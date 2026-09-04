@@ -39,8 +39,8 @@ is in ideas and judgement, which is the best thing open source has to give.
 
 ## Licence
 
-GPL-3.0, with an additional permission for App Store distribution. See
-[`LICENSE`](LICENSE).
+GPL-3.0 — see [`LICENSE`](LICENSE) — with an additional permission for App Store
+distribution, in [`LICENSE-EXCEPTION.md`](LICENSE-EXCEPTION.md).
 
 The copyleft is deliberate: it means Tilly cannot be taken closed-source or sold by
 anyone, which is what "free forever" has to mean to be worth anything.

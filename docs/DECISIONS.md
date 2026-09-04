@@ -106,7 +106,8 @@ and "today" is less meaningful than "the last thing that actually happened".
 **Decided:** 2026-09-04 · **From:** project kickoff
 
 **Chosen:** GPL-3.0, plus an additional permission under section 7 for App Store
-distribution. Makes "free forever" structural rather than a promise — nobody can take
+distribution. `LICENSE` holds the GPL verbatim so licence detection works;
+`LICENSE-EXCEPTION.md` holds the permission. Makes "free forever" structural rather than a promise — nobody can take
 Tilly closed-source or sell it.
 
 **Context:** Dime's GPL-3.0 does not oblige this. Copyright covers code, not ideas, and
