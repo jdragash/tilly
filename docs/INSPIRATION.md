@@ -132,9 +132,13 @@ are harder for a person to hold in their head and harder for an agent to edit re
 
 ### Licence
 
-Dime is GPL-3.0. **Tilly contains no Dime code and never will** — everything here is
-original work. Dime's contribution is ideas and judgement. Tilly is independently GPL-3.0
-by choice, not obligation.
+Dime is GPL-3.0; **Tilly is MIT**. These are incompatible in one direction: GPL code
+cannot be included in an MIT-licensed project without relicensing the whole thing.
+
+**Tilly contains no Dime code and never will.** Everything here is original work, and
+Dime's contribution is ideas and judgement — which copyright does not cover and which open
+source exists to share. The licence difference makes the no-copying rule load-bearing
+rather than merely preferred.
 
 ---
 
@@ -180,8 +184,8 @@ to guess at.
 this one hits. Unlock with Premium" — the app knows something useful about your money and
 is declining to tell you.
 
-**Violates tenet 5.** Tilly is free forever, and the GPL makes that structural rather than
-a promise.
+**Violates tenet 5.** Tilly is free forever. Nothing about the app knows or cares who is
+using it, and nothing it can tell you is withheld until you pay.
 
 ### A navigation bar that doesn't explain itself
 

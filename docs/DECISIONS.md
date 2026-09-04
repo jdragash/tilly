@@ -101,27 +101,33 @@ and "today" is less meaningful than "the last thing that actually happened".
 
 ---
 
-## Licence: GPL-3.0 with an App Store exception
+## Licence: MIT
 
 **Decided:** 2026-09-04 · **From:** project kickoff
 
-**Chosen:** GPL-3.0, plus an additional permission under section 7 for App Store
-distribution. `LICENSE` holds the GPL verbatim so licence detection works;
-`LICENSE-EXCEPTION.md` holds the permission. Makes "free forever" structural rather than a promise — nobody can take
-Tilly closed-source or sell it.
+**Chosen:** MIT. Anyone can use, learn from, or build on Tilly with no obligations — the
+same openness that made Dime useful to this project in the first place.
 
-**Context:** Dime's GPL-3.0 does not oblige this. Copyright covers code, not ideas, and
-Tilly contains no Dime code. The choice is deliberate reciprocity.
+**Context:** Dime's GPL-3.0 does not oblige anything here. Copyright covers code, not
+ideas, and Tilly contains no Dime code. The licence was a free choice.
 
-**Rejected — MIT.** Maximum freedom for others, but permits someone to take Tilly
-closed-source and sell it, which sits badly against tenet 5.
+**Rejected — GPL-3.0 with an App Store exception.** Briefly chosen earlier the same day
+and reversed. The appeal was making "free forever" structural: copyleft means nobody can
+take Tilly closed-source or sell it. Three things outweighed it. GPL's terms conflict with
+the restrictions app stores place on people who download software — VLC was pulled from
+the App Store in 2011 over exactly this — which needs an explicit additional-permission
+clause to work around. That clause is only effective when granted by *every* copyright
+holder, so accepting any outside contribution later would require re-granting it by each
+contributor. And copyleft restricts what other people can do with work that is meant to be
+freely learned from.
 
-**Rejected — plain GPL-3.0, no exception.** GPL's terms conflict with Apple's distribution
-restrictions; VLC was pulled from the App Store in 2011 over exactly this. As sole
-copyright holder Jake can grant the needed permission, so he does, up front.
+**Consequence, stated plainly:** tenet 5 is now a commitment rather than a guarantee. MIT
+permits someone to fork Tilly, close the source, and sell it. Nothing stops that except
+the decision recorded in `PROJECT.md`, which is where it belongs.
 
-**Watch:** the exception is only effective if granted by *all* copyright holders. Accepting
-outside contributions means re-granting it. Noted in `CLAUDE.md`.
+**Follow-on:** MIT and GPL-3.0 are incompatible in one direction — GPL code cannot enter an
+MIT project without relicensing everything. This makes the never-copy-Dime rule in
+`CLAUDE.md` load-bearing rather than merely preferred.
 
 ---
 

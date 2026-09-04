@@ -47,9 +47,9 @@ bare `.largeTitle`. See `docs/DESIGN.md` for why.
 wrong twice a year. Recurrence generates from the rule's anchor, never from the previous
 occurrence — that's Dime's live drift bug and `docs/DECISIONS.md` explains it.
 
-**The App Store licence exception depends on sole authorship.** It is only effective when
-granted by every copyright holder. If outside contributions are ever accepted, the
-exception needs re-granting by each contributor — flag this rather than merging quietly.
+**Tilly is MIT; Dime is GPL-3.0.** These are incompatible in one direction — GPL code
+cannot enter an MIT project without relicensing everything. This makes the no-copying rule
+above load-bearing, not just a preference.
 
 ## Code
 
