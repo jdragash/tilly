@@ -58,8 +58,7 @@ This half is what makes the skill Tilly's rather than generic. Check the diff ag
       anything is genuinely unclear.
 - [ ] **Tenet 4** — does anything require input the feature doesn't actually need? Does
       anything prescribe a category, a name, or a structure that should be the user's?
-- [ ] **Tenet 5** — is anything gated, limited, counted, or upsold? Any analytics or
-      tracking, including well-intentioned crash reporting?
+- [ ] **Tenet 5** — is anything gated, limited, counted, or upsold?
 
 A failure here is not a nitpick. These are the reasons the app exists.
 

@@ -63,6 +63,5 @@ Not scheduled. Recorded so they're not re-invented from scratch.
 
 ## Explicitly never
 
-- Paid tiers, IAP, locked features, ads — tenet 5, enforced by the licence.
-- Analytics or tracking of any kind.
+- Paid tiers, IAP, locked features, ads. Tenet 5.
 - Bank connections. Tilly is about rules you declare, not transactions it discovers.

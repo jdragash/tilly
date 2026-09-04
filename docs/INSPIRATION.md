@@ -183,8 +183,8 @@ to guess at.
 this one hits. Unlock with Premium" — the app knows something useful about your money and
 is declining to tell you.
 
-**Violates tenet 5.** Tilly is free forever. Nothing about the app knows or cares who is
-using it, and nothing it can tell you is withheld until you pay.
+**Violates tenet 5.** Tilly is free forever. Nothing it can tell you about your own money
+is withheld until you pay.
 
 ### A navigation bar that doesn't explain itself
 

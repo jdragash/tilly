@@ -69,12 +69,8 @@ its shape is the user's to choose.
 
 ### 5. Free forever
 
-No paywalls, no in-app purchases, no locked features, no premium tier, no analytics, no
-tracking, no accounts.
-
-The licence backs this up. GPL-3.0 means any distributed version must ship its source under
-the same terms, so Tilly cannot be taken closed-source and sold — by anyone, including its
-author later on.
+No paywalls, no in-app purchases, no locked features, no premium tier. Every part of the
+app works for everyone who has it.
 
 *Test:* would this feature work differently for someone who hadn't paid? Then it doesn't
 ship.

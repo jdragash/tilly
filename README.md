@@ -4,8 +4,7 @@ Tilly gives you a bird's-eye view of your recurring expenses — bills, subscrip
 annual costs — so you know what's coming and when.
 
 It is a personal hobby project, built in the open. It is **free forever**: no paywalls,
-no in-app purchases, no locked features, no analytics, no tracking. Nothing about it is
-for sale, now or later.
+no in-app purchases, no locked features. Nothing about it is for sale, now or later.
 
 ## What it does
 
