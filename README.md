@@ -46,8 +46,9 @@ is in ideas and judgement, which is the best thing open source has to give.
 
 ## Licence
 
-MIT — see [`LICENSE`](LICENSE). Use it, learn from it, build on it, no strings.
+GPL-3.0 — see [`LICENSE`](LICENSE) — with an additional permission for App Store
+distribution, in [`LICENSE-EXCEPTION.md`](LICENSE-EXCEPTION.md).
 
-Tilly itself will always be free: no paywalls, no in-app purchases, no locked features,
-no tracking. That's a commitment rather than something the licence enforces, and it's one
-worth stating plainly.
+Fork it, modify it, learn from it. The copyleft is there so that nobody can take Tilly
+closed-source: any distributed version has to come with its source under the same terms.
+That's what keeps "free forever" from being merely a promise.

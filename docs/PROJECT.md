@@ -72,10 +72,9 @@ its shape is the user's to choose.
 No paywalls, no in-app purchases, no locked features, no premium tier, no analytics, no
 tracking, no accounts.
 
-This is a commitment, not something the MIT licence enforces. MIT was chosen so anyone can
-use, learn from, or build on Tilly without obligation — the same openness that made Dime
-useful to this project. Keeping Tilly itself free is a decision to be re-made every time
-something tempting comes up, and the answer is in this document.
+The licence backs this up. GPL-3.0 means any distributed version must ship its source under
+the same terms, so Tilly cannot be taken closed-source and sold — by anyone, including its
+author later on.
 
 *Test:* would this feature work differently for someone who hadn't paid? Then it doesn't
 ship.

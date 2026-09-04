@@ -162,9 +162,48 @@ and "today" is less meaningful than "the last thing that actually happened".
 
 ---
 
-## Licence: MIT
+## Licence: GPL-3.0 with an App Store exception
 
-**Decided:** 2026-09-04 · **From:** project kickoff
+**Decided:** 2026-09-04 · **Supersedes:** "Licence: MIT", same day
+
+**Chosen:** GPL-3.0, plus an additional permission under section 7 for App Store
+distribution. `LICENSE` holds the GPL verbatim so licence detection works;
+`LICENSE-EXCEPTION.md` holds the permission.
+
+**Why this changed:** the requirement was restated as "build in the open, let people fork
+and modify, but keep the app from being copied and sold". That is a description of
+copyleft. MIT gives no such protection — it permits a fork to close the source and sell it.
+
+**What GPL actually does**, since this is commonly misread: it does *not* prohibit selling.
+Anyone may charge for GPL software. What it prohibits is closed-source distribution — a
+commercial fork must ship complete corresponding source under the GPL, so any buyer can
+pass it on freely. That removes the commercial moat without banning commerce, and it is the
+mechanism behind the protection wanted here.
+
+**Rejected — MIT.** Zero friction, maximum freedom for others, and no protection at all.
+Chosen earlier the same day on the mistaken premise that Dime's GPL created some obligation
+to avoid; it doesn't, since copyright covers code rather than ideas and Tilly contains no
+Dime code.
+
+**Rejected — MPL-2.0.** File-level copyleft with no App Store friction, but too weak here:
+someone can combine Tilly's files with proprietary code and ship a closed commercial app,
+provided they publish changes to Tilly's files specifically.
+
+**Rejected — non-commercial licences** (PolyForm Noncommercial, CC BY-NC). These do
+literally forbid selling, but they are not open source, they block the legitimate forking
+that building in public is for, and they carry field-of-use restrictions that sit badly
+with the project's goals.
+
+**Cost accepted:** the exception is only effective when granted by *every* copyright
+holder. Accepting outside contributions later means re-granting it from each contributor.
+Noted in `CLAUDE.md`.
+
+---
+
+## Licence: MIT  ·  SUPERSEDED
+
+**Decided:** 2026-09-04 · **Superseded the same day** by the GPL-3.0 entry above.
+**From:** project kickoff
 
 **Chosen:** MIT. Anyone can use, learn from, or build on Tilly with no obligations — the
 same openness that made Dime useful to this project in the first place.

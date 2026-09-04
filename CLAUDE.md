@@ -61,9 +61,26 @@ bare `.largeTitle`. See `docs/DESIGN.md` for why.
 wrong twice a year. Recurrence generates from the rule's anchor, never from the previous
 occurrence — that's Dime's live drift bug and `docs/DECISIONS.md` explains it.
 
-**Tilly is MIT; Dime is GPL-3.0.** These are incompatible in one direction — GPL code
-cannot enter an MIT project without relicensing everything. This makes the no-copying rule
-above load-bearing, not just a preference.
+**Tilly is GPL-3.0 with an App Store exception.** The exception is only effective when
+granted by every copyright holder, and Tilly currently has one. If outside contributions are
+ever accepted, flag that the exception needs re-granting rather than merging quietly.
+
+**The repo is public; the conversation isn't.** Personal context drives decisions but does
+not get written into tracked files. Record what a decision *implies for the product*, stated
+generally, and leave out the personal circumstance that prompted it. A sentence beginning
+"plenty of people…" is usually right; the same sentence naming Jake and his situation is
+usually not.
+
+This covers income and its timing, specific bills and amounts, living situation, employer,
+health, and family. Referring to Jake as the person who decides things — "ask Jake", "wait
+for Jake's choice" — is fine; disclosing facts about his life is not.
+
+Note that an example of a banned disclosure is itself a disclosure. Don't illustrate this
+rule with the real detail.
+
+**Ask before every commit and push.** Publishing to a public repo is not reversible. Say
+what will be committed and what the message will be, then wait. This applies to every push,
+not just the first one in a session.
 
 ## Code
 

@@ -132,13 +132,12 @@ are harder for a person to hold in their head and harder for an agent to edit re
 
 ### Licence
 
-Dime is GPL-3.0; **Tilly is MIT**. These are incompatible in one direction: GPL code
-cannot be included in an MIT-licensed project without relicensing the whole thing.
+Dime is GPL-3.0 and so is Tilly, independently — Dime's licence obliges nothing here,
+because copyright covers code rather than ideas.
 
-**Tilly contains no Dime code and never will.** Everything here is original work, and
-Dime's contribution is ideas and judgement — which copyright does not cover and which open
-source exists to share. The licence difference makes the no-copying rule load-bearing
-rather than merely preferred.
+**Tilly contains no Dime code and never will.** Everything here is original work. Dime's
+contribution is ideas and judgement, which is what open source exists to share and what
+`INSPIRATION.md` records.
 
 ---
 
