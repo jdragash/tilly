@@ -14,9 +14,27 @@ Opus pass with `tilly-explore` before I keep going?" Don't quietly redesign in S
 
 ## Read first
 
+- **The plan at `docs/plans/<slug>.md`** — this is the specification. If no plan exists,
+  stop and run `tilly-plan` rather than improvising one. Building without a plan means
+  making design and architecture decisions in Sonnet, which is the thing the workflow is
+  arranged to avoid.
 - The brief at `docs/briefs/<slug>/brief.md` and the relevant `docs/DECISIONS.md` entries
 - `CLAUDE.md` — the hard rules, especially the `Core/` boundary and the token rule
 - `docs/DESIGN.md` — tokens, state grammar, copy rules
+
+## Execute one step at a time
+
+Work the plan's steps in order. For each: build it, run its stated verification command,
+report the real output, then stop and confirm before starting the next. Don't run three
+steps together because they look small.
+
+**If a step is wrong, stop.** The specs were written before the code existed, so some will
+be ambiguous, impossible, or simply mistaken. Say which and why — don't improvise a fix,
+don't silently widen the scope, and don't implement something adjacent that seems close
+enough. A wrong spec caught in one message costs far less than one followed to completion.
+
+The same applies to anything the plan doesn't cover. A gap is a signal to ask, not licence
+to decide.
 
 ## The loop
 

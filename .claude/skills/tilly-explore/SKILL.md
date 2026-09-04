@@ -82,9 +82,16 @@ If the exploration settled anything about the visual language — state grammar,
 a spacing decision — also update `docs/DESIGN.md`. `DECISIONS.md` records *that* it was
 decided; `DESIGN.md` records the rule itself.
 
+## Next
+
+An approved design goes to **`tilly-plan`**, not straight to `tilly-build`. The plan turns
+the design into ordered step specs while there's still Opus context to make those decisions
+well.
+
 ## Hard constraints
 
-- **No code.** This skill ends at an approved design. `tilly-build` implements it.
+- **No code.** This skill ends at an approved design. `tilly-plan` specifies it and
+  `tilly-build` implements it.
 - **Never skip rung 1** because the render is already imaginable. The gate exists for
   Jake's decision-making, not as a formality.
 - **Never render all three directions** "to be thorough".

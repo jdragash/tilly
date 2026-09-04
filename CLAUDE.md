@@ -13,22 +13,34 @@ iOS development. Read `docs/PROJECT.md` before making product judgements.
 | `docs/DECISIONS.md` | Dated log: chosen, rejected, and *why each rejection lost* | Append only |
 | `docs/INSPIRATION.md` | Annotated Dime / competitor analysis — the evidence base | As things are learned |
 | `docs/briefs/<slug>/brief.md` | Per-feature or per-change briefs | Per piece of work |
+| `docs/plans/<slug>.md` | Implementation plans — ordered step specs | Per piece of work |
 
 Never delete from `DECISIONS.md`. Superseding an entry means adding a new one that says
 what changed and why, not editing history.
 
 ## Model routing
 
-| Work | Model |
-|---|---|
-| `tilly-brief` — scoping a change | Opus |
-| `tilly-explore` — wireframes and design canvas | Opus, throughout |
-| Planning an implementation | Opus |
-| `tilly-build` — implementing | Sonnet |
-| `tilly-ship` — verifying, PR, merge | Sonnet |
+| Work | Skill | Model |
+|---|---|---|
+| Scope a change | `tilly-brief` | Opus |
+| Settle the design | `tilly-explore` | Opus |
+| Specify the implementation | `tilly-plan` | Opus |
+| Implement it | `tilly-build` | Sonnet |
+| Verify, PR, merge | `tilly-ship` | Sonnet |
 
-The boundary sits between deciding and executing. If a skill's model doesn't match the
-active one, say so before proceeding rather than silently running on whatever is loaded.
+The boundary sits between deciding and executing, and **everything on the deciding side
+produces a written artifact**. That is the point: by the time work reaches `tilly-build`,
+the decisions are made, reviewed, and on disk — so execution needs none.
+
+A step spec that leaves a decision open doesn't remove that decision; it relocates it to
+the model with the least context and no way to ask first.
+
+If a skill's model doesn't match the active one, say so before proceeding rather than
+silently running on whatever is loaded.
+
+**When a spec is wrong, stop.** Plans are written before the code exists, so some steps will
+be mistaken. Report it rather than improvising — that escape hatch is what keeps detailed
+specs safe.
 
 ## Hard rules
 

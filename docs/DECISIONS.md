@@ -8,6 +8,42 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## Implementation plans are a written artifact, not an implicit step
+
+**Decided:** 2026-09-04 · **From:** project kickoff
+
+**Chosen:** A fifth skill, `tilly-plan` (Opus), sits between `tilly-explore` and
+`tilly-build` and writes `docs/plans/<slug>.md` — ordered steps, each with exact file paths,
+exact type signatures, named test cases, a verification command, and an explicit out-of-scope
+line. `tilly-build` executes one step at a time and stops when a spec is wrong.
+
+**Why:** the chain previously ran brief → explore → build. Explore ends at an approved
+*design*; build starts writing code. The decisions in between — file layout, signatures,
+build order, what "done" means per piece — had no home, so they were made ad hoc during
+implementation by the model with the least context and no way to ask first.
+
+The gap was demonstrated rather than theorised: the first Phase 1 handoff was a
+hand-written step spec typed directly into chat. That decomposition was the right work
+happening in the wrong place — invisible, unreviewable, and thrown away after one use.
+
+**Secondary benefit:** the plan is a review artifact. Reviewing a plan before code exists is
+far cheaper than reviewing a diff.
+
+**Rejected — richer briefs instead of separate plans.** A brief answers *what and why* and
+is read by a person deciding whether to do the work. A plan answers *how* and is read by a
+model executing it. Merging them makes both worse.
+
+**Rejected — leaving implementation decisions to `tilly-build`.** This is what was already
+happening. Sonnet is strong enough to make these calls, but making them in the executing
+session means they're never reviewed and never recorded.
+
+**Guardrail:** every plan ends with an escape hatch instructing the executor to stop rather
+than improvise when a spec is wrong. Specs detailed enough to remove decisions are detailed
+enough to be confidently wrong; without the hatch, over-specification turns a bad guess into
+a faithfully executed bad guess.
+
+---
+
 ## Core is a Swift package, not a folder in the app target
 
 **Decided:** 2026-09-04 · **From:** project kickoff

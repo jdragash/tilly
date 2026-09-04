@@ -94,6 +94,11 @@ Never silently overwrite. Read it, then:
 [files read, commits, decisions referenced — so this is checkable]
 ```
 
+## Next
+
+`tilly-explore` if the work needs design decisions. `tilly-plan` directly if it doesn't —
+engine and logic work usually goes straight there.
+
 ## Hard constraints
 
 - **Text only.** No wireframes, no code, no screens. That's `tilly-explore`.
