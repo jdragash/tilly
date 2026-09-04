@@ -8,6 +8,31 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## Core is a Swift package, not a folder in the app target
+
+**Decided:** 2026-09-04 · **From:** project kickoff
+
+**Chosen:** `Core/` is a standalone SPM package, `TillyCore`, which the app target depends
+on locally. Engine tests run with `cd Core && swift test`.
+
+Two reasons, both practical:
+
+*Speed.* `swift test` completes in about a second against the host, with no simulator boot.
+An `xcodebuild test` cycle is 30-60 seconds. Across the hundreds of red-green iterations
+test-driven development actually involves, that gap decides whether TDD is sustainable.
+
+*Enforcement.* "Core must not import SwiftData" becomes a compile error rather than a
+convention someone has to remember. The package simply doesn't link it.
+
+**Rejected — a plain folder inside the app target.** Simpler layout on paper, but every
+engine test would boot a simulator, and the architectural boundary would rest on discipline
+alone.
+
+**Consequence:** the Xcode project isn't needed until UI work begins. Phase 1 runs entirely
+from the command line.
+
+---
+
 ## Occurrences are computed, never stored
 
 **Decided:** 2026-09-04 · **From:** project kickoff

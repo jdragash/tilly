@@ -36,9 +36,11 @@ active one, say so before proceeding rather than silently running on whatever is
 code, no assets, no strings. Every line in this repo is original work — that is the point
 of the project, independent of licensing.
 
-**`Core/` must not import SwiftData.** The recurrence engine is pure logic over `Calendar`.
-That boundary is what makes it testable against a pinned calendar and timezone. If a change
-seems to need SwiftData in `Core/`, the change is in the wrong layer.
+**`Core/` is a separate Swift package (`TillyCore`) and must not import SwiftData.** The
+recurrence engine is pure logic over `Calendar`. The package boundary makes that a compile
+error rather than a convention, and lets the engine be tested against a pinned calendar and
+timezone in about a second. If a change seems to need SwiftData in `Core/`, the change is in
+the wrong layer.
 
 **Views reference `Tokens`, never raw values.** No literal hex, no literal point sizes, no
 bare `.largeTitle`. See `docs/DESIGN.md` for why.
@@ -60,14 +62,28 @@ above load-bearing, not just a preference.
 - Keep files focused. Dime's `InsightsView.swift` is 98KB in one file — the standing
   cautionary example. A file growing past a few hundred lines usually means it's doing too
   much.
-- New `.swift` files appear in the project automatically (file-system synchronized groups).
-  Don't hand-edit `.pbxproj`.
+- New `.swift` files appear in the app project automatically (file-system synchronized
+  groups). Don't hand-edit `.pbxproj`. Files in `Core/Sources/` are picked up by SPM with
+  no registration at all.
 
 ## Verification
 
-Report actual output, never "should pass". `xcodebuild test` green before any PR. For UI
-work, build and launch in the Simulator, screenshot, and check dark mode and Dynamic Type
-at accessibility sizes before calling it done.
+Report actual output, never "should pass".
+
+Engine work — fast, no simulator:
+
+```
+cd Core && swift test
+```
+
+App work:
+
+```
+xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test
+```
+
+Both green before any PR. For UI work, also build and launch in the Simulator, screenshot,
+and check dark mode and Dynamic Type at accessibility sizes before calling it done.
 
 ## Commits
 

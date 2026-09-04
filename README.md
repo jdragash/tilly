@@ -27,6 +27,13 @@ Early. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's built and what's next
 
 SwiftUI and SwiftData, targeting iOS 26. No third-party dependencies.
 
+The recurrence engine lives in `Core/` as a standalone Swift package with no UI and no
+database, so it can be tested in isolation:
+
+```bash
+cd Core && swift test
+```
+
 ## Acknowledgements
 
 Tilly is inspired by [**Dime**](https://github.com/rafsoh/dimeApp) by Rafael Soh — an
