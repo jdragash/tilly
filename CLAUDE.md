@@ -152,3 +152,19 @@ and check dark mode and Dynamic Type at accessibility sizes before calling it do
 
 Present tense, lowercase, scoped: `engine: clamp month-end without sticking`. Branch per
 piece of work; PR into `main`.
+
+**Write the body and the PR in plain English.** The subject line can carry a type name if
+that's genuinely the clearest way to say it, but everything below it is prose for someone who
+wasn't in the session and doesn't want to read the diff to find out what happened.
+
+The test: describe the bug as the person using the app would have hit it, before naming
+anything in the code. "Move a bill to a later date and it disappears from the month it
+actually happened in" — then, if it helps, which function was at fault. A description that
+opens with a function signature has buried the point.
+
+This is not dumbing down. A change nobody can restate in a sentence is usually a change
+that hasn't been understood yet, including by whoever wrote it. Specifics stay: exact test
+counts, real output, what was deliberately left out and why.
+
+Jargon that earns its place is fine — `anchorDate` is the clearest name for the thing it
+names. Jargon standing in for an explanation is not.
