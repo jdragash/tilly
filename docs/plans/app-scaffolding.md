@@ -526,3 +526,82 @@ settings until it builds; a project that builds for an unknown reason is worse t
 doesn't build yet.
 
 The same applies to anything not covered here. A gap is a signal to ask, not licence to decide.
+
+---
+
+## Updates
+
+### 2026-09-06 — the Step 2 seam check was too narrow
+
+**Found during review of Step 2.** The token-seam grep specified in Step 2 covered fonts and
+colours but not dimensions, so `VStack(spacing: 8)` in `RootView` passed a check that exists
+precisely to catch it. The executing session ran the check as written and reported clean; the
+spec was at fault, not the execution.
+
+Replace Step 2's grep with this one, which adds spacing, padding, corner radius and fixed
+frame literals:
+
+```
+grep -REn '#[0-9A-Fa-f]{6}|Color\(red:|\.font\(\.(largeTitle|title|headline|subheadline|body|callout|footnote|caption)|\.font\(\.system|spacing: *[0-9]|\.padding\( *[0-9]|\.padding\([^)]*, *[0-9]|cornerRadius\( *[0-9]|\.frame\((width|height): *[0-9]' Tilly --include='*.swift' | grep -v 'DesignSystem/'
+```
+
+It must print nothing. `tilly-ship` should use this version, not the original.
+
+**The fix in `RootView` is to drop the explicit spacing, not to add a spacing token.** The
+decision above — that `Tokens` ships without a spacing scale until a real layout needs one —
+still stands, and `RootView` is a placeholder the timeline deletes. Inventing a scale for a
+view that is about to be thrown away is the speculative design the decision exists to
+prevent. A bare `VStack` uses the system default, which is what v1's stock-SwiftUI position
+wants anyway.
+
+**Worth noting for `DESIGN.md`:** dimension tokens are the seam's blind spot in practice.
+Fonts and colours are conspicuous, and a bare number in a layout modifier is not — it reads
+as incidental. When the timeline introduces `Tokens.Space`, this is the reason to be strict
+about it from the first view rather than the second.
+
+### 2026-09-06 — Step 1's settings table lost the launch-screen key
+
+**Found during Step 3's launch check.** The app ran in iOS legacy compatibility scaling —
+a small centred card, letterboxed — because the generated `Info.plist` carried no
+`UILaunchScreen` key. iOS gives an app native resolution only when it declares a launch
+screen, and with `GENERATE_INFOPLIST_FILE = YES` the way to declare an empty one is
+`INFOPLIST_KEY_UILaunchScreen_Generation`, which Step 1's table never listed.
+
+**Add to the app target, both configurations:**
+
+```
+INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+```
+
+Xcode's own `iOS App Base` template writes this SDK-conditionally, as
+`INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]` and `[sdk=iphonesimulator*]`. The
+conditionals exist for multiplatform targets; Tilly is iPhone-only with `SDKROOT = iphoneos`,
+so the plain unconditional form is equivalent and one line instead of two. Noted here so the
+conditional form isn't mistaken for a discrepancy later.
+
+**How this was lost, since the pattern matters more than the setting.** The verified probe
+*had* this key — that is why the probe screenshot filled the screen. It went missing when the
+probe's working project file was turned into a prose table for this plan. Two of the same
+kind of omission were caught in review before execution (`ENABLE_PREVIEWS`,
+`SWIFT_DEFAULT_ACTOR_ISOLATION`); this one was not, and only surfaced because Step 3 verifies
+by launching rather than by testing. **A future plan that specifies build settings should give
+them as a literal block copied from something that ran, not as a hand-assembled table.** A
+table invites exactly this failure: every row is individually plausible and a missing row is
+invisible.
+
+### 2026-09-06 — what "authored once" actually constrains
+
+The Step 3 session correctly stopped rather than edit `project.pbxproj` on its own judgement,
+and asked whether "authored once" means "once per step" or "never again". Neither. The
+invariant is narrower and more useful than either reading:
+
+> **Adding, moving or removing source files must never touch the project file.**
+
+That is what file-system synchronized groups guarantee, it is what Step 2's byte-identical
+checksum proved, and it is the whole reason the hand-authored file was defensible. It says
+nothing about build settings — holding those is what a project file is *for*, and correcting
+one that is wrong is ordinary work, not a breach.
+
+So: fix build settings when they are wrong, and keep the checksum discipline for file
+additions, where it is actually load-bearing. Step 2's check should be read as "adding
+`Tokens.swift` changed nothing", not "the file is frozen".
