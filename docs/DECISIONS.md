@@ -8,6 +8,38 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## A test may be edited when a step exists to change what it asserts
+
+**Decided:** 2026-09-06 · **From:** the recurrence engine review
+
+**Chosen:** a plan step may edit an existing test when that test asserts precisely the
+behaviour the step exists to replace. The bar is that the test's *intent* survives the edit
+untouched — only the setup that pinned the old semantics moves. Any other reason to edit a
+test to make it pass is the signal to stop and report, as the plans' escape hatch says.
+
+**Why:** two step specs on the first plan turned out to be wrong, in two different sessions.
+The first was a factual error caught by `tilly-build`. The second was a rule written into the
+plan by `tilly-plan` — "if any existing test needs editing to stay green, something is wrong,
+stop" — which then fired on a step deliberately changing occurrence-windowing semantics. Two
+tests were asserting the old behaviour, correctly, having been written before the change was
+decided. Under the rule as written the only options were to stop permanently or to ignore the
+rule, and neither is right.
+
+**Rejected — keep the absolute rule.** Its appeal is that it can't be rationalised around,
+which is exactly what an escape hatch needs. But it makes any step that changes existing
+behaviour unexecutable, and a rule that has to be broken to make progress trains the habit of
+breaking it.
+
+**Rejected — drop the rule and let the executor use judgement.** Editing tests until they
+pass is the single most effective way to convert a red suite into a false green. The
+constraint has to stay; it just needs the one legitimate exception named, so that using it is
+a deliberate act rather than a rationalisation.
+
+**Consequence:** a step that intends to change existing behaviour should say so and name the
+tests it expects to touch. When it doesn't and a test still fails, that remains a stop.
+
+---
+
 ## The occurrence window means effective dates
 
 **Decided:** 2026-09-06 · **From:** recurrence engine review
