@@ -1,51 +1,54 @@
 import Foundation
 
 public enum RecurrenceEngine {
-    /// Occurrence dates for `rule` falling within `range`, ascending.
-    /// Both bounds of `range` are inclusive. All dates are start-of-day in `calendar`.
+    /// The dates `rule` *schedules* within `range`, ascending. Bounds are compared at day
+    /// granularity in `calendar` and both ends are inclusive, so a bound's time-of-day is
+    /// ignored rather than silently excluding that day. All returned dates are start-of-day.
+    ///
+    /// This windows on scheduled dates because a rule on its own has no other date to offer.
+    /// `occurrences(for:overrides:in:calendar:)` windows on *effective* dates — see "The
+    /// occurrence window means effective dates" in `docs/DECISIONS.md`.
     public static func dates(
         for rule: RecurrenceRule,
         in range: DateInterval,
         calendar: Calendar
     ) -> [Date] {
-        var effectiveRange = range
+        let rangeStart = calendar.startOfDay(for: range.start)
+        var rangeEnd = calendar.startOfDay(for: range.end)
         if let endDate = rule.endDate {
-            let clampedEnd = min(range.end, endDate)
-            guard clampedEnd >= range.start else { return [] }
-            effectiveRange = DateInterval(start: range.start, end: clampedEnd)
+            rangeEnd = min(rangeEnd, calendar.startOfDay(for: endDate))
         }
+        guard rangeEnd >= rangeStart else { return [] }
 
         switch rule.unit {
         case .day, .week:
-            return dayBasedDates(for: rule, in: effectiveRange, calendar: calendar)
+            return dayBasedDates(for: rule, from: rangeStart, through: rangeEnd, calendar: calendar)
         case .month, .year:
-            return monthBasedDates(for: rule, in: effectiveRange, calendar: calendar)
+            return monthBasedDates(for: rule, from: rangeStart, through: rangeEnd, calendar: calendar)
         }
     }
 
     private static func dayBasedDates(
         for rule: RecurrenceRule,
-        in range: DateInterval,
+        from rangeStart: Date,
+        through rangeEnd: Date,
         calendar: Calendar
     ) -> [Date] {
-        let stepDays = rule.unit == .week ? rule.interval * 7 : rule.interval
+        // `max(1,)` belts the clamp in `RecurrenceRule.init`: a zero step would make every
+        // index yield the anchor and loop forever.
+        let stepDays = (rule.unit == .week ? 7 : 1) * max(1, rule.interval)
         let anchor = calendar.startOfDay(for: rule.anchorDate)
+        guard anchor <= rangeEnd else { return [] }
 
-        guard anchor <= range.end else { return [] }
-
-        let daysFromAnchorToRangeStart = calendar.dateComponents([.day], from: anchor, to: range.start).day ?? 0
-        let startIndex: Int
-        if daysFromAnchorToRangeStart <= 0 {
-            startIndex = 0
-        } else {
-            startIndex = Int(ceil(Double(daysFromAnchorToRangeStart) / Double(stepDays)))
-        }
+        let daysToRangeStart = calendar.dateComponents([.day], from: anchor, to: rangeStart).day ?? 0
+        // Integer ceiling division — the `Double` form traps on a zero step.
+        let startIndex = daysToRangeStart <= 0 ? 0 : (daysToRangeStart + stepDays - 1) / stepDays
 
         var results: [Date] = []
         var index = startIndex
         while let candidate = calendar.date(byAdding: .day, value: index * stepDays, to: anchor),
-              candidate <= range.end {
-            if candidate >= range.start {
+              candidate <= rangeEnd {
+            if candidate >= rangeStart {
                 results.append(candidate)
             }
             index += 1
@@ -60,11 +63,12 @@ public enum RecurrenceEngine {
     /// avoid (see docs/DECISIONS.md).
     private static func monthBasedDates(
         for rule: RecurrenceRule,
-        in range: DateInterval,
+        from rangeStart: Date,
+        through rangeEnd: Date,
         calendar: Calendar
     ) -> [Date] {
         let anchor = calendar.startOfDay(for: rule.anchorDate)
-        guard anchor <= range.end else { return [] }
+        guard anchor <= rangeEnd else { return [] }
 
         let anchorComponents = calendar.dateComponents([.year, .month, .day], from: anchor)
         guard let anchorYear = anchorComponents.year,
@@ -72,7 +76,7 @@ public enum RecurrenceEngine {
               let anchorDay = anchorComponents.day else { return [] }
 
         let anchorMonthIndex = anchorYear * 12 + (anchorMonth - 1)
-        let monthStep = rule.unit == .year ? rule.interval * 12 : rule.interval
+        let monthStep = (rule.unit == .year ? 12 : 1) * max(1, rule.interval)
 
         func occurrenceDate(at index: Int) -> Date? {
             let totalMonthIndex = anchorMonthIndex + index * monthStep
@@ -83,13 +87,16 @@ public enum RecurrenceEngine {
                 return nil
             }
             let day = min(anchorDay, daysInMonth)
-            return calendar.date(from: DateComponents(year: year, month: month, day: day))
+            guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
+                return nil
+            }
+            return calendar.startOfDay(for: date)
         }
 
         var results: [Date] = []
         var index = 0
-        while let candidate = occurrenceDate(at: index), candidate <= range.end {
-            if candidate >= range.start {
+        while let candidate = occurrenceDate(at: index), candidate <= rangeEnd {
+            if candidate >= rangeStart {
                 results.append(candidate)
             }
             index += 1
@@ -99,9 +106,18 @@ public enum RecurrenceEngine {
 }
 
 extension RecurrenceEngine {
-    /// Rule-generated occurrences for `expense`, with `overrides` applied. Overrides
-    /// match on `scheduledDate` (start-of-day in `calendar`); one matching nothing is
-    /// ignored, not an error. Results sort by `effectiveDate`.
+    /// Rule-generated occurrences for `expense` with `overrides` applied, windowed on
+    /// **effective** dates: an occurrence scheduled outside `range` but moved into it is
+    /// included, and one scheduled inside but moved out is not. Bounds are compared at day
+    /// granularity, both ends inclusive. Results sort by `effectiveDate`, then
+    /// `scheduledDate`. See "The occurrence window means effective dates" in
+    /// `docs/DECISIONS.md`.
+    ///
+    /// Callers must pass every override that could bear on the window, *including ones whose
+    /// `scheduledDate` falls outside it* — fetching overrides with the same date predicate as
+    /// the query would silently drop exactly the ones that move in.
+    ///
+    /// Skipped occurrences are returned, flagged; excluding them is the caller's call.
     public static func occurrences(
         for expense: ExpenseSnapshot,
         overrides: [OccurrenceOverride],
@@ -110,23 +126,50 @@ extension RecurrenceEngine {
     ) -> [Occurrence] {
         guard !expense.isArchived else { return [] }
 
+        let windowStart = calendar.startOfDay(for: range.start)
+        let windowEnd = calendar.startOfDay(for: range.end)
+
         let overridesByDate = Dictionary(
             overrides.map { (calendar.startOfDay(for: $0.scheduledDate), $0) },
             uniquingKeysWith: { _, latest in latest }
         )
 
-        let scheduledDates = dates(for: expense.rule, in: range, calendar: calendar)
-        let unsorted = scheduledDates.map { scheduledDate -> Occurrence in
+        var scheduledDates = Set(dates(for: expense.rule, in: range, calendar: calendar))
+
+        // Pull in occurrences scheduled outside the window but moved into it. An override
+        // names the occurrence it moves, so the candidates are known exactly and no padding
+        // constant is needed — but the named date has to be one the rule actually generates,
+        // or a stray override would conjure an occurrence out of nothing.
+        for override in overrides {
+            guard let movedDate = override.movedDate else { continue }
+            let moved = calendar.startOfDay(for: movedDate)
+            guard moved >= windowStart, moved <= windowEnd else { continue }
+
+            let scheduled = calendar.startOfDay(for: override.scheduledDate)
+            guard !scheduledDates.contains(scheduled) else { continue }
+            let oneDay = DateInterval(start: scheduled, end: scheduled)
+            guard !dates(for: expense.rule, in: oneDay, calendar: calendar).isEmpty else { continue }
+
+            scheduledDates.insert(scheduled)
+        }
+
+        return scheduledDates.map { scheduledDate -> Occurrence in
             let override = overridesByDate[scheduledDate]
+            let movedTo = override?.movedDate.map { calendar.startOfDay(for: $0) }
             return Occurrence(
                 expenseID: expense.id,
                 scheduledDate: scheduledDate,
-                effectiveDate: override?.movedDate ?? scheduledDate,
+                effectiveDate: movedTo ?? scheduledDate,
                 amount: override?.actualAmount ?? expense.amount,
                 isEstimate: override?.actualAmount != nil ? false : expense.isEstimate,
                 isSkipped: override?.isSkipped ?? false
             )
         }
-        return unsorted.sorted { $0.effectiveDate < $1.effectiveDate }
+        .filter { $0.effectiveDate >= windowStart && $0.effectiveDate <= windowEnd }
+        .sorted {
+            $0.effectiveDate == $1.effectiveDate
+                ? $0.scheduledDate < $1.scheduledDate
+                : $0.effectiveDate < $1.effectiveDate
+        }
     }
 }

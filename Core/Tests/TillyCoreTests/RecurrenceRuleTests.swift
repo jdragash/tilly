@@ -26,6 +26,20 @@ import Foundation
         #expect(a == b)
     }
 
+    /// Synthesized `Decodable` writes stored properties directly and would skip the clamp,
+    /// letting a persisted rule arrive with an interval that hangs the engine.
+    @Test func decodedIntervalOfZeroClampsToOne() throws {
+        let json = #"{"interval":0,"unit":"day","anchorDate":0}"#
+        let rule = try JSONDecoder().decode(RecurrenceRule.self, from: Data(json.utf8))
+        #expect(rule.interval == 1)
+    }
+
+    @Test func decodedNegativeIntervalClampsToOne() throws {
+        let json = #"{"interval":-3,"unit":"month","anchorDate":0}"#
+        let rule = try JSONDecoder().decode(RecurrenceRule.self, from: Data(json.utf8))
+        #expect(rule.interval == 1)
+    }
+
     @Test func roundTripsThroughCodable() throws {
         let original = RecurrenceRule(interval: 3, unit: .month, anchorDate: Self.anchor, endDate: Self.anchor)
         let data = try JSONEncoder().encode(original)

@@ -27,6 +27,9 @@ public struct Occurrence: Equatable, Sendable, Identifiable {
         self.isSkipped = isSkipped
     }
 
+    /// Seconds since the epoch rather than a formatted date: an absolute instant is
+    /// timezone-free and stable, where a date string would need a calendar this value
+    /// type doesn't carry. This is identity, not date arithmetic.
     public var id: String {
         "\(expenseID.uuidString)-\(Int(scheduledDate.timeIntervalSince1970))"
     }

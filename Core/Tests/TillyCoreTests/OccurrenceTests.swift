@@ -69,7 +69,9 @@ import Foundation
         let anchor = Self.date(2027, 1, 1)
         let rule = RecurrenceRule(interval: 1, unit: .day, anchorDate: anchor)
         let expense = Self.expense(rule: rule)
-        let range = DateInterval(start: anchor, end: Self.date(2027, 1, 2))
+        // The window has to contain the moved-to date: since Step 6 the range selects on
+        // effective dates, so a move out of the window is a departure from it.
+        let range = DateInterval(start: anchor, end: Self.date(2027, 1, 31))
         let moved = Self.date(2027, 1, 15)
         let override = OccurrenceOverride(scheduledDate: Self.date(2027, 1, 1), actualAmount: nil, movedDate: moved, isSkipped: false)
 
@@ -84,14 +86,16 @@ import Foundation
         let anchor = Self.date(2027, 1, 1)
         let rule = RecurrenceRule(interval: 1, unit: .day, anchorDate: anchor)
         let expense = Self.expense(rule: rule)
-        let range = DateInterval(start: anchor, end: Self.date(2027, 1, 3))
-        // Move day 1's occurrence to after day 3, so effective order becomes 2, 3, 1.
-        let override = OccurrenceOverride(scheduledDate: Self.date(2027, 1, 1), actualAmount: nil, movedDate: Self.date(2027, 1, 10), isSkipped: false)
+        let range = DateInterval(start: anchor, end: Self.date(2027, 1, 5))
+        // Move day 1's occurrence onto day 4, so effective order becomes 2, 3, then the moved
+        // one alongside day 4, then 5. Day 4 is also scheduled, so this pins the tie-break
+        // too: equal effective dates order by scheduledDate, putting the 1st before the 4th.
+        let override = OccurrenceOverride(scheduledDate: Self.date(2027, 1, 1), actualAmount: nil, movedDate: Self.date(2027, 1, 4), isSkipped: false)
 
         let result = RecurrenceEngine.occurrences(for: expense, overrides: [override], in: range, calendar: Self.calendar)
 
-        #expect(result.map(\.scheduledDate) == [Self.date(2027, 1, 2), Self.date(2027, 1, 3), Self.date(2027, 1, 1)])
-        #expect(result.map(\.effectiveDate) == [Self.date(2027, 1, 2), Self.date(2027, 1, 3), Self.date(2027, 1, 10)])
+        #expect(result.map(\.scheduledDate) == [2, 3, 1, 4, 5].map { Self.date(2027, 1, $0) })
+        #expect(result.map(\.effectiveDate) == [2, 3, 4, 4, 5].map { Self.date(2027, 1, $0) })
     }
 
     @Test func overrideMatchingNothingIsIgnored() {
@@ -116,6 +120,28 @@ import Foundation
         let result = RecurrenceEngine.occurrences(for: expense, overrides: [], in: range, calendar: Self.calendar)
 
         #expect(result.isEmpty)
+    }
+
+    @Test func multipleOverridesOnOneExpenseEachApply() {
+        let anchor = Self.date(2027, 1, 1)
+        let rule = RecurrenceRule(interval: 1, unit: .day, anchorDate: anchor)
+        let expense = Self.expense(amount: 10, isEstimate: true, rule: rule)
+        let range = DateInterval(start: anchor, end: Self.date(2027, 1, 4))
+        let overrides = [
+            OccurrenceOverride(scheduledDate: Self.date(2027, 1, 1), actualAmount: 55, movedDate: nil, isSkipped: false),
+            OccurrenceOverride(scheduledDate: Self.date(2027, 1, 2), actualAmount: nil, movedDate: nil, isSkipped: true),
+            OccurrenceOverride(scheduledDate: Self.date(2027, 1, 3), actualAmount: nil, movedDate: Self.date(2027, 1, 4), isSkipped: false)
+        ]
+
+        let result = RecurrenceEngine.occurrences(for: expense, overrides: overrides, in: range, calendar: Self.calendar)
+
+        #expect(result.count == 4)
+        let byScheduled = Dictionary(uniqueKeysWithValues: result.map { ($0.scheduledDate, $0) })
+        #expect(byScheduled[Self.date(2027, 1, 1)]?.amount == 55)
+        #expect(byScheduled[Self.date(2027, 1, 1)]?.isEstimate == false)
+        #expect(byScheduled[Self.date(2027, 1, 2)]?.isSkipped == true)
+        #expect(byScheduled[Self.date(2027, 1, 3)]?.effectiveDate == Self.date(2027, 1, 4))
+        #expect(byScheduled[Self.date(2027, 1, 4)]?.amount == 10)
     }
 
     @Test func nilAmountExpenseYieldsNilAmountOccurrences() {
