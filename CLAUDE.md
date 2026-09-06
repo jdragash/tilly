@@ -26,7 +26,7 @@ what changed and why, not editing history.
 | Settle the design | `tilly-explore` | Opus |
 | Specify the implementation | `tilly-plan` | Opus |
 | Implement it | `tilly-build` | Sonnet |
-| Verify, PR, merge | `tilly-ship` | Sonnet |
+| Verify, land it | `tilly-ship` | Sonnet |
 
 The boundary sits between deciding and executing, and **everything on the deciding side
 produces a written artifact**. That is the point: by the time work reaches `tilly-build`,
@@ -145,21 +145,42 @@ App work:
 xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Both green before any PR. For UI work, also build and launch in the Simulator, screenshot,
-and check dark mode and Dynamic Type at accessibility sizes before calling it done.
+Both green before anything lands on `main`. For UI work, also build and launch in the
+Simulator, screenshot, and check dark mode and Dynamic Type at accessibility sizes before
+calling it done.
 
 ## Commits
 
-Present tense, lowercase, always scoped: `engine: clamp month-end without sticking`. Branch
-per piece of work; PR into `main`.
+Present tense, lowercase, always scoped: `engine: clamp month-end without sticking`.
+
+**Branch for a piece of work; commit small certain things straight to `main`.** A branch buys
+optionality — the ability to abandon work rather than unpick it — so it earns its place
+whenever there's a brief or plan behind the work, and especially for exploration that may be
+thrown away. A decision entry, a docs fix or a typo doesn't need one.
+
+Land a branch with `git merge --no-ff` and delete it. The merge commit marks that a piece of
+work landed, which is the same narrative the commit messages are for.
+
+**No pull requests.** The review that matters happens in conversation before each commit, and
+`docs/` explains the work better than a PR description would. A PR here would be a formality
+approved without being read.
+
+*Revisit when either of two things is true:* there's CI to run against a PR, or an outside
+contribution arrives — which is already the moment the GPL App Store exception needs
+re-granting. Same trigger, two reasons.
+
+*A staging branch is not needed yet either.* It would integrate parallel work or soak changes
+before a release, and neither exists — work is sequential and `main` isn't released anywhere.
+The trigger there is the first TestFlight build, when "what people have" and "what's coming"
+stop being the same thing.
 
 **The scope comes from a fixed set** — `engine:`, `app:`, `design:`, `docs:`, `meta:`. Having
 a closed list matters more than which five words; it is what stops the log reading as a pile
 of unrelated changes. `meta:` covers the workflow itself — skills, this file, tooling.
 
-**Write the body and the PR in plain English.** The subject line can carry a type name if
-that's genuinely the clearest way to say it, but everything below it is prose for someone who
-wasn't in the session and doesn't want to read the diff to find out what happened.
+**Write the body in plain English.** The subject line can carry a type name if that's
+genuinely the clearest way to say it, but everything below it is prose for someone who wasn't
+in the session and doesn't want to read the diff to find out what happened.
 
 The test: describe the bug as the person using the app would have hit it, before naming
 anything in the code. "Move a bill to a later date and it disappears from the month it

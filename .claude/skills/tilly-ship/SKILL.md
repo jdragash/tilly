@@ -1,6 +1,6 @@
 ---
 name: tilly-ship
-description: Use when Tilly work is complete and ready to become a PR and land on main — "ship this", "let's open a PR", "this is done". Runs verification, a technical and product-tenet self-review, then merges and promotes what was learned back into the docs.
+description: Use when Tilly work is complete and ready to land on main — "ship this", "let's land this", "this is done". Runs verification, a technical and product-tenet self-review, then merges and promotes what was learned back into the docs.
 ---
 
 # tilly-ship
@@ -11,11 +11,12 @@ description: Use when Tilly work is complete and ready to become a PR and land o
 judgement call is the final step — deciding what's genuinely durable enough to promote into
 `DESIGN.md`. If that's ambiguous, ask Jake rather than guessing.
 
-## Before opening anything
+## Before starting
 
 1. Confirm the direction was actually approved — check `docs/DECISIONS.md` for this work.
    If there's no recorded decision, stop and ask rather than assuming.
-2. Branch from `main`. Name it for the work: `timeline`, `occurrence-overrides`.
+2. Branch from `main` if the work isn't already on one. Name it for the work: `timeline`,
+   `occurrence-overrides`.
 
 ## Verification — run these, report actual output
 
@@ -23,12 +24,11 @@ judgement call is the final step — deciding what's genuinely durable enough to
 xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Report what it printed. Never "should pass", never "tests look fine". If anything fails,
-fix and re-run before opening the PR. Don't open on red to "get feedback early" — Jake is
-the only reviewer, so a red PR is just a broken branch.
+Report what it printed. Never "should pass", never "tests look fine". If anything fails, fix
+and re-run before merging. Nothing lands on `main` red.
 
-For UI work, also: build, launch, screenshot each changed screen, and attach those to the
-PR.
+For UI work, also: build, launch, screenshot each changed screen, and show Jake those
+screenshots before merging.
 
 ## Self-review — technical
 
@@ -62,33 +62,41 @@ This half is what makes the skill Tilly's rather than generic. Check the diff ag
 
 A failure here is not a nitpick. These are the reasons the app exists.
 
-## The PR
+## Landing it
+
+This is a solo project with no CI, so there is no pull request. The review that matters
+already happened in conversation, before each commit. Ask Jake before merging, then:
 
 ```
-gh pr create --base main
+git checkout main && git merge --no-ff <branch>
 ```
 
-Body includes:
-- What changed and why, linking the brief at `docs/briefs/<slug>/brief.md`
+The merge commit is where the summary lives — it is the only place a reader sees the whole
+piece of work at once, so write it like the commit bodies: what is now true about the
+project, what was deliberately left out, and the `Brief:` / `Plan:` trailers.
+
+Before asking, have ready:
+- What changed and why, and which `docs/DECISIONS.md` entry it implements
 - Screenshots for any UI work — before and after where there's a before
-- Which `docs/DECISIONS.md` entry this implements
 - Anything deliberately left out, and why
 
-## On merge
+Ask before merging and before pushing. Both, every time.
+
+## After merging
 
 1. **Promote durable learnings.** This is the step that keeps the library alive:
    - A new standing visual or interaction rule → `docs/DESIGN.md`
    - A decision made during implementation, with what lost → `docs/DECISIONS.md`
    - Something learned about what works on this kind of surface → `docs/INSPIRATION.md`
    - Scope that shifted → `docs/ROADMAP.md`
-2. Delete the merged branch.
+2. Delete the merged branch, local and remote.
 
 Only promote things likely to recur. One-off choices are noise in a standing document; if
 unsure, ask Jake before elevating something to a rule.
 
 ## Hard constraints
 
-- **Never open a PR on failing tests or a failing build.**
+- **Never merge on failing tests or a failing build.**
 - **Never claim verification you didn't run.** Paste the output.
 - **Never skip the tenet half of the review** because the technical half passed. A change
   can be perfectly correct Swift and still be wrong for this app.
