@@ -150,8 +150,12 @@ and check dark mode and Dynamic Type at accessibility sizes before calling it do
 
 ## Commits
 
-Present tense, lowercase, scoped: `engine: clamp month-end without sticking`. Branch per
-piece of work; PR into `main`.
+Present tense, lowercase, always scoped: `engine: clamp month-end without sticking`. Branch
+per piece of work; PR into `main`.
+
+**The scope comes from a fixed set** — `engine:`, `app:`, `design:`, `docs:`, `meta:`. Having
+a closed list matters more than which five words; it is what stops the log reading as a pile
+of unrelated changes. `meta:` covers the workflow itself — skills, this file, tooling.
 
 **Write the body and the PR in plain English.** The subject line can carry a type name if
 that's genuinely the clearest way to say it, but everything below it is prose for someone who
@@ -168,3 +172,51 @@ counts, real output, what was deliberately left out and why.
 
 Jargon that earns its place is fine — `anchorDate` is the clearest name for the thing it
 names. Jargon standing in for an explanation is not.
+
+### Link the work to what drove it
+
+When a commit belongs to a brief or a plan, name it in a trailer, alongside `Co-Authored-By`:
+
+```
+Plan: docs/plans/app-scaffolding.md
+Brief: docs/briefs/timeline/brief.md
+```
+
+This is not decoration. It makes the history queryable — `git log --grep="briefs/timeline"`
+returns every commit belonging to the timeline, months later, without anyone having
+remembered to keep a list. Whether to include it is a fact about the work rather than a
+judgement call: if a brief or plan exists, link it.
+
+### Open the body with what is now true
+
+The first line of the body says what changed *about the project*, not what changed in the
+files. "Tilly is an app you can launch now" rather than "creates the Xcode project and app
+target". The diff already says what changed; only a person can say what it meant.
+
+*Test:* read that line alone. Could someone tell whether the project moved forward, without
+knowing what a target or a model is?
+
+This is the part that carries the value and the part that rots first. The guard is
+specificity — "Tilly is an app you can launch now" passes; "improves the project's
+foundations" is the same sentence with the content removed.
+
+### Match the ceremony to the change
+
+Not every commit deserves the full apparatus, and forcing one produces padding that makes the
+history *harder* to read, not easier. The scope is always required — it costs one word. The
+trailers follow from whether a brief or plan exists. The body is what scales:
+
+| Change | Body |
+|---|---|
+| Typo, formatting, a rename, a one-line correction | None. The subject already says it. |
+| Small change whose reason isn't obvious from the diff | A sentence or two on why. |
+| Anything that changes what the app does, what it can be trusted to do, or how it is built | The full treatment — what is now true, the reasoning, what was deliberately left out. |
+
+*Test for whether a body is needed at all:* someone reading the log in six months, trying to
+understand how Tilly got here — are they worse off without it? If not, leave it out.
+
+### Expect these conventions to change
+
+Workflow, style and approach on this project are deliberately not fixed. When a convention
+here stops fitting the work, say so and propose the revision rather than following it past
+its usefulness. A rule that has to be worked around is a rule that needs rewriting.
