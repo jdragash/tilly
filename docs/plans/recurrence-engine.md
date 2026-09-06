@@ -117,8 +117,11 @@ clamp must be recomputed from the anchor every time — never carried forward.
   this is the exact Dime bug and this test is the reason the engine exists.
 - Monthly anchored **31 Jan 2028** (leap year) yields **29 Feb**, then **31 Mar**
 - Monthly anchored on the 15th is unaffected by clamping across a full year
-- Every-3-months anchored 30 Nov yields 28/29 Feb, then 31 May… anchor day restored whenever
-  the month allows
+- Every-3-months anchored 30 Nov yields 28/29 Feb, then **30 May** — anchor day restored
+  since May has 31 days ≥ 30. (**Build note, 2026-09-06:** this bullet originally read "31
+  May", which doesn't follow from a 30 Nov anchor — 31 only appears if the anchor day were
+  31, and November has no 31st. Corrected to 30 May during `tilly-build`; flagging for an
+  Opus pass to confirm the reasoning rather than the number.)
 - Yearly anchored **29 Feb 2028** yields **28 Feb** in 2029, 2030, 2031, and **29 Feb** again
   in 2032
 - Yearly anchored 3 Mar returns 3 Mar every year
