@@ -35,8 +35,42 @@ the decisions are made, reviewed, and on disk — so execution needs none.
 A step spec that leaves a decision open doesn't remove that decision; it relocates it to
 the model with the least context and no way to ask first.
 
-If a skill's model doesn't match the active one, say so before proceeding rather than
-silently running on whatever is loaded.
+### Switching between them
+
+Two ways to move, and the choice matters for cost.
+
+**Start a fresh session** when beginning a distinct piece of work — executing a plan,
+opening a new feature. The written artifacts are what make a cold start cheap: a plan holds
+everything `tilly-build` needs, so carrying an earlier conversation adds cost without adding
+context. Pick the model at the start and point the session at the plan.
+
+**Switch model in place** for short hops inside a working session. Mid-implementation, a
+question surfaces that the plan doesn't settle — switch to Opus, decide it, record it,
+switch back. Here the conversation *is* the context, and starting fresh would lose it.
+
+The rule of thumb: if the next stretch of work would need the last hour of conversation
+explained to it, stay in the session and switch models. If a document already explains it
+better than the conversation would, start fresh.
+
+Long sessions are the trap. A session that has done briefing, exploring and planning is
+carrying context that implementation doesn't need, and every turn pays for it. When the
+deciding is done and written down, that is the moment to start fresh rather than switch.
+
+### Say when to switch — don't wait to be asked
+
+Jake should not have to judge this himself. Call it at the transition points, in one line,
+without being prompted:
+
+- **A skill's model doesn't match the active one** — say so before proceeding, rather than
+  silently running on whatever is loaded.
+- **Deciding work is finished and written down** — say the artifact is ready and that a
+  fresh session on the execution model is now cheaper than continuing here.
+- **Implementation hits something the plan doesn't settle** — name it as a decision rather
+  than a detail, and say it wants Opus.
+- **A long session is about to change activity** — flag it before starting, not after.
+
+One line is enough. "Plan's written — cheaper to start fresh in Sonnet from here" beats a
+paragraph of reasoning, and beats saying nothing.
 
 **When a spec is wrong, stop.** Plans are written before the code exists, so some steps will
 be mistaken. Report it rather than improvising — that escape hatch is what keeps detailed
