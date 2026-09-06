@@ -114,6 +114,33 @@ import Foundation
         ])
     }
 
+    /// The other windowing tests use the 15th, which is clamp-immune — an engine that
+    /// reseeded from `range.start` rather than the anchor would pass them. This one catches it.
+    @Test func windowedMonthQueryPreservesAnchorClamping() {
+        let anchor = Self.date(2027, 1, 31)
+        let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor)
+        let range = DateInterval(start: Self.date(2027, 3, 1), end: Self.date(2027, 6, 30))
+        let result = RecurrenceEngine.dates(for: rule, in: range, calendar: Self.calendar)
+        #expect(result == [
+            Self.date(2027, 3, 31),
+            Self.date(2027, 4, 30),
+            Self.date(2027, 5, 31),
+            Self.date(2027, 6, 30)
+        ])
+    }
+
+    @Test func monthlyAcrossDSTInLondonStaysAtStartOfDay() {
+        var london = Calendar(identifier: .gregorian)
+        london.timeZone = TimeZone(identifier: "Europe/London")!
+        let anchor = london.date(from: DateComponents(year: 2027, month: 1, day: 15))!
+        let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor)
+        let end = london.date(from: DateComponents(year: 2027, month: 12, day: 15))!
+        let result = RecurrenceEngine.dates(for: rule, in: DateInterval(start: anchor, end: end), calendar: london)
+        #expect(result.count == 12)
+        #expect(result.allSatisfy { london.component(.hour, from: $0) == 0 })
+        #expect(result.allSatisfy { london.component(.day, from: $0) == 15 })
+    }
+
     @Test func monthRangeEntirelyBeforeAnchorReturnsEmpty() {
         let anchor = Self.date(2027, 6, 1)
         let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor)

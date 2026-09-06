@@ -117,6 +117,28 @@ import Foundation
         }
     }
 
+    /// Range bounds are compared at day granularity, so a caller passing "now" as the start
+    /// keeps today's occurrence instead of losing it to the clock.
+    @Test func nonMidnightRangeStartStillIncludesThatDay() {
+        let anchor = Self.date(2027, 1, 1)
+        let rule = RecurrenceRule(interval: 1, unit: .day, anchorDate: anchor)
+        let afternoon = Self.calendar.date(from: DateComponents(year: 2027, month: 1, day: 5, hour: 14))!
+        let range = DateInterval(start: afternoon, end: Self.date(2027, 1, 8))
+        let result = RecurrenceEngine.dates(for: rule, in: range, calendar: Self.calendar)
+        #expect(result == [5, 6, 7, 8].map { Self.date(2027, 1, $0) })
+    }
+
+    /// A rule decoded with a zero interval used to trap converting an infinite `Double` to
+    /// `Int`, or loop forever appending the anchor. The clamp now survives decoding.
+    @Test func decodedZeroIntervalRuleGeneratesDailyThroughTheEngine() throws {
+        let anchor = Self.date(2027, 1, 1)
+        let json = #"{"interval":0,"unit":"day","anchorDate":\#(anchor.timeIntervalSinceReferenceDate)}"#
+        let rule = try JSONDecoder().decode(RecurrenceRule.self, from: Data(json.utf8))
+        let range = DateInterval(start: Self.date(2027, 1, 5), end: Self.date(2027, 1, 8))
+        let result = RecurrenceEngine.dates(for: rule, in: range, calendar: Self.calendar)
+        #expect(result == [5, 6, 7, 8].map { Self.date(2027, 1, $0) })
+    }
+
     @Test func dailyOverAYearCompletesQuickly() {
         let anchor = Self.date(2027, 1, 1)
         let rule = RecurrenceRule(interval: 1, unit: .day, anchorDate: anchor)

@@ -8,6 +8,62 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## The occurrence window means effective dates
+
+**Decided:** 2026-09-06 · **From:** recurrence engine review
+
+**Chosen:** `occurrences(for:overrides:in:calendar:)` returns every occurrence whose
+*effective* date falls in the range — pulling in ones scheduled outside it but moved into
+it, and dropping ones scheduled inside it but moved out. `dates(for:in:calendar:)` keeps
+windowing on scheduled dates, because a rule on its own has no other date to offer. The two
+functions answer different questions: what the rule says, and what actually happens.
+
+Range bounds are compared at day granularity, so "falls in the range" is unambiguous:
+both ends inclusive, a bound's time-of-day ignored. A caller passing "now" as the start
+gets today's occurrence rather than losing it to the clock.
+
+**Why:** the first implementation windowed on scheduled dates and applied overrides
+afterwards, so the range meant one thing and the sort meant another. A bill anchored on 31
+January and moved to 2 February disappeared from a February query and surfaced in a January
+one, dated 2 February. The timeline is sectioned by date and rests on the most recent actual
+charge, so a moved bill would have gone missing from the month it is actually in and
+appeared under a month it isn't. Paging month by month compounds it: the same payment read
+under the wrong heading, and the correct month silently short.
+
+No padding constant is needed, which is what makes this cheap. An override names the
+occurrence it moves, so the set that can enter a window is exactly the overrides whose
+`movedDate` lands inside it — and their `scheduledDate`s are known exactly, not guessed.
+Each is checked against the rule before being admitted, so a stray override can't conjure an
+occurrence that the rule never generated.
+
+**Rejected — keep scheduled-date windowing and document it.** Cheapest change, and it moves
+the correction to every call site: timeline, headline number, month total, insights, each
+re-deriving the same widening and each able to get it wrong quietly. A question with one
+right answer belongs in one place.
+
+**Rejected — a `filterBy: .scheduled | .effective` parameter.** A knob with one correct
+setting. Every real caller wants effective dates; the only plausible scheduled-date reader
+is the editor previewing what a rule does, which reads a rule with no overrides at all, so
+the distinction doesn't arise there.
+
+**Rejected — pad the generation window by a fixed amount** (say a month either side). Wrong
+in both directions at once: still misses a longer move, and generates waste in the
+overwhelming majority of windows, which contain no moves at all. "How big should the pad be"
+has no defensible answer, and that is the signal the approach is wrong rather than merely
+imprecise.
+
+**Consequence:** callers must pass every override that could bear on the window, including
+ones whose `scheduledDate` lies outside it. Fetching overrides with the same date predicate
+as the query would silently drop exactly the ones that move into it — the failure is
+invisible, because the result still looks like a plausible month. For v1 an expense's
+overrides are few; fetch them without a date filter.
+
+**Consequence:** the engine no longer reports a moved occurrence at its original slot.
+Whether the timeline shows a trace there is a design question rather than an engine one, and
+`scheduledDate` is carried on every `Occurrence`, so the data is there either way.
+
+---
+
 ## Implementation plans are a written artifact, not an implicit step
 
 **Decided:** 2026-09-04 · **From:** project kickoff
