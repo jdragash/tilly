@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import os
 
 @main
 struct TillyApp: App {
@@ -10,6 +11,14 @@ struct TillyApp: App {
             fatalError("Failed to create ModelContainer: \(error)")
         }
     }()
+
+    init() {
+        do {
+            try SampleData.seedIfNeeded(into: container.mainContext)
+        } catch {
+            Logger(subsystem: "com.jdragash.Tilly", category: "SampleData").error("Seeding failed: \(error)")
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
