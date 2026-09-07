@@ -8,6 +8,106 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## The month header carries what is left, and says so
+
+**Decided:** 2026-09-07 · **From:** timeline
+**Supersedes:** "Month headers carry the month's total" (2026-09-07), in its
+current-month half. Collapsed bars and past and future months are unchanged.
+
+**Chosen:** the current month's header reads `−€162 left`. Every other month — past,
+future, and every collapsed bar — carries its plain total with no qualifier. When the
+current month runs out, the sentence finishes: `€0 left`.
+
+**What reframes this:** remaining and total differ in exactly one month. A future month has
+nothing charged, so they coincide. A past month has nothing left, so remaining is zero. The
+question was never "should headers show remaining"; it was what the *current* month says,
+everywhere else being moot or degenerate.
+
+**Why the word earns its place,** on a screen whose copy rule is to delete labels that
+restate their control: without it the same slot silently means two things, and a past
+month's total then reads as money still owed. That is not ambiguity, it is a figure that
+looks wrong — an amount on a month you know is finished reads as an app that failed to
+update. Tenet 3's test is whether removing the label leaves anything genuinely unclear.
+Here it does.
+
+**What it buys beyond the figure.** Once the header pins, the current month's remaining
+amount is permanently on screen — which is the roadmapped headline number, delivered on the
+month it describes instead of in a box above the content. `ROADMAP.md`'s v1 headline item is
+deleted into this one.
+
+**Rejected — the figure follows the tense and says nothing** (drawn as direction A). One
+figure, no label, no second number, and it has the best property of the three: `−€162` is
+the sum of the rows still sitting back, checkable on screen without scrolling. It lost
+because a silent switch does not read as ambiguous, it reads as a miscalculation.
+
+**Rejected — `−€162 of €1,521`** (direction B, second treatment). The most accurate and the
+most heavy-handed: it prints a second number that is redundant in every month but one, and
+on a collapsed bar it replaces one figure read at a glance with two.
+
+**Rejected — the header keeps the total, and remaining moves to the upcoming/charged
+boundary** (direction C). Drawn because it leaves this log and the roadmap untouched and
+makes the past-month problem not exist rather than handled. It lost in motion: scroll past
+the boundary and the figure is gone, which is the exact thing pinning the header was meant
+to fix.
+
+**Rejected — an `all paid` badge on finished months.** Proposed, and wrong on the word
+before the placement: Tilly never knows a bill was paid, only that its date passed, which is
+why `DESIGN.md` says *charged* throughout. A badge claiming payment is one step from a
+control asking you to confirm it, and tenet 1 exists to prevent that. On past months it also
+fails tenet 3 — August being over is not news — and it would put furniture on every month in
+history.
+
+**Rejected — tap the header to reveal the total.** An undiscoverable control, and it is
+already roadmapped as a visible setting.
+
+**Rejected — `−€162 left this month`.** The header says "September" two inches to the left.
+
+---
+
+## An opened month closes by cap, not by scrolling
+
+**Decided:** 2026-09-07 · **From:** timeline
+**Supersedes:** "The current month is home; its neighbours are collapsed bars"
+(2026-09-07), in one sentence only — "opening a month and scrolling back closes it again,
+returning to exactly the bar you opened". Everything else in that entry stands.
+
+**Chosen:** at most two months are expanded at once. Opening a third collapses the far end —
+the opposite end from where the reader is looking, off screen. Nothing closes because of
+where you scrolled.
+
+**Why the scroll trigger went:** it cannot fire. Pushing an opened month entirely off the
+top requires everything below it to fill the screen, and below it there is one month plus a
+48-point bar. Measured in the prototype at eleven recurring expenses: 798 points against a
+783-point screen, leaving the opened month's bottom edge 30 points on screen at maximum
+scroll, permanently. A month you opened could never be got rid of, and months would
+accumulate into the single uninterrupted list this log already rejected.
+
+This is arithmetic, not a badly chosen threshold, and it is why no second trigger was
+adopted instead.
+
+**Rejected — close on the hand-off,** when the next month's header reaches the top. Proposed
+and tested; it fails the same arithmetic, and it has a second fault that is worse. Opening a
+month deliberately places it *outside* the viewport so nothing under the reader's eyes
+moves — so under this trigger a month becomes eligible to close the instant it opens. It was
+watched opening and shutting itself in the same frame.
+
+**Rejected — a screen-height spacer below the last bar,** which would make both scroll
+triggers reachable. It buys the geometry by letting the reader scroll into blank space past
+the end of history, and it makes a behaviour depend on a measurement that has to stay true.
+
+**Rejected — let opened months accumulate.** The plan's own stated fallback. Bounded by
+nothing, and over a few sessions it becomes the rejected list.
+
+**Consequence for the anchor, and it inverts what the plan specified.** The plan said to pin
+the scroll position to the top-most visible item. That is the wrong anchor: at rest the
+top-most item is the collapsed bar about to be opened, so preserving its position expands it
+downward and shoves the month being read off the screen. The anchor must be the month under
+the *middle* of the viewport — the one actually being read — and it must follow that month
+across a collapse into a bar. Anchoring on total content height is also wrong, because one
+gesture can add a month at one end and drop one at the other, and the two deltas cancel.
+
+---
+
 ## A motion question gets a prototype, not another artboard
 
 **Decided:** 2026-09-07 · **From:** `tilly-explore`

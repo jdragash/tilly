@@ -99,12 +99,57 @@ day heading with a day total, and the rows inside give up their individual dates
 where the heading's vertical space comes from. A day total on a day holding one charge is
 that charge's amount written twice.
 
+### The header says what is left, and only the current month does
+
+An expanded month header carries a figure, and which figure depends on the month. The
+current month carries what is **still to go** and says so — `−€162 left`. Every other month
+carries its plain total, unqualified: a future month has nothing charged so the two
+coincide, and a past month has nothing left. When the current month runs out, the sentence
+finishes rather than changing — `€0 left`, unsigned, because there is nothing going out.
+
+The word is the one label on this screen that survives the copy rule, and it survives
+because deleting it leaves a real ambiguity rather than an imagined one. A total sitting on
+a month you know is finished does not read as unclear; it reads as a number the app failed
+to update.
+
+The current month's header is therefore the headline number. It does not get a second home
+above the content.
+
+Totals everywhere exclude skipped occurrences.
+
 ### One month at a time, with its neighbours collapsed
 
 The current month is expanded. The months either side are slim bars carrying a name and a
-total; pulling opens one, scrolling back closes it, and closing returns you to exactly the
-bar you opened. A month total excludes skipped occurrences and carries `EST` when the month
-contains an estimate.
+total; pulling or tapping opens one. **At most two months are expanded at once** — opening a
+third collapses the far end, off screen, at the opposite end from where the reader is
+looking. Nothing collapses because of where you scrolled.
+
+That last rule is not a simplification of a nicer one. Closing an opened month by scrolling
+away from it cannot work: pushing it off the top needs a screenful of content below it, and
+below it there is one month and a 48-point bar. `DECISIONS.md` has the measurement.
+
+### The month you are reading stays named
+
+The month header pins to the top of the list while its rows scroll under it, over a
+translucent ground, and hands off when the next month's header arrives beneath it. It keeps
+its size when it pins — condensing to bar height saves one point and costs three points of
+type, and lands the month you are *in* on the same shape as a month you could *open*.
+
+The hairline under it appears only while it is pinned, which is the same rule the rest of
+the screen follows: a rule is drawn because something needs closing. It earns an affordance
+for free — a rule under the month name means the list is scrolled.
+
+### Nothing under the reader's eyes may move
+
+When months open and collapse, the anchor is the month under the **middle** of the viewport —
+the one being read — and it holds its position across the change, following that month even
+when it collapses into a bar.
+
+The two intuitive anchors are both wrong, and worth naming because one of them was specified
+before it was tested. Anchoring on the top-most visible item fails at rest, where that item
+is the collapsed bar about to be opened: preserving its position expands it downward and
+pushes the month being read off screen. Anchoring on total content height fails as soon as
+one gesture adds a month at one end and drops one at the other, because the deltas cancel.
 
 ### Never lose the reader's place
 
@@ -128,6 +173,16 @@ not say "Category". The competitor's editor labels all four and titles itself "N
 expense"; it is the standing example of what this costs.
 
 Test: remove the label. If nothing is genuinely unclear, it stays removed.
+
+**The test cuts both ways, and the month header is the standing example of the other
+direction.** `−€162 left` keeps its word because removing it leaves the same slot meaning
+two different things on different months, with nothing to say which. The rule is not "fewer
+words wins" — it is that a word must be doing work no other channel is doing. The same
+header does *not* say "left this month", because "September" is already sitting beside it.
+
+**The app never says a bill was paid.** It says *charged*. Tilly knows a date passed; it
+does not know what left your account, and language that implies otherwise is one step from a
+control that asks you to confirm it. See tenet 1.
 
 **Amounts round to whole units.** Enter 74.10, see 74. Cents are noise at this altitude,
 and losing them makes columns scannable. Display-cents is a v2 setting, defaulting off.

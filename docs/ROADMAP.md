@@ -21,12 +21,11 @@ holds the token layer for the timeline to extend. Built to `docs/plans/app-scaff
 |---|---|---|
 | Recurrence engine | **Done** | Every N days / weeks / months / years from a fixed anchor. Pure, tested, no SwiftData. Built to `docs/plans/recurrence-engine.md`; 54 tests. |
 | App scaffolding | **Done** | Xcode project, `Expense`/`OverrideRecord`, `TillyStore`, token layer. Built to `docs/plans/app-scaffolding.md`; 11 tests. |
-| Timeline | Design settled | Future above, past below. One month expanded, neighbours as collapsed bars carrying their totals. Design explored and recorded 2026-09-07 — see `docs/DECISIONS.md` and `docs/DESIGN.md`; implementation plan next. |
+| Timeline | In progress | Future above, past below. One month expanded, neighbours as collapsed bars; a sticky header carrying what is left this month. Steps 1–4 of `docs/plans/timeline.md` are built and green; 5–7 revised 2026-09-07 after the header exploration. |
 | Expense editor | — | Create and edit rules. Amount optional so variable bills fit. |
 | Occurrence overrides | Engine done, UI to come | Set the real amount on an estimate, skip one, move one. "This occurrence" vs "all future" unmistakable. |
 | Categories | — | User-created only. Ships empty. |
 | Insights, thin | — | Month total, annualised total, category breakdown as a proportional bar. |
-| Headline number | — | Calendar month — "remaining this month". |
 | Token layer + gallery | Tokens started | `DesignSystem/Tokens.swift` aliases system values for text, ink and surface. `DesignSystem/Gallery.swift` still to come, and so does a spacing/dimension scale — the timeline introduces both when it needs them. |
 
 **Done when:** it holds a real set of recurring expenses and gets opened instead of guessed at.
@@ -38,7 +37,8 @@ holds the token layer for the timeline to extend. Built to `docs/plans/app-scaff
 | Item | Why not v1 |
 |---|---|
 | Look-ahead nudges — "next month you have a €500 annual bill" | Arguably the app's core promise, but the rules need real usage to design well. The engine already computes arbitrary future ranges, so this is a query plus a UI slot — and the slot is reserved in v1. |
-| Custom & pay-period headline | Plenty of people track spending from one payday to the next rather than by calendar month. Real, but it changes what the headline *means*, and shouldn't gate shipping. |
+| Custom & pay-period months | Plenty of people read their money from one payday to the next rather than by calendar month. Deferred, and cheaper than it looks: the version worth copying is "the month starts on the Nth", which is a redefinition of the month interval rather than a new paging model — the engine already windows on any `DateInterval`, so month-by-month paging survives it intact. |
+| Month header count as a setting — remaining or total | The header carries what's left, which is the right default and the only one v1 needs. A switch is a preference, not a decision, and it can wait for the settings screen to exist. |
 | Calendar view | A month grid duplicates what the timeline already carries. Live with the timeline first and find out whether it's actually missed. |
 | iCloud sync | Schema is CloudKit-shaped from day one, so this is close to a flag. Turning it on adds container setup, merge conflicts and sync latency — not what a first Swift project needs. |
 

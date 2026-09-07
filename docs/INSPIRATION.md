@@ -75,9 +75,17 @@ included, not just on the timeline.
 switches, each one clearly answering a real question rather than exposing an
 implementation detail.
 
-**Noted for v2.** The Time Frames idea is the seed of Tilly's pay-period headline. Plenty of
+**Noted for v2.** The Time Frames idea is the seed of Tilly's pay-period months. Plenty of
 people read their money from one payday to the next rather than by calendar month, and the
-headline number should eventually be able to say "remaining this pay period".
+month header should eventually be able to count over one.
+
+**And the shape of Dime's version is the useful part.** Its Time Frames screen offers a
+start of week and a start of month, and the start of month is a plain list — 1st, 2nd, 3rd,
+and so on. That is not an arbitrary period; it is an *offset*, which makes it far cheaper
+than it sounds. Tilly's engine already windows on any `DateInterval`, so "the month starts
+on the Nth" is a redefinition of one interval rather than a new paging model, and everything
+built on month-by-month paging survives it. Worth knowing before anyone argues that
+deferring pay-period support paints v1 into a corner. It doesn't.
 
 ### The proportional distribution bar
 
@@ -121,6 +129,20 @@ devices running the pass both write rows.
 
 Tilly computes occurrences from a fixed anchor instead. Neither problem exists, and
 retroactive rule edits are correct for free. See `DECISIONS.md`.
+
+### A setting that asks you to restart the app
+
+Dime's Time Frames screen carries a line under the options: *close and reload the app for
+the change to take effect.* Small, and it hands the user a chore to finish a change they
+already made — the app knows what was chosen and is declining to act on it until they do
+something about it.
+
+**Bears on tenet 1,** which is usually read as being about ticking bills off. It's wider than
+that: any moment where the app knows something and waits for the user to act anyway is the
+same failure in miniature.
+
+**Taken:** a setting takes effect when it is set. If that turns out to be expensive to
+implement for some particular setting, the honest answer is to not ship that setting yet.
 
 ### Very large view files
 
