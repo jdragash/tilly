@@ -8,6 +8,141 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## A motion question gets a prototype, not another artboard
+
+**Decided:** 2026-09-07 · **From:** `tilly-explore`
+
+**Chosen:** `tilly-explore` gains a third, conditional rung. When what is being decided is
+what happens *over time* — pinning, hand-offs, a gesture that opens something and a scroll
+that closes it again — the exploration builds one self-contained HTML prototype: no
+libraries, no build, opens by double-clicking, variants on controls rather than in separate
+files. It is untracked and thrown away when the decision lands.
+
+**Why:** the timeline's month header was explored as six artboards including a four-frame
+scroll sequence, and Jake's response was that it was hard to grasp without motion. That is
+not a failure of the drawing. Three frames of a sequence are three still images of a thing
+whose entire nature is that it moves, and adding a fourth frame does not converge on
+anything.
+
+The prototype cost about twenty minutes and immediately produced a fact that the brief, the
+canvas and the written plan had all missed: **a month of eleven recurring expenses is 802
+points against a 783-point viewport.** Nineteen points of scroll. The header therefore never
+meaningfully pins at rest, and — worse — an opened neighbour month can never scroll far
+enough out of view to trigger the close-on-scroll-back behaviour, so a month you open stays
+open. At eighteen expenses there are 383 points of scroll and both behaviours work. The
+design has a density threshold in it, and nothing static was ever going to show that.
+
+**The controls are the rung's real value,** and worth stating separately from the motion.
+Two sliders — where "today" falls in the month, and how many things recur — let Jake find
+the boundary himself rather than be shown one point on one side of it. A prototype without
+a control for the quantity the design turns on is just an animated artboard.
+
+**Rejected — draw more frames.** The thing already tried. A sequence drawn as stills asks
+the reader to animate it in their head, which is precisely the work they cannot do reliably;
+it is the reason the rung exists.
+
+**Rejected — prototype instead of the canvas.** The canvas settles type, spacing, colour,
+hierarchy and the awkward content cases, and does all of it faster than a prototype would.
+A prototype is a bad place to argue about a 13-point date line. The rungs answer different
+questions and the prototype is the narrowest of the three.
+
+**Rejected — keep prototypes in the repo as reference.** A prototype goes stale exactly the
+way the timeline's canvas did, and it looks more authoritative than a canvas because it
+runs. What survives a decision is the entry in this file.
+
+**Consequence:** the prototype must state on the page itself what it cannot reproduce —
+rubber-band overscroll, Liquid Glass, Dynamic Type, iOS momentum. A prototype mistaken for
+a promise about feel is worse than no prototype.
+
+---
+
+## Exploration wireframes before it draws
+
+**Decided:** 2026-09-07 · **From:** `tilly-explore`
+**Supersedes:** "Exploration draws variants on the canvas, not as wireframes first",
+decided earlier the same day
+
+**Chosen:** the wireframe rung comes back. `tilly-explore` emits two or three ASCII
+wireframes under a shared 500-token budget, stops for a choice, and only then builds a
+canvas — for the chosen direction, plus at most one contender if a side-by-side is asked
+for.
+
+**Why the canvas-only version lost:** its premise was that a second direction costs an
+artboard rather than a second canvas, so drawing them all is nearly free. It isn't.
+Artboards at a real type scale with real content across every state are the most expensive
+output this workflow produces, and drawing every direction at that fidelity spends the
+budget before the cheap question has been answered. That question — which *shape* is right —
+is one a wireframe answers badly at colour and type and well at layout, hierarchy, ordering
+and density, which is the only ground the directions are competing on.
+
+The two-lines-per-direction summary that replaced the wireframes was cheap, but it made the
+argument in prose. Describing a layout is the one register worse than drawing it in boxes.
+
+**Kept from the version being superseded.** The canvas rung keeps its awkward-case list, the
+requirement to draw dark mode, the rule that the argument lives in the canvas's own
+annotations, iteration in place on one URL, and the step that brings the canvas back into
+line with this file once a decision lands. Only the question of *what gets drawn* changes.
+
+**Rejected — draw every direction, but rough.** A deliberately low-fidelity canvas is a
+wireframe that costs like a canvas. If the fidelity isn't real, the artboard has given up
+the only thing it has over a wireframe.
+
+**Rejected — decide from the wireframes and skip the canvas.** Wireframes can't settle type,
+spacing or colour, and those decide whether a layout survives contact with real content.
+The canvas isn't the redundant rung; it's the one the wireframe is buying time for.
+
+**Consequence:** the requirement to draw an accessibility text size, added the same day, is
+dropped. Deferred rather than rejected — the reasoning that motivated it still holds, and
+it wants a cheaper home than every exploration canvas, probably a simulator check in
+`tilly-ship`.
+
+---
+
+## Exploration draws variants on the canvas, not as wireframes first
+
+**Decided:** 2026-09-07 · **From:** `tilly-explore`
+**Supersedes:** the two-rung gate in `tilly-explore` — ASCII wireframes, then a canvas for
+the winner only
+
+**Chosen:** `tilly-explore` names two or three directions in a line or two each and then
+draws all of them on one canvas. The canvas is where variants are compared and iterated,
+and it is revised in place rather than replaced per pass.
+
+**Why the wireframe rung lost:** it was there to stop three canvases being built to answer a
+question one cheap artifact could settle — and the cost it was avoiding turned out not to
+exist. Variants are artboards on a single canvas, so a second direction costs an artboard
+rather than a second canvas. Meanwhile the rung had a real cost of its own: it settled
+layout in the medium least able to show layout, and a design argument that has to be *read*
+rather than *looked at* is being made in the wrong register.
+
+The evidence is the timeline exploration, which reached a fifth pass by editing one canvas
+repeatedly. That is the working mode, and the wireframe gate sat in front of it doing
+nothing the canvas didn't do better.
+
+**What was kept, because the rung was doing four jobs and only one of them was cost.** The
+decision gate survives, moved to after the first canvas — Jake picks from something he can
+see. The requirement to name which tenet each direction serves and strains survives, and
+now lives in the canvas annotations beside the artboard it judges. The cap on how many
+directions get drawn survives at two or three, because the constraint is what makes each one
+an argument rather than a permutation.
+
+**Rejected — keep the wireframes as an optional first rung.** Optional gates are not gates;
+in practice they are skipped when the render feels imaginable, which is precisely when the
+render turns out to disagree.
+
+**Rejected — drop the pre-drawing description entirely and go straight to `/design`.** The
+two lines per direction cost almost nothing and are what stop three artboards being three
+versions of the same idea. So the skill keeps two gates rather than one: the directions are
+approved before anything is drawn, and the drawn direction is chosen after. They ask
+different questions — *are these worth drawing* and *which one won* — and the first is the
+last point where changing course costs a sentence instead of a rebuild.
+
+**Consequence:** `tilly-explore` also now requires dark mode and an accessibility text size
+to be drawn, and requires the canvas to be brought into line with `DECISIONS.md` once a
+decision lands. Both are failures this project actually hit — the timeline's accessibility
+layout was wrong in a way only a render showed, and its canvas kept a `TODAY` badge that had
+already been rejected, which `tilly-plan` then had to warn the implementer about.
+
 ## Time is carried by weight, not by form
 
 **Decided:** 2026-09-07 · **From:** timeline

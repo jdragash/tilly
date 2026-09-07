@@ -101,7 +101,7 @@ engine and logic work usually goes straight there.
 
 ## Hard constraints
 
-- **Text only.** No wireframes, no code, no screens. That's `tilly-explore`.
+- **Text only.** No wireframes, no canvas, no code. That's `tilly-explore`.
 - **Don't create `DECISIONS.md` entries from a brief.** A brief raises questions; it
   doesn't settle them. Decisions get recorded when they're actually made.
 - **Don't restate the tenets.** Reference them. They live in `PROJECT.md` and duplicating
