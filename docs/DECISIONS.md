@@ -8,6 +8,46 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## The project file is authored by hand, once
+
+**Decided:** 2026-09-06 · **From:** `docs/plans/app-scaffolding.md`
+
+**Chosen:** `Tilly.xcodeproj/project.pbxproj` is written by hand, a single time, using
+`PBXFileSystemSynchronizedRootGroup` for both targets — so the file holds no per-file
+references at all and does not grow as the app does. The invariant this actually protects
+turned out narrower than "don't touch it again":
+
+> Adding, moving, or removing source files must never touch the project file.
+
+Build settings are what a project file is *for* — fixing one that's wrong, or adding one
+that's missing, is ordinary work, not a breach of "authored once".
+
+**Why:** `CLAUDE.md` said "don't hand-edit `.pbxproj`", written so routine file additions
+would never require project-file surgery. Authoring the project once, correctly, with
+synchronized groups is precisely what makes that true forever after — but the rule as first
+written didn't say so, and a later session stopped mid-build, unsure whether it was even
+allowed to fix a build setting that turned out to be wrong (a missing launch-screen key was
+scaling the whole app into a letterboxed compatibility mode). Two probes, built and run in a
+scratch directory before the plan was finished, confirmed synchronized groups hold: a new
+`.swift` file in a newly created nested directory compiled into both targets with the
+`.pbxproj` byte-identical before and after.
+
+**Rejected — create it in Xcode's GUI.** Guaranteed-canonical, but costs a wizard run that
+can't be specified or verified in advance, and the template emits extras (asset catalog,
+sample content, sometimes an XCTest target) that then need removing. The probe removed the
+only real argument for it, which was risk.
+
+**Rejected — XcodeGen or Tuist.** Neither was installed, both are third-party build tooling
+in a project whose stated point is learning iOS properly, and both introduce a second source
+of truth — a `project.yml` that has to stay in step with the thing it generates.
+
+**Consequence:** `CLAUDE.md`'s hard rule is corrected to the narrower invariant above. A
+session that finds a wrong build setting should fix it directly rather than treating the
+project file as frozen; a session adding, moving or removing files should never need to
+touch it at all.
+
+---
+
 ## A test may be edited when a step exists to change what it asserts
 
 **Decided:** 2026-09-06 · **From:** the recurrence engine review

@@ -3,6 +3,8 @@ build/
 DerivedData/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
+**/xcuserdata/
+Tilly.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 *.xcuserstate
 *.xcscmblueprint
 *.moved-aside

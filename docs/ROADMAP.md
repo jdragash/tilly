@@ -12,20 +12,22 @@ re-argued each time someone notices it's missing.
 
 The smallest thing that does the job. Nothing here is optional.
 
-**Where things stand, 2026-09-06:** the engine is done and the timeline is next. There is no
-Xcode project yet — everything so far runs from the command line, as the "Core is a Swift
-package" decision anticipated. The first UI item creates it.
+**Where things stand, 2026-09-07:** the engine is done, the app scaffolding is done, and the
+timeline is next. The Xcode project exists with a live SwiftData store — `Expense` and
+`OverrideRecord` map totally onto `TillyCore`'s value types — and `DesignSystem/Tokens.swift`
+holds the token layer for the timeline to extend. Built to `docs/plans/app-scaffolding.md`.
 
 | Item | Status | Notes |
 |---|---|---|
 | Recurrence engine | **Done** | Every N days / weeks / months / years from a fixed anchor. Pure, tested, no SwiftData. Built to `docs/plans/recurrence-engine.md`; 54 tests. |
+| App scaffolding | **Done** | Xcode project, `Expense`/`OverrideRecord`, `TillyStore`, token layer. Built to `docs/plans/app-scaffolding.md`; 11 tests. |
 | Timeline | Next | Future above, past below, resting on the most recent actual charge. Sectioned by date. |
 | Expense editor | — | Create and edit rules. Amount optional so variable bills fit. |
 | Occurrence overrides | Engine done, UI to come | Set the real amount on an estimate, skip one, move one. "This occurrence" vs "all future" unmistakable. |
 | Categories | — | User-created only. Ships empty. |
 | Insights, thin | — | Month total, annualised total, category breakdown as a proportional bar. |
 | Headline number | — | Calendar month — "remaining this month". |
-| Token layer + gallery | — | `DesignSystem/Tokens.swift` aliasing system values, plus a gallery screen. Cheap now, expensive to retrofit. |
+| Token layer + gallery | Tokens started | `DesignSystem/Tokens.swift` aliases system values for text, ink and surface. `DesignSystem/Gallery.swift` still to come, and so does a spacing/dimension scale — the timeline introduces both when it needs them. |
 
 **Done when:** it holds a real set of recurring expenses and gets opened instead of guessed at.
 

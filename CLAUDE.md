@@ -26,7 +26,7 @@ what changed and why, not editing history.
 | Settle the design | `tilly-explore` | Opus |
 | Specify the implementation | `tilly-plan` | Opus |
 | Implement it | `tilly-build` | Sonnet |
-| Verify, PR, merge | `tilly-ship` | Sonnet |
+| Verify, land it | `tilly-ship` | Sonnet |
 
 The boundary sits between deciding and executing, and **everything on the deciding side
 produces a written artifact**. That is the point: by the time work reaches `tilly-build`,
@@ -126,8 +126,10 @@ not just the first one in a session.
   cautionary example. A file growing past a few hundred lines usually means it's doing too
   much.
 - New `.swift` files appear in the app project automatically (file-system synchronized
-  groups). Don't hand-edit `.pbxproj`. Files in `Core/Sources/` are picked up by SPM with
-  no registration at all.
+  groups) — adding, moving, or removing source files must never touch `.pbxproj`. Build
+  settings in the project file are ordinary work: fix one that's wrong, or add one that's
+  missing, without treating the file as frozen. Files in `Core/Sources/` are picked up by
+  SPM with no registration at all.
 
 ## Verification
 
@@ -145,17 +147,42 @@ App work:
 xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Both green before any PR. For UI work, also build and launch in the Simulator, screenshot,
-and check dark mode and Dynamic Type at accessibility sizes before calling it done.
+Both green before anything lands on `main`. For UI work, also build and launch in the
+Simulator, screenshot, and check dark mode and Dynamic Type at accessibility sizes before
+calling it done.
 
 ## Commits
 
-Present tense, lowercase, scoped: `engine: clamp month-end without sticking`. Branch per
-piece of work; PR into `main`.
+Present tense, lowercase, always scoped: `engine: clamp month-end without sticking`.
 
-**Write the body and the PR in plain English.** The subject line can carry a type name if
-that's genuinely the clearest way to say it, but everything below it is prose for someone who
-wasn't in the session and doesn't want to read the diff to find out what happened.
+**Branch for a piece of work; commit small certain things straight to `main`.** A branch buys
+optionality — the ability to abandon work rather than unpick it — so it earns its place
+whenever there's a brief or plan behind the work, and especially for exploration that may be
+thrown away. A decision entry, a docs fix or a typo doesn't need one.
+
+Land a branch with `git merge --no-ff` and delete it. The merge commit marks that a piece of
+work landed, which is the same narrative the commit messages are for.
+
+**No pull requests.** The review that matters happens in conversation before each commit, and
+`docs/` explains the work better than a PR description would. A PR here would be a formality
+approved without being read.
+
+*Revisit when either of two things is true:* there's CI to run against a PR, or an outside
+contribution arrives — which is already the moment the GPL App Store exception needs
+re-granting. Same trigger, two reasons.
+
+*A staging branch is not needed yet either.* It would integrate parallel work or soak changes
+before a release, and neither exists — work is sequential and `main` isn't released anywhere.
+The trigger there is the first TestFlight build, when "what people have" and "what's coming"
+stop being the same thing.
+
+**The scope comes from a fixed set** — `engine:`, `app:`, `design:`, `docs:`, `meta:`. Having
+a closed list matters more than which five words; it is what stops the log reading as a pile
+of unrelated changes. `meta:` covers the workflow itself — skills, this file, tooling.
+
+**Write the body in plain English.** The subject line can carry a type name if that's
+genuinely the clearest way to say it, but everything below it is prose for someone who wasn't
+in the session and doesn't want to read the diff to find out what happened.
 
 The test: describe the bug as the person using the app would have hit it, before naming
 anything in the code. "Move a bill to a later date and it disappears from the month it
@@ -168,3 +195,56 @@ counts, real output, what was deliberately left out and why.
 
 Jargon that earns its place is fine — `anchorDate` is the clearest name for the thing it
 names. Jargon standing in for an explanation is not.
+
+### Link the work to what drove it
+
+When a commit belongs to a brief or a plan, name it in a trailer, alongside `Co-Authored-By`:
+
+```
+Plan: docs/plans/app-scaffolding.md
+Brief: docs/briefs/timeline/brief.md
+Co-Authored-By: ...
+```
+
+Keep them in the **same block** as `Co-Authored-By`, with no blank line between. Git only
+parses the last contiguous paragraph as trailers, so a blank line above them turns them back
+into ordinary body text — searchable, but invisible to anything that reads trailers properly.
+
+This is not decoration. It makes the history queryable — `git log --grep="briefs/timeline"`
+returns every commit belonging to the timeline, months later, without anyone having
+remembered to keep a list. Whether to include it is a fact about the work rather than a
+judgement call: if a brief or plan exists, link it.
+
+### Open the body with what is now true
+
+The first line of the body says what changed *about the project*, not what changed in the
+files. "Tilly is an app you can launch now" rather than "creates the Xcode project and app
+target". The diff already says what changed; only a person can say what it meant.
+
+*Test:* read that line alone. Could someone tell whether the project moved forward, without
+knowing what a target or a model is?
+
+This is the part that carries the value and the part that rots first. The guard is
+specificity — "Tilly is an app you can launch now" passes; "improves the project's
+foundations" is the same sentence with the content removed.
+
+### Match the ceremony to the change
+
+Not every commit deserves the full apparatus, and forcing one produces padding that makes the
+history *harder* to read, not easier. The scope is always required — it costs one word. The
+trailers follow from whether a brief or plan exists. The body is what scales:
+
+| Change | Body |
+|---|---|
+| Typo, formatting, a rename, a one-line correction | None. The subject already says it. |
+| Small change whose reason isn't obvious from the diff | A sentence or two on why. |
+| Anything that changes what the app does, what it can be trusted to do, or how it is built | The full treatment — what is now true, the reasoning, what was deliberately left out. |
+
+*Test for whether a body is needed at all:* someone reading the log in six months, trying to
+understand how Tilly got here — are they worse off without it? If not, leave it out.
+
+### Expect these conventions to change
+
+Workflow, style and approach on this project are deliberately not fixed. When a convention
+here stops fitting the work, say so and propose the revision rather than following it past
+its usefulness. A rule that has to be worked around is a rule that needs rewriting.
