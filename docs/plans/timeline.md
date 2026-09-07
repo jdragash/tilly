@@ -10,7 +10,8 @@ occurrence window means effective dates" (2026-09-06).
 file all exist and are green.
 
 Replaces `Tilly/RootView.swift` with the timeline screen. No editor, no categories, no
-insights, no headline number.
+insights. The headline number is not a separate thing to build — the current month's header
+is it.
 
 ---
 
@@ -25,6 +26,9 @@ of them has misread the plan.
 - **One month expanded, its neighbours as collapsed bars.** Not one uninterrupted list.
   Months do *not* arrive indefinitely as you scroll — the brief's scope answer on that is
   superseded.
+- **At most two months are expanded at once,** and nothing collapses because of where you
+  scrolled. Closing on scroll-back was specified, tested in a prototype, and found to be
+  unreachable; see the Updates section and `DECISIONS.md`.
 - **A day groups only when it holds more than one charge.** One charge is an ordinary row
   carrying its own date. Two or more collapse under a heading with a day total and give up
   their individual dates.
@@ -38,8 +42,10 @@ of them has misread the plan.
   against the badge. Build the canvas minus the badge.
 - **A moved occurrence appears at its new date and nowhere else.** No ghost row, no "moved
   from the 1st" line.
-- **Month headers and collapsed bars both carry that month's total,** excluding skipped
-  occurrences, marked `EST` when the month contains an estimate.
+- **The current month's header carries what is left** — `−€162 left`, the word included.
+  Every other month, and every collapsed bar, carries a plain total. Totals and remainders
+  both exclude skipped occurrences. Superseded "headers carry the month's total"; see the
+  Updates section.
 - **Every amount carries a minus sign** — rows, day totals, month totals.
 - **The row leads with a fixed-size icon slot,** and the date moves beneath the name.
   Categories ship empty, so **the slot renders as an empty well with no glyph in v1.** Any
@@ -180,6 +186,10 @@ a bar and the header it turns into cannot disagree.
 can be looked at — tokens, the builder, the seed, the static month. Steps 5–7 are the
 scrolling behaviour, and they need a settled-looking month to build on more than they need
 the conversation that produced one. Neither half carries context the other wants.
+
+Steps 1–4 are built and green. **The second session starts with the landed-code changes in
+the Updates section, then Step 5** — the figure and `remaining` have to exist before there is
+anything for a pinned header to render.
 
 ### Step 1 — Extend `Tokens` with the dimension scale the timeline needs
 
@@ -761,13 +771,15 @@ any glyph inside the icon well, `Gallery.swift`.
 
 ---
 
-### Step 5 — Neighbour months as collapsed bars, and the expanded range
+### Step 5 — The sticky header, collapsed bars, and the capped range
 
-**Depends on:** Step 4.
+**Depends on:** Step 4, and on the landed-code changes in the Updates section — do those
+first, in the same session, since this step renders `headerFigure` and `remaining`.
 
 **Files:**
 - `Tilly/Timeline/CollapsedMonthBar.swift` (new)
 - `Tilly/Timeline/TimelineView.swift` (new — the screen proper)
+- `Tilly/Timeline/MonthHeader.swift` (modified — the pinned treatment)
 - `Tilly/RootView.swift` (modified — becomes a thin wrapper, or is deleted and `TillyApp`
   points at `TimelineView`; take whichever leaves less)
 - `TillyTests/TimelineRangeTests.swift` (new)
@@ -778,13 +790,16 @@ any glyph inside the icon well, `Gallery.swift`.
 struct CollapsedMonthBar: View {
     let section: MonthSection
     let direction: Direction     // .above uses chevron.up, .below uses chevron.down
-    let today: Date
     let open: () -> Void
 }
 
-/// The expanded months, and the bars either side of them. `high` is the later month and
-/// sits above; `low` is the earlier month and sits below.
+/// The expanded months, and the bars either side. `high` is the later month and sits
+/// above; `low` is the earlier month and sits below. At most `maxOpen` are expanded —
+/// opening a third collapses the far end, which is why the openers say which way the
+/// reader is travelling.
 struct ExpandedRange: Equatable, Sendable {
+    static let maxOpen = 2
+
     private(set) var low: MonthKey
     private(set) var high: MonthKey
 
@@ -793,30 +808,49 @@ struct ExpandedRange: Equatable, Sendable {
     var barAbove: MonthKey { get }        // high.advanced(by: 1)
     var barBelow: MonthKey { get }        // low.advanced(by: -1)
 
-    mutating func openAbove()             // high += 1
-    mutating func openBelow()             // low -= 1
-    mutating func closeAbove()            // high -= 1, never below low
-    mutating func closeBelow()            // low += 1, never above high
-    mutating func includeCurrentMonth(_ month: MonthKey)  // extends, never contracts
+    mutating func openAbove()             // high += 1, then low += 1 while over the cap
+    mutating func openBelow()             // low -= 1, then high -= 1 while over the cap
+    mutating func includeCurrentMonth(_ month: MonthKey)  // extends upward, then caps
 }
 ```
 
-**The content, top to bottom:** the bar for `barAbove`, then a `MonthSectionView` for each
-month in `months`, then the bar for `barBelow`. Inside a `ScrollView` with a `LazyVStack`
-carrying `.scrollTargetLayout()`. Every month on screen — expanded or collapsed — is a
-`MonthSection` from `TimelineBuilder.month(...)`, so a bar and the header it becomes are the
-same number by construction.
+There is no `closeAbove`/`closeBelow`. Nothing closes except by being pushed out of the cap,
+which is the whole point of the decision this step is built on.
 
-Sections are recomputed into `@State` when expenses, the range or `today` change, and not
-inside `body`.
+**The content, top to bottom:** the bar for `barAbove`, then a `MonthSectionView` for each
+month in `months`, then the bar for `barBelow`. Inside a `ScrollView` containing a
+`LazyVStack(pinnedViews: [.sectionHeaders])` carrying `.scrollTargetLayout()`, with each
+month a `Section` whose header is its `MonthHeader`. Pinning is the framework's, not
+hand-rolled — it gives the hand-off between months for free and correctly.
+
+Every month on screen — expanded or collapsed — is a `MonthSection` from
+`TimelineBuilder.month(...)`, so a bar and the header it becomes cannot disagree. Sections
+are recomputed into `@State` when expenses, the range or `today` change, and not inside
+`body`.
+
+**The pinned header.** `MonthHeader` keeps its size when it pins — no condensing. It gains:
+
+- `.background(Tokens.Surface.pinned)` — the system material, so rows visibly pass under it.
+- A hairline along its bottom edge **only while pinned**, `Tokens.Size.hairline` in
+  `Tokens.Surface.rule`, full width inside the gutter. At rest there is no rule, because
+  nothing needs closing; pinned, the rule is closing the header against content moving
+  underneath. Detect it with `onScrollGeometryChange(for:)` comparing the header's frame in
+  the container's coordinate space against the container's top inset, or with a zero-height
+  sentinel above each header and `.onScrollVisibilityChange` — whichever proves stable, and
+  say which was used.
+
+Do not attempt a size change on pinning. It was drawn, and it saves one point of height
+while dropping the month name from 20 to 17 and landing the pinned header on the same shape
+as a collapsed bar — so the month you are in stops being distinguishable from a month you
+could open.
 
 **The bar.** `Tokens.Size.monthBar` high (`monthBarAccessible` at accessibility sizes), inset
 by the gutter, `HStack(spacing: Tokens.Space.tight)` of: a chevron in `Ink.tertiary`, the
-month name in `Tokens.Text.barName` / `Ink.secondary`, a spacer, the `EST` badge in
-`Ink.tertiary` when the month contains an estimate, and the total in `Tokens.Text.barTotal` /
-`Ink.secondary`, monospaced digits. A hairline runs along its **bottom** edge, full-width
-inside the gutter — the canvas draws it on both bars, and it is the rule that closes the bar
-against the content.
+month name in `Tokens.Text.barName` / `Ink.secondary`, a spacer, and
+`TimelineFormatting.amount(section.total)` in `Tokens.Text.barTotal` / `Ink.secondary`,
+monospaced digits. **A bar always shows the plain total, never the word** — including the bar
+for the current month, which is reachable once a neighbour is open. A hairline runs along its
+**bottom** edge, full-width inside the gutter.
 
 The whole bar is a `Button` with `.buttonStyle(.plain)` calling `open()`. Tapping it is the
 accessible equivalent of pulling it; pulling arrives in Step 6.
@@ -827,19 +861,21 @@ does not persist anything yet — that is Step 7 — so every launch lands on th
 **Done when — named cases in `TimelineRangeTests`** (pure, no view):
 - `aNewRangeHoldsOnlyItsAnchor` — `months == [anchor]`.
 - `theBarsSitOneMonthEitherSideOfTheRange`.
-- `openingAboveAddsTheLaterMonthAndMovesTheBarUp`.
-- `openingBelowAddsTheEarlierMonthAndMovesTheBarDown`.
-- `closingAboveReturnsExactlyTheBarThatWasOpened` — open then close gives a range equal to
-  the original, and a `barAbove` equal to the original's.
-- `aRangeNeverClosesPastItsLastMonth` — `closeAbove` on a single-month range is a no-op, in
-  both directions.
+- `openingAboveAddsTheLaterMonth`.
+- `openingBelowAddsTheEarlierMonth`.
+- `aThirdMonthOpenedAboveDropsTheEarliestOne` — `months.count == 2`, and the dropped month is
+  now `barBelow`.
+- `aThirdMonthOpenedBelowDropsTheLatestOne` — the symmetric case, dropped month is `barAbove`.
 - `openingAcrossADecemberBoundaryLandsInJanuary`.
-- `includingTheCurrentMonthExtendsUpwardAndNeverContracts`.
+- `includingTheCurrentMonthExtendsUpwardAndStaysWithinTheCap`.
 
 and, in the simulator:
 - Tapping the bar above opens that month above the current one, with a new bar above it.
-- Tapping the bar below does the same downward.
-- A screenshot of the rest state and of one month opened.
+- Tapping it again collapses the bottom month into the bar below — three taps never yield
+  three expanded months.
+- Scrolling shows the header pin, take the hairline, and hand off to the next month.
+- Screenshots of the rest state, one month opened, and a pinned header mid-scroll, in light
+  and dark.
 
 **Verify:**
 ```
@@ -847,19 +883,16 @@ xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' te
 ```
 plus the launch and screenshot commands from Step 4, and the Step 1 seam grep.
 
-**Out of scope:** the pull gesture, closing on scroll, persistence, midnight rollover.
+**Out of scope:** the pull gesture, persistence, midnight rollover.
 
 ---
 
-### Step 6 — Pull to open, and closing on the way back
+### Step 6 — Pull to open, and holding the reader's place
 
 **Depends on:** Step 5.
 
 **Files:**
 - `Tilly/Timeline/TimelineView.swift` (modified)
-
-This step adds the two gestures that make the bars behave as the design describes, and it is
-the riskiest in the plan. Read the escape hatch at the bottom before starting.
 
 **Pulling.** Overscroll past either end by `Tokens.Size.monthBar` opens the month in that
 direction. Observe it with `onScrollGeometryChange(for:)` on the container's content offset
@@ -867,26 +900,39 @@ relative to its insets, and fire once per gesture — latch on crossing the thre
 release the latch when the offset returns inside the content. `onScrollPhaseChange` gives the
 gesture end if a latch reset needs one.
 
-**Closing.** The outermost expanded month collapses back to a bar when it is no longer
-visible: track the visible items with `.onScrollTargetVisibilityChange(idType:)`, and when no
-visible item belongs to `range.high`, call `closeAbove()`. Symmetrically for `range.low`.
+**The anchor, which is the whole risk in this step.** Opening a month above inserts a
+screenful of content above the viewport; opening at the cap simultaneously removes one at the
+other end. Nothing the reader is looking at may move through either.
 
-**The thing that must not happen** is the content jumping. Collapsing `high` removes a
-screenful of content from above the viewport and puts a 48-point bar in its place; without
-compensation everything under the reader's eyes leaps upward. Bind the scroll container's
-position to the id of the top-most visible item (`ScrollPosition` /
-`.scrollPosition(_:anchor: .top)`) so SwiftUI keeps that item pinned across the content
-change. That binding is also what Step 7 persists, so it earns its place twice.
+Anchor on **the month under the middle of the viewport** — the one being read — and restore
+its position after the change, following it even when it collapses into a bar. Track it with
+`ScrollPosition` / `.scrollPosition(_:anchor:)` keyed on `MonthKey.id`, so the identity
+survives a month turning from a `Section` into a `CollapsedMonthBar`.
+
+Two anchors look right and are not, and both are worth knowing because one of them is what
+an earlier draft of this plan specified:
+
+- **The top-most visible item.** At rest that is the collapsed bar you are about to open.
+  Preserving its position expands it *downward* and pushes the month you were reading off the
+  bottom of the screen — the exact opposite of the intended behaviour, which is that the new
+  month opens above you in space you were not occupying.
+- **Total content height.** Fails as soon as one gesture adds a month at one end and drops
+  one at the other, because the two deltas cancel and the compensation comes out near zero.
+
+Compute the anchor offset in points from a live frame, not from a rounded integer position —
+a prototype of this drifted half a point per gesture by rounding.
 
 **Done when:**
 - Pulling down at the top opens the month above; pulling up at the bottom opens the month
   below. Both take one deliberate pull, not a flick.
-- Opening the month above, then scrolling back down into the month you started in, closes it
-  again and returns exactly the bar you opened — the canvas's frames 1 and 4.
-- **Nothing under the reader's eyes moves when a month collapses.** Verify this concretely:
-  note which row sits at a fixed point on screen, cross the collapse threshold, screenshot,
-  and confirm the same row is at the same place. Report both screenshots.
 - Neither gesture fires twice for one pull.
+- **Nothing under the reader's eyes moves,** through three cases, each verified concretely by
+  noting which row sits at a fixed point on screen, performing the gesture, screenshotting,
+  and confirming the same row is at the same place: opening above; opening below; and opening
+  at the cap, where a month is added at one end and dropped at the other in one gesture.
+  Report all three pairs of screenshots.
+- The month opened above is genuinely *above* the viewport afterwards — the reader has to
+  scroll up to reach it, and did not see the screen change.
 - The existing test suites still pass unchanged; this step adds no unit tests, because what
   it changes is scroll behaviour and a test that asserted it would be asserting a mock.
 
@@ -896,10 +942,10 @@ xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' te
 ```
 then drive the gestures in the simulator and report the screenshots described above.
 
-**If the pinning will not hold** — if the content jumps on collapse and the scroll-position
-binding does not fix it — **stop and report it rather than shipping a jumping list, and
-rather than quietly dropping the close behaviour.** Months that open and never close is a
-coherent fallback and a real design change; it is Jake's to make, not this step's.
+**If the anchoring will not hold** — if content still jumps after the anchor is keyed to the
+middle month — **stop and report it rather than shipping a jumping list.** Falling back to
+tap-only, with no pull gesture, is a coherent outcome and a real design change; it is Jake's
+to make, not this step's.
 
 **Out of scope:** persistence, midnight rollover, animating the open and close.
 
@@ -920,7 +966,8 @@ coherent fallback and a real design change; it is Jake's to make, not this step'
 struct TimelinePlace: Codable, Equatable, Sendable {
     var lowID: Int          // MonthKey.id
     var highID: Int
-    var topItemID: String?  // the id of the item at the top of the viewport
+    var anchorMonthID: Int? // the month that was under the middle of the viewport
+    var anchorOffset: Double? // its top, in points, relative to the container's top
 }
 
 struct TimelinePlaceStore: Sendable {
@@ -931,25 +978,30 @@ struct TimelinePlaceStore: Sendable {
 }
 ```
 
+The place stores the same anchor Step 6 uses rather than an arbitrary item id, so restoring
+and gesturing put the reader back by the same rule. A month always resolves — it is a
+computed key, not a stored row — which removes the "id no longer resolves" case the earlier
+draft had to handle.
+
 **Restoring.** On first appearance, load the place. If there is none — the first run after
 installing — the anchor is the current month and nothing is scrolled. If there is one,
-rebuild the range from `lowID`/`highID` and scroll to `topItemID` with a `.top` anchor. If
-that id no longer resolves to anything (the data changed underneath), fall back to the top of
-the range's `high` month rather than to today — being returned somewhere plausible beats
-being thrown to a different month.
+rebuild the range from `lowID`/`highID`, clamp it to `ExpandedRange.maxOpen` in case the cap
+ever changes, and scroll so `anchorMonthID` sits at `anchorOffset`.
 
 **Saving.** Write on scroll idle (`onScrollPhaseChange` reaching `.idle`) and whenever
 `scenePhase` leaves `.active`. Both, deliberately: the scene-phase write covers a clean
-background, and the idle write covers a process that is killed without one. `DECISIONS.md` is
+background, and the idle write covers a process killed without one. `DECISIONS.md` is
 explicit that the two cases cannot be told apart, so neither may be the only writer.
 
 **Crossing midnight into a new month.** Observe `NSCalendarDayChangedNotification`. When the
 day changes, recompute `today` — which alone reclassifies every row that has passed from
-upcoming to charged. When the *month* also changes, call `range.includeCurrentMonth(...)`,
-which extends the range upward. The new month therefore opens **above** the reader, in space
-they were not occupying, and the scroll-position pinning from Step 6 keeps everything under
-their eyes still. Both visible side effects are correct and expected: the upcoming/charged
-boundary moves into the new month, and anything still upcoming in the old one becomes charged.
+upcoming to charged, and moves the current month's header figure. When the *month* also
+changes, call `range.includeCurrentMonth(...)`, which extends the range upward and then caps
+it. The new month therefore opens **above** the reader, in space they were not occupying, and
+Step 6's anchor keeps everything under their eyes still. Three visible side effects are
+correct and expected: the upcoming/charged boundary moves into the new month, anything still
+upcoming in the old one becomes charged, and the old month's header loses its word and
+becomes a plain total.
 
 **Done when — named cases in `TimelinePlaceTests`,** each with a `UserDefaults` suite created
 for the test and removed afterwards:
@@ -958,6 +1010,7 @@ for the test and removed afterwards:
 - `savingTwiceKeepsTheLatest`.
 - `clearingRemovesThePlace`.
 - `aRangeRebuiltFromASavedPlaceMatchesTheOneSaved`.
+- `aRestoredRangeIsClampedToTheCap`.
 
 and in the simulator:
 - Open the month above, scroll to a distinguishable row, background the app, kill it from
@@ -988,8 +1041,9 @@ Stated so it is not mistaken for an oversight:
 - **Anything inside the icon well.** The slot is reserved and empty until categories ship.
 - **`DesignSystem/Gallery.swift`.** Its own roadmap line, and it is worth much more now that
   there are real components and a real dimension scale to render.
-- **The headline number.** A month header totals the whole month; the headline is "remaining
-  this month". Different quantities, and the boundary between them is already drawn.
+- **A separate headline number.** Deleted from the roadmap rather than deferred: the current
+  month's header carries "remaining this month" already, and pinning keeps it on screen. A
+  second one would be the same figure in a box above the content.
 - **Where an estimated amount comes from.** The editor and the overrides UI.
 
 ---
@@ -1039,21 +1093,57 @@ neighbouring number that would be right-but-wrong — and Step 4's own spec writ
 literally. A check that reports three known-good matches on every run is a check people learn
 to wave past, which costs more than the zero ever could.
 
-### Still open, and blocking Step 5
+### 2026-09-07 — the header pins, and carries what is left
 
-Two of Jake's notes change the model Steps 5–7 are built on, so they go to `tilly-explore`
-before Step 5 rather than being absorbed here:
+Both of Jake's notes went to `tilly-explore` and came back settled. `DECISIONS.md` has "The
+month header carries what is left, and says so" and "An opened month closes by cap, not by
+scrolling". Steps 5–7 are rewritten above; the changes below touch code that has already
+landed and are specified here instead.
 
-1. **A sticky month header.** The month name pins while you scroll its month and hands off to
-   the next. Coherent with the expanded-range model, but it interacts with Step 6's
-   close-on-scroll-back and needs a background treatment the header does not currently have.
-2. **The month total becomes a remaining amount.** Meaningful looking forward — a future
-   month has nothing charged, so remaining and total coincide — and empty looking back: a
-   past month's remaining is always zero, which would leave the collapsed bar *below* the
-   current month reading zero permanently, destroying the thing that justifies its space. It
-   also collides with why `DECISIONS.md` chose a total in the first place, which was that a
-   total and the roadmapped "remaining this month" headline are different quantities. If the
-   header becomes remaining, that roadmap item needs redefining or deleting.
+**`MonthSection` gains `remaining`** — `Tilly/Timeline/TimelineModels.swift`:
+
+```swift
+let total: Decimal      // excludes skipped
+let remaining: Decimal  // sum of .upcoming entries only; excludes skipped
+```
+
+`TimelineBuilder.month(...)` already walks every entry and knows each one's state, so
+`remaining` is one accumulator alongside the existing total — add it in the same pass rather
+than filtering afterwards. Two new cases in `TimelineBuilderTests`:
+`aFutureMonthsRemainingEqualsItsTotal`, `aPastMonthsRemainingIsZero`, and
+`aSkippedOccurrenceCountsTowardsNeitherFigure`.
+
+**`MonthSection` gains `isCurrent`,** computed by the caller from `today` rather than derived
+inside the builder — the builder has `today` for state, but "is this the month we are in" is
+a question about the *screen's* anchor and belongs where the sections are assembled.
+
+**The header figure moves into `TimelineFormatting`:**
+
+```swift
+/// "−€162 left" for the current month; "−€1,539" for every other month.
+/// A current month with nothing left reads "€0 left" — unsigned, per the zero rule.
+static func headerFigure(for section: MonthSection, locale: Locale = .current) -> String
+```
+
+A collapsed bar does **not** use this — a bar always shows `amount(section.total)`. The word
+appears in one place on the screen and only ever in the expanded current month.
+
+Named cases in `TimelineFormattingTests`, `en_IE` pinned:
+`theCurrentMonthsFigureCarriesTheWord`, `aPastMonthsFigureIsAPlainTotal`,
+`aFutureMonthsFigureIsAPlainTotal`, `aSpentOutCurrentMonthReadsZeroLeft`.
+
+**`MonthHeader` renders `headerFigure` instead of `amount(section.total)`,** and gains the
+pinned treatment specified in Step 5. Its accessibility label changes with it: the current
+month reads "September, 162 euro left" and every other month "August, total 1,539 euro out".
+Update `aSectionLabelCarriesTheMonthAndItsTotal` and add
+`theCurrentMonthsLabelSaysWhatIsLeft`.
+
+**`Tokens` gains the pinned ground** — `Surface.pinned: Material = .bar`. It is a system
+material deliberately: it is what makes rows visibly pass *under* the header rather than
+stopping at it, and the system draws it correctly in both appearances for free.
+
+**What does not change.** `TimelineBuilder`'s ordering, grouping, rounding and skipped
+handling; `OccurrenceRow`; `DayGroupView`; the seed; `TillyCore`.
 
 ## If a step is wrong
 
@@ -1062,5 +1152,6 @@ impossible, or wrong, **stop and say so** — don't improvise a fix and don't si
 the scope. A wrong spec caught in one message costs far less than a wrong spec followed to
 completion.
 
-Step 6 is the one most likely to be wrong, and it says so in its own text. Steps 1–5 and 7
-are ordinary work.
+Step 6 is the one most likely to be wrong, and it says so in its own text — though it is on
+firmer ground than it was, because the anchor it now specifies was found by testing the two
+that seemed obvious and watching both fail. Steps 5 and 7 are ordinary work.
