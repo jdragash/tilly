@@ -50,8 +50,29 @@ enum TimelineFormatting {
         return "\(entry.name), \(dateString), \(amountString), \(stateWord(for: entry.state))"
     }
 
-    /// "September, total 1,521 US dollars out"
+    /// "−€162 left" for the current month; "−€1,539" for every other month. A current month
+    /// with nothing left reads "€0 left" — unsigned, per the zero rule. A collapsed bar does
+    /// not call this; it always shows `amount(section.total)`.
+    static func headerFigure(for section: MonthSection, locale: Locale = .current) -> String {
+        guard section.isCurrent else { return amount(section.total, locale: locale) }
+        return "\(amount(section.remaining, locale: locale)) left"
+    }
+
+    /// "September, 162 US dollars left" for the current month; "August, total 1,539 US
+    /// dollars out" for every other month.
     static func accessibilityLabel(for section: MonthSection, calendar: Calendar, today: Date, locale: Locale) -> String {
+        let name = section.month.name(in: calendar, relativeTo: today, locale: locale)
+        if section.isCurrent {
+            return "\(name), \(spokenAmount(abs(section.remaining), locale: locale)) left"
+        }
+        return "\(name), total \(spokenAmount(abs(section.total), locale: locale)) out"
+    }
+
+    /// "September, total 1,566 US dollars out" — a collapsed bar's label. Always the plain
+    /// total, even for the current month: a bar never speaks the word "left", the same rule
+    /// that keeps "left" out of a bar's visible total. See "★ A collapsed bar can also be
+    /// tapped" in `docs/plans/timeline.md`.
+    static func accessibilityLabel(forBar section: MonthSection, calendar: Calendar, today: Date, locale: Locale) -> String {
         let name = section.month.name(in: calendar, relativeTo: today, locale: locale)
         return "\(name), total \(spokenAmount(abs(section.total), locale: locale)) out"
     }

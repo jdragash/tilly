@@ -64,11 +64,60 @@ import Testing
 
     @Test func aSectionLabelCarriesTheMonthAndItsTotal() {
         let month = MonthKey(year: 2027, month: 9)
-        let section = MonthSection(month: month, days: [], total: 1521)
+        let section = MonthSection(month: month, days: [], total: 1521, remaining: 0, isCurrent: false)
         let label = TimelineFormatting.accessibilityLabel(
             for: section, calendar: Self.calendar, today: Self.date(2027, 9, 15), locale: Self.locale
         )
         #expect(label.contains("September"))
         #expect(label.contains("1,521") || label.contains("1521"))
+    }
+
+    /// A bar's label never speaks "left", even for the current month — a bar always shows
+    /// the plain total, and that includes its accessibility label.
+    @Test func aBarsLabelIsAlwaysThePlainTotal() {
+        let month = MonthKey(year: 2027, month: 9)
+        let section = MonthSection(month: month, days: [], total: 1566, remaining: 162, isCurrent: true)
+        let label = TimelineFormatting.accessibilityLabel(
+            forBar: section, calendar: Self.calendar, today: Self.date(2027, 9, 15), locale: Self.locale
+        )
+        #expect(label.contains("September"))
+        #expect(label.contains("total"))
+        #expect(label.contains("1,566") || label.contains("1566"))
+        #expect(!label.contains("left"))
+    }
+
+    @Test func theCurrentMonthsLabelSaysWhatIsLeft() {
+        let month = MonthKey(year: 2027, month: 9)
+        let section = MonthSection(month: month, days: [], total: 1521, remaining: 162, isCurrent: true)
+        let label = TimelineFormatting.accessibilityLabel(
+            for: section, calendar: Self.calendar, today: Self.date(2027, 9, 15), locale: Self.locale
+        )
+        #expect(label.contains("September"))
+        #expect(label.contains("left"))
+        #expect(label.contains("162"))
+    }
+
+    @Test func theCurrentMonthsFigureCarriesTheWord() {
+        let section = MonthSection(
+            month: MonthKey(year: 2027, month: 9), days: [], total: 1521, remaining: 162, isCurrent: true
+        )
+        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{2212}\u{20AC}162 left")
+    }
+
+    @Test func aPastMonthsFigureIsAPlainTotal() {
+        let section = MonthSection(month: MonthKey(year: 2027, month: 8), days: [], total: 1539, remaining: 0, isCurrent: false)
+        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{2212}\u{20AC}1,539")
+    }
+
+    @Test func aFutureMonthsFigureIsAPlainTotal() {
+        let section = MonthSection(month: MonthKey(year: 2027, month: 10), days: [], total: 1400, remaining: 1400, isCurrent: false)
+        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{2212}\u{20AC}1,400")
+    }
+
+    @Test func aSpentOutCurrentMonthReadsZeroLeft() {
+        let section = MonthSection(
+            month: MonthKey(year: 2027, month: 9), days: [], total: 1521, remaining: 0, isCurrent: true
+        )
+        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}0 left")
     }
 }

@@ -22,7 +22,7 @@ struct TillyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            TimelineView()
         }
         .modelContainer(container)
     }

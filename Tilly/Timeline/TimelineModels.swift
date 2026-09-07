@@ -31,6 +31,22 @@ struct MonthSection: Identifiable, Equatable, Sendable {
     let month: MonthKey
     let days: [DayGroup] // descending by date: the future sits above
     let total: Decimal // excludes skipped entries
+    let remaining: Decimal // sum of .upcoming entries only; excludes skipped
+
+    /// Whether this is the month `today` falls in. Not derived here from a `today` the
+    /// builder happens to have — it's a question about the screen's anchor, so whoever
+    /// assembles sections for display sets it explicitly. No default: a forgotten flag would
+    /// silently render the current month as a plain total, the one figure this design is
+    /// about, so every call site is made to state it.
+    let isCurrent: Bool
+
+    init(month: MonthKey, days: [DayGroup], total: Decimal, remaining: Decimal, isCurrent: Bool) {
+        self.month = month
+        self.days = days
+        self.total = total
+        self.remaining = remaining
+        self.isCurrent = isCurrent
+    }
 
     var id: Int { month.id }
     var isEmpty: Bool { days.isEmpty }

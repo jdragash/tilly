@@ -44,8 +44,13 @@ enum TimelineBuilder {
             .sorted { $0.date > $1.date }
 
         let total = days.reduce(Decimal(0)) { $0 + $1.total }
+        let remaining = days
+            .flatMap(\.entries)
+            .filter { $0.state == .upcoming }
+            .reduce(Decimal(0)) { $0 + ($1.amount ?? 0) }
 
-        return MonthSection(month: month, days: days, total: total)
+        // isCurrent is never this builder's call — see the note on MonthSection.isCurrent.
+        return MonthSection(month: month, days: days, total: total, remaining: remaining, isCurrent: false)
     }
 
     private static func dayGroup(on day: Date, entries: [TimelineEntry], todayStart: Date) -> DayGroup {

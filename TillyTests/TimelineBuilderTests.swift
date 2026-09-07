@@ -182,6 +182,27 @@ import TillyCore
         #expect(section.total == 0)
     }
 
+    @Test func aFutureMonthsRemainingEqualsItsTotal() {
+        let futureDay = Self.date(2027, 1, 20)
+        let section = Self.month([Self.expense(amount: 40, anchoredOn: futureDay)])
+        #expect(section.remaining == section.total)
+        #expect(section.remaining == 40)
+    }
+
+    @Test func aPastMonthsRemainingIsZero() {
+        let pastDay = Self.date(2027, 1, 10)
+        let section = Self.month([Self.expense(amount: 40, anchoredOn: pastDay)])
+        #expect(section.remaining == 0)
+    }
+
+    @Test func aSkippedOccurrenceCountsTowardsNeitherFigure() {
+        let futureDay = Self.date(2027, 1, 20)
+        let override = OccurrenceOverride(scheduledDate: futureDay, actualAmount: nil, movedDate: nil, isSkipped: true)
+        let section = Self.month([Self.expense(amount: 40, anchoredOn: futureDay, overrides: [override])])
+        #expect(section.total == 0)
+        #expect(section.remaining == 0)
+    }
+
     // MARK: The neighbouring-month trap
 
     @Test func aBillMovedInFromThePreviousMonthAppearsInThisOne() {

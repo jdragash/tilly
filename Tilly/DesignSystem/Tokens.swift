@@ -30,6 +30,7 @@ enum Tokens {
         static let base: Color = Color(.systemBackground)
         static let iconWell: Color = Color(.quaternarySystemFill)
         static let rule: Color = Color(.separator)
+        static let pinned: Material = .bar
     }
 
     enum Space {
