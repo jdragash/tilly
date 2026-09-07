@@ -8,6 +8,51 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## Exploration draws variants on the canvas, not as wireframes first
+
+**Decided:** 2026-09-07 · **From:** `tilly-explore`
+**Supersedes:** the two-rung gate in `tilly-explore` — ASCII wireframes, then a canvas for
+the winner only
+
+**Chosen:** `tilly-explore` names two or three directions in a line or two each and then
+draws all of them on one canvas. The canvas is where variants are compared and iterated,
+and it is revised in place rather than replaced per pass.
+
+**Why the wireframe rung lost:** it was there to stop three canvases being built to answer a
+question one cheap artifact could settle — and the cost it was avoiding turned out not to
+exist. Variants are artboards on a single canvas, so a second direction costs an artboard
+rather than a second canvas. Meanwhile the rung had a real cost of its own: it settled
+layout in the medium least able to show layout, and a design argument that has to be *read*
+rather than *looked at* is being made in the wrong register.
+
+The evidence is the timeline exploration, which reached a fifth pass by editing one canvas
+repeatedly. That is the working mode, and the wireframe gate sat in front of it doing
+nothing the canvas didn't do better.
+
+**What was kept, because the rung was doing four jobs and only one of them was cost.** The
+decision gate survives, moved to after the first canvas — Jake picks from something he can
+see. The requirement to name which tenet each direction serves and strains survives, and
+now lives in the canvas annotations beside the artboard it judges. The cap on how many
+directions get drawn survives at two or three, because the constraint is what makes each one
+an argument rather than a permutation.
+
+**Rejected — keep the wireframes as an optional first rung.** Optional gates are not gates;
+in practice they are skipped when the render feels imaginable, which is precisely when the
+render turns out to disagree.
+
+**Rejected — drop the pre-drawing description entirely and go straight to `/design`.** The
+two lines per direction cost almost nothing and are what stop three artboards being three
+versions of the same idea. So the skill keeps two gates rather than one: the directions are
+approved before anything is drawn, and the drawn direction is chosen after. They ask
+different questions — *are these worth drawing* and *which one won* — and the first is the
+last point where changing course costs a sentence instead of a rebuild.
+
+**Consequence:** `tilly-explore` also now requires dark mode and an accessibility text size
+to be drawn, and requires the canvas to be brought into line with `DECISIONS.md` once a
+decision lands. Both are failures this project actually hit — the timeline's accessibility
+layout was wrong in a way only a render showed, and its canvas kept a `TODAY` badge that had
+already been rejected, which `tilly-plan` then had to warn the implementer about.
+
 ## Time is carried by weight, not by form
 
 **Decided:** 2026-09-07 · **From:** timeline
