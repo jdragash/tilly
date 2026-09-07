@@ -21,7 +21,7 @@ holds the token layer for the timeline to extend. Built to `docs/plans/app-scaff
 |---|---|---|
 | Recurrence engine | **Done** | Every N days / weeks / months / years from a fixed anchor. Pure, tested, no SwiftData. Built to `docs/plans/recurrence-engine.md`; 54 tests. |
 | App scaffolding | **Done** | Xcode project, `Expense`/`OverrideRecord`, `TillyStore`, token layer. Built to `docs/plans/app-scaffolding.md`; 11 tests. |
-| Timeline | Next | Future above, past below, resting on the most recent actual charge. Sectioned by date. |
+| Timeline | Design settled | Future above, past below. One month expanded, neighbours as collapsed bars carrying their totals. Design explored and recorded 2026-09-07 — see `docs/DECISIONS.md` and `docs/DESIGN.md`; implementation plan next. |
 | Expense editor | — | Create and edit rules. Amount optional so variable bills fit. |
 | Occurrence overrides | Engine done, UI to come | Set the real amount on an estimate, skip one, move one. "This occurrence" vs "all future" unmistakable. |
 | Categories | — | User-created only. Ships empty. |

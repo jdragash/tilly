@@ -52,19 +52,71 @@ A row carries two independent states, and they must never be confused for each o
 
 | Axis | States | Channel |
 |---|---|---|
-| **Temporal** | not yet charged / charged | Form — outline vs. filled |
-| **Certainty** | estimated / known | Typography — approximation marker on the number |
+| **Temporal** | not yet charged / charged | Weight — secondary vs. full |
+| **Certainty** | estimated / known | A mark beside the amount — `EST` |
 
-The trap: if estimates are rendered "lighter" and upcoming is also rendered "lighter",
-an estimated past charge reads as upcoming. Keeping the two axes on separate perceptual
-channels — form for time, typography for certainty — is what prevents that collision.
+An upcoming row sits back: name, date, icon and amount all at secondary weight. A charged
+row comes forward at full weight. A skipped one withdraws further still and strikes through
+its amount — listed, visibly known about, visibly not counted.
 
-**Status: hypothesis, not settled.** This is the starting position for the timeline
-exploration in Phase 2, to be tested against real layouts rather than assumed correct. If
-exploration finds something better, this section changes and `DECISIONS.md` records why.
+The trap this table exists to prevent: if estimates render "lighter" and upcoming also
+renders "lighter", an estimated past charge reads as upcoming. Keeping the two axes on
+separate perceptual channels is what prevents that collision. The test case is an estimate
+that has already been charged sitting directly beneath one that has not — if those two read
+alike, the grammar has failed.
 
-The grammar applies everywhere a date or amount appears, including the editor — selecting
-a future date should show you it's in the future before you save.
+**Settled 2026-09-07** by the timeline exploration, which replaced the kickoff position
+(form — outline vs. filled). `DECISIONS.md` records why: the outline/filled dot worked, and
+paid a permanent column for a distinction that stops carrying information as soon as you
+scroll away from today. Weight satisfies the separate-channels requirement without a column.
+
+The grammar applies everywhere a date or amount appears, including the editor — selecting a
+future date should show you it's in the future before you save.
+
+---
+
+## The timeline
+
+The rules the timeline settled. They are written here because they generalise past it —
+the editor and the insights screens inherit the same vocabulary.
+
+### The row
+
+Icon, then name with the date beneath it, then the amount. The leading slot belongs to the
+category icon; the date does not compete for it. Amounts are negative — nothing on this
+screen is money arriving, so the sign sets the register rather than distinguishing anything.
+
+### Rules delimit, they do not decorate
+
+No separator between rows; space does that work. A hairline appears only to open and close
+a grouped day, and under a collapsed month bar. Seeing a rule therefore means something is
+being closed, which is the only reason to draw one.
+
+### Group a day only when there is a day to group
+
+One charge on a day is an ordinary row carrying its own date. Two or more collapse under a
+day heading with a day total, and the rows inside give up their individual dates — which is
+where the heading's vertical space comes from. A day total on a day holding one charge is
+that charge's amount written twice.
+
+### One month at a time, with its neighbours collapsed
+
+The current month is expanded. The months either side are slim bars carrying a name and a
+total; pulling opens one, scrolling back closes it, and closing returns you to exactly the
+bar you opened. A month total excludes skipped occurrences and carries `EST` when the month
+contains an estimate.
+
+### Never lose the reader's place
+
+You return to the month you left, opened as you left it, at the scroll position you left it
+at — regardless of how long you were gone or whether the process survived. The current month
+decides where you land once, on first run. See `DECISIONS.md` for why a session-scoped
+compromise is worse than either alternative.
+
+### The system owns the top
+
+The status bar and Dynamic Island are drawn by iOS over the app. Mockups leave that inset
+empty rather than painting it, or a real device shows two of everything.
 
 ---
 

@@ -8,6 +8,294 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## Time is carried by weight, not by form
+
+**Decided:** 2026-09-07 · **From:** timeline
+**Supersedes:** the state grammar hypothesis in `DESIGN.md`, written at kickoff
+
+**Chosen:** an upcoming row sits back — name, date, icon and amount all at secondary
+weight. A charged row comes forward at full weight. Certainty stays on a separate channel,
+so the two never collide.
+
+**Why this changed:** the kickoff position put temporal state on *form* — an outline dot
+versus a filled one. Drawn at real size against real rows, the dot column turned out to be
+informative for about four rows either side of the boundary and then to become a column of
+identical filled dots for the whole of history, where every row is charged. It was paying a
+permanent column for a local distinction.
+
+The trap the original section named is real and both approaches survive it: an estimate
+that has already been charged must not read as upcoming. What the hypothesis got wrong was
+assuming the fix had to be *form*. Keeping the two axes on separate channels is the actual
+requirement, and weight-plus-mark satisfies it without a new column.
+
+**Rejected — outline versus filled dot** (the kickoff position). Works, and costs a column
+that stops carrying information as soon as you scroll away from today.
+
+**Rejected — lightness for both axes.** The original trap. An estimated past charge reads
+as upcoming, which is exactly backwards.
+
+---
+
+## Estimates are marked, not approximated
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** an estimated amount carries an `EST` mark beside it. A month total containing
+an estimate carries the same mark.
+
+**Why:** a tilde is a quiet typographic hedge, and an estimate is not a hedge — it is a
+claim the app is making about money that has not moved yet. It should look like one. The
+mark also survives being small, which a tilde beside a large tabular figure does not.
+
+**Rejected — a tilde prefix on the number.** Cheaper and quieter, and too quiet: at
+13-point secondary weight it disappears, which is precisely when the reader most needs to
+know the figure is soft.
+
+**Open, and not this screen's problem:** where an estimated amount comes from. Nothing in
+the engine predicts anything, and a variable bill can double between seasons, so the
+realistic meaning of `EST` in v1 is "you entered roughly, and you will correct it when the
+bill lands". That belongs to the editor and the overrides UI.
+
+---
+
+## A day is grouped only when it holds more than one charge
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** one charge on a day is an ordinary row carrying its own date beneath the name.
+Two or more collapse under a single day heading with a day total, and the rows inside drop
+their individual dates.
+
+**Why:** a day total is real information when a day holds several charges and pure
+repetition when it holds one. Grouping every day would restate each amount as its own
+total, down the whole list. Because grouped rows give up their date line, the heading is
+close to free — a grouped day costs almost nothing over the plain rows it replaces.
+
+**Rejected — group every day** (the competitor's and Dime's past view). Consistent, and
+consistently redundant on the majority of days, which hold exactly one charge.
+
+**Rejected — a tinted card around the group.** Tried and drawn. Two problems: the card's
+padding pushed the amounts inward, so grouped amounts stopped aligning with ungrouped ones
+down the right edge; and the fill made an upcoming group visually heavier than a charged
+row beneath it, which put a container in competition with the channel carrying time.
+
+---
+
+## Rules exist to close a group, and for nothing else
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** no separator between rows. A hairline appears above and below a grouped day
+and nowhere else, so seeing one means those rows share a day and that total belongs to
+them. Collapsed month bars keep a hairline for the same reason.
+
+**Why:** a separator under every row is furniture — present regardless of what the row is,
+and therefore saying nothing. Removing it left space to do the separating, which is quieter
+and cheaper, and it gave the surviving rules a job.
+
+**Rejected — a separator under every row.** The default list treatment, and what made the
+screen feel busy in the first place.
+
+---
+
+## The current month is home; its neighbours are collapsed bars
+
+**Decided:** 2026-09-07 · **From:** timeline
+**Supersedes:** "Timeline runs future-above, past-below, resting on the last actual charge"
+(2026-09-04), in its resting-position half. Future above and past below is unchanged.
+
+**Chosen:** the timeline shows one month expanded. Scrolling up runs out at the top of that
+month rather than sliding into the next one; the next month sits above as a slim bar
+carrying its own name and total, and pulling opens it. The month below behaves the same
+way. Opening a month and scrolling back closes it again, returning to exactly the bar you
+opened.
+
+**Why the resting position changed:** the kickoff decision put the most recent actual
+charge at the resting anchor, which required placing it deliberately about two thirds down.
+Drawn against a realistic set of expenses, a month is close to one screenful, so landing at
+the top of the current month puts the boundary at roughly that height on its own. A property
+that emerges is better than one that has to be engineered, and it removes a magic number.
+
+**Why the bar earns its place:** it answers "what is coming next month" without opening
+anything, permanently, in 46 points.
+
+**Rejected — one uninterrupted list, months arriving indefinitely as you scroll.** This is
+what the brief specified and what the first exploration drew. It makes "the current month"
+true only at the instant you open the app; one scroll and you are simply somewhere in time.
+
+**Rejected — a fixed header showing what is next.** Guarantees the next charge is always
+visible, and does it with a permanent box above the content — structurally the competitor's
+home screen, and it prints the next charge twice.
+
+**Consequence — crossing midnight into a new month.** Home moves while you are not looking.
+The screen does what pulling the bar would have done: the new month opens *above* you, in
+space you were not occupying, and nothing under your eyes moves. Two visible side effects
+come with it and are correct: the boundary between upcoming and charged moves into the new
+month, and anything still upcoming in the old one becomes charged.
+
+---
+
+## The timeline never resets your position
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** you return to the month you left, opened the way you left it, at the scroll
+position you left it at — however long you were gone and whether or not the process
+survived. The current month decides where you land exactly once, on the first run after
+installing.
+
+**Why:** iOS gives no reliable line between "switched away" and "launched fresh" — a
+backgrounded app that gets killed reopens cold. Any rule that treats those differently is
+therefore unpredictable in practice, and unpredictability is the failure itself rather than
+a risk of it. Being thrown back to the top for reasons you cannot see is the specific thing
+that makes a tool feel unreliable.
+
+**Rejected — return to the current month on launch.** Keeps "home" literally true at all
+times, and pays for it by discarding your place at a moment you cannot anticipate.
+
+**Rejected — remember for the session, reset on next launch.** Sounds like a compromise and
+is the worst of the three, because "next launch" is not a thing the user can observe.
+
+---
+
+## Nothing marks the boundary between upcoming and charged
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** no divider, no badge. The last row at secondary weight and the first at full
+weight are the boundary.
+
+**Why:** the state grammar already draws this line the length of the list. Anything added on
+top is a second statement of something the reader has already been told.
+
+**Rejected — a full-width dated divider.** Drawn first. It reads as a heavier structural
+break than the months themselves, which is the wrong ranking.
+
+**Rejected — a `TODAY` badge on the first charged row.** Better, and it lies most days: the
+most recent charge is usually not today, so the badge ends up on a row dated some days ago.
+
+**Rejected — a `TODAY` badge only when a charge falls today.** Truthful, and it appears and
+disappears for reasons that are nothing to do with the reader.
+
+---
+
+## A moved occurrence leaves no trace at its original date
+
+**Decided:** 2026-09-07 · **From:** timeline
+**Settles:** open question 1 in the timeline brief
+
+**Chosen:** a moved occurrence appears at its new date and nowhere else, with no note
+explaining where it came from. This matches what the engine already reports.
+
+**Why:** if a bill moved, it moved. A line reading "moved from the 1st" is metadata about an
+edit rather than information about money, and the timeline is not an audit log. The genuinely
+important question — whether an edit changes this occurrence or the whole series — is a
+question the editor must ask at the moment of editing, not one the timeline can answer
+afterwards.
+
+**Rejected — a ghost row at the original date.** Explains the move, and does it by adding a
+row for something that is not happening.
+
+**Rejected — a secondary line at the new date.** Drawn, and cut. Cheaper than a ghost row and
+still an explanation nobody asked for.
+
+---
+
+## Month headers carry the month's total
+
+**Decided:** 2026-09-07 · **From:** timeline
+**Settles:** open question 5 in the timeline brief
+
+**Chosen:** an expanded month header and a collapsed month bar both carry that month's
+total, excluding skipped occurrences. A month containing an estimate marks its total `EST`.
+
+**Why:** it draws the boundary against the roadmapped headline number cleanly, because they
+are different quantities. A month header totals the whole month; the headline is "remaining
+this month". Neither makes the other redundant.
+
+**Rejected — no total in the header.** Quieter, and it leaves the collapsed month bar with
+nothing to say beyond a name, which is most of what makes the bar worth its space.
+
+---
+
+## Every amount carries a minus sign
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** row amounts, day totals and month totals are all written as negative.
+
+**Why:** it is not distinguishing anything — nothing on this screen is money arriving — but
+it sets the register, the way a statement does. Rejected once as a label restating its own
+context, and that was wrong: a label names a thing, a sign tells you which direction the
+number runs.
+
+**Rejected — unsigned amounts.** Defensible on the grounds that the whole screen is
+outgoing, and it reads as a list of prices rather than a list of withdrawals.
+
+---
+
+## The timeline row reserves a leading slot for a category icon
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** every row leads with a fixed-size icon slot, and the occurrence's date moves
+beneath the name. Colour is deferred; the slot and its position are settled now.
+
+**Why:** an icon distinguishes categories without a text label, which is tenet 3 applied to
+the thing categories are actually for. The alternative in use elsewhere is a category name as
+a second line under the expense name — a label doing work an icon does faster.
+
+**Rejected — a day-number column at the leading edge.** What the first exploration drew. It
+works, and it spends the most valuable position in the row on something the month header and
+the row's own date already carry.
+
+**Consequence:** categories are still out of scope and still ship empty. Any icon in a
+mockup is illustrative of the slot, not a proposed starter set — a rendered set of default
+categories is exactly how tenet 4 gets broken by accident.
+
+---
+
+## The look-ahead slot is not reserved
+
+**Decided:** 2026-09-07 · **From:** timeline
+**Settles:** open question 3 in the timeline brief
+
+**Chosen:** v1 reserves no space for the v1.1 look-ahead nudge.
+
+**Why:** the collapsed month bar already answers "is something big coming" — it carries the
+next month's total, permanently, without being opened. Most of what the slot was for is
+therefore delivered. Reserving space on top of that means an empty box above the content
+through the whole of v1, which is the specific failure `INSPIRATION.md` records.
+
+**Rejected — a reserved region under the month header.** Drawn, and it looked exactly like
+what it was: a box above the content, holding nothing.
+
+---
+
+## The timeline introduces spacing and dimension tokens
+
+**Decided:** 2026-09-07 · **From:** timeline
+
+**Chosen:** `Tokens` gains spacing, row-height, icon-size and corner-radius values, defined
+by the timeline as the first screen that needs them, and used from the first view rather
+than extracted later.
+
+**Why:** the timeline's design turns on dimensions — row rhythm, the gap that replaced the
+separators, the icon slot, the height of a collapsed month bar. Those are design decisions,
+not incidental numbers, and `DESIGN.md` already records why bare layout numbers are the
+seam's blind spot: a raw `.padding(8)` does not look wrong the way a hex literal does, so it
+escapes review. Introducing the scale with the first screen that needs it is cheaper than
+retrofitting it across several.
+
+**Rejected — raw values now, extract a scale later.** Same argument the kickoff token
+decision already rejected for fonts and colours, and it lost for the same reason: the
+extraction is the expensive part.
+
+**Rejected — design the full scale up front.** More than one screen's worth of guessing.
+The timeline defines what the timeline needs; later screens extend it.
+
+---
+
 ## The project file is authored by hand, once
 
 **Decided:** 2026-09-06 · **From:** `docs/plans/app-scaffolding.md`
