@@ -8,6 +8,54 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## A motion question gets a prototype, not another artboard
+
+**Decided:** 2026-09-07 · **From:** `tilly-explore`
+
+**Chosen:** `tilly-explore` gains a third, conditional rung. When what is being decided is
+what happens *over time* — pinning, hand-offs, a gesture that opens something and a scroll
+that closes it again — the exploration builds one self-contained HTML prototype: no
+libraries, no build, opens by double-clicking, variants on controls rather than in separate
+files. It is untracked and thrown away when the decision lands.
+
+**Why:** the timeline's month header was explored as six artboards including a four-frame
+scroll sequence, and Jake's response was that it was hard to grasp without motion. That is
+not a failure of the drawing. Three frames of a sequence are three still images of a thing
+whose entire nature is that it moves, and adding a fourth frame does not converge on
+anything.
+
+The prototype cost about twenty minutes and immediately produced a fact that the brief, the
+canvas and the written plan had all missed: **a month of eleven recurring expenses is 802
+points against a 783-point viewport.** Nineteen points of scroll. The header therefore never
+meaningfully pins at rest, and — worse — an opened neighbour month can never scroll far
+enough out of view to trigger the close-on-scroll-back behaviour, so a month you open stays
+open. At eighteen expenses there are 383 points of scroll and both behaviours work. The
+design has a density threshold in it, and nothing static was ever going to show that.
+
+**The controls are the rung's real value,** and worth stating separately from the motion.
+Two sliders — where "today" falls in the month, and how many things recur — let Jake find
+the boundary himself rather than be shown one point on one side of it. A prototype without
+a control for the quantity the design turns on is just an animated artboard.
+
+**Rejected — draw more frames.** The thing already tried. A sequence drawn as stills asks
+the reader to animate it in their head, which is precisely the work they cannot do reliably;
+it is the reason the rung exists.
+
+**Rejected — prototype instead of the canvas.** The canvas settles type, spacing, colour,
+hierarchy and the awkward content cases, and does all of it faster than a prototype would.
+A prototype is a bad place to argue about a 13-point date line. The rungs answer different
+questions and the prototype is the narrowest of the three.
+
+**Rejected — keep prototypes in the repo as reference.** A prototype goes stale exactly the
+way the timeline's canvas did, and it looks more authoritative than a canvas because it
+runs. What survives a decision is the entry in this file.
+
+**Consequence:** the prototype must state on the page itself what it cannot reproduce —
+rubber-band overscroll, Liquid Glass, Dynamic Type, iOS momentum. A prototype mistaken for
+a promise about feel is worse than no prototype.
+
+---
+
 ## Exploration wireframes before it draws
 
 **Decided:** 2026-09-07 · **From:** `tilly-explore`

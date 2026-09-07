@@ -7,10 +7,11 @@ description: Use when a Tilly brief exists and layout or interaction directions 
 
 ## Model
 
-**Opus, throughout.** Both rungs of this skill are design decisions — the wireframes settle
-structure, the canvas settles type, spacing, colour and hierarchy. Neither is mechanical
-assembly. The switch to Sonnet happens when this skill *ends* and `tilly-build` begins, so
-the model boundary sits on a skill boundary rather than inside one.
+**Opus, throughout.** Every rung of this skill is a design decision — the wireframes settle
+structure, the canvas settles type, spacing, colour and hierarchy, the prototype settles
+motion. None of it is mechanical assembly. The switch to Sonnet happens when this skill
+*ends* and `tilly-build` begins, so the model boundary sits on a skill boundary rather than
+inside one.
 
 If Sonnet is active when this triggers, say so before proceeding.
 
@@ -90,7 +91,46 @@ rejection.
 **Then stop and show Jake again.** Wait for approval, or for the changes he wants. Do not
 proceed to `tilly-plan` until this happens.
 
-### Rung 3 — iterate in place
+### Rung 3 — a working prototype, when the question is motion
+
+**Conditional.** Most explorations stop at the canvas. This rung exists for the cases where
+the thing being decided is *what happens over time* rather than what sits where.
+
+**The trigger is in the argument.** If describing a direction needs the words "as you
+scroll", "when you open", "hands off to", "closes again", "returns you to" — that direction
+cannot be settled by a still image, and drawing more artboards will not fix it. Three
+frames of a sequence are three still images of a thing whose whole nature is that it moves.
+
+**The form.** One self-contained HTML file, no libraries, no build step, no server — it
+must open by double-clicking. Match the real dimensions and the real token values so it
+reads as the app rather than as a diagram.
+
+**Put the variants on controls, not in separate files.** The point is flipping between them
+mid-interaction, at the same scroll position, without losing your place. Same for
+appearance: light and dark are a toggle.
+
+**Give it a control for whatever the design actually depends on.** This is the part that
+earns the rung. The timeline's header turned on two quantities — where "today" falls in the
+month, and how many things someone has recurring — and a slider for each was worth more
+than any artboard, because it let Jake find the *boundary* rather than be shown one point
+on one side of it.
+
+**Say what it lies about, in the prototype itself.** A browser has no rubber-band
+overscroll, no Liquid Glass, no Dynamic Type, and no momentum that feels like iOS. Put that
+list on the page next to the controls, not only in chat, so the prototype cannot be
+mistaken for a promise about how the built thing will feel.
+
+**It is throwaway.** Untracked, outside `docs/`, deleted when the decision lands. What
+survives is the `DECISIONS.md` entry — a prototype kept around goes stale the same way a
+canvas does, and it looks even more authoritative because it runs.
+
+**Expect it to find things.** The timeline's prototype established that a month of eleven
+recurring expenses is one screenful, so the header barely pins and an opened month can
+never scroll far enough out of view to close itself again. That is a fact about the design
+that three artboards, a canvas and a written plan had all missed, and it surfaced in about
+twenty minutes.
+
+### Rung 4 — iterate in place
 
 **One canvas per exploration, revised in place.** `/design` creates or re-seeds a canvas;
 an existing one is edited in its published artifact and republished to the same URL. Don't
@@ -148,6 +188,8 @@ instead.
   Jake's decision-making, not as a formality — and the canvas is the most expensive place
   to discover that a layout was the wrong shape all along.
 - **Never draw every direction on the canvas** "to be thorough".
+- **Never settle a motion question with more artboards.** If the argument needs the words
+  "as you scroll", build rung 3 instead of drawing a fourth frame of the sequence.
 - **Two or three directions, not five.** The constraint is what forces each one to be a real
   argument rather than a permutation. If a fourth genuinely earns its place, say why.
 - **Draw the states, not the happy path.** A canvas showing only the ideal case has not
