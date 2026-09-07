@@ -33,6 +33,14 @@ premature polish, it's what keeps the seam intact.
 view. Xcode's preview variants show it in light and dark at accessibility text sizes
 simultaneously, so a token change is verifiable everywhere at a glance.
 
+**Dimension tokens are the seam's blind spot.** Fonts and colours are conspicuous — a raw
+`.largeTitle` or a hex literal reads as obviously wrong in a view. A bare number in a layout
+modifier (`.padding(8)`, `VStack(spacing: 8)`, `cornerRadius(4)`) does not; it reads as
+incidental rather than as a value that escaped the token layer. When a spacing or dimension
+scale is introduced, hold it to the same rule as fonts and colours from the first view that
+uses it, not the second — the seam check `tilly-ship` runs already greps for spacing,
+padding, corner radius and fixed frames for exactly this reason.
+
 **For the v2 design pass:** layer on top of system materials rather than replacing them,
 or the design system ends up fighting Liquid Glass instead of using it.
 

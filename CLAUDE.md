@@ -126,8 +126,10 @@ not just the first one in a session.
   cautionary example. A file growing past a few hundred lines usually means it's doing too
   much.
 - New `.swift` files appear in the app project automatically (file-system synchronized
-  groups). Don't hand-edit `.pbxproj`. Files in `Core/Sources/` are picked up by SPM with
-  no registration at all.
+  groups) — adding, moving, or removing source files must never touch `.pbxproj`. Build
+  settings in the project file are ordinary work: fix one that's wrong, or add one that's
+  missing, without treating the file as frozen. Files in `Core/Sources/` are picked up by
+  SPM with no registration at all.
 
 ## Verification
 
@@ -201,7 +203,12 @@ When a commit belongs to a brief or a plan, name it in a trailer, alongside `Co-
 ```
 Plan: docs/plans/app-scaffolding.md
 Brief: docs/briefs/timeline/brief.md
+Co-Authored-By: ...
 ```
+
+Keep them in the **same block** as `Co-Authored-By`, with no blank line between. Git only
+parses the last contiguous paragraph as trailers, so a blank line above them turns them back
+into ordinary body text — searchable, but invisible to anything that reads trailers properly.
 
 This is not decoration. It makes the history queryable — `git log --grep="briefs/timeline"`
 returns every commit belonging to the timeline, months later, without anyone having
