@@ -14,6 +14,13 @@ iOS development. Read `docs/PROJECT.md` before making product judgements.
 | `docs/INSPIRATION.md` | Annotated Dime / competitor analysis — the evidence base | As things are learned |
 | `docs/briefs/<slug>/brief.md` | Per-feature or per-change briefs | Per piece of work |
 | `docs/plans/<slug>.md` | Implementation plans — ordered step specs | Per piece of work |
+| `docs/prototypes/<slug>.html` | Working prototypes from exploration — kept, dated | Per piece of work |
+
+Prototypes and design canvases are **kept, not pruned**. They record how a decision was
+reached, which is the one thing `DECISIONS.md` can state but not show. Both will eventually
+disagree with the design as it moves on, so both carry their date and the line that settles
+it: where a prototype or an artboard disagrees with `DECISIONS.md`, the decisions log wins.
+Mark the stale parts; never delete them.
 
 Never delete from `DECISIONS.md`. Superseding an entry means adding a new one that says
 what changed and why, not editing history.

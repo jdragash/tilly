@@ -8,6 +8,45 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## Prototypes and canvases are kept, and carry the date that settles a conflict
+
+**Decided:** 2026-09-07 · **From:** `tilly-explore`
+**Supersedes:** "A motion question gets a prototype, not another artboard", decided earlier
+the same day, in its retention half only — specifically the rejection of "keep prototypes in
+the repo as reference". Everything else in that entry stands.
+
+**Chosen:** a prototype is committed to `docs/prototypes/<slug>.html` and kept. The canvas is
+kept too, and a rejected direction stays drawn on it rather than being deleted. Both open
+with a date, the questions they were built to settle, which direction won, and one line
+naming the tiebreaker: *where this disagrees with `DECISIONS.md`, the decisions log wins.*
+
+**Why the throwaway rule lost:** it was written to prevent a stale artifact being mistaken
+for a spec, and it prevented that by destroying the only record of *how* a decision was
+reached. `DECISIONS.md` can state that the scroll-based close trigger was rejected; it cannot
+let anyone feel a month failing to close. Six months on, that difference is most of what a
+new reader needs, and the rejections in this file are only half the picture without it.
+
+The same argument was already accepted for the canvas — settled directions stay visible
+precisely so a decision is not relitigated — and there was no reason for prototypes to be
+governed by the opposite rule.
+
+**The staleness risk was real and is handled differently.** A prototype runs, so it looks
+more authoritative than a canvas, and this project has already had `tilly-plan` warn an
+implementer about an approved-looking artboard that was wrong. Deletion is one answer to
+that; a named tiebreaker inside the file is a better one, because it survives being found by
+someone who has not read this file.
+
+**Rejected — keep them untracked, on disk only.** The middle position, and the worst of the
+three: kept for whoever happens to have that machine, absent for anyone else, and invisible
+to `git log`.
+
+**Consequence:** `tilly-explore`'s bring-into-line step changes from pruning to marking.
+A rejected artboard is retitled and its annotation says why it lost; an artboard that turned
+out to draw something impossible is annotated as superseded and kept. `CLAUDE.md`'s docs
+contract gains the prototypes row.
+
+---
+
 ## The month header carries what is left, and says so
 
 **Decided:** 2026-09-07 · **From:** timeline
