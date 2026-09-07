@@ -12,8 +12,8 @@ problem is still open. One skill, two modes, same engine.
 ## The cheap-first rule (this is the whole point)
 
 The book is 271 pages. **Never load the book to decide which principle applies.** The index
-does that for a fraction of the cost — the same philosophy as `tilly-explore` naming its
-directions before it draws them.
+does that for a fraction of the cost — the same philosophy as `tilly-explore`'s wireframe
+gate.
 
 1. **Read `references/index.md`** — 125 principles, each with a short summary,
    when-to-use, category tags, and printed page number. Plus the book's own five routing

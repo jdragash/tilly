@@ -8,6 +8,48 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## Exploration wireframes before it draws
+
+**Decided:** 2026-09-07 · **From:** `tilly-explore`
+**Supersedes:** "Exploration draws variants on the canvas, not as wireframes first",
+decided earlier the same day
+
+**Chosen:** the wireframe rung comes back. `tilly-explore` emits two or three ASCII
+wireframes under a shared 500-token budget, stops for a choice, and only then builds a
+canvas — for the chosen direction, plus at most one contender if a side-by-side is asked
+for.
+
+**Why the canvas-only version lost:** its premise was that a second direction costs an
+artboard rather than a second canvas, so drawing them all is nearly free. It isn't.
+Artboards at a real type scale with real content across every state are the most expensive
+output this workflow produces, and drawing every direction at that fidelity spends the
+budget before the cheap question has been answered. That question — which *shape* is right —
+is one a wireframe answers badly at colour and type and well at layout, hierarchy, ordering
+and density, which is the only ground the directions are competing on.
+
+The two-lines-per-direction summary that replaced the wireframes was cheap, but it made the
+argument in prose. Describing a layout is the one register worse than drawing it in boxes.
+
+**Kept from the version being superseded.** The canvas rung keeps its awkward-case list, the
+requirement to draw dark mode, the rule that the argument lives in the canvas's own
+annotations, iteration in place on one URL, and the step that brings the canvas back into
+line with this file once a decision lands. Only the question of *what gets drawn* changes.
+
+**Rejected — draw every direction, but rough.** A deliberately low-fidelity canvas is a
+wireframe that costs like a canvas. If the fidelity isn't real, the artboard has given up
+the only thing it has over a wireframe.
+
+**Rejected — decide from the wireframes and skip the canvas.** Wireframes can't settle type,
+spacing or colour, and those decide whether a layout survives contact with real content.
+The canvas isn't the redundant rung; it's the one the wireframe is buying time for.
+
+**Consequence:** the requirement to draw an accessibility text size, added the same day, is
+dropped. Deferred rather than rejected — the reasoning that motivated it still holds, and
+it wants a cheaper home than every exploration canvas, probably a simulator check in
+`tilly-ship`.
+
+---
+
 ## Exploration draws variants on the canvas, not as wireframes first
 
 **Decided:** 2026-09-07 · **From:** `tilly-explore`

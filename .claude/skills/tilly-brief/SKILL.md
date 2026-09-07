@@ -14,7 +14,7 @@ worth switching to Opus?" Don't silently run it on whatever happens to be loaded
 
 ## Overview
 
-Produces one text-only brief before any design or code. The job is routing and
+Produces one text-only brief before any wireframe or code. The job is routing and
 determinism, not originality — go to the known sources in a fixed order, write to a fixed
 path, never silently overwrite.
 
@@ -101,7 +101,7 @@ engine and logic work usually goes straight there.
 
 ## Hard constraints
 
-- **Text only.** No canvas, no code, no screens. That's `tilly-explore`.
+- **Text only.** No wireframes, no canvas, no code. That's `tilly-explore`.
 - **Don't create `DECISIONS.md` entries from a brief.** A brief raises questions; it
   doesn't settle them. Decisions get recorded when they're actually made.
 - **Don't restate the tenets.** Reference them. They live in `PROJECT.md` and duplicating

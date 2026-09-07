@@ -7,8 +7,8 @@ description: Use when a Tilly brief exists and layout or interaction directions 
 
 ## Model
 
-**Opus, throughout.** Every rung of this skill is a design decision — the directions settle
-structure, the canvas settles type, spacing, colour and hierarchy. None of it is mechanical
+**Opus, throughout.** Both rungs of this skill are design decisions — the wireframes settle
+structure, the canvas settles type, spacing, colour and hierarchy. Neither is mechanical
 assembly. The switch to Sonnet happens when this skill *ends* and `tilly-build` begins, so
 the model boundary sits on a skill boundary rather than inside one.
 
@@ -16,10 +16,13 @@ If Sonnet is active when this triggers, say so before proceeding.
 
 ## Overview
 
-Turns a brief into directions Jake can look at. **The canvas is the working surface** —
-variants are drawn there, compared there, and iterated there. Describing a layout in prose
-and then drawing the winner once puts the argument in the weakest available medium; a design
-disagreement is settled by looking, not by reading a description of what you would see.
+Turns a brief into concrete directions, cheapest artifact first. The expensive mistake this
+prevents: drawing every direction on a canvas to settle a question a wireframe answers for
+a fraction of the cost.
+
+A wireframe can't win an argument about colour or type. It can win one about layout,
+hierarchy and ordering — which is what a *direction* is at this stage. The canvas is where
+the winner becomes a real design.
 
 **Prerequisite:** a brief must exist at `docs/briefs/<slug>/brief.md`. If it doesn't, stop
 and run `tilly-brief` — don't improvise one inline.
@@ -35,41 +38,48 @@ and run `tilly-brief` — don't improvise one inline.
 
 ## The gates (both mandatory)
 
-Two stops, and they ask different questions. The first asks *are these the right directions
-to draw*; the second asks *which drawn direction wins*. Neither substitutes for the other.
+Two stops, and they ask different questions. The first asks *which direction is worth
+drawing*; the second asks *whether the drawn thing is right*. Neither substitutes for the
+other.
 
-### 1. Name the directions, and wait
+### Rung 1 — wireframes
 
-**Two or three directions.** For each, one or two lines: what it does differently, which
-tenet it serves best, which it strains. A direction that serves no tenet is not a real
-option and shouldn't be drawn.
+**Two or three** ASCII/box-drawing wireframes, roughly 15-25 lines each, plus one short
+trade-off paragraph. **Under 500 output tokens for all of them combined.** That budget is
+the whole point; don't let it balloon into an essay per variant.
 
-**Then stop and show Jake.** He approves the set, cuts one, adds one, or redirects
-entirely. Drawing is cheap but it isn't free, and a canvas full of directions nobody wanted
-drawn is the specific waste this stop exists to prevent. It is also the last moment where
-changing course costs a sentence rather than a rebuild.
+For each variant, name which tenet it serves best and which it strains. A variant that
+serves none is not a real option.
 
-Keep it short — a list of directions, not an essay per direction. The argument gets made on
-the canvas, where it can be seen. The old version of this skill drew ASCII wireframes here;
-`DECISIONS.md` records why that went and why this stop stayed.
+Wireframes are weak at colour, type scale and spacing polish — don't try to represent
+those. They settle layout, hierarchy, ordering, density and how things collapse, which is
+most of what a design argument is actually about.
 
-### 2. Build one canvas
+**Then stop and show Jake.** Wait for a choice, or an instruction to merge two directions.
+Do not proceed until this happens. This is the last point where changing course costs a
+sentence rather than a rebuild.
 
-Use `/design`. Every named direction as artboards on a **single** canvas — real type scale,
-real spacing, real colour, real content. Not lorem: actual expense names and amounts,
-including the awkward cases, because those are where layouts fail.
+### Rung 2 — design canvas
+
+**Only the chosen direction** (plus at most one contender if Jake explicitly wants a
+side-by-side). Never all of them — that's the exact cost rung 1 exists to cut.
+
+Use `/design` to build artboards: real type scale, real spacing, real colour, real content.
+Not lorem — actual expense names and amounts, including the awkward cases, because those
+are where layouts fail.
 
 For anything on the timeline, the awkward cases are at minimum:
 
 - a name long enough to truncate
 - a day holding more than one charge, and a day holding exactly one
 - an occurrence that has been skipped
+- upcoming and charged, estimated and known
 - the empty state, and the state where nothing has been charged yet
-- dark mode, and an accessibility text size
+- dark mode
 
-Those last two are not polish. A design that hasn't been drawn at an accessibility size
-hasn't been designed; it has been designed for one text size and will be found out in the
-simulator, which is a far more expensive place to find it.
+Dark mode is not polish. Contrast and weight are the whole design argument on this surface,
+and both change when the ground goes dark — so a direction drawn only in light has been
+half drawn, and the other half gets found out in the simulator.
 
 **Carry the argument in the canvas's own annotations**, beside the artboard it belongs to,
 rather than in chat. The canvas outlives the conversation. When a question is genuinely
@@ -77,18 +87,18 @@ open, draw the honest options side by side and let the annotation say what each 
 a rejected option drawn next to its winner is worth more than a paragraph explaining the
 rejection.
 
-**Then stop and show Jake again.** Wait for a direction to be chosen, or for an instruction
-to merge two. Do not proceed to `tilly-plan` until this happens.
+**Then stop and show Jake again.** Wait for approval, or for the changes he wants. Do not
+proceed to `tilly-plan` until this happens.
 
-### 3. Iterate in place
+### Rung 3 — iterate in place
 
 **One canvas per exploration, revised in place.** `/design` creates or re-seeds a canvas;
 an existing one is edited in its published artifact and republished to the same URL. Don't
 spawn a second canvas for a second pass — the URL is the thing Jake keeps, links to, and
 hands to `tilly-plan`.
 
-As directions get settled, keep them on the canvas as reference rather than deleting them,
-on a separate page from whatever is still live. Settled-and-visible is what stops a decision
+As parts get settled, keep them on the canvas as reference rather than deleting them, on a
+separate page from whatever is still live. Settled-and-visible is what stops a decision
 being relitigated; settled-and-deleted looks like it was never considered.
 
 ## Recording the decision
@@ -134,8 +144,10 @@ instead.
 
 - **No code.** This skill ends at an approved design. `tilly-plan` specifies it and
   `tilly-build` implements it.
-- **Never draw before the directions are approved.** Both gates are stops. Announcing what
-  you are about to draw and then drawing it in the same breath is skipping the first one.
+- **Never skip rung 1** because the render is already imaginable. The gate exists for
+  Jake's decision-making, not as a formality — and the canvas is the most expensive place
+  to discover that a layout was the wrong shape all along.
+- **Never draw every direction on the canvas** "to be thorough".
 - **Two or three directions, not five.** The constraint is what forces each one to be a real
   argument rather than a permutation. If a fourth genuinely earns its place, say why.
 - **Draw the states, not the happy path.** A canvas showing only the ideal case has not
