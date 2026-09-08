@@ -19,6 +19,9 @@ struct TimelineView: View {
     @State private var hasSetRestingPosition = false
     @State private var isUnlockLatched = false
     @State private var isProgrammaticScroll = false
+    @State private var scrollOffset: CGFloat = 0
+    @State private var restingContentOffset: CGFloat?
+    @State private var pillClearance: CGFloat = Tokens.Space.floatingClearance
 
     private static let scrollSpace = "timelineScroll"
 
@@ -58,6 +61,32 @@ struct TimelineView: View {
         return visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= middleY }
     }
 
+    /// Which way `LatestButton` points, and whether it shows at all: absent within a
+    /// screenful of the resting position, `.down` above it (the reader is in an unlocked
+    /// month ahead), `.up` below it (the reader is back in history). See "Getting back" in
+    /// `docs/DESIGN.md`.
+    ///
+    /// Deliberately not `headerOffsets[window.current]`, the way `updateLatch` reads it —
+    /// `LazyVStack` stops laying out (and therefore stops measuring) a header once it is far
+    /// enough off screen, which freezes that dictionary entry at whatever it last was.
+    /// Confirmed on device: scrolling several months into history left it stuck around
+    /// −110pt, well short of a screenful, so a distance check against it never tripped.
+    /// `updateLatch` never meets this because an unlocked month is at most a couple of
+    /// screens away; a reader can scroll arbitrarily far into history, so this needs a
+    /// signal `LazyVStack` can't stop measuring. `scrollOffset` comes straight off the
+    /// `ScrollView` itself, which is never recycled, and `restingContentOffset` is a cached
+    /// "what `scrollOffset` would be if the current month's header were at the top" —
+    /// refreshed whenever that header happens to be mounted, and stable in between because
+    /// nothing but an unlock, a close, or a day change moves the current month within the
+    /// content.
+    private var returnDirection: LatestButton.Direction? {
+        guard viewportHeight > 0, let restingContentOffset else { return nil }
+        let distance = scrollOffset - restingContentOffset
+        if distance > viewportHeight { return .up }
+        if distance < -viewportHeight { return .down }
+        return nil
+    }
+
     var body: some View {
         GeometryReader { rootProxy in
             content(topInset: rootProxy.safeAreaInsets.top)
@@ -93,6 +122,9 @@ struct TimelineView: View {
                                         } action: { frame in
                                             headerOffsets[month] = frame.minY
                                             headerHeights[month] = frame.height
+                                            if month == window.current {
+                                                restingContentOffset = scrollOffset + frame.minY
+                                            }
                                         }
                                 }
                                 .id(month.id)
@@ -101,10 +133,30 @@ struct TimelineView: View {
                         }
                         .scrollTargetLayout()
                     }
+                    .contentMargins(.bottom, pillClearance, for: .scrollContent)
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
+                        scrollOffset = newValue
+                    }
                     .onAppear { scrollProxy = proxy }
                 }
                 .coordinateSpace(name: Self.scrollSpace)
                 .background(Tokens.Surface.base)
+                .overlay(alignment: .bottom) {
+                    // Always rendered — never conditionally removed — so its real,
+                    // Dynamic-Type-aware height is always available to size
+                    // `pillClearance` from, including the very first time the reader
+                    // scrolls far enough for it to matter. Visibility is opacity plus
+                    // explicit accessibility/hit-testing, not presence in the tree.
+                    LatestButton(month: window.current, direction: returnDirection ?? .up, today: today, action: returnToResting)
+                        .padding(.bottom, Tokens.Space.section)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                            pillClearance = height + Tokens.Space.section
+                        }
+                        .opacity(returnDirection == nil ? 0 : 1)
+                        .accessibilityHidden(returnDirection == nil)
+                        .allowsHitTesting(returnDirection != nil)
+                }
+                .animation(.easeInOut, value: returnDirection)
                 .overlay(alignment: .top) {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
@@ -195,9 +247,45 @@ struct TimelineView: View {
         }
     }
 
+    /// `LatestButton`'s action: animates the reader back to the resting position — the
+    /// current month's header at the container's top, the same target
+    /// `restOnCurrentMonthIfNeeded` uses — then runs Step 7's tidy-up once that scroll has
+    /// actually settled. `isProgrammaticScroll` holds `updateLatch` off for the same reason
+    /// it does during `anchorAndSettle`: closing mid-animation would fight the animated
+    /// scroll rather than follow it. See "Getting back" in `docs/DESIGN.md`.
+    ///
+    /// **Not `withAnimation(_:completion:)`.** Tried first, and wrong: confirmed on device
+    /// via logging that its completion handler runs before the scroll has visibly moved at
+    /// all — `scrollProxy.scrollTo` drives a `UIScrollView` under the hood, which doesn't
+    /// report into SwiftUI's animation-completion tracking, so `closeUnlockedMonths` fired
+    /// against the pre-scroll geometry and anchored on the unlocked month instead of the
+    /// one just settled on. A fixed delay matching `.default`'s duration is what
+    /// `anchorAndSettle` already relies on elsewhere in this file for the same reason —
+    /// timing-dependent, not sufficient in principle, but held in every trial here too.
+    private func returnToResting() {
+        guard let window, let scrollProxy else { return }
+        isProgrammaticScroll = true
+        withAnimation(.default) {
+            scrollProxy.scrollTo(window.current.id, anchor: .top)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            isProgrammaticScroll = false
+            // The reader is now at the resting position by construction, so `scrollOffset`
+            // *is* `restingContentOffset`. Saying so is not belt-and-braces: the cache is
+            // normally written as `scrollOffset + frame.minY` from two geometry callbacks
+            // that arrive independently, and during an animated scroll they are sampled at
+            // different instants — measured on device leaving the cache 702, 493 and 0.2
+            // points wrong across three otherwise identical returns. The pill hides within
+            // one viewport of resting, so an error approaching 778 points would leave it
+            // on screen at rest, pointing the wrong way.
+            restingContentOffset = scrollOffset
+            closeUnlockedMonths()
+        }
+    }
+
     private func closeUnlockedMonths() {
-        guard let window, window.unlocked > 0 else { return }
         isUnlockLatched = false
+        guard let window, window.unlocked > 0 else { return }
         let anchorMonth = monthUnderMiddle() ?? window.current
         let desiredOffset = headerOffsets[anchorMonth] ?? 0
         self.window?.unlocked = 0
@@ -208,8 +296,9 @@ struct TimelineView: View {
     /// Waits a run-loop turn for the resized list to lay out, restores `month`'s position,
     /// and holds off the close-on-scroll-back latch until that restoring scroll has settled
     /// — see "No closing during a programmatic scroll" in Step 7 of
-    /// `docs/plans/timeline.md`. Untested: exercised here by opening and closing a month,
-    /// but not yet by an animated jump across several months, which is Step 8's control.
+    /// `docs/plans/timeline.md`. Exercised by opening and closing a month directly, and,
+    /// via `returnToResting`, by an animated jump back across several unlocked months —
+    /// both verified on device in Step 8.
     private func anchorAndSettle(_ month: MonthKey, to desiredOffset: CGFloat) {
         isProgrammaticScroll = true
         DispatchQueue.main.async {

@@ -1236,6 +1236,46 @@ observation reproduced deliberately. It is the background lagging the pin by a f
 `isPinned` being derived from geometry that updates a beat behind the sticky placement. Fix
 it here if it is cheap; report it and leave it if it is not.
 
+**It now has a trigger you can aim at.** Reading `pinnedMonth` shortly after a programmatic
+jump showed it naming October while the reader had already arrived at September; the settled
+frame was correct. That is the same lag, reachable deliberately for the first time — the
+scroll animation moves faster than any thumb, so the geometry is further behind. Anyone
+hunting it should look there rather than trying to flick fast enough by hand.
+
+**Two geometry caches, and why only one of them needed replacing.** Recorded from the
+2026-09-08 review, because the reasoning is not visible in the code that survived.
+
+`LazyVStack` stops laying out a header once it is far enough off screen, and therefore stops
+calling `onGeometryChange` on it, so `headerOffsets` entries for distant months freeze at
+whatever they last were. Seen twice: a frozen offset made a derived section height come out
+at −596.7 during Step 7, and it left the current month's entry stuck near −110pt in the
+first draft of this step, so a distance check against it never tripped.
+
+**`pinnedMonth` and `monthUnderMiddle` still read that dictionary, and are safe.** Both scan
+for a threshold among months near the viewport, and a stale entry can only mislead them if it
+belongs to a month *below* the one being selected in document order — a month that got from
+at-or-above the top edge to far below it without ever being laid out in between. Scrolling
+cannot do that: the content has to travel through the viewport. Nor can the animated jump, for
+the same reason. Both were exercised after returns from five and more months of history and
+picked the right month every time. **What would break them** is a scroll that teleports rather
+than travels, so if a future step ever sets a scroll position without animating across the
+distance, re-check these two first.
+
+The pill's check was different in kind — it compares against the current month from an
+unbounded distance, exactly where the dictionary has nothing live to say — which is why it,
+and only it, needed `scrollOffset` off the `ScrollView` instead.
+
+**The resting cache has a race, and it is closed by hand.** `restingContentOffset` is
+normally written as `scrollOffset + frame.minY`, combining two geometry callbacks that arrive
+independently; during an animated scroll they are sampled at different instants. Measured on
+device across three otherwise identical returns, the cache was left 702, 493 and 0.2 points
+wrong. The pill hides within one viewport of resting, so a 702-point error still leaves 76
+points of margin, and the next manual scroll corrects it — but an error reaching 778 would
+leave the pill on screen at rest pointing the wrong way. `returnToResting` therefore sets the
+cache to `scrollOffset` outright once the animation is done, which is true there by
+construction. The general race is untouched and does not need touching: everywhere else the
+two callbacks converge within a frame because nothing is animating.
+
 **Out of scope:** persistence, midnight rollover.
 
 ---

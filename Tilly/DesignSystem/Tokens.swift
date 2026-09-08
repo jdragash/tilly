@@ -40,6 +40,8 @@ enum Tokens {
         static let tight: CGFloat = 8
         static let hairlineGap: CGFloat = 4
         static let rowVerticalAccessible: CGFloat = 12
+        static let pillHorizontal: CGFloat = 16 // the "back to" pill's inner horizontal padding
+        static let floatingClearance: CGFloat = 64 // bottom inset the list carries so the floor line clears the pill
     }
 
     enum Size {
@@ -49,6 +51,7 @@ enum Tokens {
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
         static let hairline: CGFloat = 0.5
+        static let pill: CGFloat = 36 // minimum height of the floating "back to" control
     }
 
     enum Radius {
