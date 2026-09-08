@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilly — timeline navigation prototype</title>
+<!--
+  Tilly · timeline navigation and the top edge · 2026-09-08
+
+  Built during tilly-explore to settle questions that could not be settled by drawing:
+
+    1. Content passes behind the clock and the Dynamic Island on every scroll.
+       What occupies the top inset — nothing, a solid, a material, a scrim, or a
+       progressive blur?
+    2. Navigating months is clunky. Jake's proposal: the next month is always
+       expanded so you scroll up into it; history runs continuously downward and
+       stops at a floor. What is the top boundary, what is the resting position,
+       what does the bottom of history say, and does a "latest" control earn its
+       place?
+    3. Where the floor actually sits — the earliest occurrence, or the month the
+       user started using Tilly. They differ only when an anchor is backdated,
+       and then they differ by years.
+
+  SETTLED 2026-09-08, and the controls now open on what won:
+
+    · the top inset is filled — solid
+    · next month is always open; further ahead is a deliberate unlock that closes
+      itself once you come back
+    · the list rests flush on the current month
+    · history runs down to the oldest charge entered, and months holding nothing
+      are not listed at all
+    · a "latest" control returns you to the current month
+
+  Everything rejected is still on its control, one tap away, which is the point of
+  keeping this file. See DECISIONS.md for why each one lost.
+
+  `nothing — today's build` reproduces the defect this file was built to settle, one
+  tap away: rows, and the outgoing month's header, riding up into the status bar with
+  nothing over them.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees
+  with docs/DECISIONS.md, the decisions log wins.
+
+  Companion: docs/prototypes/timeline-header.html (2026-09-07) settled the header
+  figure and the pinning. This one leaves both alone and changes what surrounds them.
+-->
+<style>
+  :root {
+    --bg:#FFFFFF; --ink:#000000; --base:60,60,67;
+    --well:rgba(60,60,67,0.06); --rule:rgba(60,60,67,0.20);
+    --glass:rgba(255,255,255,0.76); --glassSolid:#FFFFFF;
+    --stage:#E9E9EC; --panel:#FFFFFF; --panelink:#000000;
+    --gutter:20px; --section:16px; --tight:8px; --gap:12px; --hairgap:4px;
+    --row:52px; --bar:48px; --icon:40px; --iconr:10px;
+    --safe:59px;
+  }
+  body.dark {
+    --bg:#000000; --ink:#FFFFFF; --base:235,235,245;
+    --well:rgba(235,235,245,0.10); --rule:rgba(235,235,245,0.20);
+    --glass:rgba(28,28,30,0.70); --glassSolid:#000000;
+    --stage:#1A1A1C; --panel:#1C1C1E; --panelink:#FFFFFF;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--stage); color:var(--panelink);
+    font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; align-items:flex-start; justify-content:center; gap:40px;
+    padding:40px 24px 64px; min-height:100vh; flex-wrap:wrap;
+  }
+
+  /* ---- the phone ---- */
+  .phone {
+    width:390px; height:844px; flex:0 0 auto; position:sticky; top:40px;
+    background:var(--bg); color:var(--ink);
+    border:1px solid rgba(0,0,0,0.18); border-radius:34px; overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,0.22);
+  }
+  .scroller { position:absolute; inset:0; overflow-y:auto; overscroll-behavior:contain; }
+  .scroller::-webkit-scrollbar { width:0; }
+  /* The Latest pill floats over the list, so the list has to end above it —
+     otherwise the bottom-of-history line lands underneath the control. */
+  .content { padding-top:var(--safe); padding-bottom:96px; }
+
+  /* ---- the top inset: the system's, drawn honestly ---- */
+  .statusbar {
+    position:absolute; top:0; left:0; right:0; height:var(--safe); z-index:6;
+    pointer-events:none; display:flex; align-items:center;
+    padding:0 30px 0 34px; padding-top:12px;
+    font-size:15px; font-weight:600; letter-spacing:0.2px; color:var(--ink);
+  }
+  .statusbar .clock { flex:0 0 auto; }
+  .statusbar .island {
+    position:absolute; left:50%; top:12px; transform:translateX(-50%);
+    width:124px; height:36px; border-radius:18px; background:#000;
+    box-shadow:0 0 0 0.5px rgba(255,255,255,0.06);
+  }
+  .statusbar .glyphs { margin-left:auto; display:flex; gap:6px; align-items:center; }
+  .statusbar .glyphs i {
+    display:block; width:17px; height:11px; border-radius:2px;
+    background:currentColor; opacity:0.9; font-style:normal;
+  }
+  .statusbar .glyphs i.batt { width:25px; border-radius:3px; }
+
+  /* the treatment layer — between content (z1) and the status bar glyphs (z6) */
+  .inset { position:absolute; top:0; left:0; right:0; height:var(--safe); z-index:5; pointer-events:none; }
+  body[data-inset="none"] .inset { display:none; }
+  body[data-inset="solid"] .inset { background:var(--bg); }
+  body[data-inset="material"] .inset {
+    background:var(--glass);
+    -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+  }
+  body[data-inset="fade"] .inset {
+    background:linear-gradient(to bottom, var(--bg) 0%, var(--bg) 62%, rgba(255,255,255,0) 100%);
+  }
+  body.dark[data-inset="fade"] .inset {
+    background:linear-gradient(to bottom, var(--bg) 0%, var(--bg) 62%, rgba(0,0,0,0) 100%);
+  }
+  /* progressive blur: stacked layers, each masked to a band, blur ramping upward */
+  body[data-inset="progressive"] .inset { background:transparent; }
+  body[data-inset="progressive"] .inset::before,
+  body[data-inset="progressive"] .inset::after,
+  body[data-inset="progressive"] .inset > .ramp {
+    content:""; position:absolute; left:0; right:0; top:0; bottom:0;
+  }
+  body[data-inset="progressive"] .inset::before {
+    -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+    -webkit-mask-image:linear-gradient(to top, transparent 0%, #000 22%); mask-image:linear-gradient(to top, transparent 0%, #000 22%);
+  }
+  body[data-inset="progressive"] .inset > .ramp {
+    -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+    -webkit-mask-image:linear-gradient(to top, transparent 12%, #000 46%); mask-image:linear-gradient(to top, transparent 12%, #000 46%);
+  }
+  body[data-inset="progressive"] .inset::after {
+    -webkit-backdrop-filter:blur(30px) saturate(160%); backdrop-filter:blur(30px) saturate(160%);
+    background:linear-gradient(to top, rgba(127,127,127,0) 24%, var(--glass) 78%, var(--glassSolid) 100%);
+    -webkit-mask-image:linear-gradient(to top, transparent 26%, #000 66%); mask-image:linear-gradient(to top, transparent 26%, #000 66%);
+  }
+
+  /* ---- month header ---- */
+  .mhead {
+    position:sticky; top:var(--safe); z-index:2;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:var(--section) var(--gutter) var(--tight) var(--gutter);
+    background:var(--bg);
+    border-bottom:0.5px solid transparent;
+  }
+  .mhead.stuck {
+    background:var(--glass);
+    -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+    border-bottom-color:var(--rule);
+  }
+  .mname { font-size:20px; line-height:25px; font-weight:600; white-space:nowrap; }
+  .mfig  { font-size:15px; line-height:20px; font-variant-numeric:tabular-nums; color:rgba(var(--base),0.60); white-space:nowrap; }
+
+  /* ---- collapsed / affordance bar ---- */
+  .bar {
+    display:flex; align-items:center; gap:var(--tight);
+    height:var(--bar); padding:0 var(--gutter);
+    border-bottom:0.5px solid var(--rule);
+    background:none; border-left:0; border-right:0; border-top:0;
+    width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bar.top { border-bottom:0; border-top:0.5px solid transparent; }
+  .bar:active { background:rgba(var(--base),0.06); }
+  .bar svg { flex:0 0 15px; }
+  .barname { flex:1 1 auto; font-size:16px; line-height:21px; color:rgba(var(--base),0.60); }
+  .barfig  { font-size:16px; line-height:21px; font-variant-numeric:tabular-nums; color:rgba(var(--base),0.60); }
+
+  /* ---- rows ---- */
+  .row { padding-left:var(--gutter); }
+  .ri { display:flex; align-items:center; gap:var(--gap); min-height:var(--row); padding:6px var(--gutter) 6px 0; }
+  .ic { flex:0 0 var(--icon); width:var(--icon); height:var(--icon); border-radius:var(--iconr); background:var(--well); }
+  .bod { flex:1 1 auto; min-width:0; }
+  .name { font-size:17px; line-height:22px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sub { font-size:13px; line-height:16px; }
+  .amt { flex:0 0 auto; font-size:17px; line-height:22px; font-variant-numeric:tabular-nums; }
+
+  .grp { padding:var(--gap) 0 var(--tight) 0; }
+  .ghead { padding:0 var(--gutter) var(--hairgap) var(--gutter); display:flex; align-items:baseline; justify-content:space-between; }
+  .gname { font-size:13px; line-height:17px; font-weight:600; letter-spacing:0.3px; }
+  .gfig  { font-size:13px; line-height:17px; font-variant-numeric:tabular-nums; }
+  .hair { padding:0 var(--gutter); }
+  .hair > div { height:0.5px; background:var(--rule); }
+
+  .firstweek { padding:var(--section) 40px 24px; text-align:center; font-size:15px; line-height:20px; color:rgba(var(--base),0.30); }
+  .edge { padding:34px 40px 40px; text-align:center; font-size:15px; line-height:20px; color:rgba(var(--base),0.32); }
+  .edge.topedge { padding:40px 40px 26px; }
+  .emptymonth { padding:2px var(--gutter) 14px; font-size:13px; line-height:17px; color:rgba(var(--base),0.26); }
+
+  /* ---- pull affordance ---- */
+  .pullzone { height:0; overflow:hidden; transition:height 140ms ease-out; }
+  .pullzone.armed { height:56px; }
+  .pulltext { padding:18px var(--gutter) 0; text-align:center; font-size:13px; line-height:17px; color:rgba(var(--base),0.40); }
+
+  /* ---- the "latest" control ---- */
+  .latest {
+    position:absolute; left:50%; bottom:30px; transform:translateX(-50%) translateY(10px);
+    z-index:4; display:flex; align-items:center; gap:6px;
+    height:36px; padding:0 15px; border-radius:18px; border:0.5px solid var(--rule);
+    background:var(--glass); -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+    font:inherit; font-size:15px; line-height:20px; color:var(--ink); cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,0.14);
+    opacity:0; pointer-events:none; transition:opacity 160ms ease, transform 160ms ease;
+  }
+  .latest.show { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+
+  /* ---- controls ---- */
+  .panel { width:340px; flex:0 0 auto; background:var(--panel); border-radius:16px; padding:22px 22px 24px;
+           box-shadow:0 8px 28px rgba(0,0,0,0.10); }
+  .panel h1 { font-size:17px; line-height:22px; font-weight:600; margin:0 0 4px; }
+  .panel p  { font-size:13px; line-height:18px; color:rgba(var(--base),0.62); margin:0 0 20px; text-wrap:pretty; }
+  .lbl { font-size:11px; line-height:14px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase;
+         color:rgba(var(--base),0.45); margin:0 0 8px; }
+  .seg { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; }
+  .seg button {
+    font:inherit; font-size:13px; line-height:17px; padding:7px 11px; border-radius:9px; cursor:pointer;
+    border:1px solid rgba(var(--base),0.16); background:transparent; color:inherit;
+  }
+  .seg button[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .field { margin-bottom:18px; }
+  .field .lbl { margin-bottom:6px; }
+  input[type=range] { width:100%; accent-color:#007AFF; }
+  .readout { font-size:13px; line-height:18px; color:rgba(var(--base),0.62); margin-top:6px; font-variant-numeric:tabular-nums; }
+  .readout b { color:var(--panelink); font-weight:600; }
+  .group { border-top:1px solid rgba(var(--base),0.12); padding-top:18px; margin-top:2px; }
+  .group > .glbl { font-size:13px; line-height:18px; font-weight:600; margin:0 0 14px; }
+  .caveat { font-size:12px; line-height:17px; color:rgba(var(--base),0.5); border-top:1px solid rgba(var(--base),0.12);
+            padding-top:14px; margin-top:4px; text-wrap:pretty; }
+  .caveat b { color:var(--panelink); }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body data-inset="solid">
+
+<div class="phone">
+  <div class="scroller" id="scroller"><div class="content" id="content"></div></div>
+  <div class="inset"><div class="ramp"></div></div>
+  <div class="statusbar">
+    <div class="clock">9:41</div>
+    <div class="island"></div>
+    <div class="glyphs"><i></i><i></i><i class="batt"></i></div>
+  </div>
+  <button class="latest" id="latest" type="button"></button>
+</div>
+
+<div class="panel">
+  <h1>Timeline navigation</h1>
+  <p>Scroll the phone. <b>Built</b> is what is on the branch today; <b>proposed</b> is next month always open above, history running continuously below to a floor. Flip between them at the same place in the list.</p>
+
+  <div class="lbl">Model</div>
+  <div class="seg" id="model">
+    <button data-v="built" aria-pressed="false">Built</button>
+    <button data-v="proposed" aria-pressed="true">Proposed</button>
+  </div>
+
+  <div class="group">
+    <p class="glbl">Question 1 — the top inset</p>
+    <p style="font-size:13px;line-height:18px;color:rgba(var(--base),0.62);margin:0 0 14px;">
+      <b>Solid</b> won on 2026-09-08. Pick <b>nothing — today's build</b> to see what the
+      branch did, and note it is not only rows that ride up there: the outgoing month's
+      header does too, which is why a scrim or a ramp is not enough.</p>
+    <div class="lbl">What sits under the clock</div>
+    <div class="seg" id="inset">
+      <button data-v="none" aria-pressed="false">Nothing — today’s build</button>
+      <button data-v="solid" aria-pressed="true">Solid</button>
+      <button data-v="material" aria-pressed="false">Material</button>
+      <button data-v="fade" aria-pressed="false">Scrim</button>
+      <button data-v="progressive" aria-pressed="false">Progressive blur</button>
+    </div>
+  </div>
+
+  <div class="group" id="proposedControls">
+    <p class="glbl">Question 2 — navigation</p>
+
+    <div class="lbl">The top boundary</div>
+    <div class="seg" id="topEdge">
+      <button data-v="wall" aria-pressed="false">Hard wall</button>
+      <button data-v="line" aria-pressed="false">A line of copy</button>
+      <button data-v="button" aria-pressed="true">Unlock button</button>
+      <button data-v="pull" aria-pressed="false">Pull to unlock</button>
+    </div>
+
+    <div class="lbl">An unlocked month closes</div>
+    <div class="seg" id="collapse">
+      <button data-v="home" aria-pressed="true">When you get back</button>
+      <button data-v="centred" aria-pressed="false">As soon as September is centred</button>
+      <button data-v="never" aria-pressed="false">Never</button>
+    </div>
+
+    <div class="lbl">Resting position</div>
+    <div class="seg" id="rest">
+      <button data-v="flush" aria-pressed="true">Flush</button>
+      <button data-v="peek" aria-pressed="false">Next month peeks</button>
+    </div>
+
+    <div class="lbl">Getting back</div>
+    <div class="seg" id="latestCtl">
+      <button data-v="off" aria-pressed="false">No control</button>
+      <button data-v="on" aria-pressed="true">“Latest” button</button>
+    </div>
+
+    <div class="lbl">A month with nothing in it</div>
+    <div class="seg" id="emptyMonths">
+      <button data-v="header" aria-pressed="false">Header, then “nothing recurring”</button>
+      <button data-v="skip" aria-pressed="true">Not listed at all</button>
+    </div>
+
+    <div class="lbl">The bottom of history says</div>
+    <div class="seg" id="edgeCopy">
+      <button data-v="fact" aria-pressed="true">Nothing before…</button>
+      <button data-v="start" aria-pressed="false">This is where you started</button>
+      <button data-v="light" aria-pressed="false">Nothing else down here</button>
+      <button data-v="silent" aria-pressed="false">Nothing at all</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <p class="glbl">Question 3 — where the floor sits</p>
+    <div class="lbl">History begins at</div>
+    <div class="seg" id="floorRule">
+      <button data-v="usage" aria-pressed="false">When you started using Tilly</button>
+      <button data-v="occurrence" aria-pressed="true">The earliest occurrence</button>
+    </div>
+
+    <div class="lbl">The annual insurance</div>
+    <div class="seg" id="annual">
+      <button data-v="forward" aria-pressed="false">Entered now, recurs next year</button>
+      <button data-v="back" aria-pressed="true">Deliberately backdated nine months</button>
+      <button data-v="deep" aria-pressed="false">Three years back — today's seed</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <p class="glbl">The data underneath</p>
+    <div class="field">
+      <div class="lbl">Using Tilly for</div>
+      <input type="range" id="history" min="0" max="36" value="6">
+      <div class="readout" id="historyOut"></div>
+    </div>
+
+    <div class="field">
+      <div class="lbl">Today</div>
+      <input type="range" id="today" min="1" max="30" value="8">
+      <div class="readout" id="readout"></div>
+    </div>
+
+    <div class="lbl">How much recurs</div>
+    <div class="seg" id="density">
+      <button data-v="short" aria-pressed="true">11 things</button>
+      <button data-v="long" aria-pressed="false">18 things</button>
+    </div>
+
+    <div class="lbl">Appearance</div>
+    <div class="seg" id="theme">
+      <button data-v="light" aria-pressed="true">Light</button>
+      <button data-v="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <div class="caveat">
+    <b>Faithful:</b> the pin and the hand-off, content genuinely passing under the inset, the resting position, where the floor lands, how far you have to travel to get home, and how many empty months a backdated annual bill drags into view.<br><br>
+    <b>Not faithful:</b> a browser has no rubber band, so “pull to unlock” stands in as a deliberate wheel past the top edge, and the built model’s pull is the same. The blur is <code>backdrop-filter</code>, not Liquid Glass — the real thing samples differently and its progressive form is one modifier rather than three stacked layers. No Dynamic Type, no momentum that feels like iOS, and the status bar here is a drawing, not the system’s.<br><br>
+    <b>The controls open on what won on 2026-09-08.</b> Every rejected option is still
+    beside it, one tap away — that is what this file is for. Choose <i>nothing — today’s build</i> to reproduce what the branch does:
+    rows, and the outgoing month’s header, ride up into the status bar with nothing over them.<br><br>
+    <b>The unlock, and the tidy-up.</b> Tap the bar at the top, scroll up into the month it
+    opens, then come back down. It closes on its own. It cannot close in the frame it opens
+    in — the trigger needs you to have gone up there first.<br><br>
+    <b>Why the floor is the oldest charge:</b> flip it to <i>when you started using Tilly</i>
+    with the insurance <i>deliberately backdated</i> and the entry disappears — typed in on
+    purpose, never shown. The two empty months that came with the alternative are handled by
+    not listing them, which is the other half of the same decision.
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ------------------------------------------------------------------ time
+  var MONTHS = ["January","February","March","April","May","June",
+                "July","August","September","October","November","December"];
+  var CURRENT = 2026 * 12 + 8;          // September 2026
+  var SAFE = 59;
+
+  function mname(i) { return MONTHS[((i % 12) + 12) % 12]; }
+  function myear(i) { return Math.floor(i / 12); }
+  function label(i) { return mname(i) + (myear(i) === 2026 ? "" : " " + myear(i)); }
+  function daysIn(i) { return new Date(myear(i), ((i % 12) + 12) % 12 + 1, 0).getDate(); }
+
+  // ------------------------------------------------------------------ data
+  // Mirrors Tilly/Models/SampleData.swift. `unit:"y"` is the one that can be
+  // anchored years before the user ever opened the app, which is the whole of
+  // question 3.
+  var BILLS = [
+    { day:1,  name:"Rent",                      amt:950, every:1, unit:"m" },
+    { day:1,  name:"Streaming video",           amt:18,  every:1, unit:"m", skips:true },
+    { day:2,  name:"Music streaming",           amt:11,  every:1, unit:"m" },
+    { day:2,  name:"Cloud storage",             amt:3,   every:1, unit:"m" },
+    { day:4,  name:"Gym membership",            amt:32,  every:1, unit:"m" },
+    { day:4,  name:"Electricity",               vary:"elec",  every:1, unit:"m" },
+    { day:12, name:"Home & contents insurance", amt:240, every:1, unit:"y", annual:true },
+    { day:20, name:"Water",                     vary:"water", every:3, unit:"m" },
+    { day:22, name:"Home internet",             amt:45,  every:1, unit:"m", moves:true },
+    { day:25, name:"Council tax",               amt:95,  every:1, unit:"m" },
+    { day:25, name:"Mobile phone",              amt:22,  every:1, unit:"m" }
+  ];
+
+  var EXTRA = [
+    { day:27, name:"Cloud backup",     amt:8,  every:1, unit:"m" },
+    { day:24, name:"Car insurance",    amt:62, every:1, unit:"m" },
+    { day:18, name:"Bin collection",   amt:14, every:1, unit:"m" },
+    { day:16, name:"Life cover",       amt:29, every:1, unit:"m" },
+    { day:10, name:"Streaming bundle", amt:16, every:1, unit:"m" },
+    { day:8,  name:"Newspaper",        amt:12, every:1, unit:"m" },
+    { day:6,  name:"Charity",          amt:20, every:1, unit:"m" }
+  ];
+
+  // Seasonal, so scrolling back through history does not look photocopied.
+  var VARY = {
+    elec:  [118,110,95,80,68,60,58,60,72,85,99,112],
+    water: [61,61,56,56,38,38,38,44,44,52,52,61]
+  };
+
+  var S = {
+    model: "proposed",
+    collapse: "home",
+    emptyMonths: "skip",
+    annual: "back",
+    inset: "solid",
+    topEdge: "button",
+    rest: "flush",
+    latest: "on",
+    edgeCopy: "fact",
+    floorRule: "occurrence",
+    history: 6,
+    todayDay: 8,
+    dense: false,
+    unlocked: 0,          // future months opened past the always-on next month
+    low: CURRENT, high: CURRENT   // the built model's expanded range
+  };
+
+  function bills() { return S.dense ? BILLS.concat(EXTRA) : BILLS; }
+  function startOfUse() { return CURRENT - S.history; }
+  function movedFromMonth() { return CURRENT - 1; }
+  function movesApply() { return S.history >= 1; }
+
+  // Anchors are forward-looking: you enter a recurring expense for its next
+  // occurrence, not for when it historically began. Backdating is possible and
+  // deliberate — and shallow. `deep` is what Tilly/Models/SampleData.swift does
+  // today, kept so the seed's own case stays comparable.
+  function anchorOf(b) {
+    if (b.annual) {
+      if (S.annual === "deep") return CURRENT - 36;
+      if (S.annual === "back") return CURRENT - 9;
+      return CURRENT;
+    }
+    return startOfUse();
+  }
+
+  function occursIn(b, idx) {
+    var a = anchorOf(b);
+    if (idx < a) return false;
+    var step = b.unit === "y" ? 12 * b.every : b.every;
+    return (idx - a) % step === 0;
+  }
+
+  // The floor. Two definitions, and they only diverge when an anchor predates
+  // the user — which is exactly what a backdated annual renewal does.
+  function floorMonth() {
+    if (S.floorRule === "usage") return startOfUse();   // hides anything backdated past it
+    var lowest = startOfUse();
+    bills().forEach(function (b) { lowest = Math.min(lowest, anchorOf(b)); });
+    return lowest;
+  }
+
+  // -------------------------------------------------------------- money
+  function fmt(n) {
+    var s = Math.abs(n).toLocaleString("en-IE");
+    return n === 0 ? "€0" : "−€" + s;
+  }
+  function amountFor(b, idx) {
+    return b.vary ? VARY[b.vary][((idx % 12) + 12) % 12] : b.amt;
+  }
+  function stateFor(idx, day) {
+    if (idx < CURRENT) return "charged";
+    if (idx > CURRENT) return "upcoming";
+    return day <= S.todayDay ? "charged" : "upcoming";
+  }
+
+  function buildMonth(idx) {
+    var byDay = {};
+    function push(day, entry) { (byDay[day] = byDay[day] || []).push(entry); }
+
+    bills().forEach(function (b) {
+      if (!occursIn(b, idx)) return;
+      // The moved bill leaves the month its rule generated it in.
+      if (b.moves && movesApply() && idx === movedFromMonth()) return;
+      var day = Math.min(b.day, daysIn(idx));
+      var skipped = b.skips && idx === CURRENT;
+      push(day, {
+        name: b.name, amt: amountFor(b, idx), day: day,
+        state: skipped ? "skipped" : stateFor(idx, day)
+      });
+    });
+
+    // ...and arrives in this one, on a date its rule never generates.
+    if (movesApply() && idx === CURRENT) {
+      var mover = bills().filter(function (b) { return b.moves; })[0];
+      if (mover && occursIn(mover, movedFromMonth())) {
+        push(3, { name: mover.name, amt: mover.amt, day: 3, state: stateFor(idx, 3) });
+      }
+    }
+
+    var days = Object.keys(byDay).map(Number).sort(function (a, b) { return b - a; })
+      .map(function (day) {
+        var entries = byDay[day].slice().sort(function (x, y) {
+          return y.amt - x.amt || x.name.localeCompare(y.name);
+        });
+        var total = entries.reduce(function (s, e) { return s + (e.state === "skipped" ? 0 : e.amt); }, 0);
+        return { day: day, entries: entries, total: total, charged: stateFor(idx, day) === "charged",
+                 line: new Date(myear(idx), ((idx % 12) + 12) % 12, day)
+                   .toLocaleDateString("en-IE", { weekday:"short", day:"numeric" }) };
+      });
+
+    var total = 0, remaining = 0;
+    days.forEach(function (d) {
+      total += d.total;
+      d.entries.forEach(function (e) { if (e.state === "upcoming") remaining += e.amt; });
+    });
+
+    return { idx: idx, days: days, total: total, remaining: remaining,
+             isCurrent: idx === CURRENT, isEmpty: days.length === 0 };
+  }
+
+  // The header figure. Settled 2026-09-07 and not reopened here: the current
+  // month says what is left, every other month carries its plain total.
+  function figureFor(mo) {
+    return mo.isCurrent ? fmt(mo.remaining) + " left" : fmt(mo.total);
+  }
+
+  // ------------------------------------------------------------- markup
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  var INK = {
+    charged:  ["var(--ink)",             "rgba(var(--base),0.60)"],
+    upcoming: ["rgba(var(--base),0.58)", "rgba(var(--base),0.34)"],
+    skipped:  ["rgba(var(--base),0.30)", "rgba(var(--base),0.24)"]
+  };
+
+  function rowNode(e, line, showDate) {
+    var wrap = el("div", "row"), ri = el("div", "ri");
+    ri.appendChild(el("div", "ic"));
+    var bod = el("div", "bod");
+    var name = el("div", "name", e.name);
+    name.style.color = INK[e.state][0];
+    bod.appendChild(name);
+    if (showDate) {
+      var sub = el("div", "sub", line);
+      sub.style.color = INK[e.state][1];
+      bod.appendChild(sub);
+    }
+    ri.appendChild(bod);
+    var amt = el("div", "amt", fmt(e.amt));
+    amt.style.color = INK[e.state][0];
+    if (e.state === "skipped") amt.style.textDecoration = "line-through";
+    ri.appendChild(amt);
+    wrap.appendChild(ri);
+    return wrap;
+  }
+
+  function hairline() { var h = el("div", "hair"); h.appendChild(el("div")); return h; }
+
+  function dayNode(d) {
+    if (d.entries.length === 1) return rowNode(d.entries[0], d.line, true);
+    var g = el("div", "grp"), head = el("div", "ghead");
+    var ink = d.charged ? "rgba(var(--base),0.60)" : "rgba(var(--base),0.34)";
+    var nm = el("div", "gname", d.line), fg = el("div", "gfig", fmt(d.total));
+    nm.style.color = ink; fg.style.color = ink;
+    head.appendChild(nm); head.appendChild(fg);
+    g.appendChild(head); g.appendChild(hairline());
+    d.entries.forEach(function (e) { g.appendChild(rowNode(e, d.line, false)); });
+    g.appendChild(hairline());
+    return g;
+  }
+
+  function chevron(dir) {
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", "15"); svg.setAttribute("height", "15");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "rgba(var(--base),0.30)");
+    svg.setAttribute("stroke-width", "1.9");
+    svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round");
+    var p = document.createElementNS(ns, "path");
+    p.setAttribute("d", dir === "up" ? "M6 14.5 12 8.5l6 6" : "M6 9.5 12 15.5l6-6");
+    svg.appendChild(p);
+    return svg;
+  }
+
+  function barNode(idx, dir, onClick, isTop) {
+    var mo = buildMonth(idx);
+    var b = el("button", "bar" + (isTop ? " top" : ""));
+    b.type = "button";
+    b.dataset.month = idx;
+    b.appendChild(chevron(dir));
+    b.appendChild(el("div", "barname", label(idx)));
+    b.appendChild(el("div", "barfig", fmt(mo.total)));
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function monthNode(mo) {
+    var sec = el("section");
+    sec.dataset.month = mo.idx;
+    var head = el("div", "mhead");
+    head.appendChild(el("div", "mname", label(mo.idx)));
+    head.appendChild(el("div", "mfig", figureFor(mo)));
+    sec.appendChild(head);
+
+    if (mo.isEmpty) {
+      // A month the app holds no rule for. Under the "earliest occurrence"
+      // floor a backdated annual renewal produces dozens of these.
+      sec.appendChild(el("div", "emptymonth", "Nothing recurring"));
+    } else {
+      mo.days.forEach(function (d) { sec.appendChild(dayNode(d)); });
+    }
+
+    if (mo.isCurrent && mo.remaining === mo.total && !mo.isEmpty) {
+      sec.appendChild(el("div", "firstweek", "This fills in as bills go out."));
+    }
+    return sec;
+  }
+
+  var EDGE_COPY = {
+    fact:  function (f) { return "Nothing before " + label(f) + "."; },
+    start: function ()  { return "This is where you started."; },
+    light: function ()  { return "Nothing else down here."; },
+    silent:function ()  { return null; }
+  };
+
+  // ------------------------------------------------------------- render
+  var scroller = document.getElementById("scroller");
+  var content  = document.getElementById("content");
+  var latestBtn = document.getElementById("latest");
+  var pullArmed = false;
+
+  function topMonth() { return CURRENT + 1 + S.unlocked; }
+
+  function render() {
+    content.textContent = "";
+
+    if (S.model === "built") {
+      // What is on the branch: bars either side, at most two expanded, opening a
+      // third collapses the far end.
+      content.appendChild(barNode(S.high + 1, "up", openAboveBuilt, true));
+      for (var m = S.high; m >= S.low; m--) content.appendChild(monthNode(buildMonth(m)));
+      content.appendChild(barNode(S.low - 1, "down", openBelowBuilt));
+      markStuck();
+      return;
+    }
+
+    // Proposed. Top boundary, then every month down to the floor, then the bottom.
+    var top = topMonth();
+
+    if (S.topEdge === "pull") {
+      var zone = el("div", "pullzone" + (pullArmed ? " armed" : ""));
+      zone.appendChild(el("div", "pulltext", "Keep pulling for " + label(top + 1)));
+      content.appendChild(zone);
+    } else if (S.topEdge === "line") {
+      content.appendChild(el("div", "edge topedge", "Tilly looks one month ahead."));
+    } else if (S.topEdge === "button") {
+      content.appendChild(barNode(top + 1, "up", unlockAbove, true));
+    }
+
+    var floor = floorMonth();
+    for (var i = top; i >= floor; i--) {
+      var mo = buildMonth(i);
+      // A month between the floor and today that no rule reaches. Listing it costs a
+      // header and a €0; not listing it puts a silent gap in the run of months.
+      if (mo.isEmpty && S.emptyMonths === "skip" && i !== CURRENT) continue;
+      content.appendChild(monthNode(mo));
+    }
+
+    var copy = EDGE_COPY[S.edgeCopy](floor);
+    if (copy) content.appendChild(el("div", "edge", copy));
+    else content.appendChild(el("div", "edge", " "));
+
+    markStuck();
+  }
+
+  // Put the current month's header at the top of the visible area — or `peek`
+  // points below it, so the month above is visibly there.
+  function restingTop() {
+    var sec = content.querySelector('section[data-month="' + CURRENT + '"]');
+    if (!sec) return 0;
+    return Math.max(0, sec.offsetTop - SAFE - (S.rest === "peek" ? 44 : 0));
+  }
+
+  // Returning home and the tidy-up collide: the collapse sets scroll position
+  // directly, and doing that inside an in-flight smooth scroll fights the
+  // animation. So the collapse waits until the journey has actually stopped.
+  var homing = false, homeTimer = null;
+
+  function goHome(smooth) {
+    if (!smooth) { scroller.scrollTop = restingTop(); return; }
+    homing = true;
+    scroller.scrollTo({ top: restingTop(), behavior: "smooth" });
+    var last = -1;
+    clearInterval(homeTimer);
+    homeTimer = setInterval(function () {
+      if (Math.abs(scroller.scrollTop - last) < 0.5) {
+        clearInterval(homeTimer);
+        homing = false;
+        maybeCollapse();
+      }
+      last = scroller.scrollTop;
+    }, 90);
+  }
+
+  // Nothing the reader is looking at may move. Anchor on the month under the
+  // MIDDLE of the viewport and put it back where it was. Anchoring on the
+  // top-most item fails at rest (it is the thing about to expand downward);
+  // anchoring on total height fails when one gesture adds at one end and drops
+  // at the other, because the deltas cancel.
+  function anchored(mutate) {
+    var box = scroller.getBoundingClientRect();
+    var mid = box.top + scroller.clientHeight / 2;
+    var secs = content.querySelectorAll("section");
+    var key = null, offset = 0;
+    for (var i = 0; i < secs.length; i++) {
+      var r = secs[i].getBoundingClientRect();
+      if (r.top <= mid && r.bottom >= mid) { key = secs[i].dataset.month; offset = r.top - box.top; break; }
+    }
+    if (key == null && secs.length) {
+      key = secs[0].dataset.month;
+      offset = secs[0].getBoundingClientRect().top - box.top;
+    }
+    mutate();
+    render();
+    if (key == null) return;
+    var after = content.querySelectorAll("section, .bar");
+    for (var j = 0; j < after.length; j++) {
+      if (after[j].dataset.month === key) { scroller.scrollTop = after[j].offsetTop - offset; return; }
+    }
+  }
+
+  function unlockAbove() { anchored(function () { S.unlocked++; }); updateReadouts(); }
+
+  // An unlocked month closes itself once you come back, so looking a few months
+  // ahead never leaves anything to tidy up by hand.
+  //
+  // "An opened month closes by cap, not by scrolling" (2026-09-07) rejected a
+  // scroll trigger on arithmetic that this model changes: back then an opened
+  // month could not be pushed off the top, because below it sat one month and a
+  // 48-point bar. Below an unlocked month there is now October, September and the
+  // whole of history, so the trigger is reachable many times over.
+  //
+  // The second fault in that entry is the one that still bites, and the latch is
+  // the answer to it. A month opens ABOVE you, outside the viewport — so any
+  // trigger phrased as "it is not visible" fires in the frame it opens in. This
+  // one cannot: it requires you to have actually travelled up into the unlocked
+  // month first, and only then fires on the way back.
+  var awayLatch = false;
+
+  function maybeCollapse() {
+    if (homing) return;
+    if (S.model !== "proposed" || S.collapse === "never" || !S.unlocked) { awayLatch = false; return; }
+    var home = restingTop();
+    if (scroller.scrollTop < home - 300) awayLatch = true;
+    if (!awayLatch) return;
+
+    var back;
+    if (S.collapse === "home") {
+      back = scroller.scrollTop >= home - 4;
+    } else {
+      var sec = content.querySelector('section[data-month="' + CURRENT + '"]');
+      if (!sec) return;
+      var box = scroller.getBoundingClientRect();
+      var mid = box.top + scroller.clientHeight / 2;
+      var r = sec.getBoundingClientRect();
+      back = r.top <= mid && r.bottom >= mid;
+    }
+    if (!back) return;
+
+    awayLatch = false;
+    anchored(function () { S.unlocked = 0; });
+    updateReadouts();
+  }
+
+  // ------------------------------------------------- the built model's range
+  var MAXOPEN = 2;
+  function openAboveBuilt() {
+    anchored(function () {
+      S.high++;
+      while (S.high - S.low + 1 > MAXOPEN) S.low++;
+    });
+  }
+  function openBelowBuilt() {
+    anchored(function () {
+      S.low--;
+      while (S.high - S.low + 1 > MAXOPEN) S.high--;
+    });
+  }
+
+  // ------------------------------------------------------- stuck + latest
+  function markStuck() {
+    var top = scroller.getBoundingClientRect().top + SAFE;
+    var heads = content.querySelectorAll(".mhead");
+    for (var i = 0; i < heads.length; i++) {
+      heads[i].classList.toggle("stuck", heads[i].getBoundingClientRect().top - top < 0.6);
+    }
+  }
+
+  function updateLatest() {
+    if (S.model !== "proposed" || S.latest === "off") {
+      latestBtn.classList.remove("show");
+      return;
+    }
+    var home = restingTop();
+    var delta = scroller.scrollTop - home;
+    var away = Math.abs(delta) > 240;
+    latestBtn.classList.toggle("show", away);
+    if (away) {
+      latestBtn.textContent = (delta < 0 ? "↓ " : "↑ ") + mname(CURRENT);
+    }
+  }
+  latestBtn.addEventListener("click", function () { goHome(true); });
+
+  var ticking = false;
+  scroller.addEventListener("scroll", function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { markStuck(); updateLatest(); maybeCollapse(); ticking = false; });
+  }, { passive: true });
+
+  // A browser has no rubber band. Wheeling deliberately past an edge stands in
+  // for the pull — in the built model it opens the neighbour, and in the
+  // proposed model it unlocks another future month when that variant is on.
+  var pull = 0, pullTimer = null;
+  scroller.addEventListener("wheel", function (ev) {
+    var atTop = scroller.scrollTop <= 0;
+    var atEnd = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+    if (atTop && ev.deltaY < 0) {
+      pull += -ev.deltaY;
+      if (S.model === "proposed" && S.topEdge === "pull") {
+        var armed = pull > 40;
+        if (armed !== pullArmed) { pullArmed = armed; render(); }
+      }
+      clearTimeout(pullTimer);
+      pullTimer = setTimeout(function () {
+        pull = 0;
+        if (pullArmed) { pullArmed = false; render(); }
+      }, 260);
+      if (pull > 110) {
+        pull = 0; pullArmed = false;
+        if (S.model === "built") openAboveBuilt();
+        else if (S.topEdge === "pull") unlockAbove();
+      }
+    } else if (atEnd && ev.deltaY > 0 && S.model === "built") {
+      pull -= ev.deltaY;
+      clearTimeout(pullTimer);
+      pullTimer = setTimeout(function () { pull = 0; }, 260);
+      if (pull < -110) { pull = 0; openBelowBuilt(); }
+    } else {
+      pull = 0;
+      if (pullArmed) { pullArmed = false; render(); }
+    }
+  }, { passive: true });
+
+  // ------------------------------------------------------------ controls
+  function segment(id, onPick) {
+    var box = document.getElementById(id);
+    box.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button");
+      if (!b) return;
+      box.querySelectorAll("button").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x === b));
+      });
+      onPick(b.dataset.v);
+    });
+  }
+
+  function reset() {
+    S.unlocked = 0;
+    S.low = S.high = CURRENT;
+    pullArmed = false;
+    awayLatch = false;
+    render();
+    goHome(false);
+    updateLatest();
+    updateReadouts();
+  }
+
+  segment("model", function (v) {
+    S.model = v;
+    document.getElementById("proposedControls").hidden = (v !== "proposed");
+    reset();
+  });
+  segment("inset",    function (v) { S.inset = v; document.body.dataset.inset = v; });
+  segment("topEdge",  function (v) { S.topEdge = v; reset(); });
+  segment("rest",     function (v) { S.rest = v; goHome(true); });
+  segment("collapse", function (v) { S.collapse = v; awayLatch = false; });
+  segment("emptyMonths", function (v) { S.emptyMonths = v; reset(); });
+  segment("latestCtl",function (v) { S.latest = v; updateLatest(); });
+  segment("edgeCopy", function (v) { S.edgeCopy = v; var t = scroller.scrollTop; render(); scroller.scrollTop = t; });
+  segment("floorRule",function (v) { S.floorRule = v; reset(); });
+  segment("annual",   function (v) { S.annual = v; reset(); });
+  segment("density",  function (v) { S.dense = (v === "long"); reset(); });
+  segment("theme",    function (v) { document.body.classList.toggle("dark", v === "dark"); });
+
+  var historySlider = document.getElementById("history");
+  var historyOut = document.getElementById("historyOut");
+  var todaySlider = document.getElementById("today");
+  var readout = document.getElementById("readout");
+
+  function updateReadouts() {
+    var floor = floorMonth();
+    var span = CURRENT - floor;
+    historyOut.innerHTML =
+      (S.history === 0 ? "<b>installed this month</b>" : "<b>" + S.history + "</b> month" + (S.history === 1 ? "" : "s"))
+      + " &nbsp;·&nbsp; floor at <b>" + label(floor) + "</b>"
+      + "<br>" + (span === 0 ? "no months below the current one" : "<b>" + span + "</b> month" + (span === 1 ? "" : "s") + " to scroll through to reach it")
+      + (S.unlocked ? "<br><b>" + S.unlocked + "</b> extra future month" + (S.unlocked === 1 ? "" : "s") + " unlocked" : "");
+
+    var mo = buildMonth(CURRENT);
+    var d = new Date(2026, 8, S.todayDay);
+    readout.innerHTML =
+      d.toLocaleDateString("en-IE", { weekday:"long", day:"numeric", month:"long" }) +
+      "<br>remaining <b>" + fmt(mo.remaining) + "</b> &nbsp;·&nbsp; total <b>" + fmt(mo.total) + "</b>";
+  }
+
+  historySlider.addEventListener("input", function () {
+    S.history = Number(historySlider.value);
+    reset();
+  });
+
+  todaySlider.addEventListener("input", function () {
+    S.todayDay = Number(todaySlider.value);
+    var t = scroller.scrollTop;
+    render();
+    scroller.scrollTop = t;
+    updateReadouts();
+  });
+
+  render();
+  goHome(false);
+  updateReadouts();
+  updateLatest();
+})();
+</script>
+</body>
+</html>

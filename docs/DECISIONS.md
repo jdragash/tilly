@@ -8,6 +8,179 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## The timeline is one list you scroll, bounded at both ends
+
+**Decided:** 2026-09-08 · **From:** timeline
+**Supersedes:** "The current month is home; its neighbours are collapsed bars"
+(2026-09-07), in its collapsed-bar half. Future above and past below is unchanged, and
+so is the current month being where you land.
+
+**Chosen:** the next month is always expanded, so you reach it by scrolling rather than
+by opening anything. Below the current month, history runs continuously — months arrive
+as you scroll, with no bar to tap — down to a floor. There are no collapsed month bars
+in either direction. The list rests flush on the current month.
+
+**Why the bars went:** they made ordinary movement into a sequence of decisions. Reaching
+next month meant tapping it, which expanded a screenful above and put the reader somewhere
+they had not asked to be. Going two or three months out and then wanting to come back meant
+loading each month again on the way down. The bar was buying "what is coming next month, in
+46 points" and charging for it with every other movement on the screen.
+
+**This reverses "Rejected — one uninterrupted list, months arriving indefinitely as you
+scroll" (2026-09-07), and the reason it lost no longer applies.** That rejection said an
+unbounded list makes "the current month" true only at the instant you open the app. This
+list is bounded at both ends — one month ahead, and the oldest charge behind — and a
+control returns you to the current month from anywhere. Indefinite was the problem, not
+continuous.
+
+**Rejected — keep the bars and make them nicer.** The clunkiness is not in how the bar
+looks. It is in there being a decision at all where the reader expected a scroll.
+
+**Rejected — resting so the next month peeks into view.** Drawn, and it has a real
+argument: the next month's header carries its name and total, which is exactly what the
+collapsed bar was for, delivered free and without the bar. It lost on focus — the current
+month is what the screen is about, and starting with two month names on it dilutes that.
+The affordance it was buying is not needed: scrolling up is not a gesture anyone has to
+be taught.
+
+---
+
+## Looking further ahead is a deliberate unlock, and it puts itself away
+
+**Decided:** 2026-09-08 · **From:** timeline
+**Supersedes:** "An opened month closes by cap, not by scrolling" (2026-09-07), entirely.
+
+**Chosen:** at the top of the list sits a bar for the month after next. Tapping it opens
+that month; the bar then offers the one after. Unlocked months close on their own once
+the reader returns to the current month. Nothing accumulates, and there is no control to
+tidy anything away.
+
+**Why v1 stops at one month by default:** the further out you look, the more the months
+are the same month. Deep future navigation is the calendar view's job in v1.1, and the
+timeline is better for not trying to be it.
+
+**Why a scroll-based close is legitimate now, having been rejected three weeks of work
+ago.** The cap decision killed it on arithmetic: pushing an opened month off the top
+needed a screenful below it, and below it sat one month and a 48-point bar — 798 points
+against a 783-point screen. Under this structure, below an unlocked month sit next month,
+the current month, and the whole of history. The trigger is reachable many times over.
+The arithmetic changed because the structure did.
+
+**The second fault in that entry is still real, and the fix is a latch.** A month opens
+*above* the reader, outside the viewport, so any trigger phrased as "it is no longer
+visible" fires in the frame it opens in — which was watched happening. This trigger
+requires the reader to have travelled up into the unlocked month first, and only then
+fires on the way back. It cannot close on open.
+
+**Rejected — a hard wall with no way past it.** Honest and cheap, and it makes the app
+unable to answer a question people genuinely have two months out.
+
+**Rejected — pull past the top to unlock.** No furniture at rest, which is its whole
+appeal. It hides the one thing on this screen that is not discoverable by scrolling, and
+it is invisible to VoiceOver and Switch Control.
+
+**Rejected — a "hide" control for months you opened.** Considered before the automatic
+close was found. It is an ongoing obligation — the app leaving a mess and asking the
+reader to clear it — which is what tenet 1 exists to prevent.
+
+**Rejected — let unlocked months accumulate.** Bounded by nothing. The same fault the
+cap decision was written to prevent, and the automatic close prevents it without a cap.
+
+---
+
+## History begins at the oldest charge you have entered
+
+**Decided:** 2026-09-08 · **From:** timeline
+**Supersedes:** the €0 collapsed bar below the current month, which was never decided —
+it was a consequence of the engine generating nothing before an anchor.
+
+**Chosen:** the list runs down to the oldest occurrence the app can generate, and stops.
+Below it, one line: `Nothing before March.` A month between there and today that holds
+nothing is **not listed at all** — the list simply skips it. No month anywhere renders a
+€0 total for a month the app knows nothing about.
+
+**What makes this safe is how expenses are entered, and it is worth stating as a rule
+rather than leaving implicit.** A recurring expense is entered forward — you set it up
+for its next occurrence, not for when it historically began. So anchors sit at or after
+the point someone starts using the app, and "the oldest charge" is normally days or weeks
+back, not years. Backdating is possible and occasionally deliberate; it is not the shape
+of ordinary use.
+
+**Rejected — start history at the date the app was installed.** The obvious answer, and
+it fails the case that motivates backdating at all: someone who deliberately enters a
+renewal date from earlier in the year would never see it. It also requires storing an
+install date, which is a new persisted value and a migration, bought in exchange for
+hiding data the user typed in on purpose.
+
+**Rejected — list empty months with a €0 total.** Arithmetically true and substantively
+false: the app has no idea what that month cost, only that no rule it holds reached it.
+Stating €0 is a claim, and it is the same class of error as saying a bill was *paid* —
+see tenet 1.
+
+**Rejected — a collapsed bar below the current month reading €0.** Where this started.
+It defeated the one thing justifying the bar: saying something useful without being
+opened.
+
+**Consequence for the sample data.** `SampleData.swift` anchors the annual insurance
+three years back so that an annual rule recurs into view at all. That is not how anyone
+enters a bill, and it is the single input that turns this decision's two empty months
+into twenty-seven. The seed changes with this work.
+
+---
+
+## The app fills the top inset; the system draws over it
+
+**Decided:** 2026-09-08 · **From:** timeline
+**Supersedes:** "The system owns the top" in `DESIGN.md`, which told mockups to leave the
+inset unpainted and was silent on what the running app puts there.
+
+**Chosen:** the area behind the clock and the Dynamic Island carries the app's own
+background, opaque, full width. Content scrolls under it and is hidden by it.
+
+**Why anything is needed:** with a scroll view extending under the inset and nothing
+covering it, rows render behind the clock on every scroll. It is not only rows — a month
+header pins to the bottom edge of its own section as that section exits, so during every
+hand-off a second month name sits in the inset directly above the pinned one. Whatever
+fills the inset has to be opaque enough to hide a header.
+
+**Rejected — iOS 26's scroll edge effect.** The obvious one-line answer. Tried in both
+styles on the real screen and it had no visible effect.
+
+**Rejected — a progressive blur, and a plain scrim.** The iOS 26 idiom, built properly in
+the prototype and tuned twice. Both leak in the lower third of the inset, which is where
+the outgoing header sits — so content stays legible *above* the pinned header, and reads
+as broken ordering rather than as depth. The inset is 59 points; a ramp has nowhere to go.
+
+**Rejected — the same translucent material the pinned header uses.** The consistent
+answer, and a reasonable one: rows visibly pass under it, which is what the header already
+does. Deferred rather than beaten — it is a surface treatment, changeable in one token
+when the design pass happens, and solid is the cleaner starting point.
+
+---
+
+## A control returns you to the current month
+
+**Decided:** 2026-09-08 · **From:** timeline
+
+**Chosen:** a floating pill appears once the reader is away from the current month,
+naming it and pointing the way — `↑ September` from below, `↓ September` from above.
+Tapping it returns them, and closes any unlocked future months on the way.
+
+**Why it is in v1 rather than after it:** it is what makes an unbounded-feeling list
+safe. Downward travel used to be gated by tapping bars; it is now free scrolling through
+however many months of history exist. The further someone can get, the more they need the
+way back, and the two changes arrived together.
+
+**Consequence, found in the prototype:** the pill floats over the list, so the list needs
+a bottom inset of roughly the pill's height plus its margin. Without it the last line of
+history sits underneath the control.
+
+**Rejected — leaving it to v1.1 with the calendar view.** Where it was originally put.
+The calendar view is a way to *go* somewhere; this is the way back, and it became load-
+bearing the moment the bars came out.
+
+---
+
 ## Prototypes and canvases are kept, and carry the date that settles a conflict
 
 **Decided:** 2026-09-07 · **From:** `tilly-explore`

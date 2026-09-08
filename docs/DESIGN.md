@@ -89,8 +89,9 @@ screen is money arriving, so the sign sets the register rather than distinguishi
 ### Rules delimit, they do not decorate
 
 No separator between rows; space does that work. A hairline appears only to open and close
-a grouped day, and under a collapsed month bar. Seeing a rule therefore means something is
-being closed, which is the only reason to draw one.
+a grouped day, under the bar that unlocks a further month, and under a pinned month header.
+Seeing a rule therefore means something is being closed, which is the only reason to draw
+one.
 
 ### Group a day only when there is a day to group
 
@@ -117,16 +118,55 @@ above the content.
 
 Totals everywhere exclude skipped occurrences.
 
-### One month at a time, with its neighbours collapsed
+### The timeline is one list, and you scroll it
 
-The current month is expanded. The months either side are slim bars carrying a name and a
-total; pulling or tapping opens one. **At most two months are expanded at once** — opening a
-third collapses the far end, off screen, at the opposite end from where the reader is
-looking. Nothing collapses because of where you scrolled.
+The next month is always expanded, so you reach it by scrolling rather than by opening
+anything. Below the current month, history runs continuously — months arrive as you scroll,
+with nothing to tap. There are no collapsed month bars. The list rests flush on the current
+month, with the next month above the top of the screen.
 
-That last rule is not a simplification of a nicer one. Closing an opened month by scrolling
-away from it cannot work: pushing it off the top needs a screenful of content below it, and
-below it there is one month and a 48-point bar. `DECISIONS.md` has the measurement.
+**Ordinary movement is never a decision.** That is the rule the bars broke: reaching next
+month cost a tap, which expanded a screenful above and left the reader somewhere they had
+not asked to be, and coming back meant loading each month again on the way down.
+
+The list is bounded at both ends, and that is what keeps "the current month" true. One month
+ahead, the oldest charge behind, and a control that returns you.
+
+### Further ahead is asked for, and puts itself away
+
+One bar survives, at the very top: it opens the month after next, and then offers the one
+after that. **An unlocked month closes on its own once the reader comes back to the current
+month.** Nothing accumulates and there is no control to clear anything — a screen that
+leaves a mess for you to tidy is the thing tenet 1 rules out.
+
+The trigger needs care and `DECISIONS.md` explains why. A month opens *above* the reader,
+outside the viewport, so any trigger meaning "it is no longer visible" fires in the frame it
+opens in. The reader must have travelled up into the month first; only then does coming back
+close it.
+
+### History stops where your oldest charge does
+
+The list runs down to the oldest occurrence the app can generate and stops. Below it, one
+line — `Nothing before March.` A month between there and today that holds nothing is **not
+listed at all**; the list skips it.
+
+**No month ever renders €0 for a month the app knows nothing about.** The app does not know
+what that month cost, only that no rule it holds reached it, and printing a total is a claim
+it cannot make. It is the same error as saying a bill was *paid*.
+
+This is safe because of how expenses are entered, which is worth stating as a rule: a
+recurring expense is set up for its **next** occurrence, not for when it historically began.
+Anchors therefore sit at or after the point someone starts using the app. Backdating is
+possible and sometimes deliberate — and when someone does it deliberately, they see it.
+
+### Getting back
+
+A floating pill appears once the reader is away from the current month, naming it and
+pointing the way — `↑ September` from below, `↓ September` from above. Tapping it returns
+them and closes any unlocked months on the way.
+
+It floats over the list, so **the list carries a bottom inset** of roughly the pill's height
+plus its margin. Without it the last line of history sits underneath the control.
 
 ### The month you are reading stays named
 
@@ -158,10 +198,21 @@ at — regardless of how long you were gone or whether the process survived. The
 decides where you land once, on first run. See `DECISIONS.md` for why a session-scoped
 compromise is worse than either alternative.
 
-### The system owns the top
+### The app fills the top inset; the system draws over it
 
-The status bar and Dynamic Island are drawn by iOS over the app. Mockups leave that inset
-empty rather than painting it, or a real device shows two of everything.
+The status bar and Dynamic Island are drawn by iOS over the app. The area behind them
+carries the app's own background, opaque and full width; content scrolls under it and is
+hidden by it.
+
+**It has to be opaque enough to hide a month header, not just a row.** A header pins to the
+bottom edge of its own section as that section exits, so during every hand-off a second
+month name sits in the inset directly above the pinned one. A scrim or a progressive blur
+leaks in the lower third of a 59-point inset — exactly where that header sits — and content
+staying legible above the pinned header reads as broken ordering rather than as depth.
+`DECISIONS.md` records that iOS 26's scroll edge effect had no visible effect here at all.
+
+Mockups still leave the inset empty rather than painting a clock into it, or a real device
+shows two of everything.
 
 ---
 
