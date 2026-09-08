@@ -123,6 +123,39 @@ import TillyCore
         ])
     }
 
+    @Test func theSeedHasHistoryBelowTheCurrentMonth() throws {
+        let context = try Self.makeContext()
+        try SampleData.insert(into: context, today: Self.today, calendar: Self.calendar)
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>()).map(\.timelineExpense)
+        let sixMonthsBack = MonthKey(containing: Self.today, calendar: Self.calendar).advanced(by: -6)
+        let section = TimelineBuilder.month(sixMonthsBack, expenses: expenses, today: Self.today, calendar: Self.calendar)
+
+        #expect(!section.isEmpty)
+    }
+
+    @Test func theBackdatedAnnualSitsBelowTwoEmptyMonths() throws {
+        let context = try Self.makeContext()
+        try SampleData.insert(into: context, today: Self.today, calendar: Self.calendar)
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>()).map(\.timelineExpense)
+        let currentMonth = MonthKey(containing: Self.today, calendar: Self.calendar)
+        let insuranceMonth = currentMonth.advanced(by: -9)
+        let emptyMonths = [currentMonth.advanced(by: -7), currentMonth.advanced(by: -8)]
+
+        let insuranceSection = TimelineBuilder.month(
+            insuranceMonth, expenses: expenses, today: Self.today, calendar: Self.calendar
+        )
+        #expect(insuranceSection.days.contains { day in
+            day.entries.contains { $0.name == "Home & contents insurance" }
+        })
+
+        for month in emptyMonths {
+            let section = TimelineBuilder.month(month, expenses: expenses, today: Self.today, calendar: Self.calendar)
+            #expect(section.isEmpty)
+        }
+    }
+
     @Test func theEmptyStoreFlagSuppressesSeeding() throws {
         let suiteName = "SampleDataTests.emptyStoreFlag"
         let defaults = Self.makeDefaults(suiteName: suiteName)

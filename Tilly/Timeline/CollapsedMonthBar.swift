@@ -1,24 +1,13 @@
 import SwiftUI
 
-/// A collapsed neighbour of the expanded range: a name and its plain total, never the
-/// current month's "left" word — a bar always shows the plain total, including the bar for
-/// the current month once a neighbour is open. Tapping it is the accessible equivalent of
-/// pulling it open, which Step 6 adds; nothing about the bar's appearance changes between
-/// the two. See "★ A collapsed bar can also be tapped" in `docs/plans/timeline.md`.
+/// The unlock bar at the very top of the list: the month after next, named with its plain
+/// total, never the "left" word — that stays inside the current month's own header. Tapping
+/// it opens that month; the bar then offers the one after. It is also a `Button`, so it is
+/// reachable by VoiceOver and Switch Control — there is no other way to reach it, since
+/// pull-to-unlock was rejected for the same reason. See "Looking further ahead is a
+/// deliberate unlock" in `docs/DECISIONS.md`.
 struct CollapsedMonthBar: View {
-    enum Direction {
-        case above, below
-
-        var systemImage: String {
-            switch self {
-            case .above: "chevron.up"
-            case .below: "chevron.down"
-            }
-        }
-    }
-
     let section: MonthSection
-    let direction: Direction
     let today: Date
     let open: () -> Void
 
@@ -30,7 +19,7 @@ struct CollapsedMonthBar: View {
         Button(action: open) {
             VStack(spacing: 0) {
                 HStack(spacing: Tokens.Space.tight) {
-                    Image(systemName: direction.systemImage)
+                    Image(systemName: "chevron.up")
                         .foregroundStyle(Tokens.Ink.tertiary)
                         .accessibilityHidden(true)
                     Text(section.month.name(in: calendar, relativeTo: today, locale: locale))

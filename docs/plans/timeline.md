@@ -922,6 +922,10 @@ struct TimelineWindow: Equatable, Sendable {
     var unlocked: Int = 0
 
     var top: MonthKey { current.advanced(by: 1 + unlocked) }
+
+    /// `top` down to `floor`, descending. Pure range arithmetic — filtering out empty
+    /// months needs `MonthSection`s and belongs in the view.
+    var months: [MonthKey] { get }
 }
 
 enum TimelineFloor {
@@ -954,20 +958,58 @@ as the first-week line.
 
 **The top inset.** The scroll view extends under it and nothing covers it, so rows — and
 the outgoing month's header, which pins to the bottom of its own section as that section
-leaves — render behind the clock. Fill it with `Tokens.Surface.base`, opaque, full width:
+leaves — render behind the clock. Fill it with `Tokens.Surface.base`, opaque, full width.
+
+*Corrected 2026-09-08, after this step was executed. The snippet originally specified here
+did not work, and neither did the fallback named beside it. Both failures are recorded
+because both are easy to retry:*
 
 ```swift
+// WRONG — this was specified and does not work.
 .overlay(alignment: .top) {
-    Tokens.Surface.base
-        .frame(height: 0)
-        .ignoresSafeArea(edges: .top)
+    Tokens.Surface.base.frame(height: 0).ignoresSafeArea(edges: .top)
 }
 ```
 
-A zero-height view that ignores the top safe area expands to exactly that inset. **Verify it
-actually does on iOS 26 and say which approach you used** — if it does not, a `GeometryReader`
-reading `safeAreaInsets.top` is the fallback. Do not reach for a material or a gradient:
-`DECISIONS.md` records both being built and both leaking where the outgoing header sits.
+`ignoresSafeArea` does not *add* height; it permits a view that would otherwise be inset to
+extend. A view explicitly framed to zero height is zero points tall wherever it is attached —
+including at the root of `body`, outside the scroll view entirely, which was tested and
+still bleeds.
+
+The named fallback — a `GeometryReader` inside that same `.overlay` — fails for a different
+and real reason: `safeAreaInsets` on a proxy reports what is still *un-consumed* at that
+point in the layout, and a `ScrollView` consumes the top inset by turning it into content
+insets. Anything layered onto the scroll view therefore reads zero.
+
+**What works:** measure once above that consumption and pass the value down.
+
+```swift
+var body: some View {
+    GeometryReader { proxy in content(topInset: proxy.safeAreaInsets.top) }
+}
+// ...then, on the ScrollView:
+.overlay(alignment: .top) {
+    Tokens.Surface.base
+        .frame(height: topInset)
+        .frame(maxWidth: .infinity)
+        .ignoresSafeArea(edges: .top)
+        .allowsHitTesting(false)
+}
+```
+
+Note the cost, and leave it: a root `GeometryReader` claims all available space and
+top-leading aligns its content. Harmless for a full-screen root view; it would not be for a
+view sized to its content. Do not reach for a material or a gradient — `DECISIONS.md`
+records both being built and both leaking where the outgoing header sits.
+
+**The list rests flush on the current month.** *Added 2026-09-08 — omitted when this step
+was written.* With the next month always expanded above, the resting position no longer falls
+out of "scroll offset zero"; it has to be set. On first appearance, scroll so the current
+month's header sits at the top of the visible area, with next month above the fold.
+
+This belongs here rather than in Step 9 because **Step 7's latch measures distance from the
+resting position** and cannot be built or tested while there isn't one. Step 9 restores a
+*saved* place; this is where the place comes from when there is none.
 
 **Sections are still computed into `@State`,** now over the whole window. That is one engine
 call per expense per month, and the window is normally a handful of months. It is unbounded
@@ -993,13 +1035,21 @@ Update `SampleDataTests` accordingly, and add `theSeedHasHistoryBelowTheCurrentM
 `unlockingRaisesTheTop`, `theWindowRunsFromTheTopDownToTheFloor`,
 `aWindowCrossingDecemberLandsInJanuary`.
 
+**`theWindowRunsFromTheTopDownToTheFloor` must call `window.months`,** not rebuild the loop
+inside the test and assert on its own local. A test that reimplements the thing it tests
+passes while the real code is broken, which is what the first pass at this step produced.
+
 `TimelineFloorTests`: `theFloorIsTheEarliestAnchor`,
 `anOverrideMovedEarlierThanEveryAnchorBecomesTheFloor`,
-`noExpensesHasNoFloor`, `theFloorIsTheAnchorsMonthNotItsDay`.
+`noExpensesHasNoFloor`, `theFloorIsTheAnchorsMonthNotItsDay`,
+`anArchivedExpensesAnchorDoesNotSetTheFloor` — the engine never generates an occurrence for
+an archived expense, so counting its anchor would put the floor below anything the list can
+show.
 
 and in the simulator:
 - Nothing renders behind the clock or the Dynamic Island at any scroll position, including
   mid-hand-off between two months. **Screenshot the hand-off specifically**, light and dark.
+- The app opens resting on the current month, with next month above the fold. Screenshot.
 - Scrolling down reaches the floor line and stops. No month shows €0.
 - The two empty months above the backdated insurance are absent, and the list runs
   ...March, then December 2025.
@@ -1110,6 +1160,14 @@ VoiceOver has no arrow to read. Hidden from the accessibility tree while it is i
 - Light and dark, plus one accessibility text size — the pill must not cover content or
   overflow its own bounds.
 
+**Watch for the pinned-header lag while you are in here.** Observed independently twice
+during Step 6 — once by the implementer, once in review — a frame during fast momentum
+scrolling where a pinned header carries neither its `Surface.pinned` ground nor its hairline,
+so a day heading draws straight through it. Every settled position is correct, and neither
+observation reproduced deliberately. It is the background lagging the pin by a frame or two,
+`isPinned` being derived from geometry that updates a beat behind the sticky placement. Fix
+it here if it is cheap; report it and leave it if it is not.
+
 **Out of scope:** persistence, midnight rollover.
 
 ---
@@ -1147,6 +1205,19 @@ that scroll position with the month still unlocked for the current session only.
 
 Store the same anchor Step 7 uses, so restoring and gesturing put the reader back by the
 same rule. A month always resolves — it is a computed key, not a stored row.
+
+**Use `ScrollViewReader`, not `ScrollPosition`.** Found in Step 6 and recorded here because
+this step scrolls to a restored position and would otherwise rediscover it: the newer
+`ScrollPosition` / `.scrollPosition(_:)` API produced *no visible scroll at all* in this
+view — logging confirmed `scrollTo` being called with the right id every time, to no effect.
+A `ScrollViewProxy` from `ScrollViewReader` works. The call also has to be deferred one
+run-loop turn (`DispatchQueue.main.async`, not a timed delay): when the sections first
+populate, `ScrollViewReader`'s own `onAppear` has not yet set the proxy.
+
+Step 6 sets its one-shot flag *before* that deferred call runs, so if the proxy were still
+nil a turn later the scroll would be skipped and never retried. It does not happen in
+practice. This step replaces that logic, so fold the guard in properly rather than inheriting
+it: only mark the position as restored once a scroll has actually been issued.
 
 **Restoring.** On first appearance, load the place. With none — the first run after
 installing — rest on the current month. With one, scroll so `anchorMonthID` sits at
