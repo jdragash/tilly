@@ -13,8 +13,12 @@ struct TimelineView: View {
     @State private var window: TimelineWindow?
     @State private var sections: [MonthKey: MonthSection] = [:]
     @State private var headerOffsets: [MonthKey: CGFloat] = [:]
+    @State private var headerHeights: [MonthKey: CGFloat] = [:]
+    @State private var viewportHeight: CGFloat = 0
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasSetRestingPosition = false
+    @State private var isUnlockLatched = false
+    @State private var isProgrammaticScroll = false
 
     private static let scrollSpace = "timelineScroll"
 
@@ -32,24 +36,37 @@ struct TimelineView: View {
     }
 
     /// Months from the top of the window down to the floor, with an empty month dropped
-    /// unless it's the current month or the one after — both always render, empty or not,
-    /// because the current month needs its header and its first-week line. See "History
-    /// stops where your oldest charge does" in `docs/DESIGN.md`.
+    /// unless it's the current month, the one after, or anything unlocked beyond that — all
+    /// of those always render, empty or not, because they're either the month the header
+    /// speaks for or a month the reader deliberately opened. See "History stops where your
+    /// oldest charge does" in `docs/DESIGN.md`.
     private var visibleMonths: [MonthKey] {
         guard let window else { return [] }
-        let nextMonth = window.current.advanced(by: 1)
         return window.months.filter { month in
-            month == window.current || month == nextMonth || !(sections[month]?.isEmpty ?? true)
+            month >= window.current || !(sections[month]?.isEmpty ?? true)
         }
+    }
+
+    /// The month under the middle of the viewport — the one actually being read, and the
+    /// only anchor that survives opening or closing a month without visibly moving. The
+    /// top-most visible item is wrong (it's the bar about to be tapped, so preserving it
+    /// shoves the read month off screen); total content height is wrong too, because one
+    /// gesture can add a month at one end and drop one at the other. See "Looking further
+    /// ahead is a deliberate unlock" in `docs/DECISIONS.md`.
+    private func monthUnderMiddle() -> MonthKey? {
+        let middleY = viewportHeight / 2
+        return visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= middleY }
     }
 
     var body: some View {
         GeometryReader { rootProxy in
             content(topInset: rootProxy.safeAreaInsets.top)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
         .onAppear(perform: setUpIfNeeded)
         .onChange(of: expenses) { _, _ in rebuildSections() }
         .onChange(of: sections) { _, _ in restOnCurrentMonthIfNeeded() }
+        .onChange(of: headerOffsets) { _, _ in updateLatch() }
     }
 
     @ViewBuilder
@@ -61,7 +78,7 @@ struct TimelineView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                            CollapsedMonthBar(section: section(for: window.top.advanced(by: 1)), today: today, open: {})
+                            CollapsedMonthBar(section: section(for: window.top.advanced(by: 1)), today: today, open: unlockMonthAbove)
                             ForEach(visibleMonths) { month in
                                 let monthSection = section(for: month)
                                 Section {
@@ -71,10 +88,11 @@ struct TimelineView: View {
                                     )
                                 } header: {
                                     MonthHeader(section: monthSection, today: today, isPinned: pinnedMonth == month)
-                                        .onGeometryChange(for: CGFloat.self) { proxy in
-                                            proxy.frame(in: .named(Self.scrollSpace)).minY
-                                        } action: { minY in
-                                            headerOffsets[month] = minY
+                                        .onGeometryChange(for: CGRect.self) { proxy in
+                                            proxy.frame(in: .named(Self.scrollSpace))
+                                        } action: { frame in
+                                            headerOffsets[month] = frame.minY
+                                            headerHeights[month] = frame.height
                                         }
                                 }
                                 .id(month.id)
@@ -145,6 +163,96 @@ struct TimelineView: View {
         DispatchQueue.main.async {
             scrollProxy?.scrollTo(target, anchor: .top)
         }
+    }
+
+    /// Opens the month named on the unlock bar. See "The anchor" in Step 7 of
+    /// `docs/plans/timeline.md`: a screenful of content lands *above* the viewport, so the
+    /// month under the middle — not the bar, not total content height — is what has to stay
+    /// put.
+    private func unlockMonthAbove() {
+        guard window != nil, let anchorMonth = monthUnderMiddle() else { return }
+        let desiredOffset = headerOffsets[anchorMonth] ?? 0
+        window?.unlocked += 1
+        rebuildSections()
+        anchorAndSettle(anchorMonth, to: desiredOffset)
+    }
+
+    /// The tidy-up: unlocked months close once the reader has actually travelled up into
+    /// one of them and come back. Two guards make this safe — see "The tidy-up" in Step 7.
+    /// `isUnlockLatched` requires the trip up before any close can fire, so this never fires
+    /// in the frame a month opens (it opens outside the viewport, which would otherwise read
+    /// as "no longer visible" instantly). `isProgrammaticScroll` keeps this from firing while
+    /// one of this view's own animated scrolls is still in flight.
+    private func updateLatch() {
+        guard let window, !isProgrammaticScroll else { return }
+        let currentOffset = headerOffsets[window.current] ?? 0
+        if !isUnlockLatched {
+            if window.unlocked > 0 && currentOffset > viewportHeight {
+                isUnlockLatched = true
+            }
+        } else if currentOffset <= 0 {
+            closeUnlockedMonths()
+        }
+    }
+
+    private func closeUnlockedMonths() {
+        guard let window, window.unlocked > 0 else { return }
+        isUnlockLatched = false
+        let anchorMonth = monthUnderMiddle() ?? window.current
+        let desiredOffset = headerOffsets[anchorMonth] ?? 0
+        self.window?.unlocked = 0
+        rebuildSections()
+        anchorAndSettle(anchorMonth, to: desiredOffset)
+    }
+
+    /// Waits a run-loop turn for the resized list to lay out, restores `month`'s position,
+    /// and holds off the close-on-scroll-back latch until that restoring scroll has settled
+    /// — see "No closing during a programmatic scroll" in Step 7 of
+    /// `docs/plans/timeline.md`. Untested: exercised here by opening and closing a month,
+    /// but not yet by an animated jump across several months, which is Step 8's control.
+    private func anchorAndSettle(_ month: MonthKey, to desiredOffset: CGFloat) {
+        isProgrammaticScroll = true
+        DispatchQueue.main.async {
+            restoreAnchor(month, to: desiredOffset)
+            DispatchQueue.main.async {
+                isProgrammaticScroll = false
+            }
+        }
+    }
+
+    /// Places `month`'s top at `desiredOffset` points from the container's top, exactly —
+    /// not approximately. `scrollTo(_:anchor:)` aligns the point at fraction `f` within the
+    /// target with the point at fraction `f` within the container, so asking for `f = 0`
+    /// (`.top`) always lands the target's own top at the container's top, regardless of
+    /// either height — that is the one exact primitive available. Solving
+    /// `desiredOffset = f × (viewportHeight − targetHeight)` for `f` reuses that same
+    /// primitive to place the target's top at an arbitrary offset instead of only zero.
+    ///
+    /// **The target here is the header, not the section** — measured on device, 2026-09-08.
+    /// `.id(_:)` sits on the `Section`, but while `pinnedViews: [.sectionHeaders]` is working,
+    /// `scrollTo` resolves that id to the pinned header alone, so `targetHeight` is the
+    /// header's 47 points and not the section's several hundred. Passing a section height
+    /// here overshoots by a proportion of the difference: the anchor landed 287 points low.
+    /// The two facts are coupled, which is why they were mistaken for independent bugs — a
+    /// geometry modifier on the `Section` breaks pinning *and* makes `scrollTo` resolve to
+    /// the whole section, so a section height is right only while the header is broken.
+    ///
+    /// A pleasant consequence: `viewportHeight − headerHeight` is a large, stable number, so
+    /// `f` stays inside the unit square and the denominator never approaches zero. Both were
+    /// live worries while the section's height was in this expression.
+    ///
+    /// Every value is read live and unrounded — a cached or rounded height was the earlier
+    /// version's bug, and it drifted by half a point per gesture.
+    private func restoreAnchor(_ month: MonthKey, to desiredOffset: CGFloat) {
+        guard let scrollProxy else { return }
+        let headerHeight = headerHeights[month] ?? 0
+        let denominator = viewportHeight - headerHeight
+        guard headerHeight > 0, denominator > 0.5 else {
+            scrollProxy.scrollTo(month.id, anchor: .top)
+            return
+        }
+        let fraction = desiredOffset / denominator
+        scrollProxy.scrollTo(month.id, anchor: UnitPoint(x: 0.5, y: fraction))
     }
 
     private func rebuildSections() {

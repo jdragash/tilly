@@ -1104,7 +1104,39 @@ Two things make it safe, and both are load-bearing:
 Set `unlocked` back to 0 through the same anchored path, so the current month does not move
 while a screenful disappears above it.
 
+**Never attach a modifier to a `Section` inside the pinned `LazyVStack`, and know that fixing
+this changes what `scrollTo` anchors to.** Found by bisection on 2026-09-08 and confirmed by
+instrumented measurement the same day: an `.onGeometryChange` on the `Section` silently breaks
+`pinnedViews: [.sectionHeaders]` — the month header stops pinning entirely, so scrolling two
+months into history leaves no month name on screen at all. `.id(_:)` is safe; the geometry
+modifier is not.
+
+**The two faults are coupled, which is the part that cost a round trip.** `.id(_:)` sits on
+the `Section`, but what `scrollTo(_:anchor:)` resolves it to depends on whether pinning is
+working:
+
+| Pinning | `scrollTo` resolves the id to | Correct `targetHeight` in `restoreAnchor` |
+|---|---|---|
+| Working | the pinned header alone | the **header's** height (47pt at default sizes) |
+| Broken by a modifier on `Section` | the whole section | the section's height (~672pt) |
+
+So the pre-fix build was wrong twice in a way that cancelled: the header did not pin, *and*
+the section height in `desiredOffset = f × (viewportHeight − targetHeight)` was the right
+number for a list in that state. Restoring pinning without changing that expression leaves a
+section height where a header height belongs, and the anchor overshoots — measured at 287
+points low, against a desired offset of 48.5. Both test suites stayed green throughout, in
+both directions.
+
+**So measure the header, on the header.** `MonthHeader` already carries a geometry modifier
+for its offset; read the whole `CGRect` there and take `minY` and `height` from it. No derived
+section heights are needed anywhere.
+
 **Done when:**
+- The month header still pins. Scroll two months into history, let it settle, and confirm the
+  month name is there with its ground and hairline. This is the regression above; it does not
+  show up in any test.
+- **Check the anchor again after any change to pinning, and vice versa.** They are one
+  mechanism, not two. A green suite says nothing about either.
 - Tapping the bar opens the month above; the bar then names the month after it.
 - The opened month is genuinely above the viewport afterwards — the reader scrolls up to
   reach it and did not see the screen change.
@@ -1119,6 +1151,42 @@ while a screenful disappears above it.
 
 **If the anchoring will not hold** — if content jumps after the anchor is keyed to the middle
 month — **stop and report it rather than shipping a jumping list.**
+
+**Carried forward from the 2026-09-08 review — known, unfixed, and not blocking.** Each was
+reasoned about rather than observed failing, so none is worth pre-emptive machinery; they are
+here so the next symptom is recognised rather than rediscovered.
+
+- ~~**`restoreAnchor`'s `f` goes outside [0,1] and relies on `UnitPoint` extrapolating.**~~
+  ~~**The `abs(denominator) > 0.5` fallback jumps.**~~ **Both retired on 2026-09-08.** They
+  were symptoms of the section height being in that expression at all. With the header's
+  height there instead, `H − h` is about 731 points and barely moves — `f` stays inside
+  `[0, 0.53]`, the denominator never approaches zero, and the fallback is unreachable. The
+  "month taller than the viewport" concern goes with them: a header never approaches the
+  viewport's height, at any Dynamic Type size.
+- **The latch cannot fire when months are short.** `currentOffset > viewportHeight` needs the
+  current month's header a full viewport down; an unlocked empty month above an empty next
+  month never gets there, so it never closes. Only reachable once rules carry an `endDate`.
+- **`isUnlockLatched` can stick true.** `closeUnlockedMonths()` guards on `unlocked > 0` before
+  clearing the latch, so an early return leaves it set. No path reaches it yet — Step 8's
+  control adds one, so clear the latch before the guard when you get there.
+- **The nested `DispatchQueue.main.async` pair is timing-dependent, not sufficient in
+  principle.** One run-loop turn is not guaranteed to cover a SwiftUI layout pass. Held in
+  every trial. The principled fix keys off observed geometry and is more machinery than this
+  step warrants.
+
+**Verified working on 2026-09-08, so a later regression here is a regression.** Re-verified
+after the pinning fix, on device, against the corrected `restoreAnchor`:
+
+- The header pins five months into history, light and dark.
+- The anchor is exact — four landmarks came back at identical pixel positions across an
+  unlock, and again across a second unlock, and again at `accessibility-large` in dark mode
+  where the header is more than twice as tall.
+- It never closes in the frame it opens in; three seconds of stillness changes nothing.
+- The tidy-up completes end to end from one unlock and from two, with the bar returning to
+  its pre-unlock month.
+- The current month does not move while the close happens. Measured against a control: the
+  same synthesised drag moves the list 822 pixels whether or not a close fires during it, so
+  the small shortfall against the drag distance is pan-gesture slop, not the anchor.
 
 **Out of scope:** the latest control, persistence, midnight rollover.
 
