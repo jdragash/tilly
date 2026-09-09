@@ -326,16 +326,21 @@ struct TimelineView: View {
     /// geometry modifier on the `Section` breaks pinning *and* makes `scrollTo` resolve to
     /// the whole section, so a section height is right only while the header is broken.
     ///
-    /// A pleasant consequence: `viewportHeight − headerHeight` is a large, stable number, so
-    /// `f` stays inside the unit square and the denominator never approaches zero. Both were
-    /// live worries while the section's height was in this expression.
+    /// **The container is shorter than the viewport by `pillClearance`.** Step 8 gave the list
+    /// a bottom `contentMargins` so the floor line clears the floating pill, and `scrollTo`
+    /// aligns within the container's *content area*, not the whole viewport. Dividing by the
+    /// viewport instead lands every restore proportionally short — measured on device at
+    /// 0.907x of what was asked, which is exactly (710 - 47) / (778 - 47).
+    ///
+    /// A pleasant consequence: the denominator is a large, stable number, so it never
+    /// approaches zero. That was a live worry while the section's height was in here.
     ///
     /// Every value is read live and unrounded — a cached or rounded height was the earlier
     /// version's bug, and it drifted by half a point per gesture.
     private func restoreAnchor(_ month: MonthKey, to desiredOffset: CGFloat) {
         guard let scrollProxy else { return }
         let headerHeight = headerHeights[month] ?? 0
-        let denominator = viewportHeight - headerHeight
+        let denominator = (viewportHeight - pillClearance) - headerHeight
         guard headerHeight > 0, denominator > 0.5 else {
             scrollProxy.scrollTo(month.id, anchor: .top)
             return

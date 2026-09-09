@@ -1276,6 +1276,15 @@ cache to `scrollOffset` outright once the animation is done, which is true there
 construction. The general race is untouched and does not need touching: everywhere else the
 two callbacks converge within a frame because nothing is animating.
 
+**`restoreAnchor`'s denominator is the container, not the viewport.** Found on 2026-09-09,
+after this step had landed. The `contentMargins(.bottom, …)` above makes the scroll container
+shorter than the viewport by `pillClearance`, and `scrollTo` aligns within the container — so
+dividing by the viewport lands every anchored restore at `(710 − 47) / (778 − 47) = 0.907×`
+what was asked. Invisible here, because the offsets this step deals in are small enough for
+the error to be a few points; plainly visible at the depths Step 9 restores from. **A
+correcting second pass is not the fix** — one was written against the symptom before the
+cause was found, and it converged, which is exactly how a missing term hides.
+
 **Out of scope:** persistence, midnight rollover.
 
 ---
