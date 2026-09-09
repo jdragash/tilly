@@ -30,7 +30,12 @@ enum Tokens {
         static let base: Color = Color(.systemBackground)
         static let iconWell: Color = Color(.quaternarySystemFill)
         static let rule: Color = Color(.separator)
-        static let pinned: Material = .bar
+        /// The pinned month header's ground. Opaque, and deliberately the same paper as
+        /// the page: a pinned header hides what passes beneath it rather than tinting it.
+        /// Because it matches `base`, the header can carry it at rest too — see the note in
+        /// `MonthHeader`. Liquid Glass is for things that float *over* content, which the
+        /// floating pill is and a full-bleed sticky header is not.
+        static let pinned: Color = Color(.systemBackground)
     }
 
     enum Space {
@@ -42,6 +47,7 @@ enum Tokens {
         static let rowVerticalAccessible: CGFloat = 12
         static let pillHorizontal: CGFloat = 16 // the "back to" pill's inner horizontal padding
         static let floatingClearance: CGFloat = 64 // bottom inset the list carries so the floor line clears the pill
+        static let returnThreshold: CGFloat = 240 // how far from the current month the "back to" pill appears
     }
 
     enum Size {
@@ -52,6 +58,17 @@ enum Tokens {
         static let iconAccessible: CGFloat = 44
         static let hairline: CGFloat = 0.5
         static let pill: CGFloat = 36 // minimum height of the floating "back to" control
+    }
+
+    enum Motion {
+        // The return scroll's duration scales with how far the reader actually has to
+        // travel, the way a browser's native smooth scroll does. A fixed duration is the
+        // thing that reads badly: measured on device, `.default` moved 2,052 points in
+        // 284ms, which lands as a smear rather than as travel. Floor and ceiling keep a
+        // short hop from feeling sluggish and a long one from dragging.
+        static let returnPointsPerSecond: CGFloat = 3000
+        static let returnDurationMin: TimeInterval = 0.35
+        static let returnDurationMax: TimeInterval = 0.9
     }
 
     enum Radius {

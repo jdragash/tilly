@@ -63,10 +63,9 @@ struct TimelineView: View {
         return visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= middleY }
     }
 
-    /// Which way `LatestButton` points, and whether it shows at all: absent within a
-    /// screenful of the resting position, `.down` above it (the reader is in an unlocked
-    /// month ahead), `.up` below it (the reader is back in history). See "Getting back" in
-    /// `docs/DESIGN.md`.
+    /// How far the reader has travelled from the resting position: positive below it (back
+    /// in history), negative above it (in an unlocked month ahead). `nil` until there is
+    /// enough geometry to say.
     ///
     /// Deliberately not `headerOffsets[window.current]`, the way `updateLatch` reads it —
     /// `LazyVStack` stops laying out (and therefore stops measuring) a header once it is far
@@ -81,12 +80,40 @@ struct TimelineView: View {
     /// refreshed whenever that header happens to be mounted, and stable in between because
     /// nothing but an unlock, a close, or a day change moves the current month within the
     /// content.
-    private var returnDirection: LatestButton.Direction? {
+    private var returnDistance: CGFloat? {
         guard viewportHeight > 0, let restingContentOffset else { return nil }
-        let distance = scrollOffset - restingContentOffset
-        if distance > viewportHeight { return .up }
-        if distance < -viewportHeight { return .down }
-        return nil
+        return scrollOffset - restingContentOffset
+    }
+
+    /// Which way `LatestButton` points — deliberately defined at *every* distance, including
+    /// the ones where the pill is hidden. The pill is never removed from the tree (see the
+    /// overlay), so a direction that fell back to a default while hidden would flip at the
+    /// same instant the pill faded in, and the reader would watch the arrow cross-dissolve
+    /// from up to down as it arrived. Reading the sign instead means direction only ever
+    /// changes as the reader passes *through* the resting position, which is the one place
+    /// the pill is guaranteed to be invisible.
+    private var returnDirection: LatestButton.Direction {
+        (returnDistance ?? 0) < 0 ? .down : .up
+    }
+
+    /// Whether the pill shows at all: once the reader is `Tokens.Space.returnThreshold` from
+    /// the resting position in either direction — about a third of a screen, so it arrives
+    /// as soon as the current month is behind you rather than several months later. A full
+    /// viewport was tried and is far too far: it left the pill hidden two months into
+    /// history. See "Getting back" in `docs/DESIGN.md`.
+    private var isReturnVisible: Bool {
+        guard let returnDistance else { return false }
+        return abs(returnDistance) > Tokens.Space.returnThreshold
+    }
+
+    /// How long the return scroll should take, scaled to the distance actually travelled.
+    /// `scrollTo` does animate — measured on device, not the snap it looks like — but at
+    /// `.default`'s fixed duration a return from deep history covers two thousand points in
+    /// under a third of a second, which reads as a jump rather than as travel.
+    private var returnDuration: TimeInterval {
+        let distance = abs(returnDistance ?? 0)
+        let scaled = TimeInterval(distance / Tokens.Motion.returnPointsPerSecond)
+        return min(Tokens.Motion.returnDurationMax, max(Tokens.Motion.returnDurationMin, scaled))
     }
 
     var body: some View {
@@ -158,16 +185,18 @@ struct TimelineView: View {
                     // `pillClearance` from, including the very first time the reader
                     // scrolls far enough for it to matter. Visibility is opacity plus
                     // explicit accessibility/hit-testing, not presence in the tree.
-                    LatestButton(month: window.current, direction: returnDirection ?? .up, today: today, action: returnToResting)
+                    LatestButton(month: window.current, direction: returnDirection, today: today, action: returnToResting)
                         .padding(.bottom, Tokens.Space.section)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                             pillClearance = height + Tokens.Space.section
                         }
-                        .opacity(returnDirection == nil ? 0 : 1)
-                        .accessibilityHidden(returnDirection == nil)
-                        .allowsHitTesting(returnDirection != nil)
+                        .opacity(isReturnVisible ? 1 : 0)
+                        .accessibilityHidden(!isReturnVisible)
+                        .allowsHitTesting(isReturnVisible)
                 }
-                .animation(.easeInOut, value: returnDirection)
+                // Keyed to visibility alone. Keying it to direction as well is what made the
+                // arrow animate its own change rather than simply being correct on arrival.
+                .animation(.easeInOut, value: isReturnVisible)
                 .overlay(alignment: .top) {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
@@ -358,16 +387,19 @@ struct TimelineView: View {
     /// all — `scrollProxy.scrollTo` drives a `UIScrollView` under the hood, which doesn't
     /// report into SwiftUI's animation-completion tracking, so `closeUnlockedMonths` fired
     /// against the pre-scroll geometry and anchored on the unlocked month instead of the
-    /// one just settled on. A fixed delay matching `.default`'s duration is what
+    /// one just settled on. A fixed delay matching the animation's own duration is what
     /// `anchorAndSettle` already relies on elsewhere in this file for the same reason —
     /// timing-dependent, not sufficient in principle, but held in every trial here too.
+    /// That delay is derived from `returnDuration` rather than hard-coded, because the
+    /// duration now varies with distance and the two must not drift apart.
     private func returnToResting() {
         guard let window, let scrollProxy else { return }
+        let duration = returnDuration
         isProgrammaticScroll = true
-        withAnimation(.default) {
+        withAnimation(.easeInOut(duration: duration)) {
             scrollProxy.scrollTo(window.current.id, anchor: .top)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.06) {
             isProgrammaticScroll = false
             // The reader is now at the resting position by construction, so `scrollOffset`
             // *is* `restingContentOffset`. Saying so is not belt-and-braces: the cache is

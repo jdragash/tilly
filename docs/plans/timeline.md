@@ -33,6 +33,10 @@ expensive to learn and are invisible to every test:
 - **Two limitations shipped deliberately** — a saved place remembers the month rather than the
   row, and a pinned header can lag its own background by a frame under fast scrolling. Both
   are in `docs/DECISIONS.md` with what would have to change to lift them.
+  **Resolved 2026-09-09 (the second one):** the pinned ground became the same paper as the
+  page, so the header carries it unconditionally and nothing about the background waits on
+  geometry any more. See "Liquid Glass for what floats" in `DECISIONS.md`. The saved-place
+  limitation still stands.
 - **The unfinished thread**, if anyone picks it up: point-based scrolling would remove the
   saved-place limitation, and it blanked this list outright. Start by calibrating the two
   scroll coordinate systems against each other from a settled position — Step 9 records the
@@ -1252,6 +1256,13 @@ VoiceOver has no arrow to read. Hidden from the accessibility tree while it is i
   history with the control visible.**
 - Light and dark, plus one accessibility text size — the pill must not cover content or
   overflow its own bounds.
+
+**Resolved 2026-09-09 — kept because the hunt below is still the right method.** The lag was
+real and the diagnosis here was right, but the fix was not in the timing: with the pinned
+ground the same colour as the page, the background no longer depends on `isPinned` at all, so
+there is nothing left to lag. The same change removed a worse version of the bug that this
+note never caught — an opening month flashing fully transparent, because an unmeasured header
+counts as unpinned and therefore drew no ground whatsoever.
 
 **Watch for the pinned-header lag while you are in here.** Observed independently twice
 during Step 6 — once by the implementer, once in review — a frame during fast momentum

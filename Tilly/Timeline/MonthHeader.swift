@@ -6,7 +6,7 @@ import SwiftUI
 ///
 /// Keeps its size when it pins — condensing would save a point of height and cost three
 /// points of type, landing the month you're *in* on the same shape as one you could open.
-/// `isPinned` only ever changes the background and the hairline beneath it.
+/// `isPinned` only ever changes the hairline beneath it.
 struct MonthHeader: View {
     let section: MonthSection
     let today: Date
@@ -43,15 +43,17 @@ struct MonthHeader: View {
         .padding(.horizontal, Tokens.Space.gutter)
         .padding(.top, Tokens.Space.section)
         .padding(.bottom, Tokens.Space.tight)
-        .background {
-            // A rule is drawn because something needs closing — at rest there is nothing
-            // to close, and pinned there is content moving underneath. See "The month you
-            // are reading stays named" in `docs/DESIGN.md`.
-            if isPinned {
-                Rectangle().fill(Tokens.Surface.pinned)
-            }
-        }
+        // Carried at rest as well as pinned. The pinned ground is the same paper as the
+        // page, so drawing it unconditionally looks identical at rest — and it removes the
+        // frame, right after a month opens and every header is remeasured, where `isPinned`
+        // was briefly false and the header rendered with no ground at all. Deriving it from
+        // measured geometry is still right; letting the *background* depend on that
+        // geometry was not.
+        .background(Tokens.Surface.pinned)
         .overlay(alignment: .bottom) {
+            // A rule is drawn because something needs closing — at rest there is nothing to
+            // close, and pinned there is content moving underneath. See "The month you are
+            // reading stays named" in `docs/DESIGN.md`.
             if isPinned {
                 Rectangle()
                     .fill(Tokens.Surface.rule)

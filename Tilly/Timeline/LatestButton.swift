@@ -1,8 +1,13 @@
 import SwiftUI
 
 /// The floating pill that returns the reader to the current month. It appears once they are
-/// more than a screenful from the resting position, pointing the way they will travel to get
-/// there, and disappears once they arrive. See "Getting back" in `docs/DESIGN.md`.
+/// `Tokens.Space.returnThreshold` from the resting position, pointing the way they will
+/// travel to get there, and disappears once they arrive. See "Getting back" in
+/// `docs/DESIGN.md`.
+///
+/// Liquid Glass, via the stock `.glass` button style rather than a hand-built capsule: a
+/// control floating over moving content is exactly what the material is for, and the style
+/// carries the press response and the accessibility contrast behaviours with it.
 struct LatestButton: View {
     enum Direction: Equatable {
         case up, down
@@ -34,12 +39,8 @@ struct LatestButton: View {
             .foregroundStyle(Tokens.Ink.primary)
             .padding(.horizontal, Tokens.Space.pillHorizontal)
             .frame(minHeight: Tokens.Size.pill)
-            .background {
-                Capsule().fill(Tokens.Surface.pinned)
-                Capsule().strokeBorder(Tokens.Surface.rule, lineWidth: Tokens.Size.hairline)
-            }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
         .accessibilityElement(children: .combine)
         // VoiceOver has no arrow to read, so the verb the visible copy deliberately omits
         // belongs in the label instead.
