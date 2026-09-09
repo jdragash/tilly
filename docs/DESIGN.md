@@ -161,17 +161,36 @@ possible and sometimes deliberate — and when someone does it deliberately, the
 
 ### Getting back
 
-A floating pill appears once the reader is away from the current month, naming it and
-pointing the way — `↑ September` from below, `↓ September` from above. Tapping it returns
-them and closes any unlocked months on the way.
+A floating pill appears once the reader is **240 points** from the current month's resting
+position — about a third of a screen, so it arrives as soon as the month you are in is
+behind you. It names the month and points the way — `↑ September` from below, `↓ September`
+from above. Tapping it returns them and closes any unlocked months on the way.
+
+The number is load-bearing and belongs here rather than in the code alone: written as "away
+from the current month" it was once built as a full screen height, which meant scrolling two
+months into history before the way back offered itself. See "The return pill appears a third
+of a screen away" in `DECISIONS.md`.
+
+**It points the way it will travel from the moment it could be needed**, not from the moment
+it appears. The arrow follows which side of the current month the reader is on, at every
+distance, including the ones where the pill is invisible. Deciding direction only on arrival
+means the arrow changes as it fades in, and the reader watches it turn around.
+
+**The return is a scroll, not a jump.** Its duration scales with the distance travelled, the
+way a browser's native smooth scroll does; a fixed duration covers eight months of history in
+a third of a second, which reads as a teleport with a smear rather than as travel.
 
 It floats over the list, so **the list carries a bottom inset** of roughly the pill's height
 plus its margin. Without it the last line of history sits underneath the control.
 
 ### The month you are reading stays named
 
-The month header pins to the top of the list while its rows scroll under it, over a
-translucent ground, and hands off when the next month's header arrives beneath it. It keeps
+The month header pins to the top of the list while its rows scroll under it, over an opaque
+ground that is the same paper as the page, and hands off when the next month's header arrives
+beneath it. Content passing underneath is hidden, not tinted — a pinned header is the page
+continuing, not a pane laid over it. Because that ground matches the page, the header carries
+it at rest too; see "Liquid Glass for what floats" in `DECISIONS.md` for why that is what
+stops an opening month flashing transparent. It keeps
 its size when it pins — condensing to bar height saves one point and costs three points of
 type, and lands the month you are *in* on the same shape as a month you could *open*.
 

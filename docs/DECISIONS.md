@@ -13,6 +13,63 @@ Where a supersession is partial, the marker names which half survived.
 
 ---
 
+## The return pill appears a third of a screen away, not a screenful
+
+**Decided:** 2026-09-09 · **From:** timeline usability pass
+
+**Chosen:** the pill showing the way back to the current month appears once the reader is
+240 points from the resting position, in either direction — `Tokens.Space.returnThreshold`.
+About a third of a screen, so it arrives as soon as the month you are in is behind you.
+
+**Rejected — a full viewport, which is what shipped.** `DESIGN.md` said only "away from the
+current month" and never named a number, so the figure was chosen at implementation time and
+overshot the working prototype's by three times. In practice it meant scrolling two whole
+months into history before the way back offered itself, which reads as the control being
+broken rather than as it being deliberate. The prototype had settled on 240 and was right.
+
+**Rejected — showing it the instant the current month's header leaves the top.** The literal
+reading of "away from the current month", and it flickers: a reader nudging the list around
+the boundary would watch the control appear and disappear repeatedly. A threshold needs room
+to be unambiguous, and a third of a screen is the smallest distance that reads as *leaving*.
+
+**Follow-on, and it is a real one.** The distance driving this is measured against a cached
+"where the current month rests", and that cache is known to drift — this file already records
+it landing 702 and 493 points wrong on otherwise identical returns. At a 778-point threshold
+that error mostly hid inside the tolerance. At 240 it does not: a 700-point error is three
+times the threshold, so the pill can appear well away from where it should. **The threshold
+is now correct and the measurement feeding it is not.** Recorded here rather than fixed in
+passing, because it lives in the scroll geometry this project has already lost days to.
+
+---
+
+## Liquid Glass for what floats; plain paper for what pins
+
+**Decided:** 2026-09-09 · **From:** timeline usability pass
+
+**Chosen:** the floating "back to" pill uses the stock `.glass` button style. The pinned
+month header uses an opaque ground that is the same surface as the page — paper, not glass.
+`Tokens.Surface.pinned` is a colour rather than a material, and content passing beneath a
+pinned header is hidden rather than tinted.
+
+**Rejected — a material for both, which is what shipped.** `Material.bar` reads distinctly
+grey against the list, and the header looked like a separate slab laid over the page rather
+than part of it. The prototype had hand-rolled a near-white translucency in CSS, which is
+close to what Liquid Glass now does natively — but the header is not the place for it.
+
+**Rejected — Liquid Glass on the pinned header too.** Glass is for controls floating *above*
+content; a full-bleed sticky header is not floating, and the platform's own answer there is
+the scroll edge effect. Using it on both would have made the header and the pill read as the
+same kind of object when only one of them is a control.
+
+**Consequence, and it removes a known limitation.** With the pinned ground the same paper as
+the page, the header can carry it *at rest* as well as pinned — drawing it unconditionally is
+visually identical. That deletes the frame in which `isPinned` was briefly false after a
+month opened and the header rendered with no ground at all, which is what made an opening
+month flash transparent. The "pinned header lags its own background by a frame" limitation
+recorded in `plans/timeline.md` goes with it: nothing conditional drives the background now.
+
+---
+
 ## A saved place remembers the month, not the row
 
 **Decided:** 2026-09-09 · **From:** timeline
