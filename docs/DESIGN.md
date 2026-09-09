@@ -89,8 +89,9 @@ screen is money arriving, so the sign sets the register rather than distinguishi
 ### Rules delimit, they do not decorate
 
 No separator between rows; space does that work. A hairline appears only to open and close
-a grouped day, and under a collapsed month bar. Seeing a rule therefore means something is
-being closed, which is the only reason to draw one.
+a grouped day, under the bar that unlocks a further month, and under a pinned month header.
+Seeing a rule therefore means something is being closed, which is the only reason to draw
+one.
 
 ### Group a day only when there is a day to group
 
@@ -99,24 +100,123 @@ day heading with a day total, and the rows inside give up their individual dates
 where the heading's vertical space comes from. A day total on a day holding one charge is
 that charge's amount written twice.
 
-### One month at a time, with its neighbours collapsed
+### The header says what is left, and only the current month does
 
-The current month is expanded. The months either side are slim bars carrying a name and a
-total; pulling opens one, scrolling back closes it, and closing returns you to exactly the
-bar you opened. A month total excludes skipped occurrences and carries `EST` when the month
-contains an estimate.
+An expanded month header carries a figure, and which figure depends on the month. The
+current month carries what is **still to go** and says so — `−€162 left`. Every other month
+carries its plain total, unqualified: a future month has nothing charged so the two
+coincide, and a past month has nothing left. When the current month runs out, the sentence
+finishes rather than changing — `€0 left`, unsigned, because there is nothing going out.
+
+The word is the one label on this screen that survives the copy rule, and it survives
+because deleting it leaves a real ambiguity rather than an imagined one. A total sitting on
+a month you know is finished does not read as unclear; it reads as a number the app failed
+to update.
+
+The current month's header is therefore the headline number. It does not get a second home
+above the content.
+
+Totals everywhere exclude skipped occurrences.
+
+### The timeline is one list, and you scroll it
+
+The next month is always expanded, so you reach it by scrolling rather than by opening
+anything. Below the current month, history runs continuously — months arrive as you scroll,
+with nothing to tap. There are no collapsed month bars. The list rests flush on the current
+month, with the next month above the top of the screen.
+
+**Ordinary movement is never a decision.** That is the rule the bars broke: reaching next
+month cost a tap, which expanded a screenful above and left the reader somewhere they had
+not asked to be, and coming back meant loading each month again on the way down.
+
+The list is bounded at both ends, and that is what keeps "the current month" true. One month
+ahead, the oldest charge behind, and a control that returns you.
+
+### Further ahead is asked for, and puts itself away
+
+One bar survives, at the very top: it opens the month after next, and then offers the one
+after that. **An unlocked month closes on its own once the reader comes back to the current
+month.** Nothing accumulates and there is no control to clear anything — a screen that
+leaves a mess for you to tidy is the thing tenet 1 rules out.
+
+The trigger needs care and `DECISIONS.md` explains why. A month opens *above* the reader,
+outside the viewport, so any trigger meaning "it is no longer visible" fires in the frame it
+opens in. The reader must have travelled up into the month first; only then does coming back
+close it.
+
+### History stops where your oldest charge does
+
+The list runs down to the oldest occurrence the app can generate and stops. Below it, one
+line — `Nothing before March.` A month between there and today that holds nothing is **not
+listed at all**; the list skips it.
+
+**No month ever renders €0 for a month the app knows nothing about.** The app does not know
+what that month cost, only that no rule it holds reached it, and printing a total is a claim
+it cannot make. It is the same error as saying a bill was *paid*.
+
+This is safe because of how expenses are entered, which is worth stating as a rule: a
+recurring expense is set up for its **next** occurrence, not for when it historically began.
+Anchors therefore sit at or after the point someone starts using the app. Backdating is
+possible and sometimes deliberate — and when someone does it deliberately, they see it.
+
+### Getting back
+
+A floating pill appears once the reader is away from the current month, naming it and
+pointing the way — `↑ September` from below, `↓ September` from above. Tapping it returns
+them and closes any unlocked months on the way.
+
+It floats over the list, so **the list carries a bottom inset** of roughly the pill's height
+plus its margin. Without it the last line of history sits underneath the control.
+
+### The month you are reading stays named
+
+The month header pins to the top of the list while its rows scroll under it, over a
+translucent ground, and hands off when the next month's header arrives beneath it. It keeps
+its size when it pins — condensing to bar height saves one point and costs three points of
+type, and lands the month you are *in* on the same shape as a month you could *open*.
+
+The hairline under it appears only while it is pinned, which is the same rule the rest of
+the screen follows: a rule is drawn because something needs closing. It earns an affordance
+for free — a rule under the month name means the list is scrolled.
+
+### Nothing under the reader's eyes may move
+
+When months open and collapse, the anchor is the month under the **middle** of the viewport —
+the one being read — and it holds its position across the change, following that month even
+when it collapses into a bar.
+
+The two intuitive anchors are both wrong, and worth naming because one of them was specified
+before it was tested. Anchoring on the top-most visible item fails at rest, where that item
+is the collapsed bar about to be opened: preserving its position expands it downward and
+pushes the month being read off screen. Anchoring on total content height fails as soon as
+one gesture adds a month at one end and drops one at the other, because the deltas cancel.
 
 ### Never lose the reader's place
 
-You return to the month you left, opened as you left it, at the scroll position you left it
-at — regardless of how long you were gone or whether the process survived. The current month
-decides where you land once, on first run. See `DECISIONS.md` for why a session-scoped
-compromise is worse than either alternative.
+You return to the month you left, opened as you left it, regardless of how long you were gone
+or whether the process survived. The current month decides where you land once, on first run.
+See `DECISIONS.md` for why a session-scoped compromise is worse than either alternative.
 
-### The system owns the top
+**In v1 that means the month, not the row.** You come back to the top of the month you were
+reading; if you were partway down it, you lose that much. The error is bounded and always in
+the same direction, and returning from a month boundary — where the unlock and the return
+control both leave you — loses nothing. See "A saved place remembers the month, not the row".
 
-The status bar and Dynamic Island are drawn by iOS over the app. Mockups leave that inset
-empty rather than painting it, or a real device shows two of everything.
+### The app fills the top inset; the system draws over it
+
+The status bar and Dynamic Island are drawn by iOS over the app. The area behind them
+carries the app's own background, opaque and full width; content scrolls under it and is
+hidden by it.
+
+**It has to be opaque enough to hide a month header, not just a row.** A header pins to the
+bottom edge of its own section as that section exits, so during every hand-off a second
+month name sits in the inset directly above the pinned one. A scrim or a progressive blur
+leaks in the lower third of a 59-point inset — exactly where that header sits — and content
+staying legible above the pinned header reads as broken ordering rather than as depth.
+`DECISIONS.md` records that iOS 26's scroll edge effect had no visible effect here at all.
+
+Mockups still leave the inset empty rather than painting a clock into it, or a real device
+shows two of everything.
 
 ---
 
@@ -128,6 +228,16 @@ not say "Category". The competitor's editor labels all four and titles itself "N
 expense"; it is the standing example of what this costs.
 
 Test: remove the label. If nothing is genuinely unclear, it stays removed.
+
+**The test cuts both ways, and the month header is the standing example of the other
+direction.** `−€162 left` keeps its word because removing it leaves the same slot meaning
+two different things on different months, with nothing to say which. The rule is not "fewer
+words wins" — it is that a word must be doing work no other channel is doing. The same
+header does *not* say "left this month", because "September" is already sitting beside it.
+
+**The app never says a bill was paid.** It says *charged*. Tilly knows a date passed; it
+does not know what left your account, and language that implies otherwise is one step from a
+control that asks you to confirm it. See tenet 1.
 
 **Amounts round to whole units.** Enter 74.10, see 74. Cents are noise at this altitude,
 and losing them makes columns scannable. Display-cents is a v2 setting, defaulting off.

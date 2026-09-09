@@ -120,9 +120,21 @@ overscroll, no Liquid Glass, no Dynamic Type, and no momentum that feels like iO
 list on the page next to the controls, not only in chat, so the prototype cannot be
 mistaken for a promise about how the built thing will feel.
 
-**It is throwaway.** Untracked, outside `docs/`, deleted when the decision lands. What
-survives is the `DECISIONS.md` entry — a prototype kept around goes stale the same way a
-canvas does, and it looks even more authoritative because it runs.
+**It is kept.** `docs/prototypes/<slug>.html`, committed, one per exploration. A prototype is
+a record of how a decision was reached, and that is worth more than the disk it costs —
+months later it is the only thing that can still answer "why does it work like that".
+
+**Which makes dating it mandatory, not optional.** Open every prototype with an HTML comment
+carrying the date, the questions it was built to settle, which direction won, and the line
+that resolves the conflict when one arrives:
+
+> Retained as a record of the work rather than as a spec. Where this disagrees with
+> `docs/DECISIONS.md`, the decisions log wins.
+
+That sentence is the whole safety mechanism. A retained prototype *will* eventually disagree
+with the design — it runs, so it looks more authoritative than a canvas, and this project has
+already been bitten once by an approved-looking reference that was wrong in a specific place.
+Naming the tiebreaker inside the file is what stops a later session building from it.
 
 **Expect it to find things.** The timeline's prototype established that a month of eleven
 recurring expenses is one screenful, so the header barely pins and an opened month can
@@ -163,12 +175,25 @@ If the exploration settled anything about the visual language — state grammar,
 a spacing decision — also update `docs/DESIGN.md`. `DECISIONS.md` records *that* it was
 decided; `DESIGN.md` records the rule itself.
 
-**Then bring the canvas into line with what was decided.** This is the step that gets
-skipped. The timeline's canvas kept a `TODAY` badge on its main artboard after
+**Then bring the canvas and the prototype into line with what was decided.** This is the step
+that gets skipped. The timeline's canvas kept a `TODAY` badge on its main artboard after
 `DECISIONS.md` had rejected it, and `tilly-plan` had to warn the implementer that the
-approved-looking reference was wrong in a specific place. Either update the artboard or
-annotate it as superseded — a canvas that disagrees with the decisions log is worse than no
-canvas, because it looks authoritative.
+approved-looking reference was wrong in a specific place.
+
+**Nothing is deleted to achieve this.** Both the canvas and the prototype are kept as records
+of how the decision was reached — a rejected option that is still visible is what stops the
+same debate recurring, and one that was quietly removed looks like it was never considered.
+So bringing them into line means *marking*, not pruning:
+
+- Retitle a rejected direction's artboard so its status is legible from the canvas view
+  ("B — chosen", "A — rejected"), and rewrite its annotation to say why it lost.
+- Where an artboard is now wrong rather than merely rejected, annotate it as superseded and
+  say which decision superseded it. An artboard drawing something that turned out to be
+  impossible is worth keeping *and* worth labelling.
+- Move settled work to its own page rather than deleting it.
+
+An unmarked canvas or prototype that disagrees with the decisions log is worse than none,
+because it looks authoritative. A marked one is a record.
 
 ## Next
 

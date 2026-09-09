@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilly — month header prototype</title>
+<!--
+  Tilly · timeline month header · 2026-09-07
+
+  Built during tilly-explore to settle two questions that could not be settled by
+  drawing: whether the month header should pin, and what figure it should carry.
+  Direction B won and is the default here — the current month reads "−€162 left",
+  every other month a plain total.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees
+  with docs/DECISIONS.md, the decisions log wins.
+
+  What it found, which the canvas and the written plan had both missed: a month
+  of eleven recurring expenses is 802 points against a 783-point screen, so the
+  header barely pins and no scroll-based trigger can ever close an opened month.
+  Hence the "Opened months" control — closing is a cap, not a gesture.
+-->
+<style>
+  :root {
+    --bg:#FFFFFF; --ink:#000000; --base:60,60,67;
+    --well:rgba(60,60,67,0.06); --rule:rgba(60,60,67,0.20);
+    --glass:rgba(255,255,255,0.76);
+    --stage:#E9E9EC; --panel:#FFFFFF; --panelink:#000000;
+    --gutter:20px; --section:16px; --tight:8px; --gap:12px; --hairgap:4px;
+    --row:52px; --bar:48px; --icon:40px; --iconr:10px;
+  }
+  body.dark {
+    --bg:#000000; --ink:#FFFFFF; --base:235,235,245;
+    --well:rgba(235,235,245,0.10); --rule:rgba(235,235,245,0.20);
+    --glass:rgba(28,28,30,0.70);
+    --stage:#1A1A1C; --panel:#1C1C1E; --panelink:#FFFFFF;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--stage); color:var(--panelink);
+    font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; align-items:flex-start; justify-content:center; gap:40px;
+    padding:40px 24px 64px; min-height:100vh; flex-wrap:wrap;
+  }
+
+  /* ---- the phone ---- */
+  .phone {
+    width:390px; height:844px; flex:0 0 auto;
+    background:var(--bg); color:var(--ink);
+    border:1px solid rgba(0,0,0,0.18); border-radius:34px; overflow:hidden;
+    display:flex; flex-direction:column;
+    box-shadow:0 24px 60px rgba(0,0,0,0.22);
+  }
+  .safe { flex:0 0 59px; }
+  .scroller { flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; position:relative; }
+  .scroller::-webkit-scrollbar { width:0; }
+
+  /* ---- month header ---- */
+  .mhead {
+    position:sticky; top:0; z-index:2;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:var(--section) var(--gutter) var(--tight) var(--gutter);
+    background:var(--bg);
+    border-bottom:0.5px solid transparent;
+  }
+  .mhead.stuck {
+    background:var(--glass);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px);
+    border-bottom-color:var(--rule);
+  }
+  .mname { font-size:20px; line-height:25px; font-weight:600; white-space:nowrap; }
+  .mfig  { font-size:15px; line-height:20px; font-variant-numeric:tabular-nums; color:rgba(var(--base),0.60); white-space:nowrap; }
+
+  /* condensed treatment: only differs once stuck */
+  body.slim .mhead.stuck { padding:0 var(--gutter); height:var(--bar); }
+  body.slim .mhead.stuck .mname { font-size:17px; line-height:22px; }
+  body.slim .mhead.stuck .mfig  { font-size:16px; line-height:21px; }
+
+  /* ---- collapsed bar ---- */
+  .bar {
+    display:flex; align-items:center; gap:var(--tight);
+    height:var(--bar); padding:0 var(--gutter);
+    border-bottom:0.5px solid var(--rule);
+    background:none; border-left:0; border-right:0; border-top:0;
+    width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .bar:active { background:rgba(var(--base),0.06); }
+  .bar svg { flex:0 0 15px; }
+  .barname { flex:1 1 auto; font-size:16px; line-height:21px; color:rgba(var(--base),0.60); }
+  .barfig  { font-size:16px; line-height:21px; font-variant-numeric:tabular-nums; color:rgba(var(--base),0.60); }
+
+  /* ---- rows ---- */
+  .row { padding-left:var(--gutter); }
+  .ri { display:flex; align-items:center; gap:var(--gap); min-height:var(--row); padding:6px var(--gutter) 6px 0; }
+  .ic { flex:0 0 var(--icon); width:var(--icon); height:var(--icon); border-radius:var(--iconr); background:var(--well); }
+  .bod { flex:1 1 auto; min-width:0; }
+  .name { font-size:17px; line-height:22px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sub { font-size:13px; line-height:16px; }
+  .amt { flex:0 0 auto; font-size:17px; line-height:22px; font-variant-numeric:tabular-nums; }
+
+  .grp { padding:var(--gap) 0 var(--tight) 0; }
+  .ghead { padding:0 var(--gutter) var(--hairgap) var(--gutter); display:flex; align-items:baseline; justify-content:space-between; }
+  .gname { font-size:13px; line-height:17px; font-weight:600; letter-spacing:0.3px; }
+  .gfig  { font-size:13px; line-height:17px; font-variant-numeric:tabular-nums; }
+  .hair { padding:0 var(--gutter); }
+  .hair > div { height:0.5px; background:var(--rule); }
+
+  /* direction C's running line */
+  .togo { padding:var(--section) var(--gutter); text-align:right; font-size:13px; line-height:17px;
+          font-variant-numeric:tabular-nums; color:rgba(var(--base),0.60); }
+
+  .firstweek { padding:var(--section) 40px 24px; text-align:center; font-size:15px; line-height:20px; color:rgba(var(--base),0.30); }
+
+  /* ---- controls ---- */
+  .panel { width:330px; flex:0 0 auto; background:var(--panel); border-radius:16px; padding:22px 22px 24px;
+           box-shadow:0 8px 28px rgba(0,0,0,0.10); }
+  .panel h1 { font-size:17px; line-height:22px; font-weight:600; margin:0 0 4px; }
+  .panel p  { font-size:13px; line-height:18px; color:rgba(var(--base),0.62); margin:0 0 20px; text-wrap:pretty; }
+  .lbl { font-size:11px; line-height:14px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase;
+         color:rgba(var(--base),0.45); margin:0 0 8px; }
+  .seg { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; }
+  .seg button {
+    font:inherit; font-size:13px; line-height:17px; padding:7px 11px; border-radius:9px; cursor:pointer;
+    border:1px solid rgba(var(--base),0.16); background:transparent; color:inherit;
+  }
+  .seg button[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .field { margin-bottom:18px; }
+  .field .lbl { margin-bottom:6px; }
+  input[type=range] { width:100%; accent-color:#007AFF; }
+  .readout { font-size:13px; line-height:18px; color:rgba(var(--base),0.62); margin-top:6px; font-variant-numeric:tabular-nums; }
+  .readout b { color:var(--panelink); font-weight:600; }
+  .caveat { font-size:12px; line-height:17px; color:rgba(var(--base),0.5); border-top:1px solid rgba(var(--base),0.12);
+            padding-top:14px; margin-top:4px; text-wrap:pretty; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="safe"></div>
+  <div class="scroller" id="scroller"></div>
+</div>
+
+<div class="panel">
+  <h1>Month header</h1>
+  <p>Scroll the list. The header pins and hands off between months; tap a collapsed bar to open that month, then scroll back past it to close it again.</p>
+
+  <div class="lbl">What the figure says</div>
+  <div class="seg" id="dir">
+    <button data-v="A" aria-pressed="false">A — silent</button>
+    <button data-v="Bword" aria-pressed="true">B — “left”</button>
+    <button data-v="Boft" aria-pressed="false">B — of total</button>
+    <button data-v="C" aria-pressed="false">C — at boundary</button>
+  </div>
+
+  <div class="lbl">Pinned treatment</div>
+  <div class="seg" id="pin">
+    <button data-v="full" aria-pressed="true">Full size</button>
+    <button data-v="slim" aria-pressed="false">Condensed</button>
+  </div>
+
+  <div class="field">
+    <div class="lbl">Today</div>
+    <input type="range" id="today" min="1" max="30" value="22">
+    <div class="readout" id="readout"></div>
+  </div>
+
+  <div class="lbl">Opened months</div>
+  <div class="seg" id="cap">
+    <button data-v="cap" aria-pressed="true">Cap at 2</button>
+    <button data-v="nocap" aria-pressed="false">Never close</button>
+  </div>
+
+  <div class="lbl">How much recurs</div>
+  <div class="seg" id="density">
+    <button data-v="short" aria-pressed="true">11 things</button>
+    <button data-v="long" aria-pressed="false">18 things</button>
+  </div>
+
+  <div class="lbl">Appearance</div>
+  <div class="seg" id="theme">
+    <button data-v="light" aria-pressed="true">Light</button>
+    <button data-v="dark" aria-pressed="false">Dark</button>
+  </div>
+
+  <div class="caveat">
+    Faithful: the pin, the hand-off, the hairline appearing only while stuck, what each figure says, and the fact that nothing under your eyes moves when a month collapses.<br><br>
+    Not faithful: pull-to-open — a browser has no rubber band, so tapping a bar is the gesture here. The blur is <code>backdrop-filter</code>, not Liquid Glass.<br><br>
+    Watch for: at 11 things a month is one screenful, so the header barely pins. That threshold is real, not an artefact of the prototype.<br><br>
+    Closing is capped rather than triggered by scrolling — two geometric triggers were tried and both are unreachable at 11 things. Set “Never close” and keep opening months to see what the cap prevents.
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- data
+  var YEAR = 2026;
+  var MONTHS = ["January","February","March","April","May","June",
+                "July","August","September","October","November","December"];
+
+  // Recurring set. `vary` gives a per-month figure for the bills that move.
+  var BILLS = [
+    { day:28, name:"Broadband",                   amt:45  },
+    { day:25, name:"Council tax",                 amt:95  },
+    { day:25, name:"Phone",                       amt:22  },
+    { day:22, name:"Home & Contents Insurance",   amt:240 },
+    { day:20, name:"Water",       vary:{6:61, 7:56, 8:38, 9:38, 10:44} },
+    { day:15, name:"Electricity", vary:{6:72, 7:99, 8:85, 9:85, 10:118} },
+    { day:12, name:"Rent",                        amt:950 },
+    { day:4,  name:"Gym",                         amt:32  },
+    { day:2,  name:"Spotify",                     amt:11  },
+    { day:2,  name:"iCloud",                      amt:3   },
+    { day:1,  name:"Netflix",                     amt:18, skipIn:8 }
+  ];
+
+  // A second, longer set. How many recurring things someone has decides whether
+  // the header ever pins at rest — a short month is one screenful and barely
+  // scrolls, which is the finding this switch exists to make visible.
+  var EXTRA = [
+    { day:27, name:"Cloud storage",   amt:8  },
+    { day:24, name:"Car insurance",   amt:62 },
+    { day:18, name:"Bin collection",  amt:14 },
+    { day:16, name:"Life cover",      amt:29 },
+    { day:10, name:"Streaming bundle",amt:16 },
+    { day:8,  name:"Newspaper",       amt:12 },
+    { day:6,  name:"Charity",         amt:20 }
+  ];
+  var dense = false;
+  function bills() { return dense ? BILLS.concat(EXTRA) : BILLS; }
+
+  var FIRST = 6, LAST = 10;          // July .. November, zero-based
+  var CURRENT = 8;                   // September
+  var todayDay = 22;
+
+  var state = { low: CURRENT, high: CURRENT, dir: "Bword" };   // the chosen direction
+
+  // -------------------------------------------------------------- money
+  function fmt(n) {
+    var s = Math.abs(n).toLocaleString("en-IE");
+    return n === 0 ? "€0" : "−€" + s;
+  }
+  function plain(n) { return "€" + Math.abs(n).toLocaleString("en-IE"); }
+
+  function amountFor(bill, m) {
+    return bill.vary ? bill.vary[m] : bill.amt;
+  }
+
+  // Build one month: days descending, each with its entries.
+  function buildMonth(m) {
+    var byDay = {};
+    bills().forEach(function (b) {
+      var skipped = b.skipIn === m;
+      var d = new Date(YEAR, m, b.day);
+      var charged = (m < CURRENT) || (m === CURRENT && b.day <= todayDay);
+      var state = skipped ? "skipped" : (charged ? "charged" : "upcoming");
+      (byDay[b.day] = byDay[b.day] || []).push({
+        name: b.name, amt: amountFor(b, m), state: state,
+        line: d.toLocaleDateString("en-IE", { weekday:"short", day:"numeric" })
+      });
+    });
+
+    var days = Object.keys(byDay).map(Number).sort(function (a, b) { return b - a; })
+      .map(function (day) {
+        var entries = byDay[day].slice().sort(function (x, y) {
+          return y.amt - x.amt || x.name.localeCompare(y.name);
+        });
+        var total = entries.reduce(function (s, e) {
+          return s + (e.state === "skipped" ? 0 : e.amt);
+        }, 0);
+        var charged = (m < CURRENT) || (m === CURRENT && day <= todayDay);
+        return { day: day, entries: entries, total: total, charged: charged };
+      });
+
+    var total = 0, remaining = 0;
+    days.forEach(function (d) {
+      total += d.total;
+      d.entries.forEach(function (e) { if (e.state === "upcoming") remaining += e.amt; });
+    });
+
+    return { m: m, days: days, total: total, remaining: remaining,
+             isCurrent: m === CURRENT, isPast: m < CURRENT };
+  }
+
+  // What the header (and a bar) says, per direction.
+  function figureFor(mo) {
+    if (state.dir === "C") return fmt(mo.total);
+    if (!mo.isCurrent)     return fmt(mo.total);         // past and future alike
+    if (state.dir === "A") return fmt(mo.remaining);
+    if (state.dir === "Bword") {
+      return fmt(mo.remaining) + " left";   // €0 left — the sentence just finishes
+    }
+    return fmt(mo.remaining) + " of " + plain(mo.total); // Boft
+  }
+
+  // ------------------------------------------------------------- markup
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  var INK = {
+    charged:  ["var(--ink)",                "rgba(var(--base),0.60)"],
+    upcoming: ["rgba(var(--base),0.58)",    "rgba(var(--base),0.34)"],
+    skipped:  ["rgba(var(--base),0.30)",    "rgba(var(--base),0.24)"]
+  };
+
+  function rowNode(e, showDate) {
+    var wrap = el("div", "row"), ri = el("div", "ri");
+    ri.appendChild(el("div", "ic"));
+
+    var bod = el("div", "bod");
+    var name = el("div", "name", e.name);
+    name.style.color = INK[e.state][0];
+    bod.appendChild(name);
+    if (showDate) {
+      var sub = el("div", "sub", e.line);
+      sub.style.color = INK[e.state][1];
+      bod.appendChild(sub);
+    }
+    ri.appendChild(bod);
+
+    var amt = el("div", "amt", fmt(e.amt));
+    amt.style.color = INK[e.state][0];
+    if (e.state === "skipped") amt.style.textDecoration = "line-through";
+    ri.appendChild(amt);
+
+    wrap.appendChild(ri);
+    return wrap;
+  }
+
+  function hairline() {
+    var h = el("div", "hair");
+    h.appendChild(el("div"));
+    return h;
+  }
+
+  function dayNode(d) {
+    if (d.entries.length === 1) return rowNode(d.entries[0], true);
+
+    var g = el("div", "grp");
+    var head = el("div", "ghead");
+    var ink = d.charged ? "rgba(var(--base),0.60)" : "rgba(var(--base),0.34)";
+    var nm = el("div", "gname", d.entries[0].line);
+    var fg = el("div", "gfig", fmt(d.total));
+    nm.style.color = ink; fg.style.color = ink;
+    head.appendChild(nm); head.appendChild(fg);
+
+    g.appendChild(head);
+    g.appendChild(hairline());
+    d.entries.forEach(function (e) { g.appendChild(rowNode(e, false)); });
+    g.appendChild(hairline());
+    return g;
+  }
+
+  function chevron(dir) {
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", "15"); svg.setAttribute("height", "15");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "rgba(var(--base),0.30)");
+    svg.setAttribute("stroke-width", "1.9");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    var p = document.createElementNS(ns, "path");
+    p.setAttribute("d", dir === "up" ? "M6 14.5 12 8.5l6 6" : "M6 9.5 12 15.5l6-6");
+    svg.appendChild(p);
+    return svg;
+  }
+
+  function barNode(m, dir) {
+    var mo = buildMonth(m);
+    var b = el("button", "bar");
+    b.type = "button";
+    b.dataset.month = m;
+    b.appendChild(chevron(dir));
+    b.appendChild(el("div", "barname", MONTHS[m] + (YEAR !== 2026 ? " " + YEAR : "")));
+    b.appendChild(el("div", "barfig", figureFor(mo)));
+    b.addEventListener("click", function () {
+      dir === "up" ? openAbove() : openBelow();
+    });
+    return b;
+  }
+
+  function monthNode(mo) {
+    var sec = el("section");
+    sec.dataset.month = mo.m;
+
+    var head = el("div", "mhead");
+    head.appendChild(el("div", "mname", MONTHS[mo.m]));
+    head.appendChild(el("div", "mfig", figureFor(mo)));
+    sec.appendChild(head);
+
+    // Direction C puts the remaining figure at the upcoming/charged boundary,
+    // and only where that boundary is real.
+    var boundaryAt = -1;
+    if (state.dir === "C" && mo.remaining > 0) {
+      boundaryAt = mo.days.length;                       // default: after all rows
+      for (var i = 0; i < mo.days.length; i++) {
+        if (mo.days[i].charged) { boundaryAt = i; break; }
+      }
+    }
+
+    mo.days.forEach(function (d, i) {
+      if (i === boundaryAt) sec.appendChild(el("div", "togo", fmt(mo.remaining) + " still to go"));
+      sec.appendChild(dayNode(d));
+    });
+    if (boundaryAt === mo.days.length) {
+      sec.appendChild(el("div", "togo", fmt(mo.remaining) + " still to go"));
+    }
+
+    if (mo.isCurrent && mo.remaining === mo.total) {
+      sec.appendChild(el("div", "firstweek", "This fills in as bills go out."));
+    }
+    return sec;
+  }
+
+  // -------------------------------------------------------------- render
+  var scroller = document.getElementById("scroller");
+
+  function render() {
+    scroller.textContent = "";
+    if (state.high < LAST) scroller.appendChild(barNode(state.high + 1, "up"));
+    for (var m = state.high; m >= state.low; m--) scroller.appendChild(monthNode(buildMonth(m)));
+    if (state.low > FIRST) scroller.appendChild(barNode(state.low - 1, "down"));
+    markStuck();
+  }
+
+  // Nothing the reader is looking at may move. Anchor on the month under the
+  // MIDDLE of the viewport — the one actually being read — then put it back
+  // where it was, following it across a collapse into a bar.
+  //
+  // Two anchors that seem right and are not. Anchoring on scrollHeight breaks as
+  // soon as one gesture adds a month at one end and drops one at the other: the
+  // deltas cancel and the compensation comes out near zero. Anchoring on
+  // whatever sits at the TOP edge is worse — at rest that is the collapsed bar
+  // you are about to open, so preserving its position expands it downward and
+  // shoves the month you were reading off the screen. The month opens above you
+  // only if you anchor on the month you are in.
+  function anchored(mutate) {
+    var box = scroller.getBoundingClientRect();
+    var mid = box.top + scroller.clientHeight / 2;
+    var secs = scroller.querySelectorAll("section");
+    var key = null, offset = 0;
+
+    for (var i = 0; i < secs.length; i++) {
+      var r = secs[i].getBoundingClientRect();
+      if (r.top <= mid && r.bottom >= mid) { key = secs[i].dataset.month; offset = r.top - box.top; break; }
+    }
+    if (key == null && secs.length) {                 // shorter than the viewport
+      key = secs[0].dataset.month;
+      offset = secs[0].getBoundingClientRect().top - box.top;
+    }
+
+    mutate();
+    render();
+
+    if (key == null) return;
+    var after = scroller.querySelectorAll("section, .bar");
+    for (var j = 0; j < after.length; j++) {
+      if (after[j].dataset.month === key) { scroller.scrollTop = after[j].offsetTop - offset; return; }
+    }
+  }
+
+  function openAbove() {
+    if (state.high >= LAST) return;
+    anchored(function () { state.high++; enforceCap(true); });
+  }
+  function openBelow() {
+    if (state.low <= FIRST) return;
+    anchored(function () { state.low--; enforceCap(false); });
+  }
+
+  // ------------------------------------------------- stuck state + closing
+  function markStuck() {
+    var top = scroller.getBoundingClientRect().top;
+    var heads = scroller.querySelectorAll(".mhead");
+    for (var i = 0; i < heads.length; i++) {
+      var r = heads[i].getBoundingClientRect();
+      heads[i].classList.toggle("stuck", r.top - top < 0.6);
+    }
+  }
+
+  // Closing an opened month.
+  //
+  // Two geometric triggers were tried and both are unreachable when a month is
+  // about one screenful. "The opened month is no longer visible" needs enough
+  // content below it to fill a screen, and there isn't any — at eleven expenses
+  // October's bottom edge is still 30 points on screen at maximum scroll. The
+  // hand-off trigger ("the next month's header reaches the top") fails for the
+  // same arithmetic, and additionally misfires: opening a month deliberately
+  // places it OUTSIDE the viewport, so it is eligible to close the instant it
+  // opens.
+  //
+  // So closing is not geometric. The range is capped instead: opening a third
+  // month collapses the far end, off-screen, where nothing the reader is looking
+  // at can move.
+  var MAXOPEN = 2;
+  var capped = true;
+
+  function enforceCap(openedAbove) {
+    if (!capped) return;
+    while (state.high - state.low + 1 > MAXOPEN) {
+      if (openedAbove) state.low++;      // drop the bottom — content below, nothing moves
+      else state.high--;                 // drop the top — handled by the caller's anchor
+    }
+  }
+
+  var ticking = false;
+  scroller.addEventListener("scroll", function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      markStuck();
+      ticking = false;
+    });
+  }, { passive: true });
+
+  // A browser has no rubber band, so this stands in for the pull: keep wheeling
+  // past either end and the neighbour opens. Deliberately not a flick.
+  var pull = 0, pullTimer = null;
+  scroller.addEventListener("wheel", function (ev) {
+    var atTop = scroller.scrollTop <= 0;
+    var atEnd = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+    if ((atTop && ev.deltaY < 0) || (atEnd && ev.deltaY > 0)) {
+      pull += -ev.deltaY;
+      clearTimeout(pullTimer);
+      pullTimer = setTimeout(function () { pull = 0; }, 220);
+      if (pull > 90)  { pull = 0; openAbove(); }
+      if (pull < -90) { pull = 0; openBelow(); }
+    } else {
+      pull = 0;
+    }
+  }, { passive: true });
+
+  // -------------------------------------------------------------- controls
+  function segment(id, onPick) {
+    var box = document.getElementById(id);
+    box.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button");
+      if (!b) return;
+      box.querySelectorAll("button").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x === b));
+      });
+      onPick(b.dataset.v);
+    });
+  }
+
+  segment("dir", function (v) { state.dir = v; render(); });
+  segment("pin", function (v) { document.body.classList.toggle("slim", v === "slim"); markStuck(); });
+  segment("theme", function (v) { document.body.classList.toggle("dark", v === "dark"); });
+  segment("cap", function (v) {
+    capped = (v === "cap");
+    state.low = state.high = CURRENT;
+    render();
+    scroller.scrollTop = 0;
+  });
+  segment("density", function (v) {
+    dense = (v === "long");
+    state.low = state.high = CURRENT;
+    render();
+    scroller.scrollTop = 0;
+    updateReadout();
+  });
+
+  var slider = document.getElementById("today");
+  var readout = document.getElementById("readout");
+
+  function updateReadout() {
+    var mo = buildMonth(CURRENT);
+    var d = new Date(YEAR, CURRENT, todayDay);
+    readout.innerHTML =
+      d.toLocaleDateString("en-IE", { weekday:"long", day:"numeric", month:"long" }) +
+      "<br>remaining <b>" + fmt(mo.remaining) + "</b> &nbsp;·&nbsp; total <b>" + fmt(mo.total) + "</b>";
+  }
+
+  slider.addEventListener("input", function () {
+    todayDay = Number(slider.value);
+    var top = scroller.scrollTop;
+    render();
+    scroller.scrollTop = top;
+    updateReadout();
+  });
+
+  render();
+  updateReadout();
+})();
+</script>
+</body>
+</html>

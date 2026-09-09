@@ -1,0 +1,48 @@
+import SwiftUI
+
+/// The floating pill that returns the reader to the current month. It appears once they are
+/// more than a screenful from the resting position, pointing the way they will travel to get
+/// there, and disappears once they arrive. See "Getting back" in `docs/DESIGN.md`.
+struct LatestButton: View {
+    enum Direction: Equatable {
+        case up, down
+
+        var systemImage: String {
+            switch self {
+            case .up: "chevron.up"
+            case .down: "chevron.down"
+            }
+        }
+    }
+
+    let month: MonthKey
+    let direction: Direction
+    let today: Date
+    let action: () -> Void
+
+    @Environment(\.calendar) private var calendar
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: Tokens.Space.tight) {
+                Image(systemName: direction.systemImage)
+                    .accessibilityHidden(true)
+                Text(month.name(in: calendar, relativeTo: today, locale: locale))
+                    .font(Tokens.Text.barName)
+            }
+            .foregroundStyle(Tokens.Ink.primary)
+            .padding(.horizontal, Tokens.Space.pillHorizontal)
+            .frame(minHeight: Tokens.Size.pill)
+            .background {
+                Capsule().fill(Tokens.Surface.pinned)
+                Capsule().strokeBorder(Tokens.Surface.rule, lineWidth: Tokens.Size.hairline)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        // VoiceOver has no arrow to read, so the verb the visible copy deliberately omits
+        // belongs in the label instead.
+        .accessibilityLabel("Back to \(month.name(in: calendar, relativeTo: today, locale: locale))")
+    }
+}

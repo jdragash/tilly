@@ -14,6 +14,13 @@ iOS development. Read `docs/PROJECT.md` before making product judgements.
 | `docs/INSPIRATION.md` | Annotated Dime / competitor analysis — the evidence base | As things are learned |
 | `docs/briefs/<slug>/brief.md` | Per-feature or per-change briefs | Per piece of work |
 | `docs/plans/<slug>.md` | Implementation plans — ordered step specs | Per piece of work |
+| `docs/prototypes/<slug>.html` | Working prototypes from exploration — kept, dated | Per piece of work |
+
+Prototypes and design canvases are **kept, not pruned**. They record how a decision was
+reached, which is the one thing `DECISIONS.md` can state but not show. Both will eventually
+disagree with the design as it moves on, so both carry their date and the line that settles
+it: where a prototype or an artboard disagrees with `DECISIONS.md`, the decisions log wins.
+Mark the stale parts; never delete them.
 
 Never delete from `DECISIONS.md`. Superseding an entry means adding a new one that says
 what changed and why, not editing history.
@@ -25,11 +32,29 @@ what changed and why, not editing history.
 | Scope a change | `tilly-brief` | Opus |
 | Settle the design | `tilly-explore` | Opus |
 | Specify the implementation | `tilly-plan` | Opus |
-| Implement it | `tilly-build` | Sonnet |
+| Implement it | `tilly-build` | Sonnet, but see below |
 | Verify, land it | `tilly-ship` | Sonnet |
 
-The boundary sits between deciding and executing, and **everything on the deciding side
-produces a written artifact**. That is the point: by the time work reaches `tilly-build`,
+**Implementation splits by how a step proves itself, not by what it touches.** A step whose
+done-when is a test — engine work, stores, model layers, most screens — goes to Sonnet, and
+that is most of the work. A step whose done-when is *"look at the screen and confirm nothing
+moved"* goes to Opus, including the building.
+
+The reason is evidence, from Steps 7, 8 and 9 of the timeline. Sonnet built all three
+soundly and found real bugs in each on its own. But on the parts where correctness was only
+visible by measuring a running app, its diagnosis went wide every time, and always in the
+same direction — toward more machinery. A regression reported as pre-existing. A corrective
+loop that converged on a missing term instead of finding it. A choice between three
+architectural options when the fault was one wrong number. Each cost a full Opus review pass
+to unpick, so the split was buying a Sonnet turn *and* a long Opus session, when the answer
+only ever came from the second.
+
+Scroll geometry, pinning and anchoring are the current examples. The test is not "is this
+UI" — plenty of UI is ordinary and testable. It is whether a green suite would still be green
+if the step were broken. Where the answer is yes, Opus builds it.
+
+The boundary otherwise sits between deciding and executing, and **everything on the deciding
+side produces a written artifact**. That is the point: by the time work reaches `tilly-build`,
 the decisions are made, reviewed, and on disk — so execution needs none.
 
 A step spec that leaves a decision open doesn't remove that decision; it relocates it to
