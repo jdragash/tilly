@@ -1362,8 +1362,12 @@ for the test and removed afterwards:
   `clearingRemovesThePlace`, `aPlaceBelowTheFloorIsClampedIntoTheWindow`.
 
 and in the simulator:
-- Scroll to a distinguishable row, background the app, kill it from Xcode, relaunch: the
-  same row is in the same place. Screenshot before and after.
+- Scroll so a month header sits in the upper half of the screen, background the app, kill it,
+  relaunch: every row is in the same place, to the pixel. Screenshot before and after.
+- Do the same from partway down a month: you come back to that month, at its top. This is the
+  accepted v1 behaviour, not a failure — see "A saved place remembers the month, not the row"
+  in `docs/DECISIONS.md`, and the section above for what was measured. **Anything other than
+  the right month at its top is a regression.**
 - Delete and reinstall: it lands on the current month. Screenshot.
 
 **Verify:**
@@ -1371,6 +1375,49 @@ and in the simulator:
 xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 then `cd Core && swift test` — still 54.
+
+**What a saved place cannot say yet — found on device, 2026-09-09.** `TimelinePlace` stores a
+month and that month's top in points from the container's top. That works whenever the anchor
+month begins at or below the top of the screen, and cannot express the reader being *inside* a
+month. The reason is the primitive, not the data shape:
+
+- A pinned header is translated to stay at the container's top, so its measured `minY` reads
+  exactly `0` however deep the reader is — `0.0` while that same month's content sat at
+  `-394.2`. The offset saved mid-month therefore collapses to zero, and the restore lands on
+  that month's first row.
+- Measuring the section's *content* fixes the reading. Content is never pinned, and a month's
+  own top is one header height above it, giving a true negative offset. Verified: a position
+  the old scheme recorded as `0` was recorded as `-155.6`.
+- `restoreAnchor` cannot consume a negative one. `scrollTo(_:anchor:)` positions a target by a
+  fraction of that target's own frame and does not extrapolate outside the unit square: asked
+  for `-155.6` it delivered `+139.0`. So the honest measurement is deliberately *not* wired
+  in — it makes the failure worse, not better.
+
+**Point-based scrolling is not the way out, on this view.** A spike confirmed
+`ScrollPosition`'s `scrollTo(y:)` moves a list of this shape exactly, cold or warm, on a rig
+built to match. It does not survive contact with the real one. Measured here:
+
+- Binding `.scrollPosition($position)` alone is harmless — a fresh install renders and behaves
+  normally with it attached.
+- Driving it is not. A two-stage restore — `scrollTo(_:anchor: .top)` to place the month
+  exactly, then `scrollTo(y:)` to add the depth — **rendered the list blank**, with the app
+  alive and not crashed. The second stage was a 187-point move from an already-mounted
+  position, not a long jump into unrendered content.
+- Note also that `contentOffset.y` reads `-62.0` at the top of this list, so the reported
+  offset and any `y` passed in do not share an origin. The rig showed the same 62. That alone
+  would be a fixed correction; it does not explain a blank screen.
+
+So the rig reproduced the API and not the view. Whatever is wrong involves this list's own
+combination — `LazyVStack`, pinned headers, `scrollTargetLayout()`, `contentMargins` — and
+finding it is a fresh investigation, not a last step. **Anyone picking this up should start by
+calibrating the two coordinate spaces against each other from a settled position, before
+trying to restore anything.**
+
+That leaves the two options that were never blocked: anchor on a boundary that is on screen so
+the offset stays positive — which needs a fallback for a month taller than the container, and
+with the current seed most months are — or accept for v1 that a relaunch from mid-month returns
+to that month's top, which contradicts `DECISIONS.md`'s "the scroll position you left it at"
+and so needs a decision entry rather than silence.
 
 **Out of scope:** iCloud, migrations, syncing the place between devices, animating the
 rollover.

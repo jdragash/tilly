@@ -8,6 +8,49 @@ Format: one entry per decision. Newest at the top.
 
 ---
 
+## A saved place remembers the month, not the row
+
+**Decided:** 2026-09-09 · **From:** timeline
+**Qualifies:** "The timeline never resets your position" (2026-09-07). That entry stands;
+this narrows what "the scroll position you left it at" delivers in v1.
+
+**Chosen:** leaving and returning puts you back in the month you were reading, at the top of
+it. If you were partway down that month, you lose that much. Everything else in that entry
+holds — you are not thrown to the current month, the month you were in is still the month you
+come back to, and where you land is never decided by how long you were away or whether the
+process survived.
+
+**Why this is a decision and not a bug left in.** The list keeps a month's name pinned to the
+top of the screen while you read it, and a pinned header reports its position as zero for as
+long as it is pinned, however far into the month you have gone. So the app can see which month
+you are in but not where in it. That much can be fixed by measuring the month's body instead of
+its name, and it was — the measurement works. What cannot currently be done is *acting* on it:
+the call that scrolls to a month can place it at the top of the screen or below, never above,
+and "you were partway into this month" is the above case. Point-based scrolling, which has no
+such limit, blanked the list outright on this view — see Step 9 of `docs/plans/timeline.md` for
+what was measured.
+
+So the error is bounded and always in the same direction: right month, top of it. A reader who
+was three rows down loses three rows. A reader who was at a month boundary — which is where the
+unlock and the return control both leave you — loses nothing.
+
+**Rejected — anchor on a month boundary that is on screen,** so the offset saved is always a
+position the scroll call can reach. It is the right shape, and it needs a fallback for a month
+taller than the screen, where no boundary is visible. With a realistic set of recurring
+expenses most months are taller than the screen, so the fallback would be the common path and
+the fix would mostly not be running. Worth revisiting when the position can be reached
+directly.
+
+**Rejected — hold the timeline until this works properly.** Three sessions had gone into it,
+the remaining gap is a few rows in one direction, and the alternative is a finished feature
+nobody can use. Shipping the limitation and naming it is the smaller cost.
+
+**Revisit when** the two scroll coordinate systems on this view are understood — the plan
+records the specific measurement to start from. Until then, treat "at the scroll position you
+left it at" as "in the month you left, at its top".
+
+---
+
 ## The timeline is one list you scroll, bounded at both ends
 
 **Decided:** 2026-09-08 · **From:** timeline

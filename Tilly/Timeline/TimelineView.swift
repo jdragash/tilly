@@ -8,6 +8,7 @@ struct TimelineView: View {
     @Query private var expenses: [Expense]
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var today = Date()
     @State private var window: TimelineWindow?
@@ -16,13 +17,14 @@ struct TimelineView: View {
     @State private var headerHeights: [MonthKey: CGFloat] = [:]
     @State private var viewportHeight: CGFloat = 0
     @State private var scrollProxy: ScrollViewProxy?
-    @State private var hasSetRestingPosition = false
+    @State private var hasRestoredPlace = false
     @State private var isUnlockLatched = false
     @State private var isProgrammaticScroll = false
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
     @State private var pillClearance: CGFloat = Tokens.Space.floatingClearance
 
+    private let placeStore = TimelinePlaceStore()
     private static let scrollSpace = "timelineScroll"
 
     /// The last month (in top-to-bottom document order) whose header has reached the
@@ -94,8 +96,14 @@ struct TimelineView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
         .onAppear(perform: setUpIfNeeded)
         .onChange(of: expenses) { _, _ in rebuildSections() }
-        .onChange(of: sections) { _, _ in restOnCurrentMonthIfNeeded() }
+        .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
         .onChange(of: headerOffsets) { _, _ in updateLatch() }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase != .active, hasRestoredPlace { saveCurrentPlace() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+            handleDayChange()
+        }
     }
 
     @ViewBuilder
@@ -136,6 +144,9 @@ struct TimelineView: View {
                     .contentMargins(.bottom, pillClearance, for: .scrollContent)
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                         scrollOffset = newValue
+                    }
+                    .onScrollPhaseChange { _, newPhase in
+                        if newPhase == .idle && !isProgrammaticScroll && hasRestoredPlace { saveCurrentPlace() }
                     }
                     .onAppear { scrollProxy = proxy }
                 }
@@ -198,9 +209,11 @@ struct TimelineView: View {
         rebuildSections()
     }
 
-    /// The list rests flush on the current month: its header at the top of the visible
-    /// area, next month above the fold. See "The list rests flush on the current month" in
-    /// `docs/plans/timeline.md`.
+    /// Restores where the reader left off, exactly once. With a saved place, scrolls so its
+    /// anchor month sits at its saved offset — clamped into the current window in case the
+    /// floor has moved since. With none — the first run after installing — rests flush on
+    /// the current month instead, its header at the top, next month above the fold. See
+    /// "The timeline never resets your position" in `docs/DECISIONS.md`.
     ///
     /// Tried and discarded: the newer `ScrollPosition`/`.scrollPosition(_:)` API, called the
     /// same way, produced no visible scroll — a `ScrollViewProxy` from `ScrollViewReader`
@@ -208,13 +221,99 @@ struct TimelineView: View {
     /// point `sections` first gets the current month, `scrollProxy` is still nil, because
     /// `ScrollViewReader`'s own `onAppear` — which sets it — hasn't run yet. One run-loop
     /// turn is enough for both to be ready; confirmed with logging, not assumed.
-    private func restOnCurrentMonthIfNeeded() {
-        guard !hasSetRestingPosition, let window, sections[window.current] != nil else { return }
-        hasSetRestingPosition = true
-        let target = window.current.id
+    ///
+    /// `hasRestoredPlace` is set only inside the deferred block, once a scroll has actually
+    /// been issued — not before it, the way Step 6 set its own one-shot flag. A nil
+    /// `scrollProxy` a turn later leaves the flag false, so the next `sections` change (there
+    /// will be one; `rebuildSections()` always follows) gets another attempt instead of
+    /// skipping the restore forever.
+    ///
+    /// The same flag also gates `saveCurrentPlace` at both its call sites. Caught on device:
+    /// `.onScrollPhaseChange` fires once immediately on mount, reporting `.idle` as the
+    /// scroll view's default starting phase rather than a genuine settle — and it fires
+    /// before this function's own deferred restore has run. Saving there overwrote the
+    /// previous, correct place with the pre-restore top-of-list layout, before the restore
+    /// scroll had even been issued. Nothing may save until a place has actually been
+    /// restored to.
+    private func restorePlaceIfNeeded() {
+        guard !hasRestoredPlace, let window, sections[window.current] != nil else { return }
         DispatchQueue.main.async {
-            scrollProxy?.scrollTo(target, anchor: .top)
+            guard let scrollProxy else { return }
+            hasRestoredPlace = true
+            guard let saved = placeStore.load()?.clamped(into: window),
+                  let month = window.months.first(where: { $0.id == saved.anchorMonthID })
+            else {
+                scrollProxy.scrollTo(window.current.id, anchor: .top)
+                return
+            }
+            // Two passes, not one. The month is unmounted at this point — nothing near the
+            // top of a cold launch's list is anywhere near deep history — so `headerHeights`
+            // has no entry for it and the first call takes `restoreAnchor`'s own `.top`
+            // fallback, which mounts it. The second, a turn later, has real geometry and is
+            // the one that lands.
+            let offset = CGFloat(saved.anchorOffset)
+            restoreAnchor(month, to: offset)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                restoreAnchor(month, to: offset)
+            }
         }
+    }
+
+    /// The anchor to save: the month under the middle of the viewport, at its live offset —
+    /// the same rule Step 7's unlock and Step 9's restore both key on, so gesturing and
+    /// restoring agree on what "here" means. Nothing is saved when there is no live
+    /// geometry to read (nothing has laid out yet, or the screen is the empty state).
+    ///
+    /// **`headerOffsets` here is a deliberate limitation, not an oversight.** A pinned header
+    /// reports its position as exactly `0` for as long as it is pinned, however far into the
+    /// month the reader has gone — so a place saved from mid-month records the month and loses
+    /// the depth, and the restore lands on that month's first row. That is the behaviour
+    /// "A saved place remembers the month, not the row" in `docs/DECISIONS.md` signs off for
+    /// v1.
+    ///
+    /// The honest measurement exists and is easy: the section's content is never pinned, so a
+    /// month's true top is its content's top less one header height. Do not switch to it on
+    /// its own. `restoreAnchor` cannot consume the negative offset that produces — asked for
+    /// `-155.6` it delivered `+139.0` — so measuring better without also fixing the restore
+    /// makes the landing worse, not better. Step 9 of `docs/plans/timeline.md` records what
+    /// was measured and where to start.
+    private func currentPlace() -> TimelinePlace? {
+        guard let month = monthUnderMiddle(), let offset = headerOffsets[month] else { return nil }
+        return TimelinePlace(anchorMonthID: month.id, anchorOffset: Double(offset))
+    }
+
+    /// Fires on scroll-idle and whenever the scene leaves `.active` — deliberately both, per
+    /// "The timeline never resets your position" in `docs/DECISIONS.md`: iOS gives no way to
+    /// tell a clean background from a killed process apart, so neither may be the only
+    /// writer. Suppressed during one of this view's own animated scrolls so an in-flight
+    /// restore or return-to-resting doesn't overwrite the saved place with a mid-flight
+    /// position, and gated on `hasRestoredPlace` at both call sites for the same reason —
+    /// see the note there about the very first scroll-phase callback.
+    private func saveCurrentPlace() {
+        guard !isProgrammaticScroll else { return }
+        // Deferred a run-loop turn: read one frame after scroll-idle or scenePhase fires,
+        // not synchronously with it. `headerOffsets` is written from `onGeometryChange`,
+        // which can land a beat behind the scroll settling or the scene backgrounding —
+        // the same lag Step 8 documented for the pinned header's ground and hairline.
+        DispatchQueue.main.async {
+            guard let place = currentPlace() else { return }
+            placeStore.save(place)
+        }
+    }
+
+    /// `today` moves forward as the calendar day changes underneath a running app. When the
+    /// month itself changes, `window.current` moves up with it — and because the next month
+    /// was always expanded, the month the reader is now in is already on screen and already
+    /// open; nothing is inserted above them. See "Crossing midnight into a new month" in
+    /// Step 9 of `docs/plans/timeline.md`.
+    private func handleDayChange() {
+        today = Date()
+        guard let window else { return }
+        let newCurrent = MonthKey(containing: today, calendar: calendar)
+        if newCurrent != window.current {
+            self.window = TimelineWindow(floor: window.floor, current: newCurrent, unlocked: window.unlocked)
+        }
+        rebuildSections()
     }
 
     /// Opens the month named on the unlock bar. See "The anchor" in Step 7 of
@@ -249,7 +348,7 @@ struct TimelineView: View {
 
     /// `LatestButton`'s action: animates the reader back to the resting position — the
     /// current month's header at the container's top, the same target
-    /// `restOnCurrentMonthIfNeeded` uses — then runs Step 7's tidy-up once that scroll has
+    /// `restorePlaceIfNeeded` uses — then runs Step 7's tidy-up once that scroll has
     /// actually settled. `isProgrammaticScroll` holds `updateLatch` off for the same reason
     /// it does during `anchorAndSettle`: closing mid-animation would fight the animated
     /// scroll rather than follow it. See "Getting back" in `docs/DESIGN.md`.
@@ -330,10 +429,17 @@ struct TimelineView: View {
     /// a bottom `contentMargins` so the floor line clears the floating pill, and `scrollTo`
     /// aligns within the container's *content area*, not the whole viewport. Dividing by the
     /// viewport instead lands every restore proportionally short — measured on device at
-    /// 0.907x of what was asked, which is exactly (710 - 47) / (778 - 47).
+    /// 0.907x of whatever was asked, which is exactly (710 - 47) / (778 - 47). It slipped
+    /// through Step 8 because the offsets in play there were small enough for the error to be
+    /// a few points; Step 9 restores from arbitrary depth, where the same ratio is tens of
+    /// points and plainly visible. With the right denominator a single pass lands within a
+    /// tenth of a point.
     ///
-    /// A pleasant consequence: the denominator is a large, stable number, so it never
-    /// approaches zero. That was a live worry while the section's height was in here.
+    /// **`desiredOffset` must not be negative.** `f` outside the unit square does not
+    /// extrapolate: asking for -155.6 landed at +139.0 on device. So this can place a month's
+    /// header anywhere from the container's top down, and cannot express "this month began
+    /// above the top of the screen". See "What a saved place cannot say yet" in Step 9 of
+    /// `docs/plans/timeline.md`.
     ///
     /// Every value is read live and unrounded — a cached or rounded height was the earlier
     /// version's bug, and it drifted by half a point per gesture.

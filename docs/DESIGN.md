@@ -193,10 +193,14 @@ one gesture adds a month at one end and drops one at the other, because the delt
 
 ### Never lose the reader's place
 
-You return to the month you left, opened as you left it, at the scroll position you left it
-at — regardless of how long you were gone or whether the process survived. The current month
-decides where you land once, on first run. See `DECISIONS.md` for why a session-scoped
-compromise is worse than either alternative.
+You return to the month you left, opened as you left it, regardless of how long you were gone
+or whether the process survived. The current month decides where you land once, on first run.
+See `DECISIONS.md` for why a session-scoped compromise is worse than either alternative.
+
+**In v1 that means the month, not the row.** You come back to the top of the month you were
+reading; if you were partway down it, you lose that much. The error is bounded and always in
+the same direction, and returning from a month boundary — where the unlock and the return
+control both leave you — loses nothing. See "A saved place remembers the month, not the row".
 
 ### The app fills the top inset; the system draws over it
 
