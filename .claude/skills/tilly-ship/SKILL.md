@@ -32,18 +32,17 @@ screenshots before merging.
 
 ## Self-review — technical
 
-- [ ] No hardcoded hex or point values. Views reference `Tokens` only.
-- [ ] `Core/` imports no SwiftData.
-- [ ] Date arithmetic through `Calendar` components, never `TimeInterval`.
-- [ ] Recurrence generates from the anchor, never from the previous occurrence.
-- [ ] SwiftData models still CloudKit-compatible — properties optional or defaulted, no
-      unique constraints, relationships optional.
-- [ ] VoiceOver labels on new interactive elements.
-- [ ] Dynamic Type checked at an accessibility size.
-- [ ] Dark mode checked.
-- [ ] No file has grown past a few hundred lines. (Dime's 98KB `InsightsView.swift` is the
-      standing example — see `docs/INSPIRATION.md`.)
+**Run the checks in `CLAUDE.md`** — Hard rules, Code, Verification. They are not restated
+here, deliberately; see the note in `tilly-build`. Report what you actually found, per check,
+not "all clear".
+
+Only these three are not in `CLAUDE.md` and belong to shipping:
+
+- [ ] VoiceOver labels on any new interactive element, and a hint where the action is not
+      obvious from the label.
 - [ ] Tests cover the awkward cases, not just the happy path.
+- [ ] Nothing in the diff contradicts a `docs/DECISIONS.md` entry that still binds. Check the
+      supersession marker before treating an entry as live.
 
 ## Self-review — product tenets
 

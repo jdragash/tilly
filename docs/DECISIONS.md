@@ -6,6 +6,11 @@ three months.
 
 Format: one entry per decision. Newest at the top.
 
+An entry that has been overtaken says so directly beneath its date — **Superseded entirely**,
+**Superseded in part**, or **Qualified**. Nothing is ever deleted or edited away, so that
+marker is the only way to tell, at the entry itself, whether what you are reading still binds.
+Where a supersession is partial, the marker names which half survived.
+
 ---
 
 ## A saved place remembers the month, not the row
@@ -322,6 +327,8 @@ already roadmapped as a visible setting.
 ## An opened month closes by cap, not by scrolling
 
 **Decided:** 2026-09-07 · **From:** timeline
+**Superseded entirely by** "Looking further ahead is a deliberate unlock, and it puts itself
+away" (2026-09-08). Kept for the reasoning; nothing here still binds.
 **Supersedes:** "The current month is home; its neighbours are collapsed bars"
 (2026-09-07), in one sentence only — "opening a month and scrolling back closes it again,
 returning to exactly the bar you opened". Everything else in that entry stands.
@@ -366,6 +373,8 @@ gesture can add a month at one end and drop one at the other, and the two deltas
 ## A motion question gets a prototype, not another artboard
 
 **Decided:** 2026-09-07 · **From:** `tilly-explore`
+**Superseded in part by** "Prototypes and canvases are kept, and carry the date that settles a
+conflict" (2026-09-07), in its retention half only. When a prototype is warranted still binds.
 
 **Chosen:** `tilly-explore` gains a third, conditional rung. When what is being decided is
 what happens *over time* — pinning, hand-offs, a gesture that opens something and a scroll
@@ -456,6 +465,8 @@ it wants a cheaper home than every exploration canvas, probably a simulator chec
 ## Exploration draws variants on the canvas, not as wireframes first
 
 **Decided:** 2026-09-07 · **From:** `tilly-explore`
+**Superseded entirely by** "Exploration wireframes before it draws" (2026-09-07). Kept for the
+reasoning; nothing here still binds.
 **Supersedes:** the two-rung gate in `tilly-explore` — ASCII wireframes, then a canvas for
 the winner only
 
@@ -591,6 +602,9 @@ screen feel busy in the first place.
 ## The current month is home; its neighbours are collapsed bars
 
 **Decided:** 2026-09-07 · **From:** timeline
+**Superseded in part.** The collapsed-bar half is replaced by "The timeline is one list you
+scroll, bounded at both ends" (2026-09-08); the close-on-scroll sentence by "An opened month
+closes by cap" (2026-09-07), itself since replaced. Future above and past below still binds.
 **Supersedes:** "Timeline runs future-above, past-below, resting on the last actual charge"
 (2026-09-04), in its resting-position half. Future above and past below is unchanged.
 
@@ -628,6 +642,8 @@ month, and anything still upcoming in the old one becomes charged.
 ## The timeline never resets your position
 
 **Decided:** 2026-09-07 · **From:** timeline
+**Qualified by** "A saved place remembers the month, not the row" (2026-09-09). This entry
+stands; the newer one narrows what it delivers in v1.
 
 **Chosen:** you return to the month you left, opened the way you left it, at the scroll
 position you left it at — however long you were gone and whether or not the process
@@ -694,6 +710,8 @@ still an explanation nobody asked for.
 ## Month headers carry the month's total
 
 **Decided:** 2026-09-07 · **From:** timeline
+**Superseded in part by** "The month header carries what is left, and says so" (2026-09-07),
+in its current-month half only. Collapsed bars, past and future months still bind.
 **Settles:** open question 5 in the timeline brief
 
 **Chosen:** an expanded month header and a collapsed month bar both carry that month's
@@ -1056,6 +1074,9 @@ Over-engineering for v1.
 ## Timeline runs future-above, past-below, resting on the last actual charge
 
 **Decided:** 2026-09-04 · **From:** project kickoff
+**Superseded in part by** "The current month is home; its neighbours are collapsed bars"
+(2026-09-07), in its resting-position half — and that entry has itself since been narrowed.
+Future above and past below still binds, and is now in "The timeline is one list you scroll".
 
 **Chosen:** Opening the app puts what's next at eye level, with the most recent real charge
 as the resting anchor — so you see where you are and what's coming from there.

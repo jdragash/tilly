@@ -15,6 +15,31 @@ is it.
 
 ---
 
+## Shipped 2026-09-09 — what this plan left behind
+
+**Read this part, not the step list, unless you are here for history.** All nine steps are
+built and merged. What is still worth someone's time is the handful of things that were
+expensive to learn and are invisible to every test:
+
+- **Three traps in SwiftUI scrolling.** A geometry modifier on a `Section` inside a pinned
+  `LazyVStack` silently kills header pinning *and* changes what `scrollTo` resolves to; a
+  pinned header reports its position as exactly zero however far you have scrolled into it;
+  and `scrollTo(_:anchor:)` aligns within the container minus its content margins, and does
+  not extrapolate outside the unit square. Each cost about a day. See "Never attach a modifier
+  to a `Section`" in Step 7 and "What a saved place cannot say yet" in Step 9.
+- **Both test suites stayed green through every one of them.** Three regressions reached
+  review with 130 passing tests behind them. That is why the routing rule in `CLAUDE.md` now
+  sends screen-verified work to Opus.
+- **Two limitations shipped deliberately** — a saved place remembers the month rather than the
+  row, and a pinned header can lag its own background by a frame under fast scrolling. Both
+  are in `docs/DECISIONS.md` with what would have to change to lift them.
+- **The unfinished thread**, if anyone picks it up: point-based scrolling would remove the
+  saved-place limitation, and it blanked this list outright. Start by calibrating the two
+  scroll coordinate systems against each other from a settled position — Step 9 records the
+  measurements to start from, including that `contentOffset.y` reads `-62.0` at the top.
+
+---
+
 ## Already decided — do not reopen
 
 Every one of these is in `DECISIONS.md` or `DESIGN.md`. A step that finds itself weighing one

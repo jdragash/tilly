@@ -19,7 +19,17 @@ maintain.
 
 ## Status
 
-Early. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's built and what's next, and
+The timeline is built and is the whole app so far. It's one list you scroll: this month
+open with what's left to come out, history running continuously behind it as far back as
+your oldest charge, and next month already open above. You can look one month further
+ahead — it puts itself away when you come back — jump to the current month from anywhere,
+and close the app without losing your place.
+
+**You can't add an expense yet.** The editor is the next piece of work; until it exists
+the app only shows data it was seeded with. The recurrence engine underneath it is done
+and tested.
+
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the order things are coming in, and
 [`docs/PROJECT.md`](docs/PROJECT.md) for what the app is trying to be.
 
 ## Built with

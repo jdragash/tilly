@@ -7,7 +7,12 @@ description: Use when implementing approved Tilly work in the iOS app — buildi
 
 ## Model
 
-**Sonnet.** This is execution against decisions already made. If a genuine design question
+**Usually Sonnet — but check CLAUDE.md's routing table, which splits this by how the step
+proves itself.** A step whose done-when is a test goes to Sonnet. A step whose done-when is
+"look at the screen and confirm nothing moved" goes to Opus, because a green suite says
+nothing about it and diagnosing it needs measurement rather than a checklist.
+
+Either way this is execution against decisions already made. If a genuine design question
 surfaces mid-build — not "which shade" but "this layout doesn't work and needs rethinking"
 — stop and say so: "This is a real design call, not an implementation detail. Worth an
 Opus pass with `tilly-explore` before I keep going?" Don't quietly redesign in Sonnet.
@@ -79,14 +84,11 @@ Before calling any screen done:
 
 ## Hard constraints
 
-- **Never copy from Dime.** Patterns and reasoning only. Every line is original.
-- **No raw values in views.** `Tokens.Text.amount`, never `.largeTitle`; never a literal
-  hex or point size. If a token doesn't exist for what you need, add it to
-  `DesignSystem/Tokens.swift` rather than inlining.
-- **No `TimeInterval` date arithmetic.** `Calendar` components only.
-- **Recurrence generates from the rule's anchor**, never from the previous occurrence.
-  That's Dime's live drift bug; `docs/DECISIONS.md` has the detail.
-- **Report real output.** Never "the build should pass". If it failed, paste what failed.
-- **Don't hand-edit `.pbxproj`.** New `.swift` files are picked up automatically.
-- **Watch file size.** A view file growing past a few hundred lines is a signal to split
-  it. Dime's 98KB `InsightsView.swift` is the standing example of not doing this.
+**They live in `CLAUDE.md`, not here** — the Hard rules, Code and Verification sections.
+They are not repeated in this file on purpose: a rule written in two places is a rule that
+will eventually say two different things, and the skill would win because it is what got
+loaded. Read them there.
+
+The two that bite most often while building, so you recognise them without looking: no raw
+values in views — add a token rather than inlining one — and report real output, never "the
+build should pass".
