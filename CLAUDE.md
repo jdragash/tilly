@@ -150,6 +150,9 @@ not just the first one in a session.
 - Keep files focused. Dime's `InsightsView.swift` is 98KB in one file — the standing
   cautionary example. A file growing past a few hundred lines usually means it's doing too
   much.
+- Building a pinned, scroll-anchored list? Read the two scrolling notes in
+  `docs/plans/timeline.md` first — three traps that are invisible to tests and cost a day
+  each to rediscover.
 - New `.swift` files appear in the app project automatically (file-system synchronized
   groups) — adding, moving, or removing source files must never touch `.pbxproj`. Build
   settings in the project file are ordinary work: fix one that's wrong, or add one that's

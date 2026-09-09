@@ -21,8 +21,8 @@ holds the token layer for the timeline to extend. Built to `docs/plans/app-scaff
 |---|---|---|
 | Recurrence engine | **Done** | Every N days / weeks / months / years from a fixed anchor. Pure, tested, no SwiftData. Built to `docs/plans/recurrence-engine.md`; 54 tests. |
 | App scaffolding | **Done** | Xcode project, `Expense`/`OverrideRecord`, `TillyStore`, token layer. Built to `docs/plans/app-scaffolding.md`; 11 tests. |
-| Timeline | In progress | Future above, past below. One month expanded, neighbours as collapsed bars; a sticky header carrying what is left this month. Steps 1–4 of `docs/plans/timeline.md` are built and green; 5–7 revised 2026-09-07 after the header exploration. |
-| Expense editor | — | Create and edit rules. Amount optional so variable bills fit. |
+| Timeline | Shipped 2026-09-09 | One list you scroll, bounded at both ends: next month always open above, history continuous below down to the oldest charge. A pinned header carries what is left this month. A deliberate unlock looks further ahead and puts itself away; a pill returns you to the current month; your place survives a relaunch. Built to `docs/plans/timeline.md`, all nine steps. Two known limitations are recorded there and in `DECISIONS.md` — a saved place remembers the month rather than the row, and the pinned header can lag its own background by a frame under fast scrolling. |
+| Expense editor | Next | Create and edit rules. Amount optional so variable bills fit. **The timeline's empty state already invites this and there is nothing behind it** — until the editor exists, the app can only show data it was seeded with. |
 | Occurrence overrides | Engine done, UI to come | Set the real amount on an estimate, skip one, move one. "This occurrence" vs "all future" unmistakable. |
 | Categories | — | User-created only. Ships empty. |
 | Insights, thin | — | Month total, annualised total, category breakdown as a proportional bar. |
