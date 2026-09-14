@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Carries what is left in the current month, and every other month's plain total —
-/// excluding skipped occurrences either way. See "The month header carries what is left,
-/// and says so" in `docs/DECISIONS.md`.
+/// excluding skipped occurrences either way. See "The month header" in
+/// `docs/DESIGN.md`.
 ///
 /// Keeps its size when it pins — condensing would save a point of height and cost three
 /// points of type, landing the month you're *in* on the same shape as one you could open.
@@ -52,7 +52,7 @@ struct MonthHeader: View {
         .background(Tokens.Surface.pinned)
         .overlay(alignment: .bottom) {
             // A rule is drawn because something needs closing — at rest there is nothing to
-            // close, and pinned there is content moving underneath. See "The month you are
+            // close, and pinned there is content moving underneath. See "The month you're
             // reading stays named" in `docs/DESIGN.md`.
             if isPinned {
                 Rectangle()

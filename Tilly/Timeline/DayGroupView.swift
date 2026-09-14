@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Two or more charges on one day collapse under a heading with a day total; one charge is
-/// an ordinary row carrying its own date. See "A day is grouped only when it holds more
-/// than one charge" in `docs/DECISIONS.md`.
+/// an ordinary row carrying its own date. See "Group a day only when there's a day
+/// to group" in `docs/DESIGN.md`.
 struct DayGroupView: View {
     let group: DayGroup
 

@@ -4,7 +4,7 @@ import TillyCore
 /// Reduces a set of expenses to one month's `MonthSection`, joining the engine's
 /// occurrences back to their name and applying the timeline's own ordering, state and
 /// totalling rules. Pure — no SwiftData, no view code — so it is tested without a
-/// simulator. See "How month paging maps onto the engine" in `docs/plans/timeline.md`.
+/// simulator. See `.claude/rules/core-engine.md`.
 enum TimelineBuilder {
     static func month(
         _ month: MonthKey,

@@ -2,6 +2,8 @@ import Foundation
 import SwiftData
 import TillyCore
 
+/// The stored form of `TillyCore.OccurrenceOverride`. Named differently on purpose, so the
+/// persisted type and the engine's value type never collide in a file or in a reader's head.
 @Model
 final class OverrideRecord {
     var scheduledDate: Date = Date()

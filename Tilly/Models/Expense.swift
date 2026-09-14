@@ -10,6 +10,8 @@ final class Expense {
     var isEstimate: Bool = false
     var isArchived: Bool = false
     var recurrenceInterval: Int = 1
+    /// A plain `String` rather than the enum: CloudKit-safe, readable in the store, and
+    /// usable in a `#Predicate`. A stored enum goes through `Codable` into an opaque blob.
     var recurrenceUnitRaw: String = RecurrenceUnit.month.rawValue
     var anchorDate: Date = Date()
     var endDate: Date?
@@ -41,6 +43,8 @@ final class Expense {
 }
 
 extension Expense {
+    /// Falls back to `.month` rather than failing. Mapping to the engine is total: a bill shown
+    /// with a defaulted unit is an obvious fault, and one that silently vanishes is not.
     var recurrenceUnit: RecurrenceUnit {
         RecurrenceUnit(rawValue: recurrenceUnitRaw) ?? .month
     }

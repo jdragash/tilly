@@ -4,8 +4,9 @@ import SwiftUI
 /// total, never the "left" word — that stays inside the current month's own header. Tapping
 /// it opens that month; the bar then offers the one after. It is also a `Button`, so it is
 /// reachable by VoiceOver and Switch Control — there is no other way to reach it, since
-/// pull-to-unlock was rejected for the same reason. See "Looking further ahead is a
-/// deliberate unlock" in `docs/DECISIONS.md`.
+/// pull-to-unlock was rejected for the same reason. See
+/// "The timeline is one list, future above and past below, bounded at both ends" in
+/// `docs/DECISIONS.md`.
 struct CollapsedMonthBar: View {
     let section: MonthSection
     let today: Date

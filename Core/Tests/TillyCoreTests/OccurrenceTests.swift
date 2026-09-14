@@ -69,7 +69,7 @@ import Foundation
         let anchor = Self.date(2027, 1, 1)
         let rule = RecurrenceRule(interval: 1, unit: .day, anchorDate: anchor)
         let expense = Self.expense(rule: rule)
-        // The window has to contain the moved-to date: since Step 6 the range selects on
+        // The window has to contain the moved-to date: the range selects on
         // effective dates, so a move out of the window is a departure from it.
         let range = DateInterval(start: anchor, end: Self.date(2027, 1, 31))
         let moved = Self.date(2027, 1, 15)

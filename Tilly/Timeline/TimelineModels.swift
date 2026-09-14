@@ -3,8 +3,7 @@ import TillyCore
 
 /// A row's temporal state, carried by weight per `DESIGN.md`'s state grammar: upcoming
 /// sits back, charged comes forward, skipped withdraws further still. The grammar's second
-/// axis — certainty — is deferred with the `EST` mark; see the 2026-09-07 update in
-/// `docs/plans/timeline.md`.
+/// axis — certainty — is not rendered in v1; it returns with variable bills.
 enum OccurrenceState: Equatable, Sendable {
     case upcoming, charged, skipped
 }

@@ -2,8 +2,9 @@ import SwiftData
 import SwiftUI
 
 /// The timeline: next month always open above, history running continuously below down to
-/// the oldest charge entered. See "The timeline is one list you scroll, bounded at both
-/// ends" in `docs/DECISIONS.md`.
+/// the oldest charge entered. See
+/// "The timeline is one list, future above and past below, bounded at both ends" in
+/// `docs/DECISIONS.md`.
 struct TimelineView: View {
     @Query private var expenses: [Expense]
     @Environment(\.calendar) private var calendar
@@ -56,8 +57,8 @@ struct TimelineView: View {
     /// only anchor that survives opening or closing a month without visibly moving. The
     /// top-most visible item is wrong (it's the bar about to be tapped, so preserving it
     /// shoves the read month off screen); total content height is wrong too, because one
-    /// gesture can add a month at one end and drop one at the other. See "Looking further
-    /// ahead is a deliberate unlock" in `docs/DECISIONS.md`.
+    /// gesture can add a month at one end and drop one at the other. See
+    /// `.claude/rules/swiftui-scrolling.md`.
     private func monthUnderMiddle() -> MonthKey? {
         let middleY = viewportHeight / 2
         return visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= middleY }
@@ -201,8 +202,8 @@ struct TimelineView: View {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
                     // the `GeometryReader` wrapping the whole screen in `body`, and passed
-                    // down instead. See "The app fills the top inset; the system draws over
-                    // it" in `docs/DECISIONS.md`.
+                    // down instead. See "The app fills the top
+                    // inset" in `docs/DESIGN.md`.
                     Tokens.Surface.base
                         .frame(height: topInset)
                         .frame(maxWidth: .infinity)
@@ -242,7 +243,8 @@ struct TimelineView: View {
     /// anchor month sits at its saved offset — clamped into the current window in case the
     /// floor has moved since. With none — the first run after installing — rests flush on
     /// the current month instead, its header at the top, next month above the fold. See
-    /// "The timeline never resets your position" in `docs/DECISIONS.md`.
+    /// "Your place survives a relaunch, to the month rather than the row"
+    /// in `docs/DECISIONS.md`.
     ///
     /// Tried and discarded: the newer `ScrollPosition`/`.scrollPosition(_:)` API, called the
     /// same way, produced no visible scroll — a `ScrollViewProxy` from `ScrollViewReader`
@@ -252,7 +254,7 @@ struct TimelineView: View {
     /// turn is enough for both to be ready; confirmed with logging, not assumed.
     ///
     /// `hasRestoredPlace` is set only inside the deferred block, once a scroll has actually
-    /// been issued — not before it, the way Step 6 set its own one-shot flag. A nil
+    /// been issued — not before it. A nil
     /// `scrollProxy` a turn later leaves the flag false, so the next `sections` change (there
     /// will be one; `rebuildSections()` always follows) gets another attempt instead of
     /// skipping the restore forever.
@@ -289,7 +291,7 @@ struct TimelineView: View {
     }
 
     /// The anchor to save: the month under the middle of the viewport, at its live offset —
-    /// the same rule Step 7's unlock and Step 9's restore both key on, so gesturing and
+    /// the same rule the unlock and the restore both key on, so gesturing and
     /// restoring agree on what "here" means. Nothing is saved when there is no live
     /// geometry to read (nothing has laid out yet, or the screen is the empty state).
     ///
@@ -297,14 +299,14 @@ struct TimelineView: View {
     /// reports its position as exactly `0` for as long as it is pinned, however far into the
     /// month the reader has gone — so a place saved from mid-month records the month and loses
     /// the depth, and the restore lands on that month's first row. That is the behaviour
-    /// "A saved place remembers the month, not the row" in `docs/DECISIONS.md` signs off for
-    /// v1.
+    /// "Your place survives a relaunch, to the month rather than the row" in `docs/DECISIONS.md`
+    /// signs off for v1.
     ///
     /// The honest measurement exists and is easy: the section's content is never pinned, so a
     /// month's true top is its content's top less one header height. Do not switch to it on
     /// its own. `restoreAnchor` cannot consume the negative offset that produces — asked for
     /// `-155.6` it delivered `+139.0` — so measuring better without also fixing the restore
-    /// makes the landing worse, not better. Step 9 of `docs/plans/timeline.md` records what
+    /// makes the landing worse, not better. `.claude/rules/swiftui-scrolling.md` records what
     /// was measured and where to start.
     private func currentPlace() -> TimelinePlace? {
         guard let month = monthUnderMiddle(), let offset = headerOffsets[month] else { return nil }
@@ -312,7 +314,8 @@ struct TimelineView: View {
     }
 
     /// Fires on scroll-idle and whenever the scene leaves `.active` — deliberately both, per
-    /// "The timeline never resets your position" in `docs/DECISIONS.md`: iOS gives no way to
+    /// "Your place survives a relaunch, to the month rather than the row" in `docs/DECISIONS.md`:
+    /// iOS gives no way to
     /// tell a clean background from a killed process apart, so neither may be the only
     /// writer. Suppressed during one of this view's own animated scrolls so an in-flight
     /// restore or return-to-resting doesn't overwrite the saved place with a mid-flight
@@ -323,7 +326,7 @@ struct TimelineView: View {
         // Deferred a run-loop turn: read one frame after scroll-idle or scenePhase fires,
         // not synchronously with it. `headerOffsets` is written from `onGeometryChange`,
         // which can land a beat behind the scroll settling or the scene backgrounding —
-        // the same lag Step 8 documented for the pinned header's ground and hairline.
+        // the same lag that once left the pinned header's ground a frame behind.
         DispatchQueue.main.async {
             guard let place = currentPlace() else { return }
             placeStore.save(place)
@@ -333,8 +336,8 @@ struct TimelineView: View {
     /// `today` moves forward as the calendar day changes underneath a running app. When the
     /// month itself changes, `window.current` moves up with it — and because the next month
     /// was always expanded, the month the reader is now in is already on screen and already
-    /// open; nothing is inserted above them. See "Crossing midnight into a new month" in
-    /// Step 9 of `docs/plans/timeline.md`.
+    /// open; nothing is inserted above them. See "Nothing under the reader's eyes moves"
+    /// in `docs/DESIGN.md`.
     private func handleDayChange() {
         today = Date()
         guard let window else { return }
@@ -345,8 +348,8 @@ struct TimelineView: View {
         rebuildSections()
     }
 
-    /// Opens the month named on the unlock bar. See "The anchor" in Step 7 of
-    /// `docs/plans/timeline.md`: a screenful of content lands *above* the viewport, so the
+    /// Opens the month named on the unlock bar. See "Anchoring" in
+    /// `.claude/rules/swiftui-scrolling.md`: a screenful of content lands *above* the viewport, so the
     /// month under the middle — not the bar, not total content height — is what has to stay
     /// put.
     private func unlockMonthAbove() {
@@ -358,7 +361,7 @@ struct TimelineView: View {
     }
 
     /// The tidy-up: unlocked months close once the reader has actually travelled up into
-    /// one of them and come back. Two guards make this safe — see "The tidy-up" in Step 7.
+    /// one of them and come back. Two guards make this safe — see "Anchoring" in `.claude/rules/swiftui-scrolling.md`.
     /// `isUnlockLatched` requires the trip up before any close can fire, so this never fires
     /// in the frame a month opens (it opens outside the viewport, which would otherwise read
     /// as "no longer visible" instantly). `isProgrammaticScroll` keeps this from firing while
@@ -377,7 +380,7 @@ struct TimelineView: View {
 
     /// `LatestButton`'s action: animates the reader back to the resting position — the
     /// current month's header at the container's top, the same target
-    /// `restorePlaceIfNeeded` uses — then runs Step 7's tidy-up once that scroll has
+    /// `restorePlaceIfNeeded` uses — then runs the tidy-up once that scroll has
     /// actually settled. `isProgrammaticScroll` holds `updateLatch` off for the same reason
     /// it does during `anchorAndSettle`: closing mid-animation would fight the animated
     /// scroll rather than follow it. See "Getting back" in `docs/DESIGN.md`.
@@ -426,10 +429,10 @@ struct TimelineView: View {
 
     /// Waits a run-loop turn for the resized list to lay out, restores `month`'s position,
     /// and holds off the close-on-scroll-back latch until that restoring scroll has settled
-    /// — see "No closing during a programmatic scroll" in Step 7 of
-    /// `docs/plans/timeline.md`. Exercised by opening and closing a month directly, and,
+    /// — see "Anchoring" in
+    /// `.claude/rules/swiftui-scrolling.md`. Exercised by opening and closing a month directly, and,
     /// via `returnToResting`, by an animated jump back across several unlocked months —
-    /// both verified on device in Step 8.
+    /// both verified on device.
     private func anchorAndSettle(_ month: MonthKey, to desiredOffset: CGFloat) {
         isProgrammaticScroll = true
         DispatchQueue.main.async {
@@ -457,21 +460,21 @@ struct TimelineView: View {
     /// geometry modifier on the `Section` breaks pinning *and* makes `scrollTo` resolve to
     /// the whole section, so a section height is right only while the header is broken.
     ///
-    /// **The container is shorter than the viewport by `pillClearance`.** Step 8 gave the list
+    /// **The container is shorter than the viewport by `pillClearance`.** The pill gave the list
     /// a bottom `contentMargins` so the floor line clears the floating pill, and `scrollTo`
     /// aligns within the container's *content area*, not the whole viewport. Dividing by the
     /// viewport instead lands every restore proportionally short — measured on device at
     /// 0.907x of whatever was asked, which is exactly (710 - 47) / (778 - 47). It slipped
-    /// through Step 8 because the offsets in play there were small enough for the error to be
-    /// a few points; Step 9 restores from arbitrary depth, where the same ratio is tens of
+    /// through while only unlocks used it, because those offsets were small enough for the error
+    /// to be a few points; restoring a saved place works from arbitrary depth, where the same ratio is tens of
     /// points and plainly visible. With the right denominator a single pass lands within a
     /// tenth of a point.
     ///
     /// **`desiredOffset` must not be negative.** `f` outside the unit square does not
     /// extrapolate: asking for -155.6 landed at +139.0 on device. So this can place a month's
     /// header anywhere from the container's top down, and cannot express "this month began
-    /// above the top of the screen". See "What a saved place cannot say yet" in Step 9 of
-    /// `docs/plans/timeline.md`.
+    /// above the top of the screen". See
+    /// `.claude/rules/swiftui-scrolling.md`.
     ///
     /// Every value is read live and unrounded — a cached or rounded height was the earlier
     /// version's bug, and it drifted by half a point per gesture.

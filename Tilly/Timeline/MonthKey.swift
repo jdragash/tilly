@@ -29,8 +29,7 @@ struct MonthKey: Hashable, Comparable, Identifiable, Sendable {
     }
 
     /// First day of the month through its last, both start-of-day — the interval the
-    /// engine windows an "effective dates" query against. See "How month paging maps onto
-    /// the engine" in `docs/plans/timeline.md`.
+    /// engine windows an "effective dates" query against. See `.claude/rules/core-engine.md`.
     func interval(in calendar: Calendar) -> DateInterval {
         let first = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
         let daysInMonth = calendar.range(of: .day, in: .month, for: first)?.count ?? 1
