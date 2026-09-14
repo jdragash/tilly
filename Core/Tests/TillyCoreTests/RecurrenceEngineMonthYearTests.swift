@@ -50,7 +50,7 @@ import Foundation
 
     /// Plan originally read "31 May" for this case, which can't follow from a 30 Nov
     /// anchor (November has no 31st). Corrected to 30 May — anchor day restored since
-    /// May has 31 days. See docs/plans/recurrence-engine.md build note, 2026-09-06.
+    /// May has 31 days.
     @Test func everyThreeMonthsAnchoredNov30RestoresAnchorDayWhenMonthAllows() {
         let anchor = Self.date(2027, 11, 30)
         let rule = RecurrenceRule(interval: 3, unit: .month, anchorDate: anchor)

@@ -22,13 +22,12 @@ A brief can scope a whole feature or a single change. It does not have to be a p
 
 ## Fixed lookup order (before asking Jake anything)
 
-1. **`docs/PROJECT.md`** — read in full. The tenets are the frame for everything that
-   follows. Do not ask what this already answers.
-2. **`docs/ROADMAP.md`** — is this already scheduled? Is it explicitly deferred, and if so
-   does the stated reason still hold? A brief for something the roadmap defers must say
-   why that's changing.
-3. **`docs/DECISIONS.md`** — has this been decided before? A brief that reopens a settled
-   decision must name the entry and say what new information justifies revisiting it.
+1. **`docs/PROJECT.md`** — read in full, with `docs/TASTE.md`. The tenets are the frame for
+   everything that follows. Do not ask what these already answer.
+2. **`docs/ROADMAP.md`** — is this scheduled or deferred? Note it. The roadmap is a forecast;
+   a brief never has to justify Jake reprioritising.
+3. **`docs/DECISIONS.md`** — has this been decided before? A brief that reopens an entry names
+   it and says what's new. Jake having changed his mind counts as new.
 4. **`docs/INSPIRATION.md`** — is there existing evidence about this surface? Usually yes
    for anything touching the timeline or the editor.
 5. **`docs/briefs/`** — list it. If a brief for this topic exists, go to "Existing brief"
@@ -106,5 +105,5 @@ engine and logic work usually goes straight there.
   doesn't settle them. Decisions get recorded when they're actually made.
 - **Don't restate the tenets.** Reference them. They live in `PROJECT.md` and duplicating
   them means they drift.
-- **An empty answer is a finding.** If the roadmap defers this and nobody remembers why,
-  say that plainly rather than inventing a rationale.
+- **An empty answer is a finding.** If something is missing from the docs, say that plainly
+  rather than inventing a rationale.

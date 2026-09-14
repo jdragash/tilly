@@ -2,7 +2,8 @@ import Foundation
 
 /// A scroll position and nothing else — there is no expanded state to go with it, because
 /// an unlocked month closes itself and stays open only for the session that opened it. See
-/// "The timeline never resets your position" in `docs/DECISIONS.md`.
+/// "Your place survives a relaunch, to the month rather than the row"
+/// in `docs/DECISIONS.md`.
 struct TimelinePlace: Codable, Equatable, Sendable {
     var anchorMonthID: Int      // MonthKey.id, the month under the middle of the viewport
     var anchorOffset: Double    // its top, in points, relative to the container's top

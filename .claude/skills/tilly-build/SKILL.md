@@ -23,9 +23,10 @@ Opus pass with `tilly-explore` before I keep going?" Don't quietly redesign in S
   stop and run `tilly-plan` rather than improvising one. Building without a plan means
   making design and architecture decisions in Sonnet, which is the thing the workflow is
   arranged to avoid.
-- The brief at `docs/briefs/<slug>/brief.md` and the relevant `docs/DECISIONS.md` entries
+- The brief at `docs/briefs/<slug>/brief.md`
 - `CLAUDE.md` — the hard rules, especially the `Core/` boundary and the token rule
 - `docs/DESIGN.md` — tokens, state grammar, copy rules
+- `.claude/rules/` — load by path when you touch matching files. Read them if they haven't loaded.
 
 ## Execute one step at a time
 
@@ -40,6 +41,13 @@ enough. A wrong spec caught in one message costs far less than one followed to c
 
 The same applies to anything the plan doesn't cover. A gap is a signal to ask, not licence
 to decide.
+
+**Editing a test to make it pass is a stop**, unless the step says it changes the behaviour that
+test asserts, and the test's intent survives the edit.
+
+**Record lessons as you find them.** Anything learned that a green suite wouldn't catch — an API
+that doesn't behave, a measurement that surprised you, a trap — goes into the plan's `## Lessons`
+section in the same change. `tilly-ship` moves those into `.claude/rules/` when the work lands.
 
 ## The loop
 

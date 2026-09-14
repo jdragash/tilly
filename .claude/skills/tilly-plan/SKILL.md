@@ -29,8 +29,8 @@ work is going to be right.
 ## Read first
 
 - The brief at `docs/briefs/<slug>/brief.md`
-- Relevant `docs/DECISIONS.md` entries — the plan must not reopen settled questions
-- `docs/DESIGN.md` for anything touching UI
+- `docs/DESIGN.md` and `docs/DECISIONS.md` — the plan must not reopen settled questions
+- `.claude/rules/` files for the paths the plan touches — lessons earlier work paid for
 - `CLAUDE.md` for the standing constraints every step inherits
 - The actual code being changed. Never plan against an assumed structure.
 
@@ -43,13 +43,16 @@ docs/plans/<slug>.md
 Same slug as the brief. If a plan exists there, read it first — append a dated `## Updates`
 section rather than rewriting, unless Jake asks for a fresh one.
 
+A plan is disposable. Once the work ships, `tilly-ship` moves its Lessons into `.claude/rules/`
+and deletes it; git keeps it, and `Plan:` trailers still resolve through `git log`.
+
 ## Structure
 
 ```markdown
 # <Title> — implementation plan
 
 **Brief:** docs/briefs/<slug>/brief.md
-**Decisions:** <the DECISIONS.md entries this implements>
+**Settled by:** <the DESIGN.md rules and DECISIONS.md entries this implements>
 
 ## Already decided — do not reopen
 [Bulleted. Anything a step might otherwise be tempted to re-litigate.]
@@ -70,6 +73,10 @@ section rather than rewriting, unless Jake asks for a fresh one.
 **Verify:** [the literal command to run]
 
 **Out of scope:** [what this step must not touch]
+
+## Lessons
+[Empty when written. Filled in during build: anything learned that a green suite would not
+catch.]
 ```
 
 ## What makes a step spec good
@@ -78,7 +85,11 @@ section rather than rewriting, unless Jake asks for a fresh one.
 a rule and a range" leaves five decisions open. The signature leaves none.
 
 **Named test cases, not "add tests".** For anything with logic, enumerate the cases the
-step must cover, including the awkward ones. The tests are the specification.
+step must cover, including the awkward ones. The tests are the specification. A step that
+changes existing behaviour names the existing tests it expects to edit.
+
+**Build settings as a literal block** copied from something that ran, never a hand-assembled
+table. Every row of a table looks plausible, and a missing row is invisible.
 
 **Independently verifiable.** Each step ends green and could be committed on its own. A step
 that only makes sense alongside the next one is one step, not two.
@@ -116,8 +127,8 @@ turns a bad guess into a confidently executed bad guess.
   that doesn't exist, or a path that moved, is worse than no plan.
 - **Don't restate `CLAUDE.md`.** Steps inherit those constraints. Repeating them makes them
   drift; reference them instead.
-- **Don't settle product or design questions here.** If a step needs a decision that
-  `DECISIONS.md` doesn't record, that's a gap — go back to `tilly-brief` or `tilly-explore`
+- **Don't settle product or design questions here.** If a step needs a decision the docs
+  don't settle, that's a gap — go back to `tilly-brief` or `tilly-explore`
   rather than deciding it inside an implementation plan.
 - **Every step names its verification command.** A step whose completion can't be checked
   isn't specified yet.

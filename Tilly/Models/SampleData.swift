@@ -6,8 +6,7 @@ import TillyCore
 /// wherever the app is first opened, the seed shows upcoming and charged rows, an estimate
 /// of each temporal state, a skipped bill, and the neighbouring-month trap made visible. Most
 /// anchor six months back so there is history to scroll through; the annual insurance anchors
-/// nine months back, deliberately backdated, so the floor sits below two empty months. See
-/// `docs/plans/timeline.md`, Step 3 for the table and Step 6 for why the anchors moved.
+/// nine months back, deliberately backdated, so the floor sits below two empty months.
 enum SampleData {
     private static let hasSeededKey = "tillySampleDataSeeded"
     private static let emptyStoreKey = "tillyEmptyStore"
