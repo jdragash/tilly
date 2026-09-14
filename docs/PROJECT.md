@@ -1,8 +1,8 @@
 # Tilly — what it is and why
 
 The source of truth for what this app is trying to be. Stable by design: sequence lives
-in `ROADMAP.md`, visual and interaction rules in `DESIGN.md`, and the record of choices
-already made in `DECISIONS.md`.
+in `ROADMAP.md`, principles in `TASTE.md`, visual and interaction rules in `DESIGN.md`, and
+costly choices in `DECISIONS.md`.
 
 ## The problem
 
@@ -37,6 +37,8 @@ it's charged. The app's job is to know things for you, not to ask you to tell it
 could have worked out.
 
 *Test:* does this feature create an ongoing obligation for the user? If yes, it's wrong.
+Any moment the app knows something and waits for you to act anyway is the same failure — a
+setting that asks for a restart, or a mess left for you to clear.
 
 ### 2. Minimal for hierarchy's sake, not minimalism's
 
@@ -83,8 +85,7 @@ enough insight to see where the money goes.
 
 ## Out of scope, deliberately
 
-Each of these was considered and deferred with a reason. See `ROADMAP.md` for when, and
-`DECISIONS.md` for the full reasoning.
+Each of these was considered and deferred with a reason. See `ROADMAP.md` for when.
 
 - **Savings buckets and goals** — a second app-shaped idea. The schema and navigation
   leave room for it; building both at once would double the model before either is proven.
