@@ -13,8 +13,8 @@ judgement call is the final step — deciding what's genuinely durable enough to
 
 ## Before starting
 
-1. Confirm the direction was actually approved — check `docs/DECISIONS.md` for this work.
-   If there's no recorded decision, stop and ask rather than assuming.
+1. Confirm the direction was actually approved — check the brief and the conversation. If
+   neither shows Jake agreed to it, stop and ask rather than assuming.
 2. Branch from `main` if the work isn't already on one. Name it for the work: `timeline`,
    `occurrence-overrides`.
 
@@ -41,8 +41,8 @@ Only these three are not in `CLAUDE.md` and belong to shipping:
 - [ ] VoiceOver labels on any new interactive element, and a hint where the action is not
       obvious from the label.
 - [ ] Tests cover the awkward cases, not just the happy path.
-- [ ] Nothing in the diff contradicts a `docs/DECISIONS.md` entry that still binds. Check the
-      supersession marker before treating an entry as live.
+- [ ] If the diff conflicts with a doc, ask Jake which is right, then update the doc in this
+      change. Don't narrate the difference.
 
 ## Self-review — product tenets
 
@@ -75,7 +75,7 @@ piece of work at once, so write it like the commit bodies: what is now true abou
 project, what was deliberately left out, and the `Brief:` / `Plan:` trailers.
 
 Before asking, have ready:
-- What changed and why, and which `docs/DECISIONS.md` entry it implements
+- What changed and why, and which brief it implements
 - Screenshots for any UI work — before and after where there's a before
 - Anything deliberately left out, and why
 
@@ -83,15 +83,22 @@ Ask before merging and before pushing. Both, every time.
 
 ## After merging
 
-1. **Promote durable learnings.** This is the step that keeps the library alive:
-   - A new standing visual or interaction rule → `docs/DESIGN.md`
-   - A decision made during implementation, with what lost → `docs/DECISIONS.md`
+1. **Promote durable learnings**, each to its one right home. Rewrite in place; don't append.
+   - A standing visual or interaction rule → `docs/DESIGN.md`, present tense, no backstory
+   - A choice that is costly to reverse, or will be reopened with a tempting loser →
+     `docs/DECISIONS.md`, replacing any entry it changes
+   - A tuning value → a comment beside the token or constant, not a doc
+   - The plan's `## Lessons` → `.claude/rules/<topic>.md`, path-scoped; then delete the plan
    - Something learned about what works on this kind of surface → `docs/INSPIRATION.md`
-   - Scope that shifted → `docs/ROADMAP.md`
+   - Scope that shifted → `docs/ROADMAP.md`, silently
+   - A workflow change → the skill or `CLAUDE.md` line itself, with the why in a `meta:` commit
+   - Anything else → nowhere. It's in git.
 2. Delete the merged branch, local and remote.
+3. Run `scripts/doc-budget.sh`. If a feature landed rather than a fix, or the budget fails,
+   suggest `tilly-prune` in one line.
 
-Only promote things likely to recur. One-off choices are noise in a standing document; if
-unsure, ask Jake before elevating something to a rule.
+Only promote things likely to recur. `docs/TASTE.md` is never edited here — that's
+`tilly-prune`'s job, with Jake's approval.
 
 ## Hard constraints
 

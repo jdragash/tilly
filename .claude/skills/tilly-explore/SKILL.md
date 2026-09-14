@@ -32,10 +32,11 @@ and run `tilly-brief` — don't improvise one inline.
 
 - The brief in full
 - `docs/PROJECT.md` — the tenets are the evaluation criteria
+- `docs/TASTE.md` — name the principle each direction leans on, and the one it strains
 - `docs/INSPIRATION.md` — the specific evidence about what works on this kind of surface
 - `docs/DESIGN.md` — existing tokens, state grammar, copy rules
 - `docs/DECISIONS.md` — what is already settled on this surface, so a "direction" isn't a
-  re-run of something rejected months ago
+  re-run of something already rejected
 
 ## The gates (both mandatory)
 
@@ -120,27 +121,15 @@ overscroll, no Liquid Glass, no Dynamic Type, and no momentum that feels like iO
 list on the page next to the controls, not only in chat, so the prototype cannot be
 mistaken for a promise about how the built thing will feel.
 
-**It is kept.** `docs/prototypes/<slug>.html`, committed, one per exploration. A prototype is
-a record of how a decision was reached, and that is worth more than the disk it costs —
-months later it is the only thing that can still answer "why does it work like that".
+**It is kept** at `docs/prototypes/<slug>.html`, committed, one per exploration: it's the only
+record that can still answer "why does it work like that". Open it with an HTML comment carrying
+the date, the questions it settled, which direction won, and this line:
 
-**Which makes dating it mandatory, not optional.** Open every prototype with an HTML comment
-carrying the date, the questions it was built to settle, which direction won, and the line
-that resolves the conflict when one arrives:
+> Retained as a record of the work rather than as a spec. Where this disagrees with the docs,
+> the docs win.
 
-> Retained as a record of the work rather than as a spec. Where this disagrees with
-> `docs/DECISIONS.md`, the decisions log wins.
-
-That sentence is the whole safety mechanism. A retained prototype *will* eventually disagree
-with the design — it runs, so it looks more authoritative than a canvas, and this project has
-already been bitten once by an approved-looking reference that was wrong in a specific place.
-Naming the tiebreaker inside the file is what stops a later session building from it.
-
-**Expect it to find things.** The timeline's prototype established that a month of eleven
-recurring expenses is one screenful, so the header barely pins and an opened month can
-never scroll far enough out of view to close itself again. That is a fact about the design
-that three artboards, a canvas and a written plan had all missed, and it surfaced in about
-twenty minutes.
+A prototype runs, so it looks more authoritative than a canvas. That line is what stops a later
+session building from a stale one.
 
 ### Rung 4 — iterate in place
 
@@ -155,45 +144,25 @@ being relitigated; settled-and-deleted looks like it was never considered.
 
 ## Recording the decision
 
-After Jake picks (or rejects everything), append to `docs/DECISIONS.md`:
+After Jake picks (or rejects everything), put each outcome in its one right home, rewriting in
+place rather than appending:
 
-```markdown
-## <what was decided>
+- **A visual or interaction rule** → `docs/DESIGN.md`, present tense, no backstory. A line of why
+  only where the rule would otherwise look arbitrary.
+- **A choice that is costly to reverse, or will be reopened with a rejected option that still
+  looks tempting** → `docs/DECISIONS.md`, in its format, replacing any entry it changes. Most
+  explorations produce none.
+- **A tuning value** (a threshold, a duration) → the token's comment. It goes in `DESIGN.md` too
+  only if a user would notice it being wrong — and then the number is written down.
+- **A correction Jake made to a proposed direction** → auto memory, as proposed / chosen / why.
+  Never `TASTE.md` directly; `tilly-prune` promotes patterns.
+- **Everything else** — the path taken, the losing arguments at length — lives in the commit
+  body, the canvas annotations and the prototype.
 
-**Decided:** YYYY-MM-DD · **From:** <brief slug>
-
-**Chosen:** <direction, one line>
-
-**Rejected — <name>:** <why it lost>
-**Rejected — <name>:** <why it lost>
-```
-
-Rejected alternatives with reasons matter as much as the winner. That's what stops the same
-debate recurring.
-
-If the exploration settled anything about the visual language — state grammar, a copy rule,
-a spacing decision — also update `docs/DESIGN.md`. `DECISIONS.md` records *that* it was
-decided; `DESIGN.md` records the rule itself.
-
-**Then bring the canvas and the prototype into line with what was decided.** This is the step
-that gets skipped. The timeline's canvas kept a `TODAY` badge on its main artboard after
-`DECISIONS.md` had rejected it, and `tilly-plan` had to warn the implementer that the
-approved-looking reference was wrong in a specific place.
-
-**Nothing is deleted to achieve this.** Both the canvas and the prototype are kept as records
-of how the decision was reached — a rejected option that is still visible is what stops the
-same debate recurring, and one that was quietly removed looks like it was never considered.
-So bringing them into line means *marking*, not pruning:
-
-- Retitle a rejected direction's artboard so its status is legible from the canvas view
-  ("B — chosen", "A — rejected"), and rewrite its annotation to say why it lost.
-- Where an artboard is now wrong rather than merely rejected, annotate it as superseded and
-  say which decision superseded it. An artboard drawing something that turned out to be
-  impossible is worth keeping *and* worth labelling.
-- Move settled work to its own page rather than deleting it.
-
-An unmarked canvas or prototype that disagrees with the decisions log is worse than none,
-because it looks authoritative. A marked one is a record.
+**Then bring the canvas and prototype into line — by marking, never deleting.** Retitle
+rejected artboards ("A — rejected") with a line on why they lost; annotate an artboard that turned
+out wrong as superseded and say by what; move settled work to its own page. An unmarked artifact
+that disagrees with the docs looks authoritative, which is worse than none.
 
 ## Next
 
@@ -219,7 +188,8 @@ instead.
   argument rather than a permutation. If a fourth genuinely earns its place, say why.
 - **Draw the states, not the happy path.** A canvas showing only the ideal case has not
   tested the design.
-- **Judge against the tenets, not taste.** "This feels cleaner" is not an argument;
-  "this puts the most important element at eye level, which the alternative buries" is.
+- **Judge against the tenets and `TASTE.md`, not a feeling.** "This feels cleaner" is not an
+  argument; "this puts the most important element at eye level, which the alternative buries"
+  is.
 - **Watch for the competitor failure mode.** If a layout is accumulating boxes above the
   actual content, that's the specific thing `docs/INSPIRATION.md` warns about. Name it.
