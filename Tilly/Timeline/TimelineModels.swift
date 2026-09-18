@@ -58,6 +58,7 @@ struct MonthSection: Identifiable, Equatable, Sendable {
 /// without SwiftData.
 struct TimelineExpense: Equatable, Sendable {
     let name: String
+    let emoji: String? // nil only for data saved before categories existed
     let snapshot: ExpenseSnapshot
     let overrides: [OccurrenceOverride]
 }

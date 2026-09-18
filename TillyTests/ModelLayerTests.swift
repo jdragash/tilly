@@ -168,4 +168,63 @@ import TillyCore
         #expect(occurrences.contains { $0.scheduledDate == Self.date(2027, 2, 28) })
         #expect(occurrences.count == 2)
     }
+
+    // MARK: Categories
+
+    @Test func aCategoryRoundTripsItsNameAndEmoji() throws {
+        let context = try Self.makeContext()
+        context.insert(ExpenseCategory(name: "Streaming", emoji: "📺"))
+        try context.save()
+
+        let fetched = try #require(try context.fetch(FetchDescriptor<ExpenseCategory>()).first)
+        #expect(fetched.name == "Streaming")
+        #expect(fetched.emoji == "📺")
+    }
+
+    @Test func anExpenseKeepsItsCategory() throws {
+        let context = try Self.makeContext()
+        let category = ExpenseCategory(name: "Home", emoji: "🏠")
+        context.insert(category)
+        context.insert(Expense(name: "Rent", category: category))
+        try context.save()
+
+        let fetched = try #require(try context.fetch(FetchDescriptor<Expense>()).first)
+        #expect(fetched.category?.id == category.id)
+        #expect(category.expenses?.count == 1)
+    }
+
+    @Test func deletingACategoryLeavesItsExpensesWithNone() throws {
+        let context = try Self.makeContext()
+        let category = ExpenseCategory(name: "Home", emoji: "🏠")
+        context.insert(category)
+        context.insert(Expense(name: "Rent", category: category))
+        try context.save()
+
+        context.delete(category)
+        try context.save()
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>())
+        #expect(expenses.count == 1)
+        #expect(expenses.first?.category == nil)
+    }
+
+    @Test func theTimelineExpenseCarriesTheCategoryEmoji() throws {
+        let context = try Self.makeContext()
+        let category = ExpenseCategory(name: "Home", emoji: "🏠")
+        let expense = Expense(name: "Rent", category: category)
+        context.insert(category)
+        context.insert(expense)
+        try context.save()
+
+        #expect(expense.timelineExpense.emoji == "🏠")
+    }
+
+    @Test func anExpenseWithNoCategoryHasNoEmoji() throws {
+        let context = try Self.makeContext()
+        let expense = Expense(name: "Rent")
+        context.insert(expense)
+        try context.save()
+
+        #expect(expense.timelineExpense.emoji == nil)
+    }
 }

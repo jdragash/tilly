@@ -28,7 +28,7 @@ import TillyCore
     ) -> TimelineExpense {
         let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor)
         let snapshot = ExpenseSnapshot(id: UUID(), amount: amount, isEstimate: false, rule: rule, isArchived: isArchived)
-        return TimelineExpense(name: name, snapshot: snapshot, overrides: overrides)
+        return TimelineExpense(name: name, emoji: nil, snapshot: snapshot, overrides: overrides)
     }
 
     static func month(
