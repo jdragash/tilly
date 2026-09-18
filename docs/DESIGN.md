@@ -56,7 +56,7 @@ Categories are kept in Settings. There is no list of every expense: the timeline
 ### The row
 
 Icon well, then name with the date beneath it, then the amount. The well holds the category's
-emoji; every expense has one. A bill that ends adds its last month to the date, `Sep 18 · ends
+emoji; every expense has one. A bill that ends adds its last month to the date, `Fri 18 · ends
 05/27`, and nothing else joins that line.
 
 ### Amounts
