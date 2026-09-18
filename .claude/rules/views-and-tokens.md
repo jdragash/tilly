@@ -38,7 +38,7 @@ grep -REn '#[0-9A-Fa-f]{6}|Color\(red:|\.font\(\.(largeTitle|title|headline|subh
 ## Before calling a screen done
 
 Light and dark. Dynamic Type at an accessibility size. The empty state. For timeline work:
-upcoming and charged, skipped, a day with one charge and a day with several.
+upcoming and charged, skipped, a day with several charges.
 
 ## SwiftData models
 

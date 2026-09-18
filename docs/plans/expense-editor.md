@@ -136,7 +136,8 @@ open, **stop and report** rather than writing a migration plan.
 `Tilly/Timeline/MonthSectionView.swift`, `Tilly/Timeline/OccurrenceRow.swift`,
 `Tilly/Timeline/TimelineFormatting.swift`, `Tilly/DesignSystem/Tokens.swift`,
 `TillyTests/TimelineBuilderTests.swift`, `TillyTests/TimelineFormattingTests.swift`,
-`.claude/rules/views-and-tokens.md` (all modified); `Tilly/Timeline/DayGroupView.swift` (deleted)
+`TillyTests/SampleDataTests.swift`, `.claude/rules/views-and-tokens.md` (all modified);
+`Tilly/Timeline/DayGroupView.swift` (deleted)
 
 **Interface:**
 ```swift
@@ -190,6 +191,16 @@ several charges".
   `aSkippedOccurrenceIsListedAndOutOfTheTotal`
 - new `twoChargesOnOneDayAreTwoEntries`, `anEntryCarriesItsEmoji`, `anEntryCarriesItsRulesEnd`,
   `anEntryWithNoEndCarriesNone`
+
+`SampleDataTests` asserts the shape this step removes, so it changes with it (step 4 then
+deletes the file). Adapt mechanically to `section.entries`, keeping each test's intent:
+- `theCurrentMonthShowsEveryStateAtOnce`: `days.flatMap(\.entries)` → `entries`; the
+  `isGrouped` assertion becomes "at least two entries share a date"
+- `theMovedBillLandsInThisMonthAndLeavesThePreviousOne`: `days` / `day.date` → `entries` /
+  `entry.date`
+- `theSkippedBillIsListedAndOutOfItsDayTotal` → `theSkippedBillIsListedAndOutOfTheMonthTotal`:
+  the day-total assertion becomes "the month's `total` excludes the skipped entry's amount"
+- `theBackdatedAnnualSitsBelowTwoEmptyMonths`: `days` → `entries`
 
 and in `TimelineFormattingTests`: `aDateLineWithAnEndAddsItsMonth` (a rule ending 2027-05-18
 gives "Fri 18 · ends 05/27" for an entry on Fri 18), `aDateLineWithNoEndIsJustTheDay`,
@@ -491,6 +502,13 @@ editing categories; anything else in Settings.
 ---
 
 ## Lessons
+
+- **Step 3:** `Tokens.Text.rowEmoji` is `.title2`, which scales with Dynamic Type, while the well
+  (`Tokens.Size.iconAccessible`, 44pt) is fixed. At `accessibility-extra-large` the emoji fills the
+  well to its edges. Fine to read, but a fixed-size well is the reason it can't grow further.
+- **Step 3:** the seeded store has no categories or end dates, so the emoji, the fade and
+  `· ends 05/27` can't be seen on the seeded timeline. Check them with a temporary local edit to
+  `SampleData` and revert it; `PreviewData` (step 4) will make this ordinary.
 
 ## If a step is wrong
 

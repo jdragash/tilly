@@ -227,7 +227,7 @@ struct TimelineView: View {
         // The placeholder shown for a month `rebuildSections()` hasn't populated yet — never
         // the current month's real answer, so `isCurrent: false` here is a deliberate "not
         // known yet", not a claim.
-        sections[month] ?? MonthSection(month: month, days: [], total: 0, remaining: 0, isCurrent: false)
+        sections[month] ?? MonthSection(month: month, entries: [], total: 0, remaining: 0, isCurrent: false)
     }
 
     private func setUpIfNeeded() {
@@ -499,7 +499,7 @@ struct TimelineView: View {
         while key >= window.floor {
             let built = TimelineBuilder.month(key, expenses: timelineExpenses, today: today, calendar: calendar)
             result[key] = MonthSection(
-                month: built.month, days: built.days, total: built.total,
+                month: built.month, entries: built.entries, total: built.total,
                 remaining: built.remaining, isCurrent: key == window.current
             )
             key = key.advanced(by: -1)

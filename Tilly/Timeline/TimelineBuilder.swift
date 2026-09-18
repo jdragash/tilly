@@ -15,7 +15,7 @@ enum TimelineBuilder {
         let range = month.interval(in: calendar)
         let todayStart = calendar.startOfDay(for: today)
 
-        var entriesByDay: [Date: [TimelineEntry]] = [:]
+        var entries: [TimelineEntry] = []
         for expense in expenses {
             let occurrences = RecurrenceEngine.occurrences(
                 for: expense.snapshot,
@@ -23,47 +23,44 @@ enum TimelineBuilder {
                 in: range,
                 calendar: calendar
             )
+            let endDate = expense.snapshot.rule.endDate.map { calendar.startOfDay(for: $0) }
             for occurrence in occurrences {
                 let day = calendar.startOfDay(for: occurrence.effectiveDate)
                 let state: OccurrenceState = occurrence.isSkipped
                     ? .skipped
                     : (day <= todayStart ? .charged : .upcoming)
-                let entry = TimelineEntry(
+                entries.append(TimelineEntry(
                     id: occurrence.id,
                     name: expense.name,
+                    emoji: expense.emoji,
                     date: day,
                     amount: occurrence.amount.map(roundedToWholeUnits),
-                    state: state
-                )
-                entriesByDay[day, default: []].append(entry)
+                    state: state,
+                    endDate: endDate
+                ))
             }
         }
+        entries.sort(by: entryOrder)
 
-        let days = entriesByDay
-            .map { day, entries in dayGroup(on: day, entries: entries, todayStart: todayStart) }
-            .sorted { $0.date > $1.date }
-
-        let total = days.reduce(Decimal(0)) { $0 + $1.total }
-        let remaining = days
-            .flatMap(\.entries)
+        let total = entries
+            .filter { $0.state != .skipped }
+            .reduce(Decimal(0)) { $0 + ($1.amount ?? 0) }
+        let remaining = entries
             .filter { $0.state == .upcoming }
             .reduce(Decimal(0)) { $0 + ($1.amount ?? 0) }
 
         // isCurrent is never this builder's call — see the note on MonthSection.isCurrent.
-        return MonthSection(month: month, days: days, total: total, remaining: remaining, isCurrent: false)
+        return MonthSection(month: month, entries: entries, total: total, remaining: remaining, isCurrent: false)
     }
 
-    private static func dayGroup(on day: Date, entries: [TimelineEntry], todayStart: Date) -> DayGroup {
-        let sortedEntries = entries.sorted(by: entryOrder)
-        let total = sortedEntries
-            .filter { $0.state != .skipped }
-            .reduce(Decimal(0)) { $0 + ($1.amount ?? 0) }
-        let state: OccurrenceState = day <= todayStart ? .charged : .upcoming
-        return DayGroup(date: day, entries: sortedEntries, total: total, state: state)
-    }
-
-    /// Descending by amount; ties break on name, ascending; a `nil` amount sorts last.
+    /// Date descending so the future sits above; within a day, amount descending, ties on
+    /// name ascending, a `nil` amount last.
     private static func entryOrder(_ lhs: TimelineEntry, _ rhs: TimelineEntry) -> Bool {
+        if lhs.date != rhs.date { return lhs.date > rhs.date }
+        return amountOrder(lhs, rhs)
+    }
+
+    private static func amountOrder(_ lhs: TimelineEntry, _ rhs: TimelineEntry) -> Bool {
         switch (lhs.amount, rhs.amount) {
         case let (lhsAmount?, rhsAmount?):
             return lhsAmount == rhsAmount ? lhs.name < rhs.name : lhsAmount > rhsAmount

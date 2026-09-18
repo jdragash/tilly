@@ -23,11 +23,10 @@ extension OccurrenceState {
     }
 }
 
-/// One occurrence: icon, then name with the date beneath it, then the amount. `showsDate`
-/// is `false` inside a grouped day, where the day heading carries the date instead.
+/// One occurrence: the category's emoji in a well, then name with the date beneath it, then
+/// the amount. Every charge is its own row and carries its own date.
 struct OccurrenceRow: View {
     let entry: TimelineEntry
-    var showsDate: Bool = true
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.calendar) private var calendar
@@ -50,9 +49,7 @@ struct OccurrenceRow: View {
             iconWell(size: Tokens.Size.icon, radius: Tokens.Radius.icon)
             VStack(alignment: .leading, spacing: 0) {
                 nameText(wraps: false)
-                if showsDate {
-                    dateText
-                }
+                dateText
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             amountText
@@ -67,9 +64,7 @@ struct OccurrenceRow: View {
             iconWell(size: Tokens.Size.iconAccessible, radius: Tokens.Radius.iconAccessible)
             VStack(alignment: .leading, spacing: Tokens.Space.tight) {
                 nameText(wraps: true)
-                if showsDate {
-                    dateText
-                }
+                dateText
                 amountText
             }
         }
@@ -86,6 +81,14 @@ struct OccurrenceRow: View {
         RoundedRectangle(cornerRadius: radius, style: .continuous)
             .fill(Tokens.Surface.iconWell)
             .frame(width: size, height: size)
+            .overlay {
+                if let emoji = entry.emoji {
+                    Text(emoji)
+                        .font(Tokens.Text.rowEmoji)
+                }
+            }
+            // An upcoming or skipped row sits back with its icon, the way its ink does.
+            .opacity(entry.state == .charged ? 1 : Tokens.Opacity.upcomingIcon)
             .accessibilityHidden(true)
     }
 
@@ -98,7 +101,7 @@ struct OccurrenceRow: View {
     }
 
     private var dateText: some View {
-        Text(TimelineFormatting.dayLine(entry.date, calendar: calendar, locale: locale))
+        Text(TimelineFormatting.dateLine(for: entry, calendar: calendar, locale: locale))
             .font(Tokens.Text.caption)
             .foregroundStyle(entry.state.secondaryInk)
     }

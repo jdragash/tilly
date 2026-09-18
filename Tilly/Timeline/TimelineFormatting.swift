@@ -29,8 +29,21 @@ enum TimelineFormatting {
         return formatter.string(from: date)
     }
 
-    /// "Rent, Saturday 12 September, 950 US dollars out, upcoming" — name, date, amount
-    /// and state read as a sentence, so VoiceOver announces one thing rather than four.
+    /// "Fri 18 · ends 05/27" when the entry has an end; "Fri 18" otherwise.
+    static func dateLine(for entry: TimelineEntry, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        let day = dayLine(entry.date, calendar: calendar, locale: locale)
+        guard let endDate = entry.endDate else { return day }
+
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.locale = locale
+        formatter.dateFormat = "MM/yy"
+        return "\(day) \u{00B7} ends \(formatter.string(from: endDate))"
+    }
+
+    /// "Rent, Saturday 12 September, 950 US dollars out, upcoming" — name, date, amount,
+    /// the end when there is one, and state read as a sentence, so VoiceOver announces one thing rather than four.
     /// The currency is spoken in full, from the same locale the screen formats against.
     static func accessibilityLabel(for entry: TimelineEntry, calendar: Calendar, locale: Locale) -> String {
         let dateFormatter = DateFormatter()
@@ -47,7 +60,13 @@ enum TimelineFormatting {
             amountString = "amount not yet known"
         }
 
-        return "\(entry.name), \(dateString), \(amountString), \(stateWord(for: entry.state))"
+        var parts = [entry.name, dateString, amountString]
+        if let endDate = entry.endDate {
+            dateFormatter.dateFormat = "MMMM yyyy"
+            parts.append("ends \(dateFormatter.string(from: endDate))")
+        }
+        parts.append(stateWord(for: entry.state))
+        return parts.joined(separator: ", ")
     }
 
     /// "−€162 left" for the current month; "−€1,539" for every other month. A current month

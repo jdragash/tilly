@@ -23,12 +23,14 @@ import TillyCore
         name: String = "Test",
         amount: Decimal? = 10,
         anchoredOn anchor: Date,
+        emoji: String? = nil,
+        endDate: Date? = nil,
         isArchived: Bool = false,
         overrides: [OccurrenceOverride] = []
     ) -> TimelineExpense {
-        let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor)
+        let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor, endDate: endDate)
         let snapshot = ExpenseSnapshot(id: UUID(), amount: amount, isEstimate: false, rule: rule, isArchived: isArchived)
-        return TimelineExpense(name: name, emoji: nil, snapshot: snapshot, overrides: overrides)
+        return TimelineExpense(name: name, emoji: emoji, snapshot: snapshot, overrides: overrides)
     }
 
     static func month(
@@ -41,34 +43,44 @@ import TillyCore
 
     // MARK: Shape and ordering
 
-    @Test func aMonthWithNoExpensesHasNoDays() {
+    @Test func aMonthWithNoExpensesHasNoEntries() {
         let section = Self.month([])
-        #expect(section.days.isEmpty)
+        #expect(section.entries.isEmpty)
         #expect(section.total == 0)
     }
 
-    @Test func daysDescendSoTheFutureSitsAbove() {
+    @Test func entriesDescendByDateSoTheFutureSitsAbove() {
         let expenses = [2, 15, 28].map { Self.expense(anchoredOn: Self.date(2027, 1, $0)) }
         let section = Self.month(expenses)
-        #expect(section.days.map(\.date) == [28, 15, 2].map { Self.date(2027, 1, $0) })
+        #expect(section.entries.map(\.date) == [28, 15, 2].map { Self.date(2027, 1, $0) })
     }
 
-    @Test func aDayWithOneChargeIsNotGrouped() {
-        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10))])
-        #expect(section.days.first?.isGrouped == false)
-    }
-
-    @Test func twoChargesOnOneDayGroupWithADayTotal() {
+    @Test func twoChargesOnOneDayAreTwoEntries() {
         let day = Self.date(2027, 1, 10)
         let expenses = [
             Self.expense(name: "First", amount: 20, anchoredOn: day),
             Self.expense(name: "Second", amount: 30, anchoredOn: day)
         ]
         let section = Self.month(expenses)
-        #expect(section.days.count == 1)
-        let group = try! #require(section.days.first)
-        #expect(group.entries.count == 2)
-        #expect(group.total == 50)
+        #expect(section.entries.count == 2)
+        #expect(section.entries.allSatisfy { $0.date == day })
+        #expect(section.total == 50)
+    }
+
+    @Test func anEntryCarriesItsEmoji() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), emoji: "🏠")])
+        #expect(section.entries.first?.emoji == "🏠")
+    }
+
+    @Test func anEntryCarriesItsRulesEnd() {
+        let end = Self.date(2027, 5, 10)
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), endDate: end)])
+        #expect(section.entries.first?.endDate == end)
+    }
+
+    @Test func anEntryWithNoEndCarriesNone() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10))])
+        #expect(section.entries.first?.endDate == nil)
     }
 
     @Test func entriesInADayDescendByAmount() {
@@ -78,8 +90,7 @@ import TillyCore
             Self.expense(name: "Large", amount: 11, anchoredOn: day)
         ]
         let section = Self.month(expenses)
-        let group = try! #require(section.days.first)
-        #expect(group.entries.map(\.amount) == [11, 3])
+        #expect(section.entries.map(\.amount) == [11, 3])
     }
 
     @Test func entriesOfEqualAmountOrderByName() {
@@ -89,8 +100,7 @@ import TillyCore
             Self.expense(name: "Alpha", amount: 20, anchoredOn: day)
         ]
         let section = Self.month(expenses)
-        let group = try! #require(section.days.first)
-        #expect(group.entries.map(\.name) == ["Alpha", "Beta"])
+        #expect(section.entries.map(\.name) == ["Alpha", "Beta"])
     }
 
     @Test func anEntryWithNoAmountSortsLast() {
@@ -100,41 +110,31 @@ import TillyCore
             Self.expense(name: "Has amount", amount: 5, anchoredOn: day)
         ]
         let section = Self.month(expenses)
-        let group = try! #require(section.days.first)
-        #expect(group.entries.map(\.name) == ["Has amount", "No amount"])
+        #expect(section.entries.map(\.name) == ["Has amount", "No amount"])
     }
 
     // MARK: Time
 
     @Test func anOccurrenceDatedTodayIsCharged() {
         let section = Self.month([Self.expense(anchoredOn: Self.today)])
-        #expect(section.days.first?.entries.first?.state == .charged)
+        #expect(section.entries.first?.state == .charged)
     }
 
     @Test func anOccurrenceDatedTomorrowIsUpcoming() {
         let tomorrow = Self.date(2027, 1, 16)
         let section = Self.month([Self.expense(anchoredOn: tomorrow)])
-        #expect(section.days.first?.entries.first?.state == .upcoming)
+        #expect(section.entries.first?.state == .upcoming)
     }
 
     @Test func anOccurrenceDatedYesterdayIsCharged() {
         let yesterday = Self.date(2027, 1, 14)
         let section = Self.month([Self.expense(anchoredOn: yesterday)])
-        #expect(section.days.first?.entries.first?.state == .charged)
-    }
-
-    @Test func aDayHeadingTakesTheDaysOwnState() {
-        let futureDay = Self.date(2027, 1, 20)
-        let override = OccurrenceOverride(scheduledDate: futureDay, actualAmount: nil, movedDate: nil, isSkipped: true)
-        let section = Self.month([Self.expense(anchoredOn: futureDay, overrides: [override])])
-        let group = try! #require(section.days.first)
-        #expect(group.state == .upcoming)
-        #expect(group.entries.first?.state == .skipped)
+        #expect(section.entries.first?.state == .charged)
     }
 
     // MARK: Skipping
 
-    @Test func aSkippedOccurrenceStaysInItsDayAndOutOfTheDayTotal() {
+    @Test func aSkippedOccurrenceIsListedAndOutOfTheTotal() {
         let day = Self.date(2027, 1, 10)
         let skipOverride = OccurrenceOverride(scheduledDate: day, actualAmount: nil, movedDate: nil, isSkipped: true)
         let expenses = [
@@ -142,9 +142,8 @@ import TillyCore
             Self.expense(name: "Charged", amount: 30, anchoredOn: day)
         ]
         let section = Self.month(expenses)
-        let group = try! #require(section.days.first)
-        #expect(group.entries.count == 2)
-        #expect(group.total == 30)
+        #expect(section.entries.count == 2)
+        #expect(section.total == 30)
     }
 
     @Test func aSkippedOccurrenceIsOutOfTheMonthTotal() {
@@ -158,7 +157,7 @@ import TillyCore
         let futureDay = Self.date(2027, 1, 25)
         let override = OccurrenceOverride(scheduledDate: futureDay, actualAmount: nil, movedDate: nil, isSkipped: true)
         let section = Self.month([Self.expense(anchoredOn: futureDay, overrides: [override])])
-        #expect(section.days.first?.entries.first?.state == .skipped)
+        #expect(section.entries.first?.state == .skipped)
     }
 
     // MARK: Amounts
@@ -171,14 +170,14 @@ import TillyCore
             Self.expense(amount: Decimal(string: "74.60"), anchoredOn: dayB)
         ]
         let section = Self.month(expenses)
-        #expect(section.days.first { $0.date == dayA }?.entries.first?.amount == 74)
-        #expect(section.days.first { $0.date == dayB }?.entries.first?.amount == 75)
+        #expect(section.entries.first { $0.date == dayA }?.amount == 74)
+        #expect(section.entries.first { $0.date == dayB }?.amount == 75)
         #expect(section.total == 149)
     }
 
     @Test func anEntryWithNoAmountContributesNothingToTheTotal() {
         let section = Self.month([Self.expense(amount: nil, anchoredOn: Self.date(2027, 1, 10))])
-        #expect(section.days.first?.entries.first?.amount == nil)
+        #expect(section.entries.first?.amount == nil)
         #expect(section.total == 0)
     }
 
@@ -210,7 +209,7 @@ import TillyCore
         let moved = Self.date(2027, 1, 3)
         let override = OccurrenceOverride(scheduledDate: scheduled, actualAmount: nil, movedDate: moved, isSkipped: false)
         let section = Self.month([Self.expense(anchoredOn: scheduled, overrides: [override])])
-        #expect(section.days.contains { $0.date == moved })
+        #expect(section.entries.contains { $0.date == moved })
     }
 
     @Test func aBillMovedOutOfThisMonthIsAbsentFromIt() {
@@ -218,7 +217,7 @@ import TillyCore
         let moved = Self.date(2027, 2, 3)
         let override = OccurrenceOverride(scheduledDate: scheduled, actualAmount: nil, movedDate: moved, isSkipped: false)
         let section = Self.month([Self.expense(anchoredOn: scheduled, overrides: [override])])
-        #expect(!section.days.contains { $0.date == scheduled })
+        #expect(!section.entries.contains { $0.date == scheduled })
     }
 
     @Test func aBillMovedWithinTheMonthAppearsOnlyAtItsNewDate() {
@@ -226,8 +225,8 @@ import TillyCore
         let moved = Self.date(2027, 1, 20)
         let override = OccurrenceOverride(scheduledDate: scheduled, actualAmount: nil, movedDate: moved, isSkipped: false)
         let section = Self.month([Self.expense(anchoredOn: scheduled, overrides: [override])])
-        #expect(!section.days.contains { $0.date == scheduled })
-        #expect(section.days.contains { $0.date == moved })
+        #expect(!section.entries.contains { $0.date == scheduled })
+        #expect(section.entries.contains { $0.date == moved })
     }
 
     // MARK: Boundaries

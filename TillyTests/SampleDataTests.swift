@@ -62,12 +62,12 @@ import TillyCore
         let expenses = try context.fetch(FetchDescriptor<Expense>()).map(\.timelineExpense)
         let month = MonthKey(containing: Self.today, calendar: Self.calendar)
         let section = TimelineBuilder.month(month, expenses: expenses, today: Self.today, calendar: Self.calendar)
-        let entries = section.days.flatMap(\.entries)
+        let entries = section.entries
 
         #expect(entries.contains { $0.state == .upcoming })
         #expect(entries.contains { $0.state == .charged })
         #expect(entries.contains { $0.state == .skipped })
-        #expect(section.days.contains { $0.isGrouped })
+        #expect(Set(entries.map(\.date)).count < entries.count)
     }
 
     @Test func oneSeededNameIsLongEnoughToTruncate() throws {
@@ -90,15 +90,15 @@ import TillyCore
         let previousSection = TimelineBuilder.month(previousMonth, expenses: expenses, today: Self.today, calendar: Self.calendar)
 
         let landedDay = Self.day(3)
-        #expect(thisSection.days.contains { day in
-            day.date == landedDay && day.entries.contains { $0.name == "Home internet" }
+        #expect(thisSection.entries.contains { entry in
+            entry.date == landedDay && entry.name == "Home internet"
         })
 
         let originalDay = Self.day(22, monthOffset: -1)
-        #expect(!previousSection.days.contains { $0.date == originalDay })
+        #expect(!previousSection.entries.contains { $0.date == originalDay })
     }
 
-    @Test func theSkippedBillIsListedAndOutOfItsDayTotal() throws {
+    @Test func theSkippedBillIsListedAndOutOfTheMonthTotal() throws {
         let context = try Self.makeContext()
         try SampleData.insert(into: context, today: Self.today, calendar: Self.calendar)
 
@@ -106,9 +106,14 @@ import TillyCore
         let month = MonthKey(containing: Self.today, calendar: Self.calendar)
         let section = TimelineBuilder.month(month, expenses: expenses, today: Self.today, calendar: Self.calendar)
 
-        let group = try #require(section.days.first { $0.date == Self.day(1) })
-        #expect(group.entries.count == 2)
-        #expect(group.total == 950)
+        let dayOne = section.entries.filter { $0.date == Self.day(1) }
+        #expect(dayOne.count == 2)
+        let skipped = try #require(dayOne.first { $0.state == .skipped })
+        let skippedAmount = try #require(skipped.amount)
+        let counted = section.entries.filter { $0.state != .skipped }.reduce(Decimal(0)) { $0 + ($1.amount ?? 0) }
+        #expect(skippedAmount > 0)
+        #expect(section.total == counted)
+        #expect(section.total != counted + skippedAmount)
     }
 
     @Test func everySeededExpenseSurvivesASaveAndFetch() throws {
@@ -146,9 +151,7 @@ import TillyCore
         let insuranceSection = TimelineBuilder.month(
             insuranceMonth, expenses: expenses, today: Self.today, calendar: Self.calendar
         )
-        #expect(insuranceSection.days.contains { day in
-            day.entries.contains { $0.name == "Home & contents insurance" }
-        })
+        #expect(insuranceSection.entries.contains { $0.name == "Home & contents insurance" })
 
         for month in emptyMonths {
             let section = TimelineBuilder.month(month, expenses: expenses, today: Self.today, calendar: Self.calendar)

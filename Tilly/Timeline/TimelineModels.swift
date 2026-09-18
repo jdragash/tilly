@@ -11,24 +11,18 @@ enum OccurrenceState: Equatable, Sendable {
 struct TimelineEntry: Identifiable, Equatable, Sendable {
     let id: String // Occurrence.id — stable across launches
     let name: String
+    let emoji: String? // the category's; nil only for data saved before categories existed
     let date: Date // effectiveDate, start of day
     let amount: Decimal? // already rounded to whole units
     let state: OccurrenceState
-}
-
-struct DayGroup: Identifiable, Equatable, Sendable {
-    let date: Date // start of day
-    let entries: [TimelineEntry]
-    let total: Decimal // excludes skipped entries
-    let state: OccurrenceState // .charged or .upcoming — the day's own temporal state
-
-    var id: Date { date }
-    var isGrouped: Bool { entries.count > 1 }
+    let endDate: Date? // the rule's end, start of day; nil when it runs on
 }
 
 struct MonthSection: Identifiable, Equatable, Sendable {
     let month: MonthKey
-    let days: [DayGroup] // descending by date: the future sits above
+    /// Descending by date so the future sits above; a day's charges by amount descending,
+    /// ties by name ascending, a `nil` amount last.
+    let entries: [TimelineEntry]
     let total: Decimal // excludes skipped entries
     let remaining: Decimal // sum of .upcoming entries only; excludes skipped
 
@@ -39,18 +33,18 @@ struct MonthSection: Identifiable, Equatable, Sendable {
     /// about, so every call site is made to state it.
     let isCurrent: Bool
 
-    init(month: MonthKey, days: [DayGroup], total: Decimal, remaining: Decimal, isCurrent: Bool) {
+    init(month: MonthKey, entries: [TimelineEntry], total: Decimal, remaining: Decimal, isCurrent: Bool) {
         self.month = month
-        self.days = days
+        self.entries = entries
         self.total = total
         self.remaining = remaining
         self.isCurrent = isCurrent
     }
 
     var id: Int { month.id }
-    var isEmpty: Bool { days.isEmpty }
+    var isEmpty: Bool { entries.isEmpty }
     var hasChargedEntry: Bool {
-        days.contains { day in day.entries.contains { $0.state == .charged } }
+        entries.contains { $0.state == .charged }
     }
 }
 

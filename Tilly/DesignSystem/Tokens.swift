@@ -8,15 +8,15 @@ enum Tokens {
         static let barTotal: Font = .callout
         static let name: Font = .body
         static let amount: Font = .body
-        static let dayHeading: Font = .footnote.weight(.semibold)
-        static let dayTotal: Font = .footnote
         static let caption: Font = .footnote
         static let body: Font = .body
         static let emptyTitle: Font = .title2.weight(.semibold)
+        static let rowEmoji: Font = .title2
     }
 
-    enum Tracking {
-        static let dayHeading: CGFloat = 0.3
+    enum Opacity {
+        /// How far an upcoming or skipped row's icon well sits back; from the prototype.
+        static let upcomingIcon: Double = 0.55
     }
 
     enum Ink {
@@ -43,7 +43,6 @@ enum Tokens {
         static let section: CGFloat = 16
         static let gap: CGFloat = 12
         static let tight: CGFloat = 8
-        static let hairlineGap: CGFloat = 4
         static let rowVerticalAccessible: CGFloat = 12
         static let pillHorizontal: CGFloat = 16 // the "back to" pill's inner horizontal padding
         static let floatingClearance: CGFloat = 64 // bottom inset the list carries so the floor line clears the pill
