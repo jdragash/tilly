@@ -503,6 +503,10 @@ editing categories; anything else in Settings.
 
 ## Lessons
 
+- **Step 4:** `#Preview` blocks are not stripped from Release builds. A preview that uses
+  `PreviewData` (which is `#if DEBUG`) has to sit inside `#if DEBUG` itself, or the Release
+  configuration stops compiling. Check with `xcodebuild -scheme Tilly -configuration Release build`.
+
 - **Step 3:** `Tokens.Text.rowEmoji` is `.title2`, which scales with Dynamic Type, while the well
   (`Tokens.Size.iconAccessible`, 44pt) is fixed. At `accessibility-extra-large` the emoji fills the
   well to its edges. Fine to read, but a fixed-size well is the reason it can't grow further.

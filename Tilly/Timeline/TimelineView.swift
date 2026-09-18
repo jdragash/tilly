@@ -508,12 +508,14 @@ struct TimelineView: View {
     }
 }
 
-#Preview("Seeded current month") {
+#if DEBUG
+#Preview("Preview data") {
     let container = try! TillyStore.container(inMemory: true)
-    try! SampleData.insert(into: container.mainContext, today: Date(), calendar: .current)
+    try! PreviewData.insert(into: container.mainContext, today: Date(), calendar: .current)
     return TimelineView()
         .modelContainer(container)
 }
+#endif
 
 #Preview("Empty state") {
     TimelineView()
