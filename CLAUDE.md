@@ -13,8 +13,8 @@ development. Read `docs/PROJECT.md` before making product judgements.
 6. Plans, which are deleted once shipped
 
 When Jake's direction differs from a doc, the doc is out of date: update it in the same change,
-and **don't narrate the difference** in docs or commits. Push back only when a direction seems to
-contradict a tenet: ask once, in one line. Hard rules change only when Jake says so explicitly.
+and **don't narrate the difference** in docs or commits. Tenets included: they are a starting
+point, so rewrite one rather than asking. Hard rules change only when Jake says so explicitly.
 
 **When Jake overrides a proposal, remember it.** Note in auto memory what Claude proposed, what
 Jake chose, and his reason if he gave one. Never write these to tracked files. `tilly-prune`

@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilly — expense editor prototype</title>
+<!--
+  Tilly · the expense editor, and the shell around it · 2026-09-09
+
+  Built during tilly-explore, from docs/briefs/expense-editor/brief.md, to settle the
+  questions in that brief that are about motion and moment rather than layout:
+
+    Q1  What is genuinely required to save? Removing variable amounts pushed the field
+        count up, not down. Is there a version where you type one thing and walk past
+        the rest?
+    Q3  What does tapping a timeline row open — the occurrence, or the rule?
+    Q4  Does the scope choice ("just this one" / "from now on") come before or after
+        the edit? Both are unmistakable at the moment of choosing. They are very
+        different screens, and a still image cannot tell you which is worse to be
+        wrong in.
+    Q5  How does a category get created without becoming a second screen?
+    Q6  What would revising one look like — not built, but it constrains Q5.
+    Q7  What navigation serves two second surfaces (all expenses, categories) when
+        the app currently has none at all?
+    Q8  What does ending a bill ask for?
+
+  Direction A ("amount is the screen") was chosen at rung 1: the amount is large, the
+  keypad is up when the editor opens, and the name sits under the amount. Two changes
+  on top: repeat sits beside the date instead of behind a corner icon, and an end is
+  worth asking for, because buy-now-pay-later plans and loans have one, and the row
+  shows that end.
+
+  WHAT THIS FILE PROPOSES. None of it agreed when built. Numbers are TASTE.md principles.
+
+    · Amount and name are both required to save. The row leads with the name and
+      categories ship empty, so a second unnamed row looks exactly like the first.
+      Leans on 5 (a mark that looks the same everywhere says nothing). Set `required`
+      to `amount only` and save one to see the row it makes.
+
+    · The chips read as one phrase under the amount, unlabelled:
+      [Monthly from 12 Oct] [12 payments] [Category]. Repeat has no "none", because
+      Tilly edits rules and one-offs are out of scope (PROJECT.md). The phrase leans
+      on 6 (a word stays only if it does work no other channel does).
+
+    · An end can be "after N payments" as well as "on a date". Both store the same
+      endDate, so neither needs engine or schema work. Leans on 3 (anything that can
+      grow has an end the reader can see) and 10 (the design names the number).
+
+    · The row's second line could read "18 Sep · 3 of 12" instead of "ends Jun 2027".
+      Leans on 7 (a figure goes on the thing it describes): the count says where you
+      are in the plan, not only when it stops. Try both on the row-meta control.
+
+    · Q3/Q4, "edit, then scope": the scope question appears only when an existing
+      expense has actually changed. "Scope, then edit" asks on every tap of a row.
+      Edit-then-scope leans on 4 (nothing appears for a reason the reader can't see).
+
+    · Q5/Q6: if a category can't be revised after it's made, the inline creator has to
+      ask for name, colour and icon up front. Leans on 9 (ship a bounded, named
+      limitation), and strains tenet 4 by asking for more at creation.
+
+    · Q2/Q7: with no shell, the add button collides with the return pill. Compared:
+      no shell (corner button, which jumps when the pill appears, straining 2: nothing
+      under the reader's eyes moves), a header with menu + add (strains 7: chrome
+      above the content), and a tab bar (leans on 11: stock platform first). The
+      expenses list and category management are designed, not built.
+
+  OPEN, AND IN CONFLICT WITH DESIGN.md:
+
+    · The category creator offers eight emoji as icons. DESIGN.md bans placeholder
+      glyphs as "a starter set by the back door", and any fixed icon set may break the
+      same rule. Unresolved for Q5/Q6; the emoji stay only until it is.
+
+  WHAT THIS FILE LIES ABOUT. A browser is not iOS, and this one has no:
+
+    · rubber-band overscroll, and no momentum that decelerates like iOS
+    · Liquid Glass — the floating pill and the sheet are flat approximations
+    · Dynamic Type, and no accessibility text sizes at all
+    · real keyboard, haptics, or the way a sheet actually tracks your thumb
+    · VoiceOver order, which is the half of an editor a prototype never shows
+
+  Type scale and spacing are the real Tokens values from Tilly/DesignSystem/Tokens.swift
+  so proportions can be trusted; nothing about feel can be.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees with the
+  docs, the docs win.
+-->
+<style>
+:root {
+  /* Tokens.Space */
+  --gutter: 20px;  --section: 16px;  --gap: 12px;  --tight: 8px;  --hairgap: 4px;
+  --clearance: 64px;
+  /* Tokens.Size */
+  --row: 52px;  --icon: 40px;  --hairline: 0.5px;  --pill: 36px;
+  /* Tokens.Radius */
+  --r-icon: 10px;
+  /* Tokens.Text — points, as rendered by iOS at the default size */
+  --t-month: 20px;   --t-monthtotal: 15px;  --t-name: 17px;   --t-amount: 17px;
+  --t-day: 13px;     --t-caption: 13px;     --t-empty: 22px;  --t-big: 44px;
+
+  --paper: #fff;
+  --ink-1: #000;
+  --ink-2: rgba(60,60,67,0.6);
+  --ink-3: rgba(60,60,67,0.3);
+  --ink-4: rgba(60,60,67,0.18);
+  --well: rgba(116,116,128,0.08);
+  --fill: rgba(120,120,128,0.12);
+  --rule: rgba(60,60,67,0.29);
+  --tint: #0a84ff;
+  --danger: #d70015;
+  --sheet: #fff;
+  --scrim: rgba(0,0,0,0.28);
+}
+.dark {
+  --paper: #000;
+  --ink-1: #fff;
+  --ink-2: rgba(235,235,245,0.6);
+  --ink-3: rgba(235,235,245,0.3);
+  --ink-4: rgba(235,235,245,0.18);
+  --well: rgba(118,118,128,0.24);
+  --fill: rgba(120,120,128,0.36);
+  --rule: rgba(84,84,88,0.65);
+  --tint: #409cff;
+  --danger: #ff453a;
+  --sheet: #1c1c1e;
+  --scrim: rgba(0,0,0,0.5);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  background: #ececf0; color: #1c1c1e;
+  display: flex; justify-content: center; gap: 40px; padding: 32px; min-height: 100vh;
+}
+@media (prefers-color-scheme: dark) { body { background: #101012; color: #f2f2f7; } }
+
+/* ─── control panel ─────────────────────────────────────────────── */
+.panel { width: 300px; flex: none; }
+.panel h1 { font-size: 17px; margin: 0 0 2px; letter-spacing: -0.2px; }
+.panel .sub { color: #6b6b70; margin: 0 0 20px; font-size: 12px; }
+@media (prefers-color-scheme: dark) { .panel .sub { color: #9a9aa0; } }
+fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+legend { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.55; margin-bottom: 6px; padding: 0; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button {
+  font: inherit; font-size: 12px; padding: 5px 9px; border-radius: 7px; cursor: pointer;
+  border: 1px solid rgba(120,120,128,0.3); background: transparent; color: inherit;
+}
+.seg button[aria-pressed="true"] { background: #1c1c1e; color: #fff; border-color: #1c1c1e; }
+@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #f2f2f7; color: #000; border-color: #f2f2f7; } }
+.note { font-size: 11.5px; line-height: 1.55; opacity: 0.7; margin: 4px 0 0; }
+.lies { font-size: 11.5px; line-height: 1.6; opacity: 0.72; border-top: 1px solid rgba(120,120,128,0.3); padding-top: 14px; margin-top: 26px; }
+.lies b { font-weight: 600; }
+.lies ul { margin: 6px 0 0; padding-left: 16px; }
+
+/* ─── device ────────────────────────────────────────────────────── */
+.device {
+  width: 393px; height: 852px; flex: none; position: relative; overflow: hidden;
+  border-radius: 46px; background: var(--paper); color: var(--ink-1);
+  box-shadow: 0 0 0 10px #1c1c1e, 0 22px 60px rgba(0,0,0,0.3);
+  font-size: var(--t-name);
+  position: sticky; top: 32px;
+}
+.statusbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 59px; z-index: 40;
+  background: var(--paper);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0 28px 6px; font-size: 15px; font-weight: 600; letter-spacing: -0.2px;
+  pointer-events: none;
+}
+.home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 140px; height: 5px; border-radius: 3px; background: var(--ink-1); opacity: .3; z-index: 60; pointer-events: none; }
+
+/* ─── timeline ──────────────────────────────────────────────────── */
+.scroll {
+  position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden;
+  padding-top: 59px; padding-bottom: var(--clearance);
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+.msection { position: relative; }
+.monthhead {
+  /* top:0, not 59 — a sticky child resolves its inset against the scrollport's CONTENT
+     box, so .scroll's own 59px padding-top is already counted. Browser plumbing, not a
+     fact about the app. */
+  position: sticky; top: 0; z-index: 20; background: var(--paper);
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: var(--section) var(--gutter) var(--tight);
+}
+.monthhead .name { font-size: var(--t-month); font-weight: 600; letter-spacing: -0.4px; }
+.monthhead .total { font-size: var(--t-monthtotal); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.monthhead.pinned::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--hairline); background: var(--rule);
+}
+
+.unlockbar {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 48px; color: var(--ink-2); font-size: 15px; cursor: pointer;
+  border-bottom: var(--hairline) solid var(--rule);
+}
+
+.trow {
+  display: flex; align-items: center; gap: var(--gap);
+  min-height: var(--row); padding: 0 var(--gutter); cursor: pointer;
+}
+.trow:active { background: var(--well); }
+.trow .well {
+  width: var(--icon); height: var(--icon); border-radius: var(--r-icon); flex: none;
+  background: var(--well); display: flex; align-items: center; justify-content: center;
+  font-size: 18px; line-height: 1;
+}
+.trow .mid { flex: 1; min-width: 0; }
+.trow .nm {
+  font-size: var(--t-name); letter-spacing: -0.2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.trow .sub { font-size: var(--t-caption); color: var(--ink-2); margin-top: 1px; }
+.trow .amt { font-size: var(--t-amount); font-variant-numeric: tabular-nums; letter-spacing: -0.2px; }
+.trow.upcoming .nm, .trow.upcoming .amt { color: var(--ink-2); }
+.trow.upcoming .well { opacity: .55; }
+.trow.skipped { opacity: .45; }
+.trow.skipped .amt { text-decoration: line-through; }
+
+.daygroup { border-top: var(--hairline) solid var(--rule); border-bottom: var(--hairline) solid var(--rule); }
+.dayhead {
+  display: flex; justify-content: space-between; padding: var(--tight) var(--gutter) var(--hairgap);
+  font-size: var(--t-day); font-weight: 600; letter-spacing: .3px; color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.floor { padding: var(--section) var(--gutter) var(--section); color: var(--ink-3); font-size: var(--t-caption); }
+
+/* empty state */
+.empty {
+  position: absolute; inset: 59px 0 0; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: var(--tight);
+  padding: 0 var(--gutter); text-align: center; background: var(--paper); z-index: 15;
+}
+.empty.on { display: flex; }
+.empty h2 { font-size: var(--t-empty); font-weight: 600; margin: 0; letter-spacing: -0.3px; }
+.empty p { font-size: var(--t-name); color: var(--ink-2); margin: 0; max-width: 280px; }
+
+/* ─── shell chrome (Q7) ─────────────────────────────────────────── */
+.navbtn {
+  position: absolute; top: 18px; z-index: 45; width: 34px; height: 34px; border-radius: 17px;
+  background: var(--fill); display: none; align-items: center; justify-content: center;
+  font-size: 17px; cursor: pointer; color: var(--ink-1);
+}
+.navbtn.left { left: 14px; } .navbtn.right { right: 14px; }
+.navbtn.on { display: flex; }
+
+.tabbar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 82px; z-index: 45;
+  background: var(--paper); border-top: var(--hairline) solid var(--rule);
+  display: none; align-items: flex-start; padding-top: 8px;
+}
+.tabbar.on { display: flex; }
+.tabbar .tab { flex: 1; text-align: center; font-size: 10px; color: var(--ink-2); cursor: pointer; }
+.tabbar .tab .g { display: block; font-size: 20px; margin-bottom: 2px; }
+.tabbar .tab.sel { color: var(--tint); }
+
+/* the add control */
+.addfab {
+  position: absolute; z-index: 46; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink-1); color: var(--paper);
+  width: 56px; height: 56px; border-radius: 28px; font-size: 26px; font-weight: 300;
+  right: 20px; bottom: 28px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+}
+.addfab.corner-clash { bottom: 92px; }
+.addfab.as-header { width: 34px; height: 34px; border-radius: 17px; font-size: 19px;
+  right: 14px; top: 18px; bottom: auto; background: var(--fill); color: var(--ink-1); box-shadow: none; }
+.addfab.as-tab { display: none; }
+
+/* return pill — the thing already occupying the bottom corner */
+.returnpill {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 24px; z-index: 44;
+  height: var(--pill); padding: 0 var(--section); border-radius: 18px;
+  background: var(--fill); backdrop-filter: blur(20px);
+  display: none; align-items: center; font-size: 15px; color: var(--ink-1);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+.returnpill.on { display: flex; }
+
+/* ─── sheets ────────────────────────────────────────────────────── */
+.scrim { position: absolute; inset: 0; background: var(--scrim); z-index: 50; opacity: 0;
+  pointer-events: none; transition: opacity .28s ease; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 52;
+  background: var(--sheet); border-radius: 20px 20px 0 0;
+  transform: translateY(100%); transition: transform .34s cubic-bezier(.32,.72,0,1);
+  display: flex; flex-direction: column;
+  box-shadow: 0 -2px 30px rgba(0,0,0,0.18);
+}
+.sheet.on { transform: translateY(0); }
+.sheet.full { top: 44px; }
+/* The editor is a large-detent sheet: amount, name, the chip phrase and the pad have to
+   coexist, so it takes a fixed top rather than sizing to its content. */
+#editor { top: 96px; }
+/* A chip's picker layers OVER the editor rather than replacing it: the amount you just
+   typed stays on screen while you answer a question about it. */
+#opts { z-index: 56; }
+.scrim.hi { z-index: 54; }
+.grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--ink-4); margin: 6px auto 0; flex: none; }
+
+/* ─── the editor ────────────────────────────────────────────────── */
+.ed-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--gap) var(--section) 0; flex: none;
+}
+.ed-top .x, .ed-top .save {
+  font-size: 17px; cursor: pointer; padding: 6px 4px; min-width: 56px;
+}
+.ed-top .x { color: var(--ink-2); }
+.ed-top .save { text-align: right; color: var(--tint); font-weight: 600; }
+.ed-top .save[aria-disabled="true"] { color: var(--ink-3); font-weight: 400; }
+.ed-top .ttl { font-size: var(--t-caption); color: var(--ink-2); text-align: center; flex: 1; }
+
+.ed-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: var(--gutter) var(--gutter) var(--tight); min-height: 200px; }
+
+.bigamount {
+  font-size: var(--t-big); font-weight: 300; letter-spacing: -1.6px; line-height: 1.05;
+  font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 2px;
+}
+.bigamount .cur { color: var(--ink-3); font-size: 30px; }
+.bigamount.zero { color: var(--ink-3); }
+.bigamount .caret { width: 2px; height: 38px; background: var(--tint); margin-left: 2px;
+  animation: blink 1.06s steps(1) infinite; align-self: center; }
+@keyframes blink { 50% { opacity: 0; } }
+
+.namefield {
+  margin-top: var(--gap); font-size: var(--t-name); text-align: center; color: var(--ink-1);
+  border: 0; background: transparent; width: 100%; outline: none; font-family: inherit;
+  letter-spacing: -0.2px;
+}
+.namefield::placeholder { color: var(--ink-3); }
+.namefield.pill {
+  border: var(--hairline) solid var(--ink-4); border-radius: 16px; padding: 6px 14px;
+  width: auto; min-width: 160px; text-align: center;
+}
+
+.chiprow { display: flex; flex-wrap: wrap; gap: var(--tight); justify-content: center;
+  padding: 0 var(--gutter) var(--gap); flex: none; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 var(--gap);
+  border-radius: 17px; border: var(--hairline) solid var(--ink-4); background: transparent;
+  font-size: 15px; color: var(--ink-1); cursor: pointer; letter-spacing: -0.1px;
+  font-family: inherit; white-space: nowrap;
+}
+.chip .g { font-size: 15px; opacity: .75; }
+.chip.unset { color: var(--ink-3); }  /* not .empty — that class is the first-run state */
+.chip.future { color: var(--tint); border-color: color-mix(in srgb, var(--tint) 40%, transparent); }
+.chip.hasdot::before { content: ""; width: 9px; height: 9px; border-radius: 5px; background: currentColor; }
+
+/* keypad */
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--tight);
+  padding: 0 var(--gap) 26px; flex: none; }
+.key {
+  height: 52px; border-radius: var(--r-icon); background: var(--well); border: 0;
+  font: 300 26px/1 -apple-system, sans-serif; color: var(--ink-1); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
+}
+.key:active { background: var(--fill); }
+.key.dark { background: var(--fill); font-size: 20px; }
+
+/* ─── generic option sheet ──────────────────────────────────────── */
+.opt-title { padding: var(--section) var(--gutter) var(--tight); font-size: var(--t-caption);
+  color: var(--ink-2); text-align: center; }
+.opt {
+  display: flex; align-items: center; gap: var(--gap); padding: 0 var(--gutter);
+  min-height: var(--row); cursor: pointer; font-size: var(--t-name);
+  border-top: var(--hairline) solid var(--rule);
+}
+.opt:active { background: var(--well); }
+.opt .g { width: 26px; text-align: center; opacity: .7; }
+.opt .txt { flex: 1; }
+.opt .txt small { display: block; font-size: var(--t-caption); color: var(--ink-2); margin-top: -1px; }
+.opt.destructive { color: var(--danger); }
+.opt .tick { color: var(--tint); }
+.sheet-pad { height: 28px; flex: none; }
+
+/* category creator */
+.catnew { padding: var(--gap) var(--gutter) 0; }
+.catnew input {
+  width: 100%; font: inherit; font-size: var(--t-name); padding: var(--tight) 0;
+  border: 0; border-bottom: var(--hairline) solid var(--rule); background: transparent;
+  color: var(--ink-1); outline: none;
+}
+.catnew input::placeholder { color: var(--ink-3); }
+.swatches { display: flex; gap: var(--tight); flex-wrap: wrap; padding: var(--gap) 0 0; }
+.sw { width: 30px; height: 30px; border-radius: 15px; cursor: pointer; border: 2px solid transparent; }
+.sw[aria-pressed="true"] { border-color: var(--ink-1); }
+.glyphs { display: flex; gap: var(--tight); flex-wrap: wrap; padding: var(--gap) 0 var(--section); }
+.gl { width: 34px; height: 34px; border-radius: var(--r-icon); background: var(--well); border: 2px solid transparent;
+  display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; }
+.gl[aria-pressed="true"] { border-color: var(--ink-1); }
+
+/* second surfaces */
+.surface { position: absolute; inset: 0; background: var(--paper); z-index: 48;
+  transform: translateX(100%); transition: transform .3s cubic-bezier(.32,.72,0,1);
+  display: flex; flex-direction: column; padding-top: 59px; }
+.surface.on { transform: translateX(0); }
+.surface.frombottom { transform: translateY(100%); }
+.surface.frombottom.on { transform: translateY(0); }
+.surface-top { display: flex; align-items: center; gap: var(--tight); padding: var(--tight) var(--section) var(--gap); }
+.surface-top .back { font-size: 17px; color: var(--tint); cursor: pointer; }
+.surface-top h2 { font-size: var(--t-month); font-weight: 600; margin: 0; letter-spacing: -0.4px; }
+.surface-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+.surface-list::-webkit-scrollbar { display: none; }
+
+.banner { margin: var(--gap) var(--gutter); padding: var(--tight) var(--gap); border-radius: var(--r-icon);
+  background: var(--well); font-size: 12px; color: var(--ink-2); line-height: 1.45; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>Tilly — the expense editor</h1>
+  <p class="sub">Exploration prototype · 9 September 2026 · direction A, revised</p>
+
+  <fieldset>
+    <legend>Q4 · when the scope choice appears</legend>
+    <div class="seg" id="c-order">
+      <button data-v="after" aria-pressed="true">edit, then scope</button>
+      <button data-v="before" aria-pressed="false">scope, then edit</button>
+    </div>
+    <p class="note">Tap a charge on the timeline to compare. Both are unmistakable at the
+      moment of choosing; they fail differently when you are wrong.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Q1 · required to save</legend>
+    <div class="seg" id="c-required">
+      <button data-v="amount" aria-pressed="false">amount only</button>
+      <button data-v="both" aria-pressed="true">amount + name</button>
+    </div>
+    <p class="note">With <em>amount only</em>, save an unnamed expense and look at the row
+      it makes.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Q8 · how a bill ends</legend>
+    <div class="seg" id="c-ends">
+      <button data-v="hidden" aria-pressed="true">appears once set</button>
+      <button data-v="always" aria-pressed="false">always a chip</button>
+    </div>
+    <p class="note">The chip's own sheet offers <em>never</em>, <em>after N payments</em>
+      and <em>on a date</em>. All three store one <code>endDate</code>.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>the timeline row's second line</legend>
+    <div class="seg" id="c-meta">
+      <button data-v="none" aria-pressed="true">date only</button>
+      <button data-v="ends" aria-pressed="false">· ends Jun 2027</button>
+      <button data-v="count" aria-pressed="false">· 7 of 12</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Q2 · where add lives · Q7 · the shell</legend>
+    <div class="seg" id="c-shell">
+      <button data-v="none" aria-pressed="true">no shell — corner button</button>
+      <button data-v="header" aria-pressed="false">header: menu + add</button>
+      <button data-v="tabs" aria-pressed="false">tab bar</button>
+    </div>
+    <p class="note">Scroll into history to bring up the return pill and watch what the
+      add control does about it.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>store</legend>
+    <div class="seg" id="c-data">
+      <button data-v="seeded" aria-pressed="true">expenses entered</button>
+      <button data-v="empty" aria-pressed="false">first run</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>appearance</legend>
+    <div class="seg" id="c-theme">
+      <button data-v="light" aria-pressed="true">light</button>
+      <button data-v="dark" aria-pressed="false">dark</button>
+    </div>
+  </fieldset>
+
+  <div class="lies">
+    <b>What this lies about.</b> A browser is not iOS.
+    <ul>
+      <li>no rubber-band overscroll, and momentum that does not decelerate like iOS</li>
+      <li>no Liquid Glass — the pill and the sheets are flat approximations</li>
+      <li>no Dynamic Type, and no accessibility text sizes at all</li>
+      <li>no real keyboard, no haptics, and a sheet that does not track your thumb</li>
+      <li>no VoiceOver order — half of an editor that a prototype never shows</li>
+      <li>no SF Symbols in the category picker. The eight emoji are an open question,
+          not a proposal: DESIGN.md bans placeholder glyphs, and a fixed icon set may
+          break the same rule</li>
+    </ul>
+    Type scale and spacing are the real <code>Tokens</code> values, so proportions can be
+    trusted. Nothing about feel can be.
+  </div>
+</div>
+
+<div class="device" id="device">
+  <div class="statusbar"><span>9:41</span><span>􀙇 􀛨</span></div>
+
+  <!-- ── timeline ── -->
+  <div class="scroll" id="scroll">
+    <div class="unlockbar" id="unlock">Look further ahead ⌃</div>
+
+    <section class="msection">
+      <div class="monthhead"><span class="name">October</span><span class="total">−€1,374</span></div>
+      <div id="oct"></div>
+    </section>
+    <section class="msection">
+      <div class="monthhead"><span class="name">September</span><span class="total">−€175 left</span></div>
+      <div id="sep"></div>
+    </section>
+    <section class="msection">
+      <div class="monthhead"><span class="name">August</span><span class="total">−€1,374</span></div>
+      <div id="aug"></div>
+    </section>
+    <section class="msection">
+      <div class="monthhead"><span class="name">July</span><span class="total">−€1,374</span></div>
+      <div id="jul"></div>
+    </section>
+
+    <div class="floor" id="floor">Nothing before July.</div>
+  </div>
+
+  <!-- first run -->
+  <div class="empty" id="empty">
+    <h2>Nothing recurring yet</h2>
+    <p>Add a bill or a subscription and it shows up here before it goes out.</p>
+  </div>
+
+  <!-- shell chrome -->
+  <div class="navbtn left" id="navmenu">􀋲</div>
+  <div class="returnpill" id="pill">↓ September</div>
+  <div class="addfab" id="add">+</div>
+  <div class="tabbar" id="tabbar">
+    <div class="tab sel" data-dest="timeline"><span class="g">􀉉</span>Timeline</div>
+    <div class="tab" data-dest="add"><span class="g">􀁍</span>Add</div>
+    <div class="tab" data-dest="expenses"><span class="g">􀋲</span>Expenses</div>
+  </div>
+
+  <!-- second surfaces (Q7) — designed, not built -->
+  <div class="surface" id="s-expenses">
+    <div class="surface-top"><span class="back" data-close="s-expenses">‹ Timeline</span><h2>Expenses</h2></div>
+    <div class="banner">Designed here, deliberately not built in this piece of work.
+      It is the only way to reach a bill that next charges in seven months.</div>
+    <div class="surface-list" id="expenselist"></div>
+  </div>
+
+  <div class="surface" id="s-categories">
+    <div class="surface-top"><span class="back" data-close="s-categories">‹ Timeline</span><h2>Categories</h2></div>
+    <div class="banner">Also designed, also not built. Inline creation ships; revising
+      does not — but what revising looks like is what settles the shape of the control
+      that does ship.</div>
+    <div class="surface-list" id="categorylist"></div>
+  </div>
+
+  <div class="home"></div>
+
+  <!-- ── sheets ── -->
+  <div class="scrim" id="scrim"></div>
+
+  <!-- the editor -->
+  <div class="sheet" id="editor">
+    <div class="grabber"></div>
+    <div class="ed-top">
+      <span class="x" id="ed-x">Cancel</span>
+      <span class="ttl" id="ed-title"></span>
+      <span class="save" id="ed-save" aria-disabled="true">Save</span>
+    </div>
+    <div class="ed-body">
+      <div class="bigamount zero" id="ed-amount"><span class="cur">€</span><span id="ed-digits">0</span><span class="caret"></span></div>
+      <input class="namefield" id="ed-name" placeholder="Name it" autocomplete="off">
+    </div>
+    <div class="chiprow" id="ed-chips"></div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+
+  <!-- option sheets -->
+  <div class="sheet" id="opts">
+    <div class="grabber"></div>
+    <div id="opts-body"></div>
+    <div class="sheet-pad"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ── state ──────────────────────────────────────────────────────── */
+const S = {
+  order: "after", required: "both", ends: "hidden",
+  meta: "none", shell: "none", data: "seeded", theme: "light"
+};
+
+const PALETTE = ["#ff9f0a","#ff375f","#bf5af2","#0a84ff","#30d158","#64d2ff","#8e8e93"];
+/* Stand-ins. SF Symbols do not render reliably in a browser, and a *proposed* set of
+   category icons would break tenet 4 anyway — the slot is the design, not the contents. */
+const GLYPHS  = ["\u{1F3E0}","\u{1F4A1}","\u{1F697}","\u{1F3AC}","\u{1F3CB}","\u{1F4F1}","\u{1F6D2}","\u{2708}"];
+let categories = [];              // ships empty. That is the point.
+
+/* the store. Entered forward — every anchor sits at or after today, except the
+   two that have already run, which is how you get a September with a past. */
+const EXPENSES = [
+  { id:"rent",    name:"Rent",                                    amt:1150, day:4,  every:"Monthly", cat:null },
+  { id:"spotify", name:"Spotify Family",                          amt:18,   day:2,  every:"Monthly", cat:null },
+  { id:"netflix", name:"Netflix",                                 amt:12,   day:12, every:"Monthly", cat:null },
+  { id:"gym",     name:"Fitness First Aldgate",                   amt:42,   day:12, every:"Monthly", cat:null },
+  { id:"klarna",  name:"Klarna — sofa",                           amt:67,   day:18, every:"Monthly", cat:null,
+                  endsOn:"Jun 2027", paidOf:[3,12] },
+  { id:"vodafone",name:"Vodafone Broadband and Mobile Bundle",    amt:54,   day:24, every:"Monthly", cat:null },
+  { id:"car",     name:"Car insurance",                           amt:31,   day:26, every:"Monthly", cat:null },
+];
+const byId = id => EXPENSES.find(e => e.id === id);
+
+/* months, newest at the top, descending within each month. `t` is temporal state. */
+const MONTHS = {
+  oct: [ {e:"car",d:"26 Oct",t:"upcoming"}, {e:"vodafone",d:"24 Oct",t:"upcoming"},
+         {e:"klarna",d:"18 Oct",t:"upcoming",n:4},
+         {group:"12 OCT", items:[{e:"gym",t:"upcoming"},{e:"netflix",t:"upcoming"}]},
+         {e:"rent",d:"4 Oct",t:"upcoming"}, {e:"spotify",d:"2 Oct",t:"upcoming"} ],
+  sep: [ {e:"car",d:"26 Sep",t:"skipped"}, {e:"vodafone",d:"24 Sep",t:"upcoming"},
+         {e:"klarna",d:"18 Sep",t:"upcoming",n:3},
+         {group:"12 SEP", items:[{e:"gym",t:"upcoming"},{e:"netflix",t:"upcoming"}]},
+         {e:"rent",d:"4 Sep",t:"charged"}, {e:"spotify",d:"2 Sep",t:"charged"} ],
+  aug: [ {e:"car",d:"26 Aug",t:"charged"}, {e:"vodafone",d:"24 Aug",t:"charged"},
+         {e:"klarna",d:"18 Aug",t:"charged",n:2},
+         {group:"12 AUG", items:[{e:"gym",t:"charged"},{e:"netflix",t:"charged"}]},
+         {e:"rent",d:"4 Aug",t:"charged"}, {e:"spotify",d:"2 Aug",t:"charged"} ],
+  jul: [ {e:"car",d:"26 Jul",t:"charged"}, {e:"vodafone",d:"24 Jul",t:"charged"},
+         {e:"klarna",d:"18 Jul",t:"charged",n:1},
+         {group:"12 JUL", items:[{e:"gym",t:"charged"},{e:"netflix",t:"charged"}]},
+         {e:"rent",d:"4 Jul",t:"charged"}, {e:"spotify",d:"2 Jul",t:"charged"} ],
+};
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const money = n => "−€" + n.toLocaleString("en-IE");
+
+/* ── the timeline ───────────────────────────────────────────────── */
+function subLine(row, e) {
+  const date = row.d || "";
+  if (S.meta === "ends"  && e.endsOn) return date ? date + " · ends " + e.endsOn : "ends " + e.endsOn;
+  if (S.meta === "count" && e.paidOf) {
+    const n = row.n || e.paidOf[0];
+    return date ? date + " · " + n + " of " + e.paidOf[1] : n + " of " + e.paidOf[1];
+  }
+  return date;
+}
+
+function rowEl(row, e) {
+  const el = document.createElement("div");
+  el.className = "trow " + row.t;
+  el.dataset.expense = e.id;
+  el.dataset.date = row.d || row.groupDate || "";
+  const cat = e.cat ? categories.find(c => c.id === e.cat) : null;
+  const sub = subLine(row, e);
+  el.innerHTML =
+    '<div class="well" ' + (cat ? 'style="background:' + cat.colour + '22;color:' + cat.colour + '"' : "") + '>' +
+      (cat ? cat.glyph : "") + '</div>' +
+    '<div class="mid"><div class="nm">' + (e.name || "Unnamed") + '</div>' +
+      (sub ? '<div class="sub">' + sub + '</div>' : "") + '</div>' +
+    '<div class="amt">' + money(e.amt) + '</div>';
+  el.addEventListener("click", () => tapRow(e, el.dataset.date || row.groupDate));
+  return el;
+}
+
+function renderMonth(key) {
+  const host = $("#" + key);
+  host.innerHTML = "";
+  MONTHS[key].forEach(row => {
+    if (row.group) {
+      const g = document.createElement("div");
+      g.className = "daygroup";
+      const total = row.items.reduce((s, i) => s + byId(i.e).amt, 0);
+      g.innerHTML = '<div class="dayhead"><span>' + row.group + '</span><span>' + money(total) + '</span></div>';
+      row.items.forEach(i => g.appendChild(rowEl({ ...i, groupDate: row.group }, byId(i.e))));
+      host.appendChild(g);
+    } else {
+      host.appendChild(rowEl(row, byId(row.e)));
+    }
+  });
+}
+const renderTimeline = () => Object.keys(MONTHS).forEach(renderMonth);
+
+/* ── the editor ─────────────────────────────────────────────────── */
+const ED = {};
+function resetEditor() {
+  ED.mode = "create"; ED.digits = ""; ED.name = ""; ED.every = "Monthly";
+  ED.start = "12 Oct"; ED.startFuture = true;
+  ED.endMode = "never"; ED.endN = null; ED.endDate = null;
+  ED.cat = null; ED.scope = null; ED.expense = null; ED.dirty = false;
+}
+resetEditor();
+
+function amountText() {
+  if (!ED.digits) return "0";
+  const [w, c] = ED.digits.split(".");
+  return Number(w || 0).toLocaleString("en-IE") + (c !== undefined ? "." + c : "");
+}
+
+function endChipLabel() {
+  if (ED.endMode === "never") return null;
+  if (ED.endMode === "count") return ED.endN + " payments";
+  return "ends " + ED.endDate;
+}
+
+function renderEditor() {
+  $("#ed-digits").textContent = amountText();
+  $("#ed-amount").classList.toggle("zero", !ED.digits);
+  $("#ed-name").value = ED.name;
+
+  const ok = ED.digits && Number(ED.digits) > 0 && (S.required === "amount" || ED.name.trim());
+  $("#ed-save").setAttribute("aria-disabled", ok ? "false" : "true");
+
+  $("#ed-title").textContent =
+    ED.scope === "one"    ? "Just this charge" :
+    ED.scope === "series" ? "From now on" : "";
+
+  const chips = [];
+  chips.push({ k:"when", g:"􀉉", t: ED.every + " from " + ED.start, cls: ED.startFuture ? "future" : "" });
+
+  const endLabel = endChipLabel();
+  if (endLabel)                    chips.push({ k:"end", g:"􀆝", t:endLabel });
+  else if (S.ends === "always")    chips.push({ k:"end", g:"􀆝", t:"Ends", cls:"unset" });
+
+  const cat = ED.cat ? categories.find(c => c.id === ED.cat) : null;
+  chips.push(cat
+    ? { k:"cat", g:cat.glyph, t:cat.name, cls:"hasdot", colour:cat.colour }
+    : { k:"cat", g:"􀁍", t:"Category", cls:"unset" });
+
+  if (ED.mode !== "create") chips.push({ k:"more", g:"􀍠", t:"" });
+
+  $("#ed-chips").innerHTML = chips.map(c =>
+    '<button class="chip ' + (c.cls || "") + '" data-chip="' + c.k + '"' +
+    (c.colour ? ' style="color:' + c.colour + ';border-color:' + c.colour + '55"' : "") + '>' +
+    '<span class="g">' + c.g + '</span>' + (c.t ? '<span>' + c.t + '</span>' : "") + '</button>').join("");
+}
+
+function openEditor(mode, expense, scope, date) {
+  resetEditor();
+  ED.mode = mode; ED.scope = scope || null; ED.expense = expense || null;
+  if (expense) {
+    ED.digits = String(expense.amt);
+    ED.name = expense.name;
+    ED.every = expense.every;
+    ED.start = date || "12 Oct";
+    ED.startFuture = false;
+    ED.cat = expense.cat;
+    if (expense.paidOf) { ED.endMode = "count"; ED.endN = expense.paidOf[1]; }
+    else if (expense.endsOn) { ED.endMode = "date"; ED.endDate = expense.endsOn; }
+  }
+  renderEditor();
+  show("#editor");
+}
+
+function tapRow(expense, date) {
+  if (S.order === "before") {
+    optionSheet("What are you changing?", [
+      { g:"􀉉", t:"Just this charge", s:date, act:() => openEditor("occurrence", expense, "one", date) },
+      { g:"􀖈", t:"From now on",      s:expense.name + ", and every one after",
+        act:() => openEditor("rule", expense, "series", date) },
+      { g:"􀆄", t:"Skip this charge", s:"Stays listed, stops counting", act:closeAll },
+      { g:"􀈑", t:"Delete " + expense.name, d:true, s:"Removes its past too", act:closeAll },
+    ]);
+  } else {
+    openEditor("occurrence", expense, null, date);
+  }
+}
+
+function saveEditor() {
+  if ($("#ed-save").getAttribute("aria-disabled") === "true") return;
+
+  /* scope-after: the choice lands on the way out, and only when it can matter */
+  if (S.order === "after" && ED.mode !== "create" && !ED.scope) {
+    hide("#editor");
+    setTimeout(() => optionSheet("Apply this to", [
+      { g:"􀉉", t:"Just this charge", s:ED.start, act:commit },
+      { g:"􀖈", t:"From now on", s:ED.expense.name + ", and every one after", act:commit },
+    ]), 240);
+    return;
+  }
+  commit();
+}
+
+function commit() {
+  if (ED.mode === "create") {
+    const e = {
+      id: "new" + EXPENSES.length, name: ED.name.trim(), amt: Number(ED.digits) || 0,
+      day: 12, every: ED.every, cat: ED.cat,
+      endsOn: ED.endMode === "count" ? ED.endDate : (ED.endMode === "date" ? ED.endDate : null),
+      paidOf: ED.endMode === "count" ? [1, ED.endN] : null,
+    };
+    EXPENSES.push(e);
+    MONTHS.oct.unshift({ e: e.id, d: "12 Oct", t: "upcoming", n: 1 });
+    S.data = "seeded"; syncSeg("#c-data", "seeded");
+  }
+  renderTimeline(); renderExpenseList(); applyData(); closeAll();
+}
+
+/* ── option sheets ──────────────────────────────────────────────── */
+function optionSheet(title, rows, extraHTML) {
+  $("#opts-body").innerHTML =
+    (title ? '<div class="opt-title">' + title + "</div>" : "") +
+    rows.map((r, i) =>
+      '<div class="opt' + (r.d ? " destructive" : "") + '" data-i="' + i + '">' +
+      '<span class="g">' + (r.g || "") + "</span>" +
+      '<span class="txt">' + r.t + (r.s ? "<small>" + r.s + "</small>" : "") + "</span>" +
+      (r.tick ? '<span class="tick">􀆅</span>' : "") + "</div>").join("") +
+    (extraHTML || "");
+  $$("#opts-body .opt").forEach(el =>
+    el.addEventListener("click", () => { const r = rows[+el.dataset.i]; hide("#opts"); setTimeout(() => r.act && r.act(), 220); }));
+  show("#opts");
+}
+
+function chipSheet(kind) {
+  if (kind === "when") {
+    optionSheet("How often", ["Daily","Weekly","Monthly","Yearly","Every N…"].map(v => ({
+      g:"􀖈", t:v, tick: v === ED.every,
+      act: () => { ED.every = v.startsWith("Every") ? "Every 3 months" : v; renderEditor(); show("#editor"); }
+    })));
+  }
+  if (kind === "end") {
+    optionSheet("When does it stop?", [
+      { g:"􀆇", t:"Never", tick: ED.endMode === "never",
+        act: () => { ED.endMode = "never"; ED.endN = null; renderEditor(); show("#editor"); } },
+      { g:"􀍾", t:"After a number of payments", s:"3 · 6 · 12 · 24 — tap below", tick: ED.endMode === "count",
+        act: () => paymentCount() },
+      { g:"􀉉", t:"On a date", s:"Pick the last one", tick: ED.endMode === "date",
+        act: () => { ED.endMode = "date"; ED.endDate = "Mar 2027"; renderEditor(); show("#editor"); } },
+    ]);
+  }
+  if (kind === "cat") categorySheet();
+  if (kind === "more") {
+    optionSheet(null, [
+      { g:"􀆄", t:"Skip this charge", s:"Stays listed, stops counting", act: closeAll },
+      { g:"􀈑", t:"Delete " + (ED.expense ? ED.expense.name : "this"), d:true, s:"Removes its past too", act: closeAll },
+    ]);
+  }
+}
+
+/* Q8's finding: "12 payments" and "ends 12 Aug 2027" are the same stored value. */
+function paymentCount() {
+  const ends = { 3:"Dec 2026", 6:"Mar 2027", 12:"Sep 2027", 24:"Sep 2028" };
+  optionSheet("How many payments?",
+    [3,6,12,24].map(n => ({ g:"􀍾", t: n + " payments", s: "ends " + ends[n], tick: ED.endN === n,
+      act: () => { ED.endMode = "count"; ED.endN = n; ED.endDate = ends[n]; renderEditor(); show("#editor"); } })),
+    '<div class="banner">The engine stores one <code>endDate</code> either way. ' +
+    'Nobody holds “ends 12 March 2027” in their head for a sofa; they hold “12 payments”. ' +
+    'Same field, better question.</div>');
+}
+
+/* ── categories, created inline (Q5) and revised on a surface (Q6) ─ */
+function categorySheet() {
+  const rows = categories.map(c => ({
+    g: c.glyph, t: c.name, tick: ED.cat === c.id,
+    act: () => { ED.cat = c.id; renderEditor(); show("#editor"); }
+  }));
+  rows.push({ g:"􀁍", t:"New category", act: categoryCreator });
+  optionSheet(categories.length ? "Category" : "No categories yet", rows,
+    categories.length ? '<div class="banner">Renaming, recolouring and removing live on the ' +
+      'Expenses shell, not here — which is exactly why the control below has to ask for ' +
+      'colour and icon <em>now</em>. A category you cannot revise hardens the moment it is typed.</div>' : "");
+}
+
+function categoryCreator() {
+  let colour = PALETTE[0], glyph = GLYPHS[0];
+  $("#opts-body").innerHTML =
+    '<div class="opt-title">New category</div>' +
+    '<div class="catnew"><input id="catname" placeholder="Name it" autocomplete="off">' +
+    '<div class="swatches">' + PALETTE.map((c,i) =>
+      '<button class="sw" data-c="' + c + '" style="background:' + c + '" aria-pressed="' + (i===0) + '"></button>').join("") + "</div>" +
+    '<div class="glyphs">' + GLYPHS.map((g,i) =>
+      '<button class="gl" data-g="' + g + '" aria-pressed="' + (i===0) + '">' + g + "</button>").join("") + "</div></div>" +
+    '<div class="opt" id="catadd"><span class="g">􀁍</span><span class="txt">Add</span></div>';
+
+  $$("#opts-body .sw").forEach(b => b.addEventListener("click", () => {
+    colour = b.dataset.c; $$("#opts-body .sw").forEach(x => x.setAttribute("aria-pressed", x === b)); }));
+  $$("#opts-body .gl").forEach(b => b.addEventListener("click", () => {
+    glyph = b.dataset.g; $$("#opts-body .gl").forEach(x => x.setAttribute("aria-pressed", x === b)); }));
+  $("#catadd").addEventListener("click", () => {
+    const name = ($("#catname").value || "").trim(); if (!name) return;
+    const c = { id: "c" + categories.length, name, colour, glyph };
+    categories.push(c); ED.cat = c.id;
+    renderEditor(); renderCategoryList(); hide("#opts"); setTimeout(() => show("#editor"), 200);
+  });
+  setTimeout(() => $("#catname").focus(), 60);
+  show("#opts");
+}
+
+/* ── the two second surfaces (Q7) ───────────────────────────────── */
+function renderExpenseList() {
+  $("#expenselist").innerHTML = EXPENSES.map(e =>
+    '<div class="opt"><span class="g">' +
+    (e.cat ? (categories.find(c => c.id === e.cat) || {}).glyph : "") + "</span>" +
+    '<span class="txt">' + (e.name || "Unnamed") +
+    "<small>" + money(e.amt) + " · " + e.every.toLowerCase() +
+    (e.paidOf ? " · " + e.paidOf[0] + " of " + e.paidOf[1] : (e.endsOn ? " · ends " + e.endsOn : "")) +
+    "</small></span><span class='tick'>›</span></div>").join("");
+}
+function renderCategoryList() {
+  $("#categorylist").innerHTML = categories.length
+    ? categories.map(c =>
+        '<div class="opt" data-cat="' + c.id + '"><span class="g" style="color:' + c.colour + '">' + c.glyph + "</span>" +
+        '<span class="txt">' + c.name + "</span><span class='tick'>›</span></div>").join("")
+    : '<div class="opt-title">Categories ship empty. Make one in the editor.</div>';
+  $$("#categorylist .opt[data-cat]").forEach(el => el.addEventListener("click", () => {
+    const c = categories.find(x => x.id === el.dataset.cat);
+    const using = EXPENSES.filter(e => e.cat === c.id).length;
+    optionSheet(c.name, [
+      { g:"􀈎", t:"Rename", act: closeAll },
+      { g:"􀟒", t:"Change colour and icon", act: closeAll },
+      { g:"􀈑", t:"Delete", d:true,
+        s: using ? using + (using === 1 ? " expense keeps its place, with no category" : " expenses keep their place, with no category")
+                 : "Nothing is using it", act: closeAll },
+    ]);
+  }));
+}
+
+/* ── sheet plumbing ─────────────────────────────────────────────── */
+function show(sel) {
+  $("#scrim").classList.add("on");
+  $("#scrim").classList.toggle("hi", sel === "#opts");
+  $(sel).classList.add("on");
+}
+function hide(sel) {
+  $(sel).classList.remove("on");
+  if (sel === "#opts") $("#scrim").classList.remove("hi");
+  if (!$$(".sheet.on").length) $("#scrim").classList.remove("on");
+}
+function closeAll() {
+  $$(".sheet").forEach(s => s.classList.remove("on"));
+  $("#scrim").classList.remove("on"); $("#scrim").classList.remove("hi");
+}
+
+/* ── controls ───────────────────────────────────────────────────── */
+function syncSeg(sel, v) { $$(sel + " button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); }
+function seg(sel, key, after) {
+  $$(sel + " button").forEach(b => b.addEventListener("click", () => {
+    S[key] = b.dataset.v; syncSeg(sel, b.dataset.v); after && after();
+  }));
+}
+
+function applyShell() {
+  const tabs = S.shell === "tabs", header = S.shell === "header";
+  $("#tabbar").classList.toggle("on", tabs);
+  $("#navmenu").classList.toggle("on", header);
+  $("#add").classList.toggle("as-header", header);
+  $("#add").style.display = tabs ? "none" : "flex";
+  $("#scroll").style.paddingBottom = tabs ? "96px" : "var(--clearance)";
+  $("#pill").style.bottom = tabs ? "96px" : "24px";
+  onScroll();
+}
+function applyData() {
+  const empty = S.data === "empty";
+  $("#empty").classList.toggle("on", empty);
+  $("#scroll").style.visibility = empty ? "hidden" : "visible";
+  $("#pill").classList.toggle("on", false);
+}
+function applyTheme() { $("#device").classList.toggle("dark", S.theme === "dark"); }
+
+/* ── scroll: the pinned hairline, and the pill that already owns the corner ── */
+let restTop = 0;
+function onScroll() {
+  const sc = $("#scroll"), y = sc.scrollTop;
+  $$(".msection").forEach(sec => {
+    const h = sec.querySelector(".monthhead");
+    h.classList.toggle("pinned", y > sec.offsetTop - 59 + 1 && y < sec.offsetTop + sec.offsetHeight - 59 - h.offsetHeight);
+  });
+  const away = y - restTop;
+  const show = Math.abs(away) > 240 && S.data !== "empty";
+  $("#pill").classList.toggle("on", show);
+  $("#pill").textContent = (away > 0 ? "↑ September" : "↓ September");
+  /* the collision the brief names: both controls want the bottom corner */
+  $("#add").classList.toggle("corner-clash", show && S.shell === "none");
+}
+
+/* ── wiring ─────────────────────────────────────────────────────── */
+seg("#c-order",    "order");
+seg("#c-required", "required", renderEditor);
+seg("#c-ends",     "ends",     renderEditor);
+seg("#c-meta",     "meta",     renderTimeline);
+seg("#c-shell",    "shell",    applyShell);
+seg("#c-data",     "data",     applyData);
+seg("#c-theme",    "theme",    applyTheme);
+
+$("#add").addEventListener("click", () => openEditor("create"));
+$("#ed-x").addEventListener("click", closeAll);
+$("#ed-save").addEventListener("click", saveEditor);
+$("#scrim").addEventListener("click", () => {
+  if ($("#opts").classList.contains("on")) hide("#opts"); else closeAll();
+});
+$("#ed-name").addEventListener("input", e => { ED.name = e.target.value; renderEditor(); });
+$("#ed-chips").addEventListener("click", e => {
+  const c = e.target.closest("[data-chip]"); if (!c) return;
+  chipSheet(c.dataset.chip);
+});
+$("#navmenu").addEventListener("click", () => optionSheet(null, [
+  { g:"􀋲", t:"All expenses", s:"Every rule you have set up", act: () => $("#s-expenses").classList.add("on") },
+  { g:"􀟒", t:"Categories",   s:"Rename, recolour, remove",   act: () => $("#s-categories").classList.add("on") },
+]));
+$$(".tabbar .tab").forEach(t => t.addEventListener("click", () => {
+  const d = t.dataset.dest;
+  $$(".tabbar .tab").forEach(x => x.classList.toggle("sel", x === t && d !== "add"));
+  if (d === "add") { $$(".tabbar .tab")[0].classList.add("sel"); openEditor("create"); }
+  if (d === "expenses") $("#s-expenses").classList.add("on");
+}));
+$$("[data-close]").forEach(b => b.addEventListener("click", () => $("#" + b.dataset.close).classList.remove("on")));
+$("#unlock").addEventListener("click", () => {});
+$("#pill").addEventListener("click", () => $("#scroll").scrollTo({ top: restTop, behavior: "smooth" }));
+
+const KEYS = ["1","2","3","4","5","6","7","8","9",".","0","⌫"];
+$("#keypad").innerHTML = KEYS.map(k =>
+  '<button class="key' + (k === "⌫" || k === "." ? " dark" : "") + '" data-k="' + k + '">' + k + "</button>").join("");
+$("#keypad").addEventListener("click", e => {
+  const b = e.target.closest("[data-k]"); if (!b) return;
+  const k = b.dataset.k;
+  if (k === "⌫") ED.digits = ED.digits.slice(0, -1);
+  else if (k === ".") { if (!ED.digits.includes(".")) ED.digits = (ED.digits || "0") + "."; }
+  else { const [, c] = ED.digits.split("."); if (c !== undefined && c.length >= 2) return; ED.digits += k; }
+  renderEditor();
+});
+
+renderTimeline(); renderExpenseList(); renderCategoryList();
+applyShell(); applyData(); applyTheme(); renderEditor();
+$("#scroll").addEventListener("scroll", onScroll, { passive: true });
+window.addEventListener("load", () => {
+  /* A stuck sticky header reports its stuck offsetTop, not its natural one, so the
+     current month's resting position has to be measured with the list at the top. */
+  const sc = $("#scroll");
+  const sec = $$(".msection")[1];               /* September */
+  sc.scrollTop = 0;
+  /* Measured rather than computed: sticky headers and the scrollport's own top inset
+     make an offsetTop sum easy to get wrong by exactly one inset, which is the kind of
+     error that looks like a missing row. */
+  for (let i = 0; i < 3; i++) {
+    sc.scrollTop += sec.getBoundingClientRect().top - sc.getBoundingClientRect().top - 59;
+  }
+  restTop = sc.scrollTop;
+  onScroll();
+});
+</script>
+</body>
+</html>

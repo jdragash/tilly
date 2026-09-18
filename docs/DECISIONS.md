@@ -62,7 +62,7 @@ reaches a view through `Tokens`, dimensions included, so the design pass is a on
 ## The timeline is one list, future above and past below, bounded at both ends
 **Decided:** 2026-09-08
 Next month is always open above the current one; history runs continuously below. Further
-ahead is a deliberate unlock that closes itself once you come back. A pill returns you to this month.
+ahead is a deliberate unlock that closes itself once you come back. A month button returns you to this month.
 - **Rejected — collapsed month bars:** made ordinary movement a sequence of taps.
 - **Rejected — past above, future below:** puts history at eye level in an app about what's coming.
 - **Rejected — resting with next month peeking in:** two month names dilute the one being read.
@@ -84,3 +84,29 @@ not the process survived. The current month decides where you land only on first
 - **Rejected — remember per session:** "next launch" isn't something anyone can observe.
 - **Rejected — hold the timeline until the row is restored:** the gap is a few rows in one known direction.
 - **Revisit when:** the list's two scroll coordinate spaces are calibrated (`.claude/rules/swiftui-scrolling.md`).
+
+## The timeline is the only screen, and everything else is a sheet
+**Decided:** 2026-09-19
+Laid out like iOS Calendar: + in the pinned header's row, the month button bottom left, settings
+bottom right. The editor and settings open as sheets over the timeline. Categories live in Settings.
+- **Rejected — a list of every expense:** the timeline is that list, and grouped by category it became half an insights screen.
+- **Rejected — a categories button:** categories are set up rarely, which is what Settings is for.
+- **Rejected — the buttons in their own strip above the pinned header:** gives up a row of the screen for good.
+- **Rejected — a return pill that appears 240pt away:** a control that comes and goes; the month button is always there.
+- **Rejected — pushed pages:** they replace the timeline instead of sitting over it.
+
+## Every expense has a category, and a category is an emoji and a name
+**Decided:** 2026-09-19
+Amount, name, category and date are all required. The app ships with no categories, so the first
+expense makes the first. Both fields are required and there is no colour. The emoji comes from the
+system emoji keyboard.
+- **Rejected — an optional category:** the row's icon and any insight by category would need a stand-in that means nothing.
+- **Rejected — a colour per category:** a second identity to choose and keep distinct, when the emoji already distinguishes.
+- **Rejected — a starter set:** the user's categories are theirs (tenet 4).
+- **Rejected — a custom emoji grid:** a curated set, and weaker than the system keyboard's search.
+- **Revisit when:** managing categories in Settings, or Insights, is designed.
+
+## Every charge is its own row
+**Decided:** 2026-09-19
+Two charges on one day are two rows, each with its date. The timeline has no day groups.
+- **Rejected — grouping a day under a heading with a day total:** the list changes shape, and rows inside lose their dates.

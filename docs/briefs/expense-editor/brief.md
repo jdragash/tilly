@@ -134,34 +134,19 @@ adding a second and third expense feels like less work than the first, or the sa
 
 ## In and out
 
-**In.** Creating an expense. Editing the rule behind one. Ending a bill so it stops going
-forward and keeps its past. Deleting one outright, as a separate and visibly destructive
-action. Per-occurrence overrides — a different amount, a skip, a move — with the scope choice
-presented at the moment of editing. Categories, created inline in the editor and nowhere
-else. The schema change that category needs. An entry point on the timeline, and timeline
-rows becoming tappable. Removing the sample seed.
+**In.** Creating an expense, with amount, name, category and date required. Editing the rule
+behind one. Ending a bill so it stops going forward and keeps its past. Deleting one outright, as a
+separate and visibly destructive action. Per-occurrence overrides — a different amount, a skip, a
+move — with the scope choice presented at the moment of editing. Categories, created inline in the
+editor and listed in Settings. The schema change that category needs. The Calendar-style shell: +
+in the pinned header's row, a month button that is always there in place of the return pill, and a
+settings sheet. Timeline rows becoming tappable, and each charge becoming its own row, with no day
+groups. Removing the sample seed.
 
-**Explored and prototyped, but deliberately not built.** Two surfaces, and they are one
-question rather than two.
-
-*A list of every expense you have set up*, as rules rather than occurrences. It is the right
-answer to reaching a bill that next charges in seven months, and it is a screen plus a
-navigation model on top of an already-enlarged piece of work.
-
-*Managing categories* — renaming, recolouring, deleting, and what happens to the expenses
-still pointing at one you remove. Inline creation is what ships, but a category you can make
-and never revise is a decision that hardens the moment it is typed, and designing the
-creation control without knowing what revising looks like is how it gets designed wrong.
-
-They belong in the same exploration because they are the same problem underneath: both are a
-second surface, and Tilly currently has no way to reach one. Whatever navigation answers the
-first answers the second, and a shell designed for one destination is the wrong shape.
-`tilly-explore` designs both and keeps the prototypes; implementation waits.
-
-*The cost of that split, stated so it is not discovered later:* an expense created with its
-first occurrence far in the future and no past yet is unreachable until it charges. A typo in
-a bill you have just set up for seven months' time cannot be corrected. Every other case has
-a recent charge to tap.
+**Set aside in exploration.** *A list of every expense*: the timeline is that list, and a list
+grouped by category turned into half an insights screen, which is now its own exploration.
+*Managing categories*: they live in Settings, and what editing one there looks like is designed
+later. Neither gets a button in the shell.
 
 **Out.** Variable and unknown amounts, and the estimate control that goes with them —
 shelved, deliberately, and it is a change to the roadmap rather than a gap. The editor

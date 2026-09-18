@@ -8,28 +8,12 @@ are in `PROJECT.md`, the principles behind them in `TASTE.md`, and the evidence 
 
 ## Tokens
 
-Every view refers to `Tokens`, never to a raw value: no literal hex, no literal point sizes, no
-bare `.largeTitle`, and no bare numbers in layout modifiers.
-
-```swift
-enum Tokens {
-    enum Text { static let amount = Font.body }
-    enum Surface { static let base = Color(.systemBackground) }
-}
-```
-
-In v1 tokens alias system values. System components supply Liquid Glass, Dynamic Type, dark mode
-and VoiceOver correctly, and the indirection makes the design pass a one-file change. Screens add
-the tokens they need, and later screens extend the scale.
-
-Dimension tokens are held to the same rule as fonts and colours from the first view that uses
-them. A bare number in `.padding` doesn't look wrong the way a hex literal does, which is why it
-gets through.
-
-`DesignSystem/Gallery.swift`, still to come, will render every token and shared component in
-light, dark and accessibility sizes.
-
-For the design pass: layer on top of system materials rather than replacing them.
+Every view refers to `Tokens`, never to a raw value, dimensions included; the seam check is in
+`.claude/rules/views-and-tokens.md`. In v1 tokens alias system values: system components supply Liquid Glass,
+Dynamic Type, dark mode and VoiceOver, and the indirection makes the design pass a one-file change.
+Screens add the tokens they need. `DesignSystem/Gallery.swift`, still to come, will render every
+token in light, dark and accessibility sizes. The design pass layers on system materials rather
+than replacing them.
 
 ---
 
@@ -51,7 +35,19 @@ When certainty returns, it takes its own channel, a mark beside the amount, and 
 Lightness already means upcoming, and an estimated past charge would read as upcoming.
 
 The grammar applies wherever a date or amount appears, the editor included: a future date looks
-like the future before you save.
+like the future before you save. There the date button's icon carries it, a calendar with a clock
+for a date still to come and a plain calendar otherwise. A lighter button would read as empty.
+
+---
+
+## The shell
+
+The timeline is the app's one screen, laid out like iOS Calendar. Three glass controls float over
+it: + at the right end of the pinned header's row, the month button bottom left, and settings bottom
+right. Everything else opens as a sheet over the timeline, the editor and settings alike, so the
+reader never leaves their place. No tab bar and no pushed pages.
+
+Categories are kept in Settings. There is no list of every expense: the timeline is that list.
 
 ---
 
@@ -59,13 +55,13 @@ like the future before you save.
 
 ### The row
 
-Icon well, then name with the date beneath it, then the amount. The leading slot belongs to the
-category icon, and it renders as an empty well until categories exist. Never draw a placeholder
-glyph: that would be a starter set by the back door.
+Icon well, then name with the date beneath it, then the amount. The well holds the category's
+emoji; every expense has one. A bill that ends adds its last month to the date, `Sep 18 · ends
+05/27`, and nothing else joins that line.
 
 ### Amounts
 
-Every amount carries a minus sign: rows, day totals, month totals. Nothing on this screen is money
+Every amount carries a minus sign: rows and month totals. Nothing on this screen is money
 arriving, so the sign sets the register. A zero is unsigned (`€0`), because nothing is going out.
 
 Amounts round to whole units before anything is totalled, so a total always equals the figures
@@ -73,16 +69,14 @@ above it.
 
 ### Rules delimit, they don't decorate
 
-No separator between rows; space does that work. A hairline appears only to open and close a
-grouped day, under the unlock bar, and under a pinned month header. A rule means something is
-being closed.
+No separator between rows; space does that work. A hairline appears only under the unlock bar and
+under a pinned month header. A rule means something is being closed.
 
-### Group a day only when there's a day to group
+### Every charge is its own row
 
-One charge on a day is an ordinary row carrying its own date. Two or more collapse under a day
-heading with a day total, and the rows inside give up their dates. Inside a group, entries descend
-by amount, with ties broken by name. The heading takes the ink of the day's temporal state. No
-tinted card: it breaks amount alignment down the right edge.
+Two charges on one day are two rows, each carrying its own date. No day heading and no day total:
+a list of equal rows reads faster than a list that changes shape. Rows descend by date, and a day's
+charges by amount, with ties broken by name.
 
 ### The month header
 
@@ -135,24 +129,22 @@ occurrence or the series is asked at the moment of editing.
 
 ### Getting back
 
-A floating pill appears once the reader is **240 points** from the current month's resting
-position, in either direction: about a third of a screen, so it arrives as soon as the month is
-behind you. Showing it the instant the header leaves would flicker at the boundary.
-
-It names the month and points the way: `↑ September` from below, `↓ September` from above.
-VoiceOver reads "Back to September". The arrow follows which side the reader is on at every
-distance, including while the pill is hidden, so it never turns around as it fades in.
+The month button sits bottom left, always, and names the current month: `September`. Tapping it
+brings you back to the current month from anywhere. It stays exactly as it is while you're already
+there, like Calendar's Today: a control that appears or changes on its own does so for a reason the
+reader can't see. VoiceOver reads "Back to September".
 
 Tapping it scrolls back rather than jumping, with a duration that scales with distance, and closes
-any unlocked months on the way. The pill uses the stock glass button style. The list carries a
-bottom inset of the pill's height plus its margin, so the last line of history clears it.
+any unlocked months on the way. It is a stock glass button. The list carries a bottom inset of the
+button's height plus its margin, so the last line of history clears it.
 
 ### The month you're reading stays named
 
 The month header pins to the top while its rows scroll under it, and hands off when the next header
-arrives. Its ground is opaque and the same paper as the page, so content passing beneath is hidden
-rather than tinted, and it carries that ground at rest too. Glass is for things that float over
-content; a full-bleed sticky header doesn't float.
+arrives. It shares that row with +, which floats over its right end, so the total sits beside the
+month name rather than at the edge: `September −€53 left`. Its ground is opaque and the same paper
+as the page, so content passing beneath is hidden rather than tinted, and it carries that ground at
+rest too. Glass is for things that float over content; a full-bleed sticky header doesn't float.
 
 It keeps its full size when pinned. Condensing would save a point, cost three points of type, and
 make the month you're *in* the same shape as a month you could *open*. The hairline under it appears
@@ -167,8 +159,7 @@ passed rows, but inserts nothing above the reader: next month was already open.
 ### Your place survives
 
 You return to the month you left, at its top, however long you were gone and whether or not the
-process survived. The current month decides where you land only on first run. Returning from a
-month boundary, where the unlock and the pill both leave you, restores exactly.
+process survived. The current month decides where you land only on first run.
 
 ### The app fills the top inset
 
@@ -181,15 +172,49 @@ Mockups leave the inset empty rather than painting a clock into it.
 
 ---
 
+## The editor
+
+### The amount is the screen
+
+The amount is the largest thing on it, and the keypad is up when the editor opens. The name sits
+under the amount. Save is a full-width button at the bottom.
+
+### Amount, name and category are required
+
+Save stays disabled until all three are there; the date starts as today. The row leads with the
+emoji and the name, and insights stand on the category.
+
+### Three buttons: date, repeat, category
+
+Equal thirds under the name. The icon says what kind of thing, the label says its value:
+
+- a calendar and `Oct 31`, with a clock on the calendar for a date still to come; never a year
+- a loop and `Monthly` or `3 months`, or a one-way arrow and `09/27` once the bill ends
+- the category's emoji alone, or a tag until one is chosen
+
+When orderly and fitting every word conflict, the words get shorter. At accessibility text sizes
+the three stack, full width, in the same order.
+
+### Pickers open where the keypad was
+
+Choosing a date, a repeat or a category replaces the keypad in place, at the keypad's height, so
+the amount and name never move. Nothing stacks a second sheet over the editor.
+
+- **Date:** a calendar and nothing else.
+- **Repeat:** one wheel, `Every 1 month`, with an end column that rests on `no end` and rolls into
+  payment counts. Once there's an end, `Last payment Sep 30, 2027` shows under it. A count is the
+  only way to set an end.
+- **Category:** a list of emoji and name, with `New category` last. That opens the system emoji
+  keyboard, then asks for the name. Both are required: without the emoji, the button couldn't tell
+  a category from none.
+
+---
+
 ## Copy rules
 
-**No label that restates its control.** A field reached by tapping "+" doesn't say "Price". A date
-picker doesn't say "Payment Date". Remove the label; if nothing is genuinely unclear, it stays
-removed.
-
-**The test cuts both ways.** A word stays when removing it leaves a slot meaning two things. `−€162
-left` keeps "left", and drops "this month" because the month name sits beside it. The pill says
-`September`, not `Back to September`, because the arrow already says "back".
+**No label that restates its control** (tenet 3). **The test cuts both ways:** a word stays when
+removing it leaves a slot meaning two things. `−€162 left` keeps "left", and drops "this month"
+because the month name sits beside it. The month button says only `September`.
 
 **The app never says a bill was paid.** It says *charged*. Tilly knows a date passed, not what left
 an account.
@@ -218,6 +243,7 @@ No "restart the app to apply". If a setting is too expensive to apply live, it d
 
 ## Empty states
 
-Categories ship empty, so first run is doing the teaching. The empty state is the first screen of the
-product, not a placeholder. It feels clean rather than unfinished, and makes the next action obvious
-without instructing at length.
+First run has no expenses and no categories, so it is doing the teaching. The timeline says `Add a
+bill or a subscription and it shows up here before it goes out.`, and the first expense makes the
+first category. The empty state is the first screen of the product, not a placeholder: clean rather
+than unfinished, with the next action obvious.

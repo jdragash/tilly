@@ -30,7 +30,7 @@ Position isn't reset "on next launch", because nobody can tell a relaunch from a
 
 **5. A mark that looks the same everywhere says nothing. Spend a distinction only where it
 distinguishes.**
-No separator under every row. A hairline appears only where a grouped day opens and closes.
+No separator under every row. A hairline appears only under a pinned month header.
 
 **6. A word stays only if it does work no other channel does, and then it stays.**
 `−€162 left` keeps "left", and drops "this month" because the month name sits beside it.
@@ -39,7 +39,7 @@ No separator under every row. A hairline appears only where a grouped day opens 
 What's left this month lives in the pinned month header, not in a headline card.
 
 **8. Different kinds of thing never share a look.**
-The pinned header is paper and the floating pill is glass, because only one of them is a control.
+The pinned header is paper and the buttons floating over it are glass, because only they are controls.
 
 ## Shipping
 
@@ -48,8 +48,8 @@ A relaunch returns you to the top of the month you were reading, not the row, an
 says what would lift it.
 
 **10. If a behaviour turns on a number, the design names the number.**
-The return pill appears 240pt from rest. Written as "away from the month", it was built as a full
+The old return pill appeared 240pt from rest. Written as "away from the month", it was built as a full
 screen.
 
 **11. Stock platform first, behind a seam. Layer on the system, don't fight it.**
-The return pill is the stock glass button, and every value it uses sits behind `Tokens`.
+The month button is the stock glass button, and every value it uses sits behind `Tokens`.
