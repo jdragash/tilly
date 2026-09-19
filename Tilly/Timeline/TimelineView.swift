@@ -23,7 +23,9 @@ struct TimelineView: View {
     @State private var isProgrammaticScroll = false
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
-    @State private var pillClearance: CGFloat = Tokens.Space.floatingClearance
+    @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
+    @State private var isEditorPresented = false
+    @State private var isSettingsPresented = false
 
     private let placeStore = TimelinePlaceStore()
     private static let scrollSpace = "timelineScroll"
@@ -66,7 +68,7 @@ struct TimelineView: View {
 
     /// How far the reader has travelled from the resting position: positive below it (back
     /// in history), negative above it (in an unlocked month ahead). `nil` until there is
-    /// enough geometry to say.
+    /// enough geometry to say. It sets how long the month button's return takes.
     ///
     /// Deliberately not `headerOffsets[window.current]`, the way `updateLatch` reads it —
     /// `LazyVStack` stops laying out (and therefore stops measuring) a header once it is far
@@ -86,27 +88,6 @@ struct TimelineView: View {
         return scrollOffset - restingContentOffset
     }
 
-    /// Which way `LatestButton` points — deliberately defined at *every* distance, including
-    /// the ones where the pill is hidden. The pill is never removed from the tree (see the
-    /// overlay), so a direction that fell back to a default while hidden would flip at the
-    /// same instant the pill faded in, and the reader would watch the arrow cross-dissolve
-    /// from up to down as it arrived. Reading the sign instead means direction only ever
-    /// changes as the reader passes *through* the resting position, which is the one place
-    /// the pill is guaranteed to be invisible.
-    private var returnDirection: LatestButton.Direction {
-        (returnDistance ?? 0) < 0 ? .down : .up
-    }
-
-    /// Whether the pill shows at all: once the reader is `Tokens.Space.returnThreshold` from
-    /// the resting position in either direction — about a third of a screen, so it arrives
-    /// as soon as the current month is behind you rather than several months later. A full
-    /// viewport was tried and is far too far: it left the pill hidden two months into
-    /// history. See "Getting back" in `docs/DESIGN.md`.
-    private var isReturnVisible: Bool {
-        guard let returnDistance else { return false }
-        return abs(returnDistance) > Tokens.Space.returnThreshold
-    }
-
     /// How long the return scroll should take, scaled to the distance actually travelled.
     /// `scrollTo` does animate — measured on device, not the snap it looks like — but at
     /// `.default`'s fixed duration a return from deep history covers two thousand points in
@@ -123,7 +104,11 @@ struct TimelineView: View {
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
         .onAppear(perform: setUpIfNeeded)
-        .onChange(of: expenses) { _, _ in rebuildSections() }
+        // The first expense arrives with no window yet, because `setUpIfNeeded` found no
+        // floor on appear; without setting up here the list would stay blank.
+        .onChange(of: expenses) { _, _ in
+            if window == nil { setUpIfNeeded() } else { rebuildSections() }
+        }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
         .onChange(of: headerOffsets) { _, _ in updateLatch() }
         .onChange(of: scenePhase) { _, newPhase in
@@ -169,7 +154,7 @@ struct TimelineView: View {
                         }
                         .scrollTargetLayout()
                     }
-                    .contentMargins(.bottom, pillClearance, for: .scrollContent)
+                    .contentMargins(.bottom, bottomClearance, for: .scrollContent)
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                         scrollOffset = newValue
                     }
@@ -180,24 +165,6 @@ struct TimelineView: View {
                 }
                 .coordinateSpace(name: Self.scrollSpace)
                 .background(Tokens.Surface.base)
-                .overlay(alignment: .bottom) {
-                    // Always rendered — never conditionally removed — so its real,
-                    // Dynamic-Type-aware height is always available to size
-                    // `pillClearance` from, including the very first time the reader
-                    // scrolls far enough for it to matter. Visibility is opacity plus
-                    // explicit accessibility/hit-testing, not presence in the tree.
-                    LatestButton(month: window.current, direction: returnDirection, today: today, action: returnToResting)
-                        .padding(.bottom, Tokens.Space.section)
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                            pillClearance = height + Tokens.Space.section
-                        }
-                        .opacity(isReturnVisible ? 1 : 0)
-                        .accessibilityHidden(!isReturnVisible)
-                        .allowsHitTesting(isReturnVisible)
-                }
-                // Keyed to visibility alone. Keying it to direction as well is what made the
-                // arrow animate its own change rather than simply being correct on arrival.
-                .animation(.easeInOut, value: isReturnVisible)
                 .overlay(alignment: .top) {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
@@ -211,6 +178,32 @@ struct TimelineView: View {
                         .allowsHitTesting(false)
                 }
             }
+        }
+        .overlay(alignment: .topTrailing) {
+            // + never moves: it sits in the `headerRow` band where headers pin, and each
+            // header hands off beneath it. Over the empty state too, where it's the next step.
+            GlassCircleButton(systemImage: "plus", label: "Add an expense") { isEditorPresented = true }
+                .frame(height: Tokens.Size.headerRow)
+                .padding(.trailing, Tokens.Space.gutter)
+        }
+        .overlay(alignment: .bottom) { bottomRow }
+        .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
+        .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
+    }
+
+    /// The month button bottom left and settings bottom right, always visible. Its measured
+    /// height, which includes its bottom margin and grows with Dynamic Type, sets the list's
+    /// bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
+    private var bottomRow: some View {
+        HStack {
+            MonthButton(month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today, action: returnToResting)
+            Spacer()
+            GlassCircleButton(systemImage: "gearshape", label: "Settings") { isSettingsPresented = true }
+        }
+        .padding(.horizontal, Tokens.Space.gutter)
+        .padding(.bottom, Tokens.Space.gutter)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            bottomClearance = height + Tokens.Space.section
         }
     }
 
@@ -378,7 +371,7 @@ struct TimelineView: View {
         }
     }
 
-    /// `LatestButton`'s action: animates the reader back to the resting position — the
+    /// The month button's action: animates the reader back to the resting position — the
     /// current month's header at the container's top, the same target
     /// `restorePlaceIfNeeded` uses — then runs the tidy-up once that scroll has
     /// actually settled. `isProgrammaticScroll` holds `updateLatch` off for the same reason
@@ -409,9 +402,8 @@ struct TimelineView: View {
             // normally written as `scrollOffset + frame.minY` from two geometry callbacks
             // that arrive independently, and during an animated scroll they are sampled at
             // different instants — measured on device leaving the cache 702, 493 and 0.2
-            // points wrong across three otherwise identical returns. The pill hides within
-            // one viewport of resting, so an error approaching 778 points would leave it
-            // on screen at rest, pointing the wrong way.
+            // points wrong across three otherwise identical returns, and the next return's
+            // duration is read from it.
             restingContentOffset = scrollOffset
             closeUnlockedMonths()
         }
@@ -454,14 +446,14 @@ struct TimelineView: View {
     /// **The target here is the header, not the section** — measured on device, 2026-09-08.
     /// `.id(_:)` sits on the `Section`, but while `pinnedViews: [.sectionHeaders]` is working,
     /// `scrollTo` resolves that id to the pinned header alone, so `targetHeight` is the
-    /// header's 47 points and not the section's several hundred. Passing a section height
+    /// header's height (47 points when measured) and not the section's several hundred. Passing a section height
     /// here overshoots by a proportion of the difference: the anchor landed 287 points low.
     /// The two facts are coupled, which is why they were mistaken for independent bugs — a
     /// geometry modifier on the `Section` breaks pinning *and* makes `scrollTo` resolve to
     /// the whole section, so a section height is right only while the header is broken.
     ///
-    /// **The container is shorter than the viewport by `pillClearance`.** The pill gave the list
-    /// a bottom `contentMargins` so the floor line clears the floating pill, and `scrollTo`
+    /// **The container is shorter than the viewport by `bottomClearance`.** The bottom row gives
+    /// the list a bottom `contentMargins` so the floor line clears it, and `scrollTo`
     /// aligns within the container's *content area*, not the whole viewport. Dividing by the
     /// viewport instead lands every restore proportionally short — measured on device at
     /// 0.907x of whatever was asked, which is exactly (710 - 47) / (778 - 47). It slipped
@@ -481,7 +473,7 @@ struct TimelineView: View {
     private func restoreAnchor(_ month: MonthKey, to desiredOffset: CGFloat) {
         guard let scrollProxy else { return }
         let headerHeight = headerHeights[month] ?? 0
-        let denominator = (viewportHeight - pillClearance) - headerHeight
+        let denominator = (viewportHeight - bottomClearance) - headerHeight
         guard headerHeight > 0, denominator > 0.5 else {
             scrollProxy.scrollTo(month.id, anchor: .top)
             return

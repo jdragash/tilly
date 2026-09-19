@@ -6,6 +6,7 @@ enum Tokens {
         static let monthTotal: Font = .subheadline
         static let barName: Font = .callout
         static let barTotal: Font = .callout
+        static let floatingSymbol: Font = .body.weight(.medium)
         static let name: Font = .body
         static let amount: Font = .body
         static let caption: Font = .footnote
@@ -53,7 +54,7 @@ enum Tokens {
         /// the page: a pinned header hides what passes beneath it rather than tinting it.
         /// Because it matches `base`, the header can carry it at rest too — see the note in
         /// `MonthHeader`. Liquid Glass is for things that float *over* content, which the
-        /// floating pill is and a full-bleed sticky header is not.
+        /// floating buttons are and a full-bleed sticky header is not.
         static let pinned: Color = Color(.systemBackground)
         static let editorButtonActive: Color = Color(.tertiarySystemFill)
     }
@@ -64,9 +65,11 @@ enum Tokens {
         static let gap: CGFloat = 12
         static let tight: CGFloat = 8
         static let rowVerticalAccessible: CGFloat = 12
-        static let pillHorizontal: CGFloat = 16 // the "back to" pill's inner horizontal padding
-        static let floatingClearance: CGFloat = 64 // bottom inset the list carries so the floor line clears the pill
-        static let returnThreshold: CGFloat = 240 // how far from the current month the "back to" pill appears
+        static let monthButtonHorizontal: CGFloat = 16 // the month button's inner horizontal padding
+        static let floatingClearance: CGFloat = 80 // bottom inset the list carries until the bottom row is measured
+        /// What a month header keeps clear at its trailing end so its total never runs under +:
+        /// the button's width, the gutter it sits in, and a gap.
+        static let headerTrailingClearance: CGFloat = Size.floatingButton + gutter + gap
     }
 
     enum Size {
@@ -76,7 +79,10 @@ enum Tokens {
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
         static let hairline: CGFloat = 0.5
-        static let pill: CGFloat = 36 // minimum height of the floating "back to" control
+        /// The row a month header fills and + floats in. Headers take it as a minimum height.
+        static let headerRow: CGFloat = 52
+        /// + and settings, and the month button's minimum height, so the bottom row lines up.
+        static let floatingButton: CGFloat = 44
         static let editorButton: CGFloat = 40
         static let editorButtonStroke: CGFloat = 1
         static let editorAmountSize: CGFloat = 80 // the amount's base size, before Dynamic Type scales it

@@ -7,6 +7,10 @@ import SwiftUI
 /// Keeps its size when it pins — condensing would save a point of height and cost three
 /// points of type, landing the month you're *in* on the same shape as one you could open.
 /// `isPinned` only ever changes the hairline beneath it.
+///
+/// It shares its row with +, which floats over the trailing end, so the total sits beside the
+/// name and the trailing edge keeps `Tokens.Space.headerTrailingClearance` clear. Its minimum
+/// height is `Tokens.Size.headerRow`, the band + is centred in, with the text centred too.
 struct MonthHeader: View {
     let section: MonthSection
     let today: Date
@@ -33,16 +37,16 @@ struct MonthHeader: View {
                 // width by its `Spacer()`, and this one has nothing to do that job.
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                HStack {
+                HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.tight) {
                     nameText
-                    Spacer()
                     totalText
+                    Spacer(minLength: 0)
                 }
             }
         }
-        .padding(.horizontal, Tokens.Space.gutter)
-        .padding(.top, Tokens.Space.section)
-        .padding(.bottom, Tokens.Space.tight)
+        .padding(.leading, Tokens.Space.gutter)
+        .padding(.trailing, Tokens.Space.headerTrailingClearance)
+        .frame(minHeight: Tokens.Size.headerRow)
         // Carried at rest as well as pinned. The pinned ground is the same paper as the
         // page, so drawing it unconditionally looks identical at rest — and it removes the
         // frame, right after a month opens and every header is remeasured, where `isPinned`

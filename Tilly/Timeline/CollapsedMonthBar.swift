@@ -26,14 +26,17 @@ struct CollapsedMonthBar: View {
                     Text(section.month.name(in: calendar, relativeTo: today, locale: locale))
                         .font(Tokens.Text.barName)
                         .foregroundStyle(Tokens.Ink.secondary)
-                    Spacer()
                     Text(TimelineFormatting.amount(section.total, locale: locale))
                         .font(Tokens.Text.barTotal)
                         .monospacedDigit()
                         .foregroundStyle(Tokens.Ink.secondary)
                         .fixedSize()
+                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal, Tokens.Space.gutter)
+                // At the very top of the list the bar passes under +, so its total sits beside
+                // its name and the trailing end stays clear, as in `MonthHeader`.
+                .padding(.leading, Tokens.Space.gutter)
+                .padding(.trailing, Tokens.Space.headerTrailingClearance)
                 .frame(height: dynamicTypeSize.isAccessibilitySize ? Tokens.Size.monthBarAccessible : Tokens.Size.monthBar)
                 .contentShape(Rectangle())
                 hairline

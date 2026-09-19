@@ -504,6 +504,24 @@ editing categories; anything else in Settings.
 
 ## Lessons
 
+- **Step 8:** the `.glass` button style pads around its label: a 44pt label measured 58pt. For a
+  control that has to sit exactly in the header row, `glassEffect(.regular.interactive(), in:)` on a
+  plain button gives the size asked for (44.0 measured).
+- **Step 8:** measured with temporary `print`s of global frames, read through
+  `simctl launch --console-pty`, more precise than pixels. At rest the current header's band is
+  global y 62–114 and + is 66–110: centred to 0.0pt. In a hand-off the outgoing header sits exactly
+  one header height (52.0) above the incoming one on every frame. Unlock held October at 48.5 → 48.5
+  and 56.5 → 56.5 at `accessibility-extra-large`. The automatic close held September at 0.0, and a
+  relaunch restored July at 178.5, as saved.
+- **Step 8:** Save dismisses the editor when it's presented for real, and a first expense makes the
+  timeline appear. But one month of history is shorter than the screen, so nothing can scroll the
+  current month flush to the top: first run shows the unlock bar and next month above it.
+- **Step 8:** at `accessibility-extra-large` the unlock bar doesn't stack, and with the + clearance
+  its name truncates (`Nov…`). The stacked month header has no vertical padding now that
+  `headerRow` replaced it, so its total sits close to the hairline.
+- **Step 8:** the bottom row follows the keyboard in the timeline behind the editor (the gear moved
+  to y 422 while the emoji keyboard was up). It's hidden by the sheet.
+
 - **Step 7:** overriding `textInputMode` on a `UITextField` subclass to return the active mode whose
   `primaryLanguage == "emoji"` opens the keyboard directly on the system emoji keyboard, checked
   in the simulator. The field draws nothing (clear text and tint) and the slot draws the emoji
@@ -531,9 +549,6 @@ editing categories; anything else in Settings.
   row. `ScrollViewReader` with an `.id` on the row, scrolled to with anchor `.bottom` from an
   `onChange(of: panel)` a turn later (`Task { @MainActor in }`, animated), puts it just above the
   keyboard; the default size doesn't move.
-- **Step 8 check:** the editor's `dismiss()` after Save has only been seen with a constant-`true`
-  sheet, where it can't work. When step 8 presents the editor for real, confirm Save dismisses it,
-  and that a first expense makes the timeline appear.
 - **Step 7:** SwiftUI drops a `TextField`'s focus after `onSubmit`, so a refocus inside `submit()`
   loses; do it in a `Task { @MainActor in }`. A `UIViewRepresentable`'s delegate must not write its
   binding synchronously either, because `resignFirstResponder()` in `updateUIView` fires
