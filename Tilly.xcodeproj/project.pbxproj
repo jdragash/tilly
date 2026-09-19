@@ -3,8 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
-	preferredProjectObjectVersion = 77;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -27,16 +26,8 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1A0000000000000000000008 /* Tilly */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Tilly;
-			sourceTree = "<group>";
-		};
-		1A0000000000000000000009 /* TillyTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = TillyTests;
-			sourceTree = "<group>";
-		};
+		1A0000000000000000000008 /* Tilly */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tilly; sourceTree = "<group>"; };
+		1A0000000000000000000009 /* TillyTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = TillyTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -335,6 +326,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 68W43345SQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -358,6 +350,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 68W43345SQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
