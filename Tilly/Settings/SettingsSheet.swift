@@ -6,6 +6,9 @@ import SwiftUI
 struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
+    #if DEBUG
+    @Environment(DeveloperSession.self) private var session: DeveloperSession?
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -29,6 +32,9 @@ struct SettingsSheet: View {
                 } footer: {
                     Text("New categories are made while adding an expense.")
                 }
+                #if DEBUG
+                if let session { DeveloperSection(session: session) }
+                #endif
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Settings")

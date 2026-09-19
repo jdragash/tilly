@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// A scroll position and nothing else — there is no expanded state to go with it, because
 /// an unlocked month closes itself and stays open only for the session that opened it. See
@@ -43,4 +44,10 @@ struct TimelinePlaceStore: Sendable {
     func clear() {
         defaults.removeObject(forKey: Self.key)
     }
+}
+
+extension EnvironmentValues {
+    /// Where `TimelineView` keeps its place. Debug builds swap in a separate one while a
+    /// developer scenario is active, so sample data never moves the person's own place.
+    @Entry var timelinePlaceStore = TimelinePlaceStore()
 }

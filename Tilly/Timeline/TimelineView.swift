@@ -10,6 +10,7 @@ struct TimelineView: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.timelinePlaceStore) private var placeStore
 
     @State private var today = Date()
     @State private var window: TimelineWindow?
@@ -27,7 +28,6 @@ struct TimelineView: View {
     @State private var isEditorPresented = false
     @State private var isSettingsPresented = false
 
-    private let placeStore = TimelinePlaceStore()
     private static let scrollSpace = "timelineScroll"
 
     /// The last month (in top-to-bottom document order) whose header has reached the
