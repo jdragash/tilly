@@ -4,8 +4,9 @@ import TillyCore
 import os
 
 /// The sheet for adding an expense. The amount is the screen: the keypad is up when it opens,
-/// the name sits under it, and date, repeat and category open in the keypad's place at the
-/// keypad's height, so the amount never moves. See "The editor" in `docs/DESIGN.md`.
+/// the name sits under it, and date, category and repeat open in the keypad's place at the
+/// keypad's height, so the amount never moves. At standard text sizes the keyboard covers the
+/// panel rather than pushing the editor up. See "The editor" in `docs/DESIGN.md`.
 struct ExpenseEditor: View {
     let today: Date
 
@@ -13,15 +14,16 @@ struct ExpenseEditor: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
 
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
     @FocusState private var nameFocused: Bool
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.editorAmountSize
+    @ScaledMetric(relativeTo: .title3) private var nameHeight = Tokens.Size.editorNameHeight
     @State private var viewportHeight: CGFloat = 0
 
-    private static let newCategoryRowID = "newCategoryRow"
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
     /// `draft` and `panel` exist so previews can open the editor part-way through.
@@ -33,51 +35,47 @@ struct ExpenseEditor: View {
 
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: Tokens.Space.section) {
                     // The amount and name are the flexible part: they centre in whatever height the
-                    // buttons and panel leave, so those sit on Save. Accessibility sizes overflow
-                    // instead, and scroll.
+                    // buttons and panel leave, so those sit at the bottom. Accessibility sizes
+                    // overflow instead, and scroll.
                     VStack(spacing: Tokens.Space.section) {
                         amountView
                         nameField
                     }
                     .frame(maxHeight: .infinity)
                     EditorButtonRow(draft: draft, category: selectedCategory, today: today, panel: $panel)
-                    // A new category takes the panel's place, above its keyboard; the keyboard
-                    // takes the panel's place while a name is typed.
+                    // A new category takes the panel's place, above its keyboard. At accessibility
+                    // sizes the keyboard pushes the editor up, so the panel goes while a name is typed.
                     if panel == .newCategory {
                         NewCategoryRow(onCreate: create, onCancel: { panel = .category })
-                            .id(Self.newCategoryRowID)
-                    } else if !nameFocused {
+                    } else if keyboardCovers || !nameFocused {
+                        // Where the keyboard covers, the panel stays in the layout so nothing above
+                        // it moves, and hides so it can't show above a shorter keyboard.
                         panelArea
                             .frame(maxWidth: .infinity)
                             .frame(height: Tokens.Size.editorPanel)
+                            .opacity(nameFocused ? 0 : 1)
+                            .accessibilityHidden(nameFocused)
                     }
                 }
                 .padding(.horizontal, Tokens.Space.gutter)
                 .frame(minHeight: viewportHeight)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .ignoresSafeArea(.keyboard, edges: keyboardCovers ? .bottom : [])
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
                 viewportHeight = height
-            }
-            // At accessibility sizes the emoji keyboard covers the row, and the focused field is
-            // UIKit, so SwiftUI won't follow it. Scroll to it once it has laid out.
-            .onChange(of: panel) { _, newPanel in
-                guard newPanel == .newCategory else { return }
-                Task { @MainActor in
-                    withAnimation { proxy.scrollTo(Self.newCategoryRowID, anchor: .bottom) }
-                }
-            }
-            }
-            .safeAreaInset(edge: .bottom) {
-                if panel != .newCategory { saveButton }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(role: .close) { dismiss() }
+                }
+                // A half-made category is finished or cancelled before the expense is saved.
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(role: .confirm, action: save)
+                        .disabled(!isValid || panel == .newCategory)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -115,6 +113,7 @@ struct ExpenseEditor: View {
         TextField("Name it", text: $draft.name)
             .font(Tokens.Text.editorName)
             .multilineTextAlignment(.center)
+            .frame(minHeight: nameHeight)
             .focused($nameFocused)
             .submitLabel(.done)
     }
@@ -137,24 +136,14 @@ struct ExpenseEditor: View {
         }
     }
 
-    private var saveButton: some View {
-        Button(action: save) {
-            Text("Save")
-                .frame(maxWidth: .infinity)
-                // The tint is `Ink.primary`, which is white in dark mode, so an enabled label needs
-                // the opposite ground or it vanishes into the button. Forcing it always would also
-                // override the disabled dimming, so a disabled one steps back instead.
-                .foregroundStyle(isValid ? Tokens.Surface.base : Tokens.Ink.tertiary)
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.extraLarge)
-        .tint(Tokens.Ink.primary)
-        .disabled(!isValid)
-        .padding(.horizontal, Tokens.Space.gutter)
-        .padding(.top, Tokens.Space.tight)
-    }
-
     // MARK: State
+
+    /// The keyboard covers the editor at standard sizes. It can't while a category is made, where
+    /// the row has to sit directly above the emoji keyboard, or at accessibility sizes, where it
+    /// would cover the name field.
+    private var keyboardCovers: Bool {
+        !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
+    }
 
     private var selectedCategory: ExpenseCategory? {
         categories.first { $0.id == draft.categoryID }

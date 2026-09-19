@@ -6,7 +6,7 @@ enum EditorPanel: Equatable {
     case keypad, date, `repeat`, category, newCategory
 }
 
-/// Date, repeat and category as three equal thirds; the icon says what kind of thing, the
+/// Date, category and repeat as three equal thirds; the icon says what kind of thing, the
 /// label says its value. At accessibility text sizes they stack, full width, in the same order.
 /// See "Three buttons" in `docs/DESIGN.md`.
 struct EditorButtonRow: View {
@@ -25,8 +25,8 @@ struct EditorButtonRow: View {
             : AnyLayout(HStackLayout(spacing: Tokens.Space.tight))
         layout {
             dateButton
-            repeatButton
             categoryButton
+            repeatButton
         }
     }
 

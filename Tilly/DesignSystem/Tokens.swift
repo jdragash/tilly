@@ -86,6 +86,10 @@ enum Tokens {
         static let editorButton: CGFloat = 40
         static let editorButtonStroke: CGFloat = 1
         static let editorAmountSize: CGFloat = 80 // the amount's base size, before Dynamic Type scales it
+        /// The name field's least height, before Dynamic Type scales it. A focused field grows from
+        /// 24.0 to 25.67pt (measured), which moves the amount above it by half that; a minimum
+        /// above the larger keeps its height, and the amount, still.
+        static let editorNameHeight: CGFloat = 28
         /// Every editor panel fills exactly this height, so the amount never moves. Tuning value:
         /// the graphical calendar is the tallest panel, and a six-row month (August 2026) measures
         /// about 336pt at the default text size, so 340 clears it without clipping.

@@ -504,6 +504,26 @@ editing categories; anything else in Settings.
 
 ## Lessons
 
+- **Step 12:** a focused `TextField` is taller than an unfocused one (24.0 → 25.67pt at the default
+  size, measured), so the amount-and-name block, which centres in the leftover height, moved 0.83pt
+  when the name keyboard opened. The suite can't see that. `Tokens.Size.editorNameHeight` (a
+  `minHeight` scaled with `@ScaledMetric`) keeps the field one height, and the amount measured
+  210.17 with the keypad, the name keyboard and the date panel open. Measure with an `onGeometryChange`
+  `print` of the global frame; it only prints on change, so no new line means no movement.
+- **Step 12:** for the keyboard to cover the editor, ignoring its safe area isn't enough. The panel
+  has to stay in the layout while the name is typed (hidden with `opacity`, not removed), or the
+  amount re-centres. Ignoring is off while a category is made, so the row sits directly above the
+  emoji keyboard, and at accessibility sizes, so the name field isn't covered.
+- **Step 12:** the `ScrollViewReader` scroll to the new-category row is no longer needed. At
+  `accessibility-extra-large` the row sat above the emoji keyboard without it, with the same steps as
+  with it. The cause isn't established; the bottom Save inset it was written alongside is gone.
+- **Step 12:** the simulator's `screenshot` action returns `captureFailed` while `simctl launch
+  --console-pty` is running; `xcrun simctl io booted screenshot` works alongside it. Appending to the
+  file that `--console-pty` writes to (an `echo >>` marker) stops later output landing in it.
+- **Step 12:** driving the simulator with taps changes its store. The walk-through saved a "Cat food"
+  expense and made a "Pets" category in a sample scenario, and both were gone after a relaunch
+  because a sample reseeds on every launch. Neither is in the persistent store: not a bug.
+
 - **Step 8:** the `.glass` button style pads around its label: a 44pt label measured 58pt. For a
   control that has to sit exactly in the header row, `glassEffect(.regular.interactive(), in:)` on a
   plain button gives the size asked for (44.0 measured).
