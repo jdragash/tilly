@@ -12,6 +12,19 @@ enum Tokens {
         static let body: Font = .body
         static let emptyTitle: Font = .title2.weight(.semibold)
         static let rowEmoji: Font = .title2
+        static let editorName: Font = .title3.weight(.medium)
+        static let editorButton: Font = .subheadline
+        static let keypadKey: Font = .title
+        /// The editor's amount is the largest thing on the screen. The view scales
+        /// `Size.editorAmountSize` with `@ScaledMetric` and builds the font here, where a
+        /// fixed-size font belongs.
+        static func editorAmount(size: CGFloat) -> Font { .system(size: size, weight: .semibold) }
+    }
+
+    /// How far text may shrink to fit a line before it truncates.
+    enum Scale {
+        static let editorAmountMin: CGFloat = 0.3
+        static let editorButtonMin: CGFloat = 0.8
     }
 
     enum Opacity {
@@ -36,6 +49,7 @@ enum Tokens {
         /// `MonthHeader`. Liquid Glass is for things that float *over* content, which the
         /// floating pill is and a full-bleed sticky header is not.
         static let pinned: Color = Color(.systemBackground)
+        static let editorButtonActive: Color = Color(.tertiarySystemFill)
     }
 
     enum Space {
@@ -57,6 +71,17 @@ enum Tokens {
         static let iconAccessible: CGFloat = 44
         static let hairline: CGFloat = 0.5
         static let pill: CGFloat = 36 // minimum height of the floating "back to" control
+        static let editorButton: CGFloat = 40
+        static let editorButtonStroke: CGFloat = 1
+        static let editorAmountSize: CGFloat = 80 // the amount's base size, before Dynamic Type scales it
+        /// Every editor panel fills exactly this height, so the amount never moves. Tuning value:
+        /// the graphical calendar is the tallest panel, and a six-row month (August 2026) measures
+        /// about 336pt at the default text size, so 340 clears it without clipping.
+        static let editorPanel: CGFloat = 340
+        /// The repeat wheels' two narrow columns; the end column takes the rest. Tuning values:
+        /// a wheel's natural width is unbounded, so equal thirds truncated "12 payments".
+        static let wheelInterval: CGFloat = 64
+        static let wheelUnit: CGFloat = 96
     }
 
     enum Motion {
@@ -73,5 +98,6 @@ enum Tokens {
     enum Radius {
         static let icon: CGFloat = 10
         static let iconAccessible: CGFloat = 12
+        static let editorButton: CGFloat = 12
     }
 }

@@ -503,6 +503,26 @@ editing categories; anything else in Settings.
 
 ## Lessons
 
+- **Step 6:** a wheel `Picker`'s natural width is effectively unbounded, so `fixedSize(horizontal:)`
+  on one pushes the whole layout wider than the screen. Give the narrow wheels explicit widths
+  (`Tokens.Size.wheelInterval`, `wheelUnit`) and let the end column take the rest. Equal thirds
+  truncate "12 payments".
+- **Step 6:** `.borderedProminent` tinted with `Ink.primary` draws a white button in dark mode
+  with a white label, so the label vanishes. Set the label's colour to the opposite ground
+  (`Tokens.Surface.base`).
+- **Step 6:** to see the editor before step 8 presents it, use a temporary file that reads
+  environment variables (`SIMCTL_CHILD_…` with `simctl launch`) and a one-line `.sheet` in
+  `TillyApp`, and delete both after. Don't `git checkout` a file to remove the hook while it also
+  holds uncommitted work.
+- **Step 6:** to make content fill a `ScrollView` (a flexible block that pushes the rest down to a
+  bottom `safeAreaInset`), give the content `frame(minHeight:)` from
+  `onScrollGeometryChange { $0.containerSize.height }`. That is the visible height net of the
+  insets: `visibleRect.height` overshoots, so the last rows hide under the inset, and subtracting
+  `contentInsets` as well undershoots, so nothing stretches.
+- **Step 6:** at accessibility text sizes the sheet scrolls, the keypad's last row and the repeat
+  caption sit under Save until you scroll, and the end wheel truncates ("12 pay…"). Unsolved, as
+  the prototype's notes say.
+
 - **Step 4:** `#Preview` blocks are not stripped from Release builds. A preview that uses
   `PreviewData` (which is `#if DEBUG`) has to sit inside `#if DEBUG` itself, or the Release
   configuration stops compiling. Check with `xcodebuild -scheme Tilly -configuration Release build`.
