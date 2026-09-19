@@ -59,15 +59,16 @@ reaches a view through `Tokens`, dimensions included, so the design pass is a on
 - **Rejected — raw values now, extract tokens later:** the extraction is the expensive part.
 - **Revisit when:** the v2 design pass, which is Jake's.
 
-## The timeline is one list, future above and past below, bounded at both ends
-**Decided:** 2026-09-08
-Next month is always open above the current one; history runs continuously below. Further
-ahead is a deliberate unlock that closes itself once you come back. A month button returns you to this month.
+## The timeline is one list, future above and past below, and the future has no end
+**Decided:** 2026-09-19
+Months ahead run continuously above the current one, like Calendar, for as long as any bill does.
+History runs continuously below to the oldest charge. A month button returns you to this month.
+- **Rejected — further ahead as a deliberate unlock that closes itself:** a strange sequence of
+  taps to look ahead, and a list that changes on its own.
+- **Rejected — past above, future below, as Calendar has it:** puts history at eye level in an app about what's coming.
+- **Rejected — a horizon a year ahead with a line saying so:** looking ahead is the app's job.
 - **Rejected — collapsed month bars:** made ordinary movement a sequence of taps.
-- **Rejected — past above, future below:** puts history at eye level in an app about what's coming.
 - **Rejected — resting with next month peeking in:** two month names dilute the one being read.
-- **Rejected — pull past the top to unlock:** hidden, and invisible to VoiceOver and Switch Control.
-- **Rejected — a "hide" control, or letting unlocked months accumulate:** a mess for the reader to tidy.
 
 ## History begins at the oldest charge you have entered
 **Decided:** 2026-09-08

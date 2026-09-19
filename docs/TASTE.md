@@ -17,11 +17,10 @@ A month with nothing in it isn't listed rather than shown as €0. A passed date
 never "paid".
 
 **2. The reader's place is theirs: nothing under their eyes moves, and nothing resets it.**
-Unlocking a month opens it above the screen, so the row being read stays exactly where it was.
+The months ahead are all there from the start, so nothing is ever inserted above the row being read.
 
-**3. Bounded, not infinite. Anything that can grow has an end the reader can see.**
-History stops at the oldest charge with a line saying so. Looking further ahead is asked for, and
-puts itself away.
+**3. The list ends where the app's knowledge does, and says so.**
+History stops at the oldest charge with a line saying so. The future runs on for as long as a bill does.
 
 **4. Nothing appears, changes or resets for a reason the reader can't see.**
 Position isn't reset "on next launch", because nobody can tell a relaunch from a switch.

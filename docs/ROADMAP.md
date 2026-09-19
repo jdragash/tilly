@@ -16,7 +16,7 @@ The smallest thing that does the job.
 |---|---|---|
 | Recurrence engine | Done | Every N days, weeks, months or years from a fixed anchor. Pure and tested. |
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
-| Timeline | Done, changing | One bounded list with a pinned header, unlock ahead and saved place. The editor work replaces the return pill with the month button and drops day grouping. Known drift in the resting-position cache. |
+| Timeline | Done, changing | One list with a pinned header and saved place, now scrolling ahead without end. The editor work replaces the return pill with the month button and drops day grouping. Known drift in the resting-position cache. |
 | Expense editor | Next, designed | Create, edit, end and delete rules. Amount, name and category required. The Calendar-style shell. Removes the sample seed. `docs/briefs/expense-editor/brief.md`. |
 | Occurrence overrides | In the editor | Set a real amount, skip one, move one. "This occurrence" vs. "all future" unmistakable. |
 | Categories | In the editor, partly | Emoji and name, user-created, ships empty, required on every expense. Created in the editor; listed in Settings. Editing them there isn't designed yet. |

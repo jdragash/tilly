@@ -585,6 +585,244 @@ editing categories; anything else in Settings.
   `· ends 05/27` can't be seen on the seeded timeline. Check them with a temporary local edit to
   `SampleData` and revert it; `PreviewData` (step 4) will make this ordinary.
 
+## Updates — 2026-09-19: revisions from testing on a phone
+
+Steps 1–8 are built on `expense-editor-build`, with the Developer panel on `developer-scenarios`
+above it. These steps revise phase 1 from Jake's testing on his iPhone and continue on
+`developer-scenarios`. Phase 2 is still next after this.
+
+**Settled by:** `DESIGN.md` — "One list, and the future runs on", "Getting back", "The month you're
+reading stays named", "The editor". `DECISIONS.md` — "The timeline is one list, future above and
+past below, and the future has no end", rewritten today.
+
+### Already decided — do not reopen
+
+- **The future is still up.** You reach next month by scrolling up, as now. Only the way further
+  ahead changes: no unlock bar, no tap, no months that close themselves. You keep scrolling.
+- **Scrolling ahead has no end the reader can reach** while any bill runs on. When every bill has an
+  end, the list stops at the month of the last payment with `Nothing after May 2027.`, mirroring the
+  history floor.
+- **An empty month ahead isn't listed**, as in history, except next month, which is always there.
+- **The month button** always returns to the current month, whether the list is scrolling or still.
+  Nothing closes on the way, because nothing is open.
+- **The editor's buttons are date, category, repeat**, in that order, stacked in the same order at
+  accessibility sizes.
+- **Save is the system's confirm button**, a prominent checkmark top right, with close top left. It
+  is disabled until amount, name and category are all there. The full-width bottom Save goes.
+- **The keyboard covers the editor rather than pushing it**: amount, name and buttons stay where
+  they are when the name keyboard opens.
+- **+ gets 8pt of clear space above and below it** in the header row.
+- **The floating buttons are the system's size**, measured from iOS Calendar, not guessed. The
+  month button's label is `.headline`, as Calendar's is weightier than `.callout`.
+
+### Model routing
+
+Steps 9–11 are scroll geometry, pinning and anchoring, where a green suite stays green with the
+step broken: **Opus** (`.claude/rules/swiftui-scrolling.md`). Step 12 proves itself by tests and
+screenshots: **Sonnet**. Step 12 is independent of 9–11 and may be built first.
+
+---
+
+### Step 9 — Scroll ahead without end (Opus)
+
+**Files:** `Tilly/Timeline/TimelineWindow.swift`, `Tilly/Timeline/TimelineView.swift`,
+`Tilly/Timeline/TimelinePlace.swift` (doc comment only), `Tilly/DesignSystem/Tokens.swift`,
+`TillyTests/TimelineWindowTests.swift` (modified); `Tilly/Timeline/TimelineCeiling.swift`,
+`TillyTests/TimelineCeilingTests.swift` (new); `Tilly/Timeline/CollapsedMonthBar.swift` (deleted)
+
+**Interface:**
+```swift
+struct TimelineWindow: Equatable, Sendable {
+    /// How far ahead the list is built when no bill ends. Far enough that nobody reaches it
+    /// by scrolling; the reader never sees it as an end.
+    static let monthsAhead = 1200
+    let floor: MonthKey
+    let ceiling: MonthKey
+    let current: MonthKey
+    init(floor: MonthKey, ceiling: MonthKey, current: MonthKey)
+    var months: [MonthKey]      // ceiling down to floor, descending
+}
+// `unlocked` and `top` are deleted.
+
+enum TimelineCeiling {
+    /// The month of the last payment when every expense has an end, never before
+    /// `current + 1`; `current + monthsAhead` when any expense runs on. nil with no expenses.
+    static func month(for expenses: [Expense], current: MonthKey, calendar: Calendar) -> MonthKey?
+    /// True when the ceiling is a real last payment, so the list says so.
+    static func isLastPayment(_ ceiling: MonthKey, for expenses: [Expense], current: MonthKey, calendar: Calendar) -> Bool
+}
+```
+
+**Mechanism: one window built once, never prepended to.** The list holds every month from the
+ceiling down to the floor from the start, so nothing is ever inserted above the reader and no
+anchoring is needed. `LazyVStack` renders only what is on screen.
+
+- `visibleMonths` keeps the current month and the one after, and drops any other month whose
+  section is empty.
+- `rebuildSections()` builds every month from the ceiling down to the floor, eagerly, as it builds
+  history now. `visibleMonths` needs every month's emptiness, and writing `@State` from inside
+  `section(for:)` during a render isn't allowed, so nothing is built on demand. **Measure**
+  `rebuildSections()` and the cold launch to first frame with Typical year, before and after. If
+  launch is more than 100ms slower, stop and report rather than trimming `monthsAhead`.
+- Above the ceiling, when `isLastPayment`: `Nothing after <month>.`, styled as `floorLine`. With no
+  last payment, nothing is drawn above the top month.
+- Delete `unlockMonthAbove`, `updateLatch`, `isUnlockLatched`, `closeUnlockedMonths`, and the call
+  to it in `returnToResting`, plus `CollapsedMonthBar`. `anchorAndSettle` and `restoreAnchor` stay,
+  because restoring a place uses them. Delete `Tokens.Size.monthBar`, `monthBarAccessible` and
+  `Tokens.Text.barTotal` after grepping that nothing else reads them. `barName` stays until step 11
+  renames it.
+- `handleDayChange` rebuilds the window with the new current month and a recomputed ceiling. The
+  month the reader is in was already listed, so nothing is inserted near them.
+- Update every doc comment that describes unlocking or next month "always expanded" to say what is
+  true now, including the type comment on `TimelineView` and the one on `TimelinePlace`.
+
+**Done when:** the suite passes with these tests.
+- `TimelineWindowTests`: delete `theTopIsOneMonthAheadWhenNothingIsUnlocked` and
+  `unlockingRaisesTheTop`. `theWindowRunsFromTheTopDownToTheFloor` becomes
+  `theWindowRunsFromTheCeilingDownToTheFloor`. Keep `aWindowCrossingDecemberLandsInJanuary`.
+- `TimelineCeilingTests`: `aBillWithNoEndRunsFarAhead`, `whenEveryBillEndsTheCeilingIsTheLastPayment`,
+  `oneBillWithoutAnEndOutweighsOnesThatEnd`, `aLastPaymentBeforeNextMonthStillShowsNextMonth`,
+  `noExpensesMeansNoCeiling`, `isLastPaymentOnlyWhenEveryBillEnds`.
+
+In the simulator, measured the way step 8's Lessons describe:
+- From rest, five hard flings upward travel continuously through months ahead: no stop, no jump,
+  and each header hands off beneath + exactly one header height apart.
+- At rest the current month is flush, header at the top to within 0.5pt, as before.
+- The month button returns flush from two years ahead and from deep history, at the distance-scaled
+  duration, which is the maximum from far ahead.
+- A relaunch while reading a month a year ahead restores to that month.
+- Typical year's cold launch time, measured against the baseline.
+- `One expense`, edited to end after three payments, shows `Nothing after <month>.` above its last
+  payment, and nothing above that.
+
+**Verify:** `xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test`,
+then the checks above.
+
+**Out of scope:** the month button's behaviour mid-scroll (step 10); the header's padding and a
+short list resting flush (step 11).
+
+---
+
+### Step 10 — The month button answers mid-scroll (Opus)
+
+Needs step 9.
+
+**Files:** `Tilly/Timeline/TimelineView.swift`, `Tilly/Timeline/MonthButton.swift` (modified)
+
+**The bug, as it was hit:** while the list is still moving after a flick, tapping `September` does
+nothing, and it works only once the list has stopped. In Calendar, Today works mid-flick.
+
+**Diagnose before fixing** (`.claude/rules/swiftui-scrolling.md`, "Diagnosing"). With a temporary
+`print` in the button's action, fling and tap. Find out which of these is true:
+1. the action never runs, because the tap goes to the scroll view, which stops the fling;
+2. the action runs, but `scrollTo` loses to the deceleration still in progress;
+3. something else.
+
+Fix the cause the logging shows, and record what it was, and what fixed it, in Lessons. The fix
+must not add a second tap, a delay the reader can feel, or a check on the scroll phase that ignores
+taps. If the only fix found needs UIKit introspection of the scroll view, stop and report it
+instead, as it is a decision that wants discussing.
+
+**Done when:** in the simulator, one tap on the month button lands the current month flush, with
+its header at the top to within 0.5pt, in each of these, five times each:
+- mid-fling up from history
+- mid-fling down from a year ahead
+- at rest, from both directions (no regression)
+
+and a place saved after each landing is the current month.
+
+**Verify:** the step 9 command, then the checks above.
+
+**Out of scope:** the button's look (step 11).
+
+---
+
+### Step 11 — The header row breathes, the buttons match the system, a short list rests flush (Opus)
+
+Needs step 9.
+
+**Files:** `Tilly/DesignSystem/Tokens.swift`, `Tilly/Timeline/MonthHeader.swift`,
+`Tilly/Timeline/MonthButton.swift`, `Tilly/Timeline/TimelineView.swift` (modified)
+
+**Measure the system first.** On the iPhone 17 simulator, open Calendar in the month list view and
+screenshot it. Measure the diameter of its top glass circle buttons and the height of its bottom
+Today button, in points (divide pixels by the screen scale). Note both, and the screenshot's path,
+in the token comments.
+
+- `Tokens.Size.floatingButton` becomes Calendar's circle diameter. If Today is a different
+  height, the month button takes Today's height through a new `Tokens.Size.monthButton`.
+  Otherwise it keeps sharing `floatingButton`.
+- `Tokens.Text.barName` is renamed `Tokens.Text.monthButton` and becomes `.headline`.
+- `Tokens.Space.headerRowInset` (new): 8. `Tokens.Size.headerRow` is now derived:
+  `floatingButton + 2 × headerRowInset`.
+- The stacked accessibility layout in `MonthHeader` takes `headerRowInset` of vertical padding, so
+  its total no longer touches the hairline.
+- **A short list rests flush.** A list with one month of history is shorter than the screen, so the
+  current month can't reach the top. Add clear space after `floorLine`, measured live:
+  `max(0, containerHeight − (distance from the current header's top to the floor line's bottom))`.
+  Measure the floor line on the line itself, never on a `Section`.
+- **The bottom row ignores the keyboard** (`.ignoresSafeArea(.keyboard)`), so it no longer
+  moves behind the editor sheet.
+
+**Done when:** the suite passes, and in the simulator, measured:
+- + is centred in the header band to within 0.5pt, with `headerRowInset` above and below it
+- a hand-off beneath + is still exactly one header height, at the new height
+- restoring a saved place still lands to within 0.5pt, rechecked because the header height changed
+- `One expense` on first run rests flush on the current month, with next month above the screen.
+  With more history, the added space is 0.
+- with the emoji keyboard up in the editor, the gear's global frame hasn't moved
+- at `accessibility-extra-large` the stacked header has clear space above and below
+- screenshots beside Calendar's at the same scale, light and dark, and at an accessibility size
+
+**Verify:** the step 9 command, then the checks above.
+
+**Out of scope:** the editor; any other token.
+
+---
+
+### Step 12 — The editor: date, category, repeat; a checkmark to save; the keyboard covers (Sonnet)
+
+Independent of steps 9–11.
+
+**Files:** `Tilly/Editor/ExpenseEditor.swift`, `Tilly/Editor/EditorButtonRow.swift`,
+`Tilly/DesignSystem/Tokens.swift` (modified)
+
+**Interface:** no new types. `saveButton` is deleted; `save()` stays.
+
+- `EditorButtonRow` lays out `dateButton`, `categoryButton`, `repeatButton`, in both layouts.
+- **Save.** `ToolbarItem(placement: .confirmationAction)` holding `Button(role: .confirm)` calling
+  `save()`, stock, with no tint override. VoiceOver reads "Save". It is disabled until `isValid`, and
+  while `panel == .newCategory`: a half-made category is finished or cancelled first. Delete the
+  bottom `safeAreaInset`, and any token only Save used, after grepping.
+- **The keyboard covers.** At standard text sizes the editor's content ignores the keyboard's safe
+  area, so opening the name keyboard moves nothing. `NewCategoryRow` still sits directly above the
+  emoji keyboard, as now. At accessibility sizes, keyboard avoidance stays as it is, because the
+  name field would otherwise be covered.
+- The `ScrollViewReader` scroll to `newCategoryRowID` stays only if the accessibility-size check
+  below still needs it. Remove it if not.
+
+**Done when:** the suite passes, and in the simulator:
+- the amount's global y is the same, to within 0.5pt, with the keypad, the name keyboard and the
+  date panel open
+- the checkmark is disabled on open, stays disabled with only amount and name, and enables once a
+  category is chosen. Tapping it saves the expense and dismisses the editor.
+- making a new category: the checkmark is disabled, the row sits above the emoji keyboard, and
+  Return still creates and selects the category
+- at `accessibility-extra-large` the name field and the new-category row stay visible while typing
+- screenshots in light and dark, and at an accessibility size
+
+**Verify:** `xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test`,
+then the checks above.
+
+**Out of scope:** the amount, keypad or pickers themselves; editing an existing expense (phase 2).
+
+---
+
+### Open checks, for tilly-ship
+
+Unchecked on the phone from the Developer panel: Reset scenario, Forget my place, and switching back
+to Your data. `tilly-ship` checks all three with real taps before merging.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

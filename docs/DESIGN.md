@@ -69,8 +69,8 @@ above it.
 
 ### Rules delimit, they don't decorate
 
-No separator between rows; space does that work. A hairline appears only under the unlock bar and
-under a pinned month header. A rule means something is being closed.
+No separator between rows; space does that work. A hairline appears only under a pinned month
+header. A rule means something is being closed.
 
 ### Every charge is its own row
 
@@ -93,20 +93,18 @@ the current one.
 The last row at secondary weight and the first at full weight are the boundary. No divider. No
 `TODAY` badge either: the most recent charge usually isn't today.
 
-### One list, bounded at both ends
+### One list, and the future runs on
 
-The next month is always expanded above the current one, so you reach it by scrolling. History
-runs continuously below. There are no collapsed month bars. At rest the list sits flush on the
-current month, with next month above the top of the screen.
+Months ahead run on above the current one, like Calendar, and history runs on below. Nothing to tap
+open, nothing that closes itself. At rest the list sits flush on the current month, however short.
 
 When the current month's expanded section holds nothing charged, it ends with `This fills in as
 bills go out.`
 
-### Further ahead is asked for, and puts itself away
+### The future stops only where your bills do
 
-One bar sits at the very top. It opens the month after next, then offers the one after that.
-An unlocked month closes on its own once the reader has gone up into it and come back to the
-current month. Nothing accumulates, and there's no control to clear anything.
+While any bill runs on, so does the list. Once every bill ends, it stops at the last payment with
+`Nothing after May 2027.` An empty month ahead isn't listed, except next month.
 
 ### History stops where your oldest charge does
 
@@ -134,8 +132,8 @@ brings you back to the current month from anywhere. It stays exactly as it is wh
 there, like Calendar's Today: a control that appears or changes on its own does so for a reason the
 reader can't see. VoiceOver reads "Back to September".
 
-Tapping it scrolls back rather than jumping, with a duration that scales with distance, and closes
-any unlocked months on the way. It is a stock glass button. The list carries a bottom inset of the
+Tapping it scrolls back rather than jumping, with a duration that scales with distance, even
+mid-flick. It is a system glass button at Calendar's size and weight. The list carries a bottom inset of the
 button's height plus its margin, so the last line of history clears it.
 
 ### The month you're reading stays named
@@ -146,15 +144,14 @@ month name rather than at the edge: `September −€53 left`. Its ground is opa
 as the page, so content passing beneath is hidden rather than tinted, and it carries that ground at
 rest too. Glass is for things that float over content; a full-bleed sticky header doesn't float.
 
-It keeps its full size when pinned. Condensing would save a point, cost three points of type, and
+The row gives + 8pt of clear space above and below. It keeps its full size when pinned. Condensing would save a point, cost three points of type, and
 make the month you're *in* the same shape as a month you could *open*. The hairline under it appears
 only while it's pinned.
 
 ### Nothing under the reader's eyes moves
 
-When a month opens or closes above the reader, the month under the middle of the viewport holds its
-position on screen. Crossing midnight into a new month moves the header figure and reclassifies
-passed rows, but inserts nothing above the reader: next month was already open.
+Nothing is ever inserted above the reader: the months ahead are all there from the start. Crossing
+midnight into a new month moves the header figure and reclassifies passed rows, and nothing else.
 
 ### Your place survives
 
@@ -177,20 +174,23 @@ Mockups leave the inset empty rather than painting a clock into it.
 ### The amount is the screen
 
 The amount is the largest thing on it, and the keypad is up when the editor opens. The name sits
-under the amount. Save is a full-width button at the bottom.
+under the amount. Close is top left, and Save is the system's prominent checkmark top right.
+
+The keyboard covers the editor rather than pushing it, except at accessibility sizes, where it scrolls.
 
 ### Amount, name and category are required
 
-Save stays disabled until all three are there; the date starts as today. The row leads with the
+Save stays disabled until all three are there, and while a new category is half made. The date
+starts as today. The row leads with the
 emoji and the name, and insights stand on the category.
 
-### Three buttons: date, repeat, category
+### Three buttons: date, category, repeat
 
 Equal thirds under the name. The icon says what kind of thing, the label says its value:
 
 - a calendar and `Oct 31`, with a clock on the calendar for a date still to come; never a year
-- a loop and `Monthly` or `3 months`, or a one-way arrow and `09/27` once the bill ends
 - the category's emoji alone, or a tag until one is chosen
+- a loop and `Monthly` or `3 months`, or a one-way arrow and `09/27` once the bill ends
 
 When orderly and fitting every word conflict, the words get shorter. At accessibility text sizes
 the three stack, full width, in the same order.
