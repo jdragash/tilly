@@ -21,6 +21,11 @@ enum Tokens {
         static func editorAmount(size: CGFloat) -> Font { .system(size: size, weight: .semibold) }
     }
 
+    enum Stroke {
+        /// The empty emoji slot's dashed outline.
+        static let emojiSlot = StrokeStyle(lineWidth: 1.5, dash: [4, 3])
+    }
+
     /// How far text may shrink to fit a line before it truncates.
     enum Scale {
         static let editorAmountMin: CGFloat = 0.3
@@ -37,6 +42,7 @@ enum Tokens {
         static let secondary: Color = .secondary
         static let tertiary: Color = Color(.tertiaryLabel)
         static let quaternary: Color = Color(.quaternaryLabel)
+        static let accent: Color = .accentColor
     }
 
     enum Surface {
@@ -78,6 +84,9 @@ enum Tokens {
         /// the graphical calendar is the tallest panel, and a six-row month (August 2026) measures
         /// about 336pt at the default text size, so 340 clears it without clipping.
         static let editorPanel: CGFloat = 340
+        static let emojiSlot: CGFloat = 48
+        static let categoryField: CGFloat = 44
+        static let categoryRow: CGFloat = 48
         /// The repeat wheels' two narrow columns; the end column takes the rest. Tuning values:
         /// a wheel's natural width is unbounded, so equal thirds truncated "12 payments".
         static let wheelInterval: CGFloat = 64

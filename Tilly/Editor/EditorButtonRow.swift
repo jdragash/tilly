@@ -63,6 +63,16 @@ struct EditorButtonRow: View {
         }
     }
 
+    /// Tapping the open panel's button puts the keypad back, except while a category is being
+    /// made: there the category button goes back to the list, which is how that is cancelled.
+    private func select(_ target: EditorPanel, isOpen: Bool) {
+        if panel == .newCategory, target == .category {
+            panel = .category
+        } else {
+            panel = isOpen ? .keypad : target
+        }
+    }
+
     private var dateValue: String { draft.dateLabel(calendar: calendar, locale: locale) }
     private var repeatValue: String { draft.repeatLabel(calendar: calendar, locale: locale) }
 
@@ -75,7 +85,7 @@ struct EditorButtonRow: View {
     ) -> some View {
         let shape = RoundedRectangle(cornerRadius: Tokens.Radius.editorButton, style: .continuous)
         return Button {
-            panel = isOpen ? .keypad : target
+            select(target, isOpen: isOpen)
         } label: {
             HStack(spacing: Tokens.Space.tight) {
                 content()

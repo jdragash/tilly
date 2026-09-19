@@ -21,6 +21,7 @@ struct ExpenseEditor: View {
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.editorAmountSize
     @State private var viewportHeight: CGFloat = 0
 
+    private static let newCategoryRowID = "newCategoryRow"
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
     /// `draft` and `panel` exist so previews can open the editor part-way through.
@@ -32,6 +33,7 @@ struct ExpenseEditor: View {
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: Tokens.Space.section) {
                     // The amount and name are the flexible part: they centre in whatever height the
@@ -43,7 +45,12 @@ struct ExpenseEditor: View {
                     }
                     .frame(maxHeight: .infinity)
                     EditorButtonRow(draft: draft, category: selectedCategory, today: today, panel: $panel)
-                    if !nameFocused {
+                    // A new category takes the panel's place, above its keyboard; the keyboard
+                    // takes the panel's place while a name is typed.
+                    if panel == .newCategory {
+                        NewCategoryRow(onCreate: create, onCancel: { panel = .category })
+                            .id(Self.newCategoryRowID)
+                    } else if !nameFocused {
                         panelArea
                             .frame(maxWidth: .infinity)
                             .frame(height: Tokens.Size.editorPanel)
@@ -56,7 +63,18 @@ struct ExpenseEditor: View {
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
                 viewportHeight = height
             }
-            .safeAreaInset(edge: .bottom) { saveButton }
+            // At accessibility sizes the emoji keyboard covers the row, and the focused field is
+            // UIKit, so SwiftUI won't follow it. Scroll to it once it has laid out.
+            .onChange(of: panel) { _, newPanel in
+                guard newPanel == .newCategory else { return }
+                Task { @MainActor in
+                    withAnimation { proxy.scrollTo(Self.newCategoryRowID, anchor: .bottom) }
+                }
+            }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if panel != .newCategory { saveButton }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(role: .close) { dismiss() }
@@ -112,11 +130,10 @@ struct ExpenseEditor: View {
                 .labelsHidden()
         case .repeat:
             RepeatWheel(draft: $draft)
-        case .category, .newCategory:
-            // Filled in by the next step.
-            Text("Category")
-                .font(Tokens.Text.body)
-                .foregroundStyle(Tokens.Ink.secondary)
+        case .category:
+            CategoryPicker(selection: $draft.categoryID, onNew: { panel = .newCategory })
+        case .newCategory:
+            EmptyView()
         }
     }
 
@@ -152,6 +169,18 @@ struct ExpenseEditor: View {
             get: { draft.date },
             set: { draft.date = calendar.startOfDay(for: $0) }
         )
+    }
+
+    /// A category made in the editor is selected at once, and the list comes back.
+    private func create(_ category: ExpenseCategory) {
+        modelContext.insert(category)
+        do {
+            try modelContext.save()
+        } catch {
+            Self.logger.error("Saving a category failed: \(error)")
+        }
+        draft.categoryID = category.id
+        panel = .category
     }
 
     private func save() {

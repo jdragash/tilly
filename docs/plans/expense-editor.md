@@ -413,13 +413,14 @@ struct NewCategoryRow: View {
 - `CategoryPicker` fills the panel: a list of `@Query(sort: \ExpenseCategory.name)` rows (emoji,
   name, a checkmark on the selected one), then a tinted `New category` row with `plus`. Tapping
   a row selects it (tapping the selected one keeps it selected).
-- `New category` switches the panel to `.newCategory`: the button row gives way to
-  `NewCategoryRow` — an emoji slot (a 48pt circle, dashed `Tokens.Ink.tertiary` stroke with a
+- `New category` switches the panel to `.newCategory`: the button row stays, and
+  `NewCategoryRow` takes the panel's place above the keyboard (as in the prototype) — an emoji slot (a 48pt circle, dashed `Tokens.Ink.tertiary` stroke with a
   `face.smiling` placeholder, filled `Tokens.Surface.iconWell` once chosen) beside a capsule
   name field — and the emoji keyboard opens. Choosing an emoji moves focus to the name field.
   Return creates the category (emoji and trimmed name both required; with no emoji, focus goes
   back to the slot), inserts it, selects it, and returns the panel to `.category`. Save is
-  hidden in this mode.
+  hidden in this mode. The category button stays active, and tapping it is the visible way
+  back: it returns to `.category` (that is `onCancel`).
 - The editor's category button now shows the chosen emoji.
 
 **Done when:** the suite passes; in the simulator, from an empty store, you can make a category
@@ -502,6 +503,41 @@ editing categories; anything else in Settings.
 ---
 
 ## Lessons
+
+- **Step 7:** overriding `textInputMode` on a `UITextField` subclass to return the active mode whose
+  `primaryLanguage == "emoji"` opens the keyboard directly on the system emoji keyboard, checked
+  in the simulator. The field draws nothing (clear text and tint) and the slot draws the emoji
+  around it, so no UIKit font is needed. `EmojiInput` filters what arrives.
+- **Step 7:** the amount-and-name block centres in whatever height is left, so it sits about 30pt
+  lower while the emoji or text keyboard is up than at rest. The amount is fixed across panels,
+  not across keyboards.
+- **Step 7:** `NewCategoryRow.onCancel` is the category button, still shown above the row: tapping
+  it goes back to `.category`. VoiceOver's escape gesture does the same.
+- **Step 7:** walked through in the simulator with real taps: emoji chosen, focus moved to the name,
+  Return created the category and selected it, Return with a blank name stayed on the name, Return
+  with no emoji went back to the slot, the category button cancelled, and Save stored the expense.
+  Two notes: the emoji keyboard shows a one-time skin-tone tip on the first tap of a variant emoji
+  (👍) that swallows the tap, so dismiss it with OK; and choosing the *same* emoji again changes
+  nothing, so focus stays on the emoji keyboard. A filled slot shows no focus ring while it is
+  being changed.
+- **Step 7:** a temporary `.sheet(isPresented: .constant(true))` can't be dismissed, so Save's
+  `dismiss()` can't be seen with it; check dismissal once step 8 presents the editor for real.
+- **Step 7:** `EmojiTextField.updateUIView` must act on a *change* of `isFocused`, tracked as the last
+  value it saw, not on its state: in the emoji-to-name handoff the binding is briefly stale, and
+  re-asserting focus from state pulls it back. Don't track it from the delegate either: there the
+  delegate's `false` against a stale `true` reads as a fresh request and does the same.
+- **Step 7:** a focused UIKit field doesn't make a SwiftUI `ScrollView` follow it (only a SwiftUI
+  `TextField` does), so at `accessibility-extra-large` the emoji keyboard covered the new-category
+  row. `ScrollViewReader` with an `.id` on the row, scrolled to with anchor `.bottom` from an
+  `onChange(of: panel)` a turn later (`Task { @MainActor in }`, animated), puts it just above the
+  keyboard; the default size doesn't move.
+- **Step 8 check:** the editor's `dismiss()` after Save has only been seen with a constant-`true`
+  sheet, where it can't work. When step 8 presents the editor for real, confirm Save dismisses it,
+  and that a first expense makes the timeline appear.
+- **Step 7:** SwiftUI drops a `TextField`'s focus after `onSubmit`, so a refocus inside `submit()`
+  loses; do it in a `Task { @MainActor in }`. A `UIViewRepresentable`'s delegate must not write its
+  binding synchronously either, because `resignFirstResponder()` in `updateUIView` fires
+  `didEndEditing` mid-update.
 
 - **Step 6:** a wheel `Picker`'s natural width is effectively unbounded, so `fixedSize(horizontal:)`
   on one pushes the whole layout wider than the screen. Give the narrow wheels explicit widths
