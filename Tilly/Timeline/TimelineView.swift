@@ -25,10 +25,17 @@ struct TimelineView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
     @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
+    @State private var containerHeight: CGFloat = 0
+    @State private var currentContentTop: CGFloat?
+    @State private var floorLineBottom: CGFloat?
+    @State private var floorSpacer: CGFloat = 0
     @State private var isEditorPresented = false
     @State private var isSettingsPresented = false
 
     private static let scrollSpace = "timelineScroll"
+    /// The list's own content, which scrolling doesn't move: distances measured here hold
+    /// still while the list scrolls.
+    private static let contentSpace = "timelineContent"
 
     /// The last month (in top-to-bottom document order) whose header has reached the
     /// container's top edge. Derived fresh from every header's live offset rather than
@@ -101,8 +108,13 @@ struct TimelineView: View {
 
     var body: some View {
         GeometryReader { rootProxy in
-            content(topInset: rootProxy.safeAreaInsets.top)
+            content(topInset: rootProxy.safeAreaInsets.top, bottomInset: rootProxy.safeAreaInsets.bottom)
         }
+        // A sheet's keyboard shrinks the screen behind it too, and the bottom row rode up
+        // behind the editor to sit on the keyboard (measured: y 772 → 418). The timeline has
+        // no text field of its own, so it ignores the keyboard whole: ignoring it on the row
+        // alone isn't enough, because the row follows the bottom of what it sits in.
+        .ignoresSafeArea(.keyboard)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
         .onAppear(perform: setUpIfNeeded)
         // The first expense arrives with no window yet, because `setUpIfNeeded` found no
@@ -120,7 +132,7 @@ struct TimelineView: View {
     }
 
     @ViewBuilder
-    private func content(topInset: CGFloat) -> some View {
+    private func content(topInset: CGFloat, bottomInset: CGFloat) -> some View {
         Group {
             if expenses.isEmpty {
                 TimelineEmptyState()
@@ -136,6 +148,16 @@ struct TimelineView: View {
                                         section: monthSection,
                                         showsFirstWeekLine: monthSection.isCurrent && !monthSection.hasChargedEntry
                                     )
+                                    // The content, not the `Section`: a geometry modifier there
+                                    // stops headers pinning. And the content, not the header: a
+                                    // pinned header reports 0 however deep into its month you are.
+                                    .onGeometryChange(for: CGFloat.self) { proxy in
+                                        proxy.frame(in: .named(Self.contentSpace)).minY
+                                    } action: { minY in
+                                        guard month == window.current else { return }
+                                        currentContentTop = minY
+                                        updateFloorSpacer()
+                                    }
                                 } header: {
                                     MonthHeader(section: monthSection, today: today, isPinned: pinnedMonth == month)
                                         .onGeometryChange(for: CGRect.self) { proxy in
@@ -145,19 +167,32 @@ struct TimelineView: View {
                                             headerHeights[month] = frame.height
                                             if month == window.current {
                                                 restingContentOffset = scrollOffset + frame.minY
+                                                updateFloorSpacer()
                                             }
                                         }
                                 }
                                 .id(month.id)
                             }
                             floorLine(window.floor)
+                                .onGeometryChange(for: CGFloat.self) { proxy in
+                                    proxy.frame(in: .named(Self.contentSpace)).maxY
+                                } action: { maxY in
+                                    floorLineBottom = maxY
+                                    updateFloorSpacer()
+                                }
+                            Color.clear.frame(height: floorSpacer)
                         }
+                        .coordinateSpace(name: Self.contentSpace)
                         .scrollTargetLayout()
                     }
                     .scrollDisabled(isScrollHalted)
                     .contentMargins(.bottom, bottomClearance, for: .scrollContent)
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                         scrollOffset = newValue
+                    }
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, newValue in
+                        containerHeight = newValue
+                        updateFloorSpacer()
                     }
                     .onScrollPhaseChange { _, newPhase in
                         if newPhase == .idle && !isProgrammaticScroll && hasRestoredPlace { saveCurrentPlace() }
@@ -187,25 +222,35 @@ struct TimelineView: View {
                 .frame(height: Tokens.Size.headerRow)
                 .padding(.trailing, Tokens.Space.gutter)
         }
-        .overlay(alignment: .bottom) { bottomRow }
+        .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
     }
 
-    /// The month button bottom left and settings bottom right, always visible. Its measured
-    /// height, which includes its bottom margin and grows with Dynamic Type, sets the list's
-    /// bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
-    private var bottomRow: some View {
+    /// The month button bottom left and settings bottom right, always visible, placed as
+    /// Calendar's bottom row is. How far it reaches above the home indicator's safe area, which
+    /// grows with Dynamic Type, sets the list's bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
+    private func bottomRow(bottomInset: CGFloat) -> some View {
         HStack {
             MonthButton(month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today, action: returnToResting)
             Spacer()
-            GlassCircleButton(systemImage: "gearshape", label: "Settings") { isSettingsPresented = true }
+            GlassCircleButton(systemImage: "gearshape", label: "Settings", diameter: Tokens.Size.bottomButton) {
+                isSettingsPresented = true
+            }
         }
-        .padding(.horizontal, Tokens.Space.gutter)
-        .padding(.bottom, Tokens.Space.gutter)
+        .padding(.horizontal, Tokens.Space.bottomRowInset)
+        .padding(.bottom, Tokens.Space.bottomRowInset)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-            bottomClearance = height + Tokens.Space.section
+            // The list's bottom margin sits above the safe area already, so only the part of
+            // the row that reaches above it counts.
+            bottomClearance = max(0, height - bottomInset) + Tokens.Space.section
         }
+        // Measured from the screen's edge, as Calendar's is, not from the safe area above the
+        // home indicator. The row fills its container first: a view only as tall as its
+        // buttons never reaches the edge it's told to ignore, and stayed 28pt above the safe
+        // area (measured).
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .ignoresSafeArea(.container, edges: .bottom)
     }
 
     /// Whether the ceiling is a real last payment, so the list says so above it.
@@ -224,6 +269,24 @@ struct TimelineView: View {
             .padding(.horizontal, Tokens.Space.gutter * 2)
             .frame(minHeight: Tokens.Size.headerRow)
             .padding(.bottom, Tokens.Space.section)
+    }
+
+    /// Clear space after the floor line, so a list too short to fill the screen can still rest
+    /// flush on the current month: what the container's height lacks of the distance from the
+    /// current month's header down to the floor line's bottom. With a screenful of history it's 0.
+    ///
+    /// The distance is read from two unpinned things — the current month's content (less its
+    /// header's height) and the floor line — in the list's own coordinate space, which
+    /// scrolling doesn't move. Measured in the scroll view's space instead, the two arrived in
+    /// separate callbacks either side of a scroll, and the space flickered 548 → 0.3 → 548 at
+    /// launch. Changes under half a point are ignored.
+    private func updateFloorSpacer() {
+        guard let window, let currentContentTop, let floorLineBottom,
+              let headerHeight = headerHeights[window.current], containerHeight > 0
+        else { return }
+        let currentHeaderTop = currentContentTop - headerHeight
+        let needed = max(0, containerHeight - (floorLineBottom - currentHeaderTop))
+        if abs(needed - floorSpacer) > 0.5 { floorSpacer = needed }
     }
 
     private func floorLine(_ month: MonthKey) -> some View {

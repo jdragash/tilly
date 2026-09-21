@@ -36,6 +36,9 @@ struct MonthHeader: View {
                 // See the note in `OccurrenceRow`: the standard branch is held to full
                 // width by its `Spacer()`, and this one has nothing to do that job.
                 .frame(maxWidth: .infinity, alignment: .leading)
+                // Stacked, the header outgrows the row + sits in, so it takes the row's own
+                // clear space above and below rather than touching the hairline.
+                .padding(.vertical, Tokens.Space.headerRowInset)
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.tight) {
                     nameText

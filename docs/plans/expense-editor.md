@@ -504,6 +504,31 @@ editing categories; anything else in Settings.
 
 ## Lessons
 
+- **Step 11:** Calendar (iPhone 17 simulator, iOS 26.5, month view, 3x), measured by walking pixel
+  columns out from inside each glass shape to where its shadow starts, through the flat middle,
+  not the rounded ends or the label: top buttons 44.00pt, bottom buttons (Today and the pair beside
+  it) 48.00pt. Today's label: 12.0pt cap height, 5px vertical stems. `.headline` gave 6px stems,
+  visibly heavier; 17pt medium gave 5px. Compare stems in the ascender band just under the cap top,
+  where content showing through the glass doesn't reach.
+- **Step 11:** `.ignoresSafeArea(.keyboard)` on the bottom row did nothing: a sheet's keyboard
+  shrinks the whole screen behind it, and the row follows the bottom of its container (gear y 772
+  → 418). On the timeline's root it holds (772 with the emoji keyboard up).
+- **Step 11:** the floor spacer, measured in the scroll view's space, flickered at launch
+  (548 → 0.3 → 548): its two inputs arrived in separate callbacks either side of the restore
+  scroll. In a coordinate space on the `LazyVStack` itself, which scrolling doesn't move, it's set
+  once. Those callbacks then fire only once, before the header's height is known, so the spacer
+  is also recomputed when the current header is measured.
+- **Step 11:** measured: + at 70–114 in a 62–122 band, 8.0pt clear each side; 32 hand-offs at
+  exactly 60.0pt; a restore at 249.36 for 249.28 asked; `One expense` first run rests at 0.0 with
+  next month at −60, spacer 548; Typical year's spacer 0; the spacer held through scrolling both
+  ways. Calendar's bottom row sits 28.00pt from the screen's bottom, left and right edges, inside
+  the home indicator's safe area; Jake chose to match it (ours was 54pt up and 20pt in). Placing
+  the row from the screen's edge takes `.frame(maxHeight: .infinity, alignment: .bottom)` before
+  `.ignoresSafeArea(.container, edges: .bottom)`: a row only as tall as its buttons stayed 28pt
+  above the safe area. The list's bottom margin then counts only the row's reach above the safe
+  area. Left as they are: Calendar's top buttons sit at the safe area's top (ours 8pt under it,
+  by design), and its Today label doesn't grow with Dynamic Type while ours does.
+
 - **Step 10:** the tap always reached the button; the action ran every time. What failed was the
   scroll: an animated `scrollTo` issued while the list is decelerating can lose to the deceleration.
   Measured, one tap in three mid-fling: the phase stayed `decelerating`, never became `animating`,
@@ -649,8 +674,8 @@ past below, and the future has no end", rewritten today.
 - **The keyboard covers the editor rather than pushing it**: amount, name and buttons stay where
   they are when the name keyboard opens.
 - **+ gets 8pt of clear space above and below it** in the header row.
-- **The floating buttons are the system's size**, measured from iOS Calendar, not guessed. The
-  month button's label is `.headline`, as Calendar's is weightier than `.callout`.
+- **The floating buttons are the system's size and weight**, measured from iOS Calendar, not
+  guessed: the month button's label matches Today's weight.
 
 ### Model routing
 
@@ -792,17 +817,19 @@ and a place saved after each landing is the current month.
 Needs step 9.
 
 **Files:** `Tilly/DesignSystem/Tokens.swift`, `Tilly/Timeline/MonthHeader.swift`,
-`Tilly/Timeline/MonthButton.swift`, `Tilly/Timeline/TimelineView.swift` (modified)
+`Tilly/Timeline/MonthButton.swift`, `Tilly/Timeline/GlassCircleButton.swift`,
+`Tilly/Timeline/TimelineView.swift` (modified)
 
 **Measure the system first.** On the iPhone 17 simulator, open Calendar in the month list view and
 screenshot it. Measure the diameter of its top glass circle buttons and the height of its bottom
-Today button, in points (divide pixels by the screen scale). Note both, and the screenshot's path,
-in the token comments.
+Today button, in points (divide pixels by the screen scale). Note both, and how they were
+measured, in the token comments.
 
 - `Tokens.Size.floatingButton` becomes Calendar's circle diameter. If Today is a different
-  height, the month button takes Today's height through a new `Tokens.Size.monthButton`.
-  Otherwise it keeps sharing `floatingButton`.
-- `Tokens.Text.barName` is renamed `Tokens.Text.monthButton` and becomes `.headline`.
+  height, the month button and settings take it through a new `Tokens.Size.bottomButton`, as
+  Calendar's whole bottom row does. Otherwise they keep sharing `floatingButton`.
+- `Tokens.Text.barName` is renamed `Tokens.Text.monthButton` and matches Today's weight, measured
+  by stem width at the same scale.
 - `Tokens.Space.headerRowInset` (new): 8. `Tokens.Size.headerRow` is now derived:
   `floatingButton + 2 × headerRowInset`.
 - The stacked accessibility layout in `MonthHeader` takes `headerRowInset` of vertical padding, so
@@ -811,8 +838,10 @@ in the token comments.
   current month can't reach the top. Add clear space after `floorLine`, measured live:
   `max(0, containerHeight − (distance from the current header's top to the floor line's bottom))`.
   Measure the floor line on the line itself, never on a `Section`.
-- **The bottom row ignores the keyboard** (`.ignoresSafeArea(.keyboard)`), so it no longer
-  moves behind the editor sheet.
+- **The bottom row sits where Calendar's does**: `Tokens.Space.bottomRowInset` from the screen's
+  bottom and side edges, measured the same way.
+- **The bottom row ignores the keyboard**, so it no longer moves behind the editor sheet: the
+  whole timeline takes `.ignoresSafeArea(.keyboard)`, since it has no text field of its own.
 
 **Done when:** the suite passes, and in the simulator, measured:
 - + is centred in the header band to within 0.5pt, with `headerRowInset` above and below it

@@ -134,7 +134,7 @@ there, like Calendar's Today: a control that appears or changes on its own does 
 reader can't see. VoiceOver reads "Back to September".
 
 Tapping it scrolls back rather than jumping, with a duration that scales with distance, even
-mid-flick. It is a system glass button at Calendar's size and weight. The list carries a bottom inset of the
+mid-flick. It is a system glass button at Calendar's size, weight and place, 28pt in from the screen's edges. The list carries a bottom inset of the
 button's height plus its margin, so the last line of history clears it.
 
 ### The month you're reading stays named

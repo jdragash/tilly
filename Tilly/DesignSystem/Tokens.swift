@@ -4,7 +4,9 @@ enum Tokens {
     enum Text {
         static let monthName: Font = .title3.weight(.semibold)
         static let monthTotal: Font = .subheadline
-        static let barName: Font = .callout
+        /// Calendar's Today: 17pt medium. Measured at 3x, Today's label has a 12.0pt cap height
+        /// and 5px vertical stems; this measured 5px too, where `.headline` (semibold) measured 6px.
+        static let monthButton: Font = .body.weight(.medium)
         static let floatingSymbol: Font = .body.weight(.medium)
         static let name: Font = .body
         static let amount: Font = .body
@@ -66,6 +68,12 @@ enum Tokens {
         static let rowVerticalAccessible: CGFloat = 12
         static let monthButtonHorizontal: CGFloat = 16 // the month button's inner horizontal padding
         static let floatingClearance: CGFloat = 80 // bottom inset the list carries until the bottom row is measured
+        /// How far the bottom row sits from the screen's bottom and side edges, as Calendar's does:
+        /// Today and the pair beside it measured 28.00pt from the bottom, left and right edges on
+        /// the iPhone 17 simulator, inside the home indicator's safe area rather than above it.
+        static let bottomRowInset: CGFloat = 28
+        /// Clear space above and below + in the header row.
+        static let headerRowInset: CGFloat = 8
         /// What a month header keeps clear at its trailing end so its total never runs under +:
         /// the button's width, the gutter it sits in, and a gap.
         static let headerTrailingClearance: CGFloat = Size.floatingButton + gutter + gap
@@ -76,10 +84,15 @@ enum Tokens {
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
         static let hairline: CGFloat = 0.5
-        /// The row a month header fills and + floats in. Headers take it as a minimum height.
-        static let headerRow: CGFloat = 52
-        /// + and settings, and the month button's minimum height, so the bottom row lines up.
+        /// The row a month header fills and + floats in, with `headerRowInset` clear above and
+        /// below +. Headers take it as a minimum height.
+        static let headerRow: CGFloat = floatingButton + 2 * Space.headerRowInset
+        /// +, at the top. Calendar's top glass buttons, measured on the iPhone 17 simulator
+        /// (iOS 26.5, month view, 3x): 44.00pt tall.
         static let floatingButton: CGFloat = 44
+        /// The month button and settings, at the bottom. Calendar's bottom glass buttons, Today and
+        /// the pair beside it, measured the same way: 48.00pt tall, 4pt taller than the top ones.
+        static let bottomButton: CGFloat = 48
         static let editorButton: CGFloat = 40
         static let editorButtonStroke: CGFloat = 1
         static let editorAmountSize: CGFloat = 80 // the amount's base size, before Dynamic Type scales it

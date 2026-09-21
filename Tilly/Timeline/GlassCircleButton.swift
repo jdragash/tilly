@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A glass circle holding one symbol: + at the top, settings at the bottom. Both float over
-/// the timeline at `Tokens.Size.floatingButton`.
+/// the timeline, each at its row's size: `Tokens.Size.floatingButton` at the top and
+/// `bottomButton` at the bottom, as Calendar's are.
 ///
 /// The system glass, applied with `glassEffect` rather than the `.glass` button style: that
 /// style pads around its label, measured at 58pt for a 44pt label, and + has to sit exactly in
@@ -9,6 +10,7 @@ import SwiftUI
 struct GlassCircleButton: View {
     let systemImage: String
     let label: String
+    var diameter: CGFloat = Tokens.Size.floatingButton
     let action: () -> Void
 
     var body: some View {
@@ -19,7 +21,7 @@ struct GlassCircleButton: View {
                 // growing before it would fill it.
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(Tokens.Ink.primary)
-                .frame(width: Tokens.Size.floatingButton, height: Tokens.Size.floatingButton)
+                .frame(width: diameter, height: diameter)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

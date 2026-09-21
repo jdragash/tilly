@@ -18,10 +18,10 @@ struct MonthButton: View {
     var body: some View {
         Button(action: action) {
             Text(month.name(in: calendar, relativeTo: today, locale: locale))
-                .font(Tokens.Text.barName)
+                .font(Tokens.Text.monthButton)
                 .foregroundStyle(Tokens.Ink.primary)
                 .padding(.horizontal, Tokens.Space.monthButtonHorizontal)
-                .frame(minHeight: Tokens.Size.floatingButton)
+                .frame(minHeight: Tokens.Size.bottomButton)
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
