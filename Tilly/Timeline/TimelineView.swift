@@ -21,6 +21,7 @@ struct TimelineView: View {
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasRestoredPlace = false
     @State private var isProgrammaticScroll = false
+    @State private var isScrollHalted = false
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
     @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
@@ -153,6 +154,7 @@ struct TimelineView: View {
                         }
                         .scrollTargetLayout()
                     }
+                    .scrollDisabled(isScrollHalted)
                     .contentMargins(.bottom, bottomClearance, for: .scrollContent)
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                         scrollOffset = newValue
@@ -384,8 +386,17 @@ struct TimelineView: View {
         guard let window, let scrollProxy else { return }
         let duration = returnDuration
         isProgrammaticScroll = true
-        withAnimation(.easeInOut(duration: duration)) {
-            scrollProxy.scrollTo(window.current.id, anchor: .top)
+        // A tap lands while the list is still flying, and an animated `scrollTo` issued then
+        // loses to the deceleration already in flight — measured: the phase stayed
+        // `decelerating`, never became `animating`, and the list carried on to where the fling
+        // was going. Switching scrolling off for one turn stops the momentum where it is, with
+        // no jump, so the return is issued into a list that is standing still.
+        isScrollHalted = true
+        DispatchQueue.main.async {
+            isScrollHalted = false
+            withAnimation(.easeInOut(duration: duration)) {
+                scrollProxy.scrollTo(window.current.id, anchor: .top)
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.06) {
             isProgrammaticScroll = false
@@ -397,6 +408,11 @@ struct TimelineView: View {
             // points wrong across three otherwise identical returns, and the next return's
             // duration is read from it.
             restingContentOffset = scrollOffset
+            // And save it. The scroll-idle save is suppressed while this view's own scroll is
+            // in flight, and a fling cut short by this tap never settled to save either — so
+            // without this the saved place is wherever the fling was heading, and a relaunch
+            // returns there rather than to the month just landed on.
+            if hasRestoredPlace { saveCurrentPlace() }
         }
     }
 

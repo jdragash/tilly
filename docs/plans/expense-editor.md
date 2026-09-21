@@ -504,6 +504,22 @@ editing categories; anything else in Settings.
 
 ## Lessons
 
+- **Step 10:** the tap always reached the button; the action ran every time. What failed was the
+  scroll: an animated `scrollTo` issued while the list is decelerating can lose to the deceleration.
+  Measured, one tap in three mid-fling: the phase stayed `decelerating`, never became `animating`,
+  and the list carried on to where the fling was heading. `.scrollDisabled` switched on for one
+  turn stops the momentum where it is, with no jump (the offset moved 17pt between tap and return),
+  and the return issued a turn later lands every time: 19 taps, 0.0pt each, from fast flings both
+  ways and at rest. No UIKit, no second tap, no phase check.
+- **Step 10:** a return never saved the place it landed on: the scroll-idle save is suppressed
+  during the app's own scroll, and a fling cut short never settles, so the saved place was where the
+  fling was heading (March 2028). The return now saves once it has settled.
+- **Step 10:** to fling from the simulator tool, use `touch_path` with 8ms samples; `swipe` is too
+  slow to carry momentum, and a tap after it lands once the list has stopped. Fling into the months
+  ahead: history is short enough that a fling hits the floor and stops within a second. Read the
+  saved place from the app container's `…sandbox.plist` a couple of seconds after it's written;
+  the file on disk lags the app.
+
 - **Step 9:** how far the list reaches ahead is paid at launch, because the reader sits at its
   bottom: `scrollTo` the current month lays out every month above it first. At 1,200 months ahead
   (Typical year, 9 expenses) that was 34.4s eagerly — most of it `monthBasedDates` walking from the
