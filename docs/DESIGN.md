@@ -101,10 +101,11 @@ open, nothing that closes itself. At rest the list sits flush on the current mon
 When the current month's expanded section holds nothing charged, it ends with `This fills in as
 bills go out.`
 
-### The future stops only where your bills do
+### The future runs five years ahead, or to your last payment
 
-While any bill runs on, so does the list. Once every bill ends, it stops at the last payment with
-`Nothing after May 2027.` An empty month ahead isn't listed, except next month.
+While any bill runs on, the list runs five years ahead and stops there, nothing drawn above: dozens
+of flings away, and close enough that a launch doesn't wait for it. Once every bill ends it stops at
+the last payment instead: `Nothing after May 2027.` An empty month ahead isn't listed, except next.
 
 ### History stops where your oldest charge does
 

@@ -5,7 +5,6 @@ enum Tokens {
         static let monthName: Font = .title3.weight(.semibold)
         static let monthTotal: Font = .subheadline
         static let barName: Font = .callout
-        static let barTotal: Font = .callout
         static let floatingSymbol: Font = .body.weight(.medium)
         static let name: Font = .body
         static let amount: Font = .body
@@ -74,8 +73,6 @@ enum Tokens {
 
     enum Size {
         static let row: CGFloat = 52
-        static let monthBar: CGFloat = 48
-        static let monthBarAccessible: CGFloat = 56
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
         static let hairline: CGFloat = 0.5

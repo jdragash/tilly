@@ -68,8 +68,17 @@ public enum RecurrenceEngine {
         let anchor = calendar.startOfDay(for: rule.anchorDate)
         guard anchor <= rangeEnd else { return [] }
 
+        // Payment `k` falls in the month `k × monthStep` months after the anchor's, so the walk
+        // starts at the last payment in or before the range's first month rather than at the
+        // anchor: a window a century ahead costs what a window this month does.
+        let anchorMonth = calendar.dateComponents([.year, .month], from: anchor)
+        let startMonth = calendar.dateComponents([.year, .month], from: rangeStart)
+        let monthsToStart = ((startMonth.year ?? 0) - (anchorMonth.year ?? 0)) * 12
+            + ((startMonth.month ?? 0) - (anchorMonth.month ?? 0))
+        let monthStep = (rule.unit == .year ? 12 : 1) * max(1, rule.interval)
+
         var results: [Date] = []
-        var index = 0
+        var index = max(0, monthsToStart / monthStep)
         while let candidate = monthBasedDate(at: index, for: rule, calendar: calendar),
               candidate <= rangeEnd {
             if candidate >= rangeStart {

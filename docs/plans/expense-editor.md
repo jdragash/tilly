@@ -504,25 +504,26 @@ editing categories; anything else in Settings.
 
 ## Lessons
 
-- **Step 12:** a focused `TextField` is taller than an unfocused one (24.0 → 25.67pt at the default
-  size, measured), so the amount-and-name block, which centres in the leftover height, moved 0.83pt
-  when the name keyboard opened. The suite can't see that. `Tokens.Size.editorNameHeight` (a
-  `minHeight` scaled with `@ScaledMetric`) keeps the field one height, and the amount measured
-  210.17 with the keypad, the name keyboard and the date panel open. Measure with an `onGeometryChange`
-  `print` of the global frame; it only prints on change, so no new line means no movement.
-- **Step 12:** for the keyboard to cover the editor, ignoring its safe area isn't enough. The panel
-  has to stay in the layout while the name is typed (hidden with `opacity`, not removed), or the
-  amount re-centres. Ignoring is off while a category is made, so the row sits directly above the
-  emoji keyboard, and at accessibility sizes, so the name field isn't covered.
-- **Step 12:** the `ScrollViewReader` scroll to the new-category row is no longer needed. At
-  `accessibility-extra-large` the row sat above the emoji keyboard without it, with the same steps as
-  with it. The cause isn't established; the bottom Save inset it was written alongside is gone.
-- **Step 12:** the simulator's `screenshot` action returns `captureFailed` while `simctl launch
-  --console-pty` is running; `xcrun simctl io booted screenshot` works alongside it. Appending to the
-  file that `--console-pty` writes to (an `echo >>` marker) stops later output landing in it.
-- **Step 12:** driving the simulator with taps changes its store. The walk-through saved a "Cat food"
-  expense and made a "Pets" category in a sample scenario, and both were gone after a relaunch
-  because a sample reseeds on every launch. Neither is in the persistent store: not a bug.
+- **Step 9:** how far the list reaches ahead is paid at launch, because the reader sits at its
+  bottom: `scrollTo` the current month lays out every month above it first. At 1,200 months ahead
+  (Typical year, 9 expenses) that was 34.4s eagerly — most of it `monthBasedDates` walking from the
+  anchor on every call, which made the build quadratic until the engine learned to jump to the
+  window. With that fixed it was still 380ms, and the reader saw September 2126 for half a second
+  before the list landed. Building a month's rows only when drawn didn't help (`scrollTo` builds
+  them all anyway), `.defaultScrollAnchor(.bottom)` was worse, and a `List` was worse again: it
+  built all 1,200 before the first frame, 1,145ms against 367ms. Jake chose five years. At 60 months
+  ahead: 22ms to build 70 months, first frame 382–424ms against a 361–373ms baseline, and the list
+  lands 34ms after it appears, so nothing else is ever seen.
+- **Step 9:** a relaunch two years ahead returned at the *shortest* duration, because
+  `restingContentOffset` is only ever set by the current month's header being laid out, and that far
+  off screen it never is. Scrolling to the current month first and then on to the saved place does
+  not fix it: two `scrollTo` calls a turn apart still fight, the second landing at 0.0 or nowhere,
+  because the first is still settling. An unknown distance now takes the longest duration.
+- **Step 9:** measured in the simulator with step 8's method. Five hard flings ran Oct 2026 → Nov
+  2028 with no reversal and 47 hand-offs, every one exactly 52.0pt. First run rests at 0.05pt. The
+  month button lands 0.0 from two years ahead (0.9s) and from deep history (1,780pt, 0.59s). A
+  relaunch two years ahead restored to 225.333 against 225.333 saved. `Nothing after November.`
+  sits above a bill ending after three payments, with nothing above it.
 
 - **Step 8:** the `.glass` button style pads around its label: a 44pt label measured 58pt. For a
   control that has to sit exactly in the header row, `glassEffect(.regular.interactive(), in:)` on a
@@ -645,17 +646,20 @@ screenshots: **Sonnet**. Step 12 is independent of 9–11 and may be built first
 
 ### Step 9 — Scroll ahead without end (Opus)
 
-**Files:** `Tilly/Timeline/TimelineWindow.swift`, `Tilly/Timeline/TimelineView.swift`,
-`Tilly/Timeline/TimelinePlace.swift` (doc comment only), `Tilly/DesignSystem/Tokens.swift`,
-`TillyTests/TimelineWindowTests.swift` (modified); `Tilly/Timeline/TimelineCeiling.swift`,
-`TillyTests/TimelineCeilingTests.swift` (new); `Tilly/Timeline/CollapsedMonthBar.swift` (deleted)
+**Files:** `Core/Sources/TillyCore/RecurrenceEngine.swift`,
+`Core/Tests/TillyCoreTests/RecurrenceEngineMonthYearTests.swift`,
+`Tilly/Timeline/TimelineWindow.swift`, `Tilly/Timeline/TimelineView.swift`,
+`Tilly/Timeline/TimelineFormatting.swift`, `Tilly/Timeline/TimelinePlace.swift` (doc comment only),
+`Tilly/DesignSystem/Tokens.swift`, `TillyTests/TimelineWindowTests.swift`,
+`TillyTests/TimelinePlaceTests.swift`, `TillyTests/TimelineFormattingTests.swift` (modified);
+`Tilly/Timeline/TimelineCeiling.swift`, `TillyTests/TimelineCeilingTests.swift` (new);
+`Tilly/Timeline/CollapsedMonthBar.swift` (deleted)
 
 **Interface:**
 ```swift
 struct TimelineWindow: Equatable, Sendable {
-    /// How far ahead the list is built when no bill ends. Far enough that nobody reaches it
-    /// by scrolling; the reader never sees it as an end.
-    static let monthsAhead = 1200
+    /// How far ahead the list is built when no bill ends: five years, dozens of flings away.
+    static let monthsAhead = 60
     let floor: MonthKey
     let ceiling: MonthKey
     let current: MonthKey
@@ -675,15 +679,23 @@ enum TimelineCeiling {
 
 **Mechanism: one window built once, never prepended to.** The list holds every month from the
 ceiling down to the floor from the start, so nothing is ever inserted above the reader and no
-anchoring is needed. `LazyVStack` renders only what is on screen.
+anchoring is needed. `LazyVStack` renders only what is on screen, but the reader sits at the bottom
+of it, and the launch scroll back to this month lays out every month above first — so how far ahead
+the window reaches is a launch cost, and five years is what that buys (Lessons).
 
+- **Engine first, test first.** `monthBasedDates` starts its walk at the window instead of at the
+  anchor, as `dayBasedDates` already does, so a month far from the anchor costs what a near one
+  does. New tests: a window in February 2126 on a rule anchored 31 January 2026 gives 28 February
+  2126, a 3-month interval keeps its phase there, and a leap-day yearly rule clamps. The existing
+  tests stay green unedited.
 - `visibleMonths` keeps the current month and the one after, and drops any other month whose
   section is empty.
 - `rebuildSections()` builds every month from the ceiling down to the floor, eagerly, as it builds
-  history now. `visibleMonths` needs every month's emptiness, and writing `@State` from inside
-  `section(for:)` during a render isn't allowed, so nothing is built on demand. **Measure**
-  `rebuildSections()` and the cold launch to first frame with Typical year, before and after. If
-  launch is more than 100ms slower, stop and report rather than trimming `monthsAhead`.
+  history now. **Measure** the cold launch to first frame with Typical year against the 370ms
+  baseline (Lessons). If launch is more than 100ms slower, stop and report rather than trimming
+  `monthsAhead`.
+- An unknown return distance takes the longest duration, not the shortest: it is unknown exactly
+  when the current month's header has never been laid out, which means the reader is far from it.
 - Above the ceiling, when `isLastPayment`: `Nothing after <month>.`, styled as `floorLine`. With no
   last payment, nothing is drawn above the top month.
 - Delete `unlockMonthAbove`, `updateLatch`, `isUnlockLatched`, `closeUnlockedMonths`, and the call
@@ -692,7 +704,8 @@ anchoring is needed. `LazyVStack` renders only what is on screen.
   `Tokens.Text.barTotal` after grepping that nothing else reads them. `barName` stays until step 11
   renames it.
 - `handleDayChange` rebuilds the window with the new current month and a recomputed ceiling. The
-  month the reader is in was already listed, so nothing is inserted near them.
+  month the reader is in was already listed, but the ceiling rises by a month far above and an
+  empty month can join or leave, so the month under the middle is held with `anchorAndSettle`.
 - Update every doc comment that describes unlocking or next month "always expanded" to say what is
   true now, including the type comment on `TimelineView` and the one on `TimelinePlace`.
 
@@ -703,6 +716,7 @@ anchoring is needed. `LazyVStack` renders only what is on screen.
 - `TimelineCeilingTests`: `aBillWithNoEndRunsFarAhead`, `whenEveryBillEndsTheCeilingIsTheLastPayment`,
   `oneBillWithoutAnEndOutweighsOnesThatEnd`, `aLastPaymentBeforeNextMonthStillShowsNextMonth`,
   `noExpensesMeansNoCeiling`, `isLastPaymentOnlyWhenEveryBillEnds`.
+- `TimelineFormattingTests`: delete `aBarsLabelIsAlwaysThePlainTotal` with the bar's own label.
 
 In the simulator, measured the way step 8's Lessons describe:
 - From rest, five hard flings upward travel continuously through months ahead: no stop, no jump,

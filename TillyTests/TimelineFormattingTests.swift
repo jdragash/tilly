@@ -100,18 +100,6 @@ import Testing
 
     /// A bar's label never speaks "left", even for the current month — a bar always shows
     /// the plain total, and that includes its accessibility label.
-    @Test func aBarsLabelIsAlwaysThePlainTotal() {
-        let month = MonthKey(year: 2027, month: 9)
-        let section = MonthSection(month: month, entries: [], total: 1566, remaining: 162, isCurrent: true)
-        let label = TimelineFormatting.accessibilityLabel(
-            forBar: section, calendar: Self.calendar, today: Self.date(2027, 9, 15), locale: Self.locale
-        )
-        #expect(label.contains("September"))
-        #expect(label.contains("total"))
-        #expect(label.contains("1,566") || label.contains("1566"))
-        #expect(!label.contains("left"))
-    }
-
     @Test func theCurrentMonthsLabelSaysWhatIsLeft() {
         let month = MonthKey(year: 2027, month: 9)
         let section = MonthSection(month: month, entries: [], total: 1521, remaining: 162, isCurrent: true)

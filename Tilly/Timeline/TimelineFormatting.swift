@@ -87,14 +87,6 @@ enum TimelineFormatting {
         return "\(name), total \(spokenAmount(abs(section.total), locale: locale)) out"
     }
 
-    /// "September, total 1,566 US dollars out" — a collapsed bar's label. Always the plain
-    /// total, even for the current month: a bar never speaks the word "left", the same rule
-    /// that keeps "left" out of a bar's visible total.
-    static func accessibilityLabel(forBar section: MonthSection, calendar: Calendar, today: Date, locale: Locale) -> String {
-        let name = section.month.name(in: calendar, relativeTo: today, locale: locale)
-        return "\(name), total \(spokenAmount(abs(section.total), locale: locale)) out"
-    }
-
     private static func stateWord(for state: OccurrenceState) -> String {
         switch state {
         case .upcoming: "upcoming"

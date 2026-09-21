@@ -5,27 +5,18 @@ import Testing
     static let floor = MonthKey(year: 2026, month: 12)
     static let current = MonthKey(year: 2027, month: 6)
 
-    @Test func theTopIsOneMonthAheadWhenNothingIsUnlocked() {
-        let window = TimelineWindow(floor: Self.floor, current: Self.current)
-        #expect(window.top == Self.current.advanced(by: 1))
-    }
-
-    @Test func unlockingRaisesTheTop() {
-        let window = TimelineWindow(floor: Self.floor, current: Self.current, unlocked: 2)
-        #expect(window.top == Self.current.advanced(by: 3))
-    }
-
-    @Test func theWindowRunsFromTheTopDownToTheFloor() {
-        let window = TimelineWindow(floor: Self.floor, current: Self.current)
+    @Test func theWindowRunsFromTheCeilingDownToTheFloor() {
+        let window = TimelineWindow(floor: Self.floor, ceiling: Self.current.advanced(by: 5), current: Self.current)
         let months = window.months
 
-        #expect(months.first == window.top)
+        #expect(months.first == window.ceiling)
         #expect(months.last == window.floor)
-        #expect(months.count == window.top.id - window.floor.id + 1)
+        #expect(months.count == window.ceiling.id - window.floor.id + 1)
     }
 
     @Test func aWindowCrossingDecemberLandsInJanuary() {
-        let window = TimelineWindow(floor: Self.floor, current: MonthKey(year: 2026, month: 12))
-        #expect(window.top == MonthKey(year: 2027, month: 1))
+        let current = MonthKey(year: 2026, month: 12)
+        let window = TimelineWindow(floor: Self.floor, ceiling: current.advanced(by: 1), current: current)
+        #expect(window.months.first == MonthKey(year: 2027, month: 1))
     }
 }

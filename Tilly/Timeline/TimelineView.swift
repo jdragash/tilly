@@ -1,9 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// The timeline: next month always open above, history running continuously below down to
-/// the oldest charge entered. See
-/// "The timeline is one list, future above and past below, bounded at both ends" in
+/// The timeline: months ahead running on above for as long as any bill does, history running
+/// continuously below down to the oldest charge entered. See
+/// "The timeline is one list, future above and past below, and the future runs five years on" in
 /// `docs/DECISIONS.md`.
 struct TimelineView: View {
     @Query private var expenses: [Expense]
@@ -20,7 +20,6 @@ struct TimelineView: View {
     @State private var viewportHeight: CGFloat = 0
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasRestoredPlace = false
-    @State private var isUnlockLatched = false
     @State private var isProgrammaticScroll = false
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
@@ -43,46 +42,42 @@ struct TimelineView: View {
         visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= 0 }
     }
 
-    /// Months from the top of the window down to the floor, with an empty month dropped
-    /// unless it's the current month, the one after, or anything unlocked beyond that — all
-    /// of those always render, empty or not, because they're either the month the header
-    /// speaks for or a month the reader deliberately opened. See "History stops where your
-    /// oldest charge does" in `docs/DESIGN.md`.
+    /// Months from the ceiling down to the floor, with an empty month dropped unless it's the
+    /// current month or the one after, which always render, empty or not. See "The future runs
+    /// five years ahead, or to your last payment" and "History stops where your oldest charge does" in
+    /// `docs/DESIGN.md`.
     private var visibleMonths: [MonthKey] {
         guard let window else { return [] }
+        let nextMonth = window.current.advanced(by: 1)
         return window.months.filter { month in
-            month >= window.current || !(sections[month]?.isEmpty ?? true)
+            month == window.current || month == nextMonth || !(sections[month]?.isEmpty ?? true)
         }
     }
 
     /// The month under the middle of the viewport — the one actually being read, and the
-    /// only anchor that survives opening or closing a month without visibly moving. The
-    /// top-most visible item is wrong (it's the bar about to be tapped, so preserving it
-    /// shoves the read month off screen); total content height is wrong too, because one
-    /// gesture can add a month at one end and drop one at the other. See
-    /// `.claude/rules/swiftui-scrolling.md`.
+    /// only anchor that survives a month being added or dropped without visibly moving. The
+    /// top-most visible item is wrong (preserving it can shove the read month off screen);
+    /// total content height is wrong too, because one change can add a month at one end and
+    /// drop one at the other. See `.claude/rules/swiftui-scrolling.md`.
     private func monthUnderMiddle() -> MonthKey? {
         let middleY = viewportHeight / 2
         return visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= middleY }
     }
 
     /// How far the reader has travelled from the resting position: positive below it (back
-    /// in history), negative above it (in an unlocked month ahead). `nil` until there is
-    /// enough geometry to say. It sets how long the month button's return takes.
+    /// in history), negative above it (in a month ahead). `nil` until there is enough
+    /// geometry to say. It sets how long the month button's return takes.
     ///
-    /// Deliberately not `headerOffsets[window.current]`, the way `updateLatch` reads it —
-    /// `LazyVStack` stops laying out (and therefore stops measuring) a header once it is far
-    /// enough off screen, which freezes that dictionary entry at whatever it last was.
-    /// Confirmed on device: scrolling several months into history left it stuck around
-    /// −110pt, well short of a screenful, so a distance check against it never tripped.
-    /// `updateLatch` never meets this because an unlocked month is at most a couple of
-    /// screens away; a reader can scroll arbitrarily far into history, so this needs a
-    /// signal `LazyVStack` can't stop measuring. `scrollOffset` comes straight off the
-    /// `ScrollView` itself, which is never recycled, and `restingContentOffset` is a cached
-    /// "what `scrollOffset` would be if the current month's header were at the top" —
-    /// refreshed whenever that header happens to be mounted, and stable in between because
-    /// nothing but an unlock, a close, or a day change moves the current month within the
-    /// content.
+    /// Deliberately not `headerOffsets[window.current]` — `LazyVStack` stops laying out (and
+    /// therefore stops measuring) a header once it is far enough off screen, which freezes
+    /// that dictionary entry at whatever it last was. Confirmed on device: scrolling several
+    /// months into history left it stuck around −110pt, well short of a screenful. A reader
+    /// can scroll arbitrarily far either way, so this needs a signal `LazyVStack` can't stop
+    /// measuring. `scrollOffset` comes straight off the `ScrollView` itself, which is never
+    /// recycled, and `restingContentOffset` is a cached "what `scrollOffset` would be if the
+    /// current month's header were at the top" — refreshed whenever that header happens to be
+    /// mounted, and stable in between because nothing but a day change moves the current
+    /// month within the content.
     private var returnDistance: CGFloat? {
         guard viewportHeight > 0, let restingContentOffset else { return nil }
         return scrollOffset - restingContentOffset
@@ -92,8 +87,13 @@ struct TimelineView: View {
     /// `scrollTo` does animate — measured on device, not the snap it looks like — but at
     /// `.default`'s fixed duration a return from deep history covers two thousand points in
     /// under a third of a second, which reads as a jump rather than as travel.
+    ///
+    /// An unknown distance takes the longest duration, not the shortest. The distance is
+    /// unknown exactly when the current month's header has never been laid out — which means
+    /// it is far off screen, as after a relaunch two years ahead, where the shortest duration
+    /// read as a jump.
     private var returnDuration: TimeInterval {
-        let distance = abs(returnDistance ?? 0)
+        guard let distance = returnDistance.map(abs) else { return Tokens.Motion.returnDurationMax }
         let scaled = TimeInterval(distance / Tokens.Motion.returnPointsPerSecond)
         return min(Tokens.Motion.returnDurationMax, max(Tokens.Motion.returnDurationMin, scaled))
     }
@@ -110,7 +110,6 @@ struct TimelineView: View {
             if window == nil { setUpIfNeeded() } else { rebuildSections() }
         }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
-        .onChange(of: headerOffsets) { _, _ in updateLatch() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active, hasRestoredPlace { saveCurrentPlace() }
         }
@@ -128,7 +127,7 @@ struct TimelineView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                            CollapsedMonthBar(section: section(for: window.top.advanced(by: 1)), today: today, open: unlockMonthAbove)
+                            if isLastPayment { ceilingLine(window.ceiling) }
                             ForEach(visibleMonths) { month in
                                 let monthSection = section(for: month)
                                 Section {
@@ -207,6 +206,24 @@ struct TimelineView: View {
         }
     }
 
+    /// Whether the ceiling is a real last payment, so the list says so above it.
+    private var isLastPayment: Bool {
+        guard let window else { return false }
+        return TimelineCeiling.isLastPayment(window.ceiling, for: expenses, current: window.current, calendar: calendar)
+    }
+
+    /// The history floor's mirror, above the last payment when every bill ends. It fills the
+    /// header row, so it sits clear of + at the very top of the list.
+    private func ceilingLine(_ month: MonthKey) -> some View {
+        Text("Nothing after \(month.name(in: calendar, relativeTo: today, locale: locale)).")
+            .font(Tokens.Text.monthTotal)
+            .foregroundStyle(Tokens.Ink.tertiary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, Tokens.Space.gutter * 2)
+            .frame(minHeight: Tokens.Size.headerRow)
+            .padding(.bottom, Tokens.Space.section)
+    }
+
     private func floorLine(_ month: MonthKey) -> some View {
         Text("Nothing before \(month.name(in: calendar, relativeTo: today, locale: locale)).")
             .font(Tokens.Text.monthTotal)
@@ -227,8 +244,10 @@ struct TimelineView: View {
         guard window == nil else { return }
         today = Date()
         let current = MonthKey(containing: today, calendar: calendar)
-        guard let floor = TimelineFloor.month(for: expenses, calendar: calendar) else { return }
-        window = TimelineWindow(floor: floor, current: current)
+        guard let floor = TimelineFloor.month(for: expenses, calendar: calendar),
+              let ceiling = TimelineCeiling.month(for: expenses, current: current, calendar: calendar)
+        else { return }
+        window = TimelineWindow(floor: floor, ceiling: ceiling, current: current)
         rebuildSections()
     }
 
@@ -284,7 +303,7 @@ struct TimelineView: View {
     }
 
     /// The anchor to save: the month under the middle of the viewport, at its live offset —
-    /// the same rule the unlock and the restore both key on, so gesturing and
+    /// the same rule the restore and a day change both key on, so gesturing and
     /// restoring agree on what "here" means. Nothing is saved when there is no live
     /// geometry to read (nothing has laid out yet, or the screen is the empty state).
     ///
@@ -327,67 +346,40 @@ struct TimelineView: View {
     }
 
     /// `today` moves forward as the calendar day changes underneath a running app. When the
-    /// month itself changes, `window.current` moves up with it — and because the next month
-    /// was always expanded, the month the reader is now in is already on screen and already
-    /// open; nothing is inserted above them. See "Nothing under the reader's eyes moves"
-    /// in `docs/DESIGN.md`.
+    /// month itself changes, the window is rebuilt with the new current month and a
+    /// recomputed ceiling. The month the reader is now in was already listed, so nothing is
+    /// inserted near them; but the ceiling rises by a month far above, and an empty month can
+    /// join or leave the list, so the month under the middle is held where it is. See
+    /// "Nothing under the reader's eyes moves" in `docs/DESIGN.md`.
     private func handleDayChange() {
         today = Date()
         guard let window else { return }
         let newCurrent = MonthKey(containing: today, calendar: calendar)
-        if newCurrent != window.current {
-            self.window = TimelineWindow(floor: window.floor, current: newCurrent, unlocked: window.unlocked)
+        guard newCurrent != window.current,
+              let ceiling = TimelineCeiling.month(for: expenses, current: newCurrent, calendar: calendar)
+        else {
+            rebuildSections()
+            return
         }
+        let anchorMonth = monthUnderMiddle()
+        let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
+        self.window = TimelineWindow(floor: window.floor, ceiling: ceiling, current: newCurrent)
         rebuildSections()
-    }
-
-    /// Opens the month named on the unlock bar. See "Anchoring" in
-    /// `.claude/rules/swiftui-scrolling.md`: a screenful of content lands *above* the viewport, so the
-    /// month under the middle — not the bar, not total content height — is what has to stay
-    /// put.
-    private func unlockMonthAbove() {
-        guard window != nil, let anchorMonth = monthUnderMiddle() else { return }
-        let desiredOffset = headerOffsets[anchorMonth] ?? 0
-        window?.unlocked += 1
-        rebuildSections()
-        anchorAndSettle(anchorMonth, to: desiredOffset)
-    }
-
-    /// The tidy-up: unlocked months close once the reader has actually travelled up into
-    /// one of them and come back. Two guards make this safe — see "Anchoring" in `.claude/rules/swiftui-scrolling.md`.
-    /// `isUnlockLatched` requires the trip up before any close can fire, so this never fires
-    /// in the frame a month opens (it opens outside the viewport, which would otherwise read
-    /// as "no longer visible" instantly). `isProgrammaticScroll` keeps this from firing while
-    /// one of this view's own animated scrolls is still in flight.
-    private func updateLatch() {
-        guard let window, !isProgrammaticScroll else { return }
-        let currentOffset = headerOffsets[window.current] ?? 0
-        if !isUnlockLatched {
-            if window.unlocked > 0 && currentOffset > viewportHeight {
-                isUnlockLatched = true
-            }
-        } else if currentOffset <= 0 {
-            closeUnlockedMonths()
-        }
+        if let anchorMonth { anchorAndSettle(anchorMonth, to: max(0, desiredOffset)) }
     }
 
     /// The month button's action: animates the reader back to the resting position — the
     /// current month's header at the container's top, the same target
-    /// `restorePlaceIfNeeded` uses — then runs the tidy-up once that scroll has
-    /// actually settled. `isProgrammaticScroll` holds `updateLatch` off for the same reason
-    /// it does during `anchorAndSettle`: closing mid-animation would fight the animated
-    /// scroll rather than follow it. See "Getting back" in `docs/DESIGN.md`.
+    /// `restorePlaceIfNeeded` uses. `isProgrammaticScroll` keeps the scroll-idle save from
+    /// recording a mid-flight position. See "Getting back" in `docs/DESIGN.md`.
     ///
-    /// **Not `withAnimation(_:completion:)`.** Tried first, and wrong: confirmed on device
-    /// via logging that its completion handler runs before the scroll has visibly moved at
-    /// all — `scrollProxy.scrollTo` drives a `UIScrollView` under the hood, which doesn't
-    /// report into SwiftUI's animation-completion tracking, so `closeUnlockedMonths` fired
-    /// against the pre-scroll geometry and anchored on the unlocked month instead of the
-    /// one just settled on. A fixed delay matching the animation's own duration is what
-    /// `anchorAndSettle` already relies on elsewhere in this file for the same reason —
-    /// timing-dependent, not sufficient in principle, but held in every trial here too.
-    /// That delay is derived from `returnDuration` rather than hard-coded, because the
-    /// duration now varies with distance and the two must not drift apart.
+    /// **Not `withAnimation(_:completion:)`.** Confirmed on device via logging that its
+    /// completion handler runs before the scroll has visibly moved at all —
+    /// `scrollProxy.scrollTo` drives a `UIScrollView` under the hood, which doesn't report
+    /// into SwiftUI's animation-completion tracking. A fixed delay matching the animation's
+    /// own duration is timing-dependent, not sufficient in principle, but held in every
+    /// trial. That delay is derived from `returnDuration` rather than hard-coded, because the
+    /// duration varies with distance and the two must not drift apart.
     private func returnToResting() {
         guard let window, let scrollProxy else { return }
         let duration = returnDuration
@@ -405,26 +397,12 @@ struct TimelineView: View {
             // points wrong across three otherwise identical returns, and the next return's
             // duration is read from it.
             restingContentOffset = scrollOffset
-            closeUnlockedMonths()
         }
     }
 
-    private func closeUnlockedMonths() {
-        isUnlockLatched = false
-        guard let window, window.unlocked > 0 else { return }
-        let anchorMonth = monthUnderMiddle() ?? window.current
-        let desiredOffset = headerOffsets[anchorMonth] ?? 0
-        self.window?.unlocked = 0
-        rebuildSections()
-        anchorAndSettle(anchorMonth, to: desiredOffset)
-    }
-
     /// Waits a run-loop turn for the resized list to lay out, restores `month`'s position,
-    /// and holds off the close-on-scroll-back latch until that restoring scroll has settled
-    /// — see "Anchoring" in
-    /// `.claude/rules/swiftui-scrolling.md`. Exercised by opening and closing a month directly, and,
-    /// via `returnToResting`, by an animated jump back across several unlocked months —
-    /// both verified on device.
+    /// and holds off the scroll-idle save until that restoring scroll has settled — see
+    /// "Anchoring" in `.claude/rules/swiftui-scrolling.md`.
     private func anchorAndSettle(_ month: MonthKey, to desiredOffset: CGFloat) {
         isProgrammaticScroll = true
         DispatchQueue.main.async {
@@ -457,8 +435,8 @@ struct TimelineView: View {
     /// aligns within the container's *content area*, not the whole viewport. Dividing by the
     /// viewport instead lands every restore proportionally short — measured on device at
     /// 0.907x of whatever was asked, which is exactly (710 - 47) / (778 - 47). It slipped
-    /// through while only unlocks used it, because those offsets were small enough for the error
-    /// to be a few points; restoring a saved place works from arbitrary depth, where the same ratio is tens of
+    /// through while only small anchoring offsets used it, because the error there was a few
+    /// points; restoring a saved place works from arbitrary depth, where the same ratio is tens of
     /// points and plainly visible. With the right denominator a single pass lands within a
     /// tenth of a point.
     ///
@@ -487,14 +465,12 @@ struct TimelineView: View {
         let timelineExpenses = expenses.map(\.timelineExpense)
 
         var result: [MonthKey: MonthSection] = [:]
-        var key = window.top.advanced(by: 1) // includes the unlock bar's own month
-        while key >= window.floor {
+        for key in window.months {
             let built = TimelineBuilder.month(key, expenses: timelineExpenses, today: today, calendar: calendar)
             result[key] = MonthSection(
                 month: built.month, entries: built.entries, total: built.total,
                 remaining: built.remaining, isCurrent: key == window.current
             )
-            key = key.advanced(by: -1)
         }
         sections = result
     }

@@ -59,10 +59,14 @@ reaches a view through `Tokens`, dimensions included, so the design pass is a on
 - **Rejected — raw values now, extract tokens later:** the extraction is the expensive part.
 - **Revisit when:** the v2 design pass, which is Jake's.
 
-## The timeline is one list, future above and past below, and the future has no end
+## The timeline is one list, future above and past below, and the future runs five years on
 **Decided:** 2026-09-19
-Months ahead run continuously above the current one, like Calendar, for as long as any bill does.
-History runs continuously below to the oldest charge. A month button returns you to this month.
+Months ahead run continuously above the current one, like Calendar, for as long as any bill does,
+out to five years. History runs continuously below to the oldest charge. A month button returns you
+to this month.
+- **Rejected — a century ahead, so no reader could reach the end:** the reader sits at the bottom of
+  one long list, and the scroll back to this month on launch lays out every month above it first.
+  Measured: 34s of work at launch, and still ~380ms with each month built only when drawn.
 - **Rejected — further ahead as a deliberate unlock that closes itself:** a strange sequence of
   taps to look ahead, and a list that changes on its own.
 - **Rejected — past above, future below, as Calendar has it:** puts history at eye level in an app about what's coming.
