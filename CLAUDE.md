@@ -98,7 +98,7 @@ his life aren't, and an example of a banned disclosure is itself a disclosure.
 
 - Swift 6, SwiftUI, SwiftData. iOS 26, iPhone and portrait only. No third-party dependencies.
 - **Swift Testing** (`@Test`, `#expect`), not XCTest.
-- SwiftData models stay CloudKit-compatible. More in `.claude/rules/` (views and tokens, engine).
+- SwiftData models stay CloudKit-compatible. More in `.claude/rules/` (views and tokens, controls, engine).
 - **Building a pinned or scroll-anchored list anywhere?** Read `.claude/rules/swiftui-scrolling.md`.
 - Adding, moving or removing source files never touches `.pbxproj` (synchronized groups).
   Fixing or adding a build setting there is ordinary work.

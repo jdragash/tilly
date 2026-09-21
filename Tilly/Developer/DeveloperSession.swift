@@ -4,7 +4,8 @@ import Observation
 import SwiftData
 
 /// Which store the app is showing: the person's own, or a sample scenario seeded fresh into
-/// memory. Owned by `TillyApp` in debug builds; see `docs/plans/developer-scenarios.md`.
+/// memory. Owned by `TillyApp` in debug builds. A sample never touches the person's store: it
+/// lives in memory and reseeds from scratch whenever it loads, including on every launch.
 ///
 /// The two sides keep separate saved places, so scrolling around sample data never moves the
 /// person's own place. A sample's place is cleared whenever it loads, so each one starts from
