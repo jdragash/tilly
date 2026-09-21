@@ -64,9 +64,13 @@ final class DeveloperSession {
         generation += 1
     }
 
-    /// Clears the active side's saved place, without reloading.
+    /// Clears the active side's saved place and rebuilds the timeline, which lands where a first
+    /// run does, without reseeding anything. The rebuild is what makes it stick: left where it
+    /// was, the timeline saved that place again the moment the app was backgrounded, so a
+    /// relaunch returned to it as if nothing was forgotten.
     func forgetPlace() {
         placeStore.clear()
+        generation += 1
     }
 
     private func build(_ scenario: DeveloperScenario) {

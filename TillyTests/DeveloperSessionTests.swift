@@ -110,6 +110,21 @@ import Testing
         #expect(relaunched.placeStore.load() == Self.place)
     }
 
+    /// Forgetting has to move the timeline too. Left where it was, the place is saved again the
+    /// moment the app is backgrounded, and a relaunch returns to it as if nothing was forgotten.
+    @Test func forgettingAPlaceRebuildsTheTimeline() {
+        defer { cleanUp() }
+        let session = makeSession()
+        session.load(.typicalYear)
+        session.placeStore.save(Self.place)
+        let generation = session.generation
+
+        session.forgetPlace()
+
+        #expect(session.placeStore.load() == nil)
+        #expect(session.generation == generation + 1)
+    }
+
     @Test func sandboxPlaceNeverTouchesYourPlace() {
         defer { cleanUp() }
         let session = makeSession()

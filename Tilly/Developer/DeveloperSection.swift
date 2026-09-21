@@ -2,8 +2,8 @@
 import SwiftUI
 
 /// The last section of Settings in debug builds: switch between your own data and sample
-/// scenarios, reset the one you're in, or forget the saved place. Loading rebuilds the
-/// timeline, which closes Settings.
+/// scenarios, reset the one you're in, or forget the saved place. Each rebuilds the timeline,
+/// which closes Settings.
 struct DeveloperSection: View {
     let session: DeveloperSession
 
