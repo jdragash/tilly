@@ -34,9 +34,7 @@ public enum RecurrenceEngine {
         through rangeEnd: Date,
         calendar: Calendar
     ) -> [Date] {
-        // `max(1,)` belts the clamp in `RecurrenceRule.init`: a zero step would make every
-        // index yield the anchor and loop forever.
-        let stepDays = (rule.unit == .week ? 7 : 1) * max(1, rule.interval)
+        let stepDays = dayStep(for: rule)
         let anchor = calendar.startOfDay(for: rule.anchorDate)
         guard anchor <= rangeEnd else { return [] }
 
@@ -46,7 +44,7 @@ public enum RecurrenceEngine {
 
         var results: [Date] = []
         var index = startIndex
-        while let candidate = calendar.date(byAdding: .day, value: index * stepDays, to: anchor),
+        while let candidate = dayBasedDate(at: index, for: rule, calendar: calendar),
               candidate <= rangeEnd {
             if candidate >= rangeStart {
                 results.append(candidate)
@@ -70,38 +68,75 @@ public enum RecurrenceEngine {
         let anchor = calendar.startOfDay(for: rule.anchorDate)
         guard anchor <= rangeEnd else { return [] }
 
-        let anchorComponents = calendar.dateComponents([.year, .month, .day], from: anchor)
-        guard let anchorYear = anchorComponents.year,
-              let anchorMonth = anchorComponents.month,
-              let anchorDay = anchorComponents.day else { return [] }
-
-        let anchorMonthIndex = anchorYear * 12 + (anchorMonth - 1)
+        // Payment `k` falls in the month `k × monthStep` months after the anchor's, so the walk
+        // starts at the last payment in or before the range's first month rather than at the
+        // anchor: a window a century ahead costs what a window this month does.
+        let anchorMonth = calendar.dateComponents([.year, .month], from: anchor)
+        let startMonth = calendar.dateComponents([.year, .month], from: rangeStart)
+        let monthsToStart = ((startMonth.year ?? 0) - (anchorMonth.year ?? 0)) * 12
+            + ((startMonth.month ?? 0) - (anchorMonth.month ?? 0))
         let monthStep = (rule.unit == .year ? 12 : 1) * max(1, rule.interval)
 
-        func occurrenceDate(at index: Int) -> Date? {
-            let totalMonthIndex = anchorMonthIndex + index * monthStep
-            let year = totalMonthIndex.quotientAndRemainder(dividingBy: 12).quotient
-            let month = totalMonthIndex.quotientAndRemainder(dividingBy: 12).remainder + 1
-            guard let firstOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
-                  let daysInMonth = calendar.range(of: .day, in: .month, for: firstOfMonth)?.count else {
-                return nil
-            }
-            let day = min(anchorDay, daysInMonth)
-            guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
-                return nil
-            }
-            return calendar.startOfDay(for: date)
-        }
-
         var results: [Date] = []
-        var index = 0
-        while let candidate = occurrenceDate(at: index), candidate <= rangeEnd {
+        var index = max(0, monthsToStart / monthStep)
+        while let candidate = monthBasedDate(at: index, for: rule, calendar: calendar),
+              candidate <= rangeEnd {
             if candidate >= rangeStart {
                 results.append(candidate)
             }
             index += 1
         }
         return results
+    }
+
+    // `max(1,)` belts the clamp in `RecurrenceRule.init`: a zero step would make every
+    // index yield the anchor and loop forever.
+    private static func dayStep(for rule: RecurrenceRule) -> Int {
+        (rule.unit == .week ? 7 : 1) * max(1, rule.interval)
+    }
+
+    private static func dayBasedDate(at index: Int, for rule: RecurrenceRule, calendar: Calendar) -> Date? {
+        let anchor = calendar.startOfDay(for: rule.anchorDate)
+        return calendar.date(byAdding: .day, value: index * dayStep(for: rule), to: anchor)
+    }
+
+    private static func monthBasedDate(at index: Int, for rule: RecurrenceRule, calendar: Calendar) -> Date? {
+        let anchor = calendar.startOfDay(for: rule.anchorDate)
+        let anchorComponents = calendar.dateComponents([.year, .month, .day], from: anchor)
+        guard let anchorYear = anchorComponents.year,
+              let anchorMonth = anchorComponents.month,
+              let anchorDay = anchorComponents.day else { return nil }
+
+        let monthStep = (rule.unit == .year ? 12 : 1) * max(1, rule.interval)
+        let totalMonthIndex = anchorYear * 12 + (anchorMonth - 1) + index * monthStep
+        let year = totalMonthIndex.quotientAndRemainder(dividingBy: 12).quotient
+        let month = totalMonthIndex.quotientAndRemainder(dividingBy: 12).remainder + 1
+        guard let firstOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
+              let daysInMonth = calendar.range(of: .day, in: .month, for: firstOfMonth)?.count else {
+            return nil
+        }
+        let day = min(anchorDay, daysInMonth)
+        guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
+            return nil
+        }
+        return calendar.startOfDay(for: date)
+    }
+}
+
+extension RecurrenceEngine {
+    /// The date of the payment at `index` (0 = the anchor), generated from the anchor, never
+    /// from the previous payment, at start of day. Ignores `rule.endDate`: this is what
+    /// *sets* an end.
+    public static func date(ofPayment index: Int, for rule: RecurrenceRule, calendar: Calendar) -> Date {
+        let anchor = calendar.startOfDay(for: rule.anchorDate)
+        let generated: Date?
+        switch rule.unit {
+        case .day, .week:
+            generated = dayBasedDate(at: index, for: rule, calendar: calendar)
+        case .month, .year:
+            generated = monthBasedDate(at: index, for: rule, calendar: calendar)
+        }
+        return generated ?? anchor
     }
 }
 

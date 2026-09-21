@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 enum TillyStore {
-    static let schema = Schema([Expense.self, OverrideRecord.self])
+    static let schema = Schema([Expense.self, OverrideRecord.self, ExpenseCategory.self])
 
     static func container(inMemory: Bool = false) throws -> ModelContainer {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: inMemory)

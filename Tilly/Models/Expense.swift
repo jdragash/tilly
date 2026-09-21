@@ -15,6 +15,9 @@ final class Expense {
     var recurrenceUnitRaw: String = RecurrenceUnit.month.rawValue
     var anchorDate: Date = Date()
     var endDate: Date?
+    /// Optional because CloudKit requires it; the editor requires one, so `nil` only occurs in a
+    /// store saved before categories existed.
+    var category: ExpenseCategory?
 
     @Relationship(deleteRule: .cascade, inverse: \OverrideRecord.expense)
     var overrides: [OverrideRecord]?
@@ -28,7 +31,8 @@ final class Expense {
         recurrenceInterval: Int = 1,
         recurrenceUnit: RecurrenceUnit = .month,
         anchorDate: Date = Date(),
-        endDate: Date? = nil
+        endDate: Date? = nil,
+        category: ExpenseCategory? = nil
     ) {
         self.id = id
         self.name = name
@@ -39,6 +43,7 @@ final class Expense {
         self.recurrenceUnitRaw = recurrenceUnit.rawValue
         self.anchorDate = anchorDate
         self.endDate = endDate
+        self.category = category
     }
 }
 

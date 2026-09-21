@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilly — expense entry prototype</title>
+<!--
+  Tilly · the expense editor's entry flow, and the app shell around it · 2026-09-19
+
+  Built during tilly-explore, from docs/briefs/expense-editor/brief.md, after five rounds on the
+  design canvas. First built 2026-09-17 for the entry design; revised 2026-09-19 for the shell.
+
+  The shell, settled on the canvas in rounds 3–5:
+    · Like iOS Calendar. The month header pins to the top with its total beside the name
+          ("September −€53 left"), and + floats in that same row at the right. As you scroll,
+          each month's header takes the row over from the last.
+    · Bottom left, a September button that is always there and always brings you back to this
+          month. It replaces the pill that appeared 240pt away. Bottom right, settings.
+    · Everything opens as a sheet over the timeline. Categories live in Settings. There is no
+          list of every expense and no categories button: both were set aside, and the grouped
+          view became the start of Insights, which isn't designed yet.
+    · Every expense has a category. Amount, name, category and date are all required, so the
+          first expense makes the first category.
+    · A timeline row's second line is the date, plus "· ends 05/27" on a bill that ends. Once a
+          bill ends, its repeat button reads "09/27".
+
+  The entry design, settled in rounds 1–2:
+    · Amount, name and category are required. Save waits for all three.
+    · The editor is a sheet over the timeline: close top left, amount, name, three buttons,
+          keypad, and a full-width Save at the bottom.
+    · The three buttons are equal thirds: date, repeat, category. Each opens its picker where the
+          keypad was, and every picker is the keypad's height, so the amount never moves
+          (TASTE 2).
+    · The icon says what kind of thing, the label says the value (TASTE 6). A third leaves about
+          66pt for a label, so: loop + "Monthly" or "3 months"; one-way arrow + "09/27" once the
+          bill ends; the category is its emoji alone, and a tag icon until one is chosen.
+    · The date opens a calendar and nothing else. A date still to come shows a calendar with a
+          clock. Dates carry no year.
+    · Repeat is one wheel: every N days, weeks, months or years, and an end column that rests on
+          "no end" (TASTE 11). Once an end is set, the last payment date shows under it.
+    · Categories are an emoji and a name, both required. The app ships with none. A new one
+          starts on the emoji keyboard, then asks for the name. The category button shows only
+          the emoji, and a tag until one is chosen.
+    · A repeat's end is a payment count on the wheel, which works out the last date. There is no
+          separate end-date option.
+
+  Still open: what editing an existing expense asks (this one or all future), what the Settings
+  sheet holds beyond the category list and what tapping a category does, Insights, and what the
+  three buttons become at accessibility text sizes.
+
+  Direction A ("amount is the screen") won at rung 1; the canvas rounds are in the Tilly Expense
+  Editor design canvas. docs/prototypes/expense-editor.html is the earlier prototype for the
+  questions this one leaves alone, chiefly scope on edit.
+
+  WHAT THIS FILE LIES ABOUT. A browser is not iOS, and this one has no:
+    · system keyboards: the grey blocks stand in for them, and the emoji grid stands in for the
+      system emoji keyboard. It is not a proposed set of emoji.
+    · wheel physics or haptics: the wheel is CSS scroll snapping
+    · Liquid Glass, sheet detents, or a sheet that tracks your thumb
+    · Dynamic Type: at accessibility sizes three equal thirds cannot hold, and what they become
+      there is unsolved
+    · VoiceOver, rubber-band overscroll, or iOS momentum
+    · the timeline's day grouping, the unlock bar, or your place surviving a relaunch: next
+      month is open above, and history runs down to the oldest charge
+
+  Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the
+  docs win.
+-->
+<style>
+:root {
+  --paper: #fff; --sheet: #fff;
+  --ink-1: #000; --ink-2: rgba(60,60,67,0.6); --ink-3: rgba(60,60,67,0.3); --ink-4: rgba(60,60,67,0.18);
+  --sep: rgba(60,60,67,0.29);
+  --fill-2: rgba(120,120,128,0.16); --fill-3: rgba(118,118,128,0.12); --fill-4: rgba(116,116,128,0.08);
+  --tint: #007aff; --tint-soft: rgba(0,122,255,0.14);
+  --scrim: rgba(0,0,0,0.2); --btn-bg: #000; --btn-ink: #fff;
+  --glass: rgba(255,255,255,0.78); --glass-line: rgba(0,0,0,0.06);
+  --glass-shadow: 0 6px 20px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06);
+}
+.dark {
+  --paper: #000; --sheet: #1c1c1e;
+  --ink-1: #fff; --ink-2: rgba(235,235,245,0.6); --ink-3: rgba(235,235,245,0.3); --ink-4: rgba(235,235,245,0.16);
+  --sep: rgba(84,84,88,0.65);
+  --fill-2: rgba(120,120,128,0.32); --fill-3: rgba(118,118,128,0.24); --fill-4: rgba(118,118,128,0.18);
+  --tint: #0a84ff; --tint-soft: rgba(10,132,255,0.22);
+  --scrim: rgba(0,0,0,0.48); --btn-bg: #fff; --btn-ink: #000;
+  --glass: rgba(44,44,46,0.80); --glass-line: rgba(255,255,255,0.10); --glass-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  background: #ececf0; color: #1c1c1e;
+  display: flex; justify-content: center; align-items: flex-start; gap: 40px; padding: 32px;
+}
+@media (prefers-color-scheme: dark) { body { background: #101012; color: #f2f2f7; } }
+
+/* ── control panel ── */
+.panel { width: 280px; flex: none; }
+.panel h1 { font-size: 17px; margin: 0 0 2px; }
+.panel .sub { font-size: 12px; opacity: .6; margin: 0 0 20px; }
+fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+legend { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; opacity: .55; margin-bottom: 6px; padding: 0; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button, .act {
+  font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 7px; cursor: pointer;
+  border: 1px solid rgba(120,120,128,.3); background: transparent; color: inherit;
+}
+.seg button[aria-pressed="true"] { background: #1c1c1e; color: #fff; border-color: #1c1c1e; }
+@media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { background: #f2f2f7; color: #000; border-color: #f2f2f7; } }
+.note { font-size: 11.5px; opacity: .7; margin: 6px 0 0; }
+.lies { font-size: 11.5px; line-height: 1.6; opacity: .72; border-top: 1px solid rgba(120,120,128,.3); padding-top: 14px; margin-top: 24px; }
+.lies ul { margin: 6px 0 0; padding-left: 16px; }
+
+/* ── device ── */
+.device {
+  width: 393px; height: 852px; flex: none; position: relative; overflow: hidden;
+  border-radius: 46px; background: var(--paper); color: var(--ink-1);
+  box-shadow: 0 0 0 10px #1c1c1e, 0 22px 60px rgba(0,0,0,.3);
+  font-size: 17px; user-select: none;
+}
+
+/* timeline: the app's one screen */
+.timeline { position: absolute; inset: 0; overflow-y: auto; padding: 59px 0 112px; scrollbar-width: none; }
+.timeline::-webkit-scrollbar { display: none; }
+.inset { position: absolute; top: 0; left: 0; right: 0; height: 59px; background: var(--paper); z-index: 5; }
+/* The header pins in the row + floats over (sticky top counts from below the 59pt padding), and the next month's header pushes it out. */
+.mhead { position: sticky; top: 0; z-index: 2; height: 52px; display: flex; align-items: center; gap: 10px;
+  padding: 0 76px 0 20px; background: var(--paper); }
+.mhead.pinned { box-shadow: inset 0 -0.5px 0 var(--sep); }
+.mhead .n { font-size: 22px; font-weight: 700; letter-spacing: -.5px; white-space: nowrap; }
+.mhead .t { font-size: 16px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.floor { padding: 20px 20px 0; font-size: 15px; color: var(--ink-2); }
+.empty { padding: 8px 20px; font-size: 17px; color: var(--ink-2); max-width: 300px; }
+
+/* floating controls: glass over content */
+.glass { position: absolute; z-index: 6; height: 48px; border: .5px solid var(--glass-line); border-radius: 24px;
+  background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--glass-shadow); color: var(--ink-1); font: inherit; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; }
+.g-add { top: 61px; right: 16px; width: 48px; }
+.g-month { bottom: 34px; left: 16px; padding: 0 20px; font-size: 17px; font-weight: 500; letter-spacing: -.2px; }
+.g-settings { bottom: 34px; right: 16px; width: 48px; }
+
+/* settings sheet */
+.sbody { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 8px 20px 40px; }
+.sbody::-webkit-scrollbar { display: none; }
+.stitle { position: absolute; left: 0; right: 0; text-align: center; font-size: 17px; font-weight: 600; pointer-events: none; }
+.sgroup { font-size: 13px; text-transform: uppercase; letter-spacing: .4px; color: var(--ink-2); padding: 12px 4px 6px; }
+.snote { font-size: 13px; color: var(--ink-2); padding: 10px 4px 0; }
+.trow { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 20px; }
+.trow .well { flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--fill-4);
+  display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; }
+.trow .mid { flex: 1; min-width: 0; }
+.trow .nm { letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow .dt { font-size: 13px; color: var(--ink-2); }
+.trow .am { font-variant-numeric: tabular-nums; }
+.trow.upcoming .nm, .trow.upcoming .am { color: var(--ink-2); }
+.trow.upcoming .dt { color: var(--ink-3); }
+.trow.upcoming .well { opacity: .55; }
+.trow.fresh { animation: fresh 1.6s ease-out; }
+@keyframes fresh { from { background: var(--tint-soft); } to { background: transparent; } }
+
+.scrim { position: absolute; inset: 0; background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 10; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+
+/* ── the sheet ── */
+.sheet {
+  position: absolute; top: 120px; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: var(--sheet); border-radius: 34px 34px 0 0;
+  display: flex; flex-direction: column;
+  transform: translateY(100%); transition: transform .38s cubic-bezier(.32,.72,0,1);
+}
+.sheet.on { transform: none; }
+.grabber { flex: none; width: 36px; height: 5px; border-radius: 3px; background: var(--ink-4); margin: 5px auto 0; }
+.bar { flex: none; height: 44px; margin-top: 4px; padding: 0 16px; display: flex; align-items: center; }
+.close { width: 44px; height: 44px; border-radius: 22px; background: var(--fill-3); border: 0; color: var(--ink-1);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+.top { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 0 20px; }
+.amount { font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+.amount.zero { color: var(--ink-3); }
+.name { border: 0; background: transparent; outline: none; font-family: inherit; font-size: 20px; font-weight: 500; line-height: 1.3;
+  color: var(--ink-1); text-align: center; width: 100%; max-width: 353px; padding: 0; caret-color: var(--tint); }
+.name::placeholder { color: var(--ink-3); }
+
+.buttons { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 20px; }
+.btn { min-width: 0; height: 40px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--ink-4);
+  background: transparent; color: var(--ink-1); font: inherit; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.active { background: var(--fill-2); }
+.btn svg { flex: none; }
+.btn .lbl { min-width: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn .emo { font-size: 22px; line-height: 1; }
+
+.lower { flex: none; display: flex; flex-direction: column; }
+.area { height: 300px; padding: 16px 20px 0; display: flex; flex-direction: column; gap: 12px; }
+.area[hidden], .kbd[hidden], .save-wrap[hidden], .newcat[hidden], .home[hidden] { display: none; }
+
+.keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 65px; row-gap: 8px; }
+.key { border: 0; background: transparent; color: var(--ink-1); font-family: inherit; font-size: 28px; font-weight: 400; line-height: 1;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 12px; }
+.key:active { background: var(--fill-3); }
+
+.save-wrap { flex: none; padding: 16px 20px 0; }
+.save-wrap.tight { padding-top: 12px; }
+.save { width: 100%; height: 56px; border: 0; border-radius: 14px; background: var(--btn-bg); color: var(--btn-ink);
+  font-family: inherit; font-size: 19px; font-weight: 600; cursor: pointer; }
+.save:disabled { background: var(--fill-3); color: var(--ink-3); cursor: default; }
+.home { flex: none; height: 34px; }
+
+/* calendar */
+.cal-head { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.cal-head .m { font-weight: 600; }
+.cal-nav { display: flex; gap: 20px; }
+.cal-nav button { border: 0; background: transparent; color: var(--tint); cursor: pointer; padding: 4px; display: flex; }
+.dow, .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.dow div { text-align: center; font-size: 13px; font-weight: 600; color: var(--ink-3); height: 20px; }
+.days { grid-auto-rows: 36px; }
+.day { display: flex; align-items: center; justify-content: center; }
+.day button { width: 36px; height: 36px; border-radius: 18px; border: 0; background: transparent; color: var(--ink-1);
+  font-family: inherit; font-size: 19px; font-weight: 400; cursor: pointer; }
+.day button.today { color: var(--tint); }
+.day button.sel { background: var(--tint-soft); color: var(--tint); font-weight: 600; }
+
+/* wheel */
+.wheel { position: relative; height: 180px; flex: none; }
+.wheel .band { position: absolute; left: 0; right: 0; top: 72px; height: 36px; border-radius: 8px; background: var(--fill-3); pointer-events: none; }
+.wheel .cols { position: relative; display: grid; grid-template-columns: minmax(0, .7fr) 34px minmax(0, .85fr) minmax(0, 1.6fr); column-gap: 8px; padding: 0 12px; height: 180px; }
+.col { height: 180px; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; padding-block: 72px;
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); }
+.col::-webkit-scrollbar { display: none; }
+.col.static { overflow: hidden; }
+.it { height: 36px; display: flex; align-items: center; scroll-snap-align: center; white-space: nowrap;
+  font-size: 17px; color: var(--ink-3); transition: color .12s, font-size .12s; cursor: pointer; }
+.it.near { font-size: 20px; color: var(--ink-2); }
+.it.on { font-size: 22px; color: var(--ink-1); }
+.c-r .it { justify-content: flex-end; } .c-c .it { justify-content: center; } .c-l .it { justify-content: flex-start; }
+.caption { text-align: center; font-size: 15px; color: var(--ink-2); min-height: 20px; }
+
+/* category list */
+.list { overflow-y: auto; scrollbar-width: none; }
+.list::-webkit-scrollbar { display: none; }
+.lrow { width: 100%; height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 4px;
+  border: 0; border-bottom: .5px solid var(--sep); background: transparent; color: var(--ink-1);
+  font: inherit; text-align: left; cursor: pointer; }
+.lrow .e { width: 28px; display: flex; justify-content: center; font-size: 22px; line-height: 1; }
+.lrow .t { flex: 1; font-size: 17px; }
+.lrow .ck { color: var(--tint); display: flex; }
+.lrow.add { color: var(--tint); }
+
+/* new category */
+.newcat { flex: none; padding: 16px 20px 0; display: flex; align-items: center; gap: 12px; height: 72px; }
+.emoji-slot { flex: none; width: 48px; height: 48px; border-radius: 24px; border: 1.5px dashed var(--ink-3); background: transparent;
+  color: var(--ink-3); display: flex; align-items: center; justify-content: center; font-size: 26px; line-height: 1; cursor: pointer; }
+.emoji-slot.focus { border-color: var(--tint); color: var(--tint); }
+.emoji-slot.filled { border: 0; background: var(--fill-3); }
+.catname { flex: 1; height: 44px; border-radius: 22px; border: 0; background: var(--fill-3); padding: 0 16px;
+  font-family: inherit; font-size: 17px; color: var(--ink-1); outline: none; caret-color: var(--tint); }
+.catname::placeholder { color: var(--ink-2); }
+
+/* keyboard stand-ins */
+.kbd { flex: none; height: 336px; margin-top: 12px; background: var(--fill-4); position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--ink-3); font-size: 14px; }
+.kbd .done { position: absolute; right: 12px; bottom: 50px; height: 42px; padding: 0 18px; border-radius: 8px; border: 0;
+  background: var(--tint); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.egrid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 0 12px; width: 100%; }
+.egrid button { height: 40px; border: 0; background: transparent; font-size: 28px; line-height: 1; cursor: pointer; border-radius: 8px; }
+.egrid button:hover { background: var(--fill-3); }
+.klabel { font-size: 12px; color: var(--ink-3); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+button:focus-visible { outline: 2px solid var(--tint); outline-offset: 2px; }
+input:focus, input:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) { .sheet, .scrim { transition: none; } .trow.fresh { animation: none; } }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>Tilly — adding an expense</h1>
+  <p class="sub">Prototype · 19 September 2026 · the entry design and the Calendar-style shell</p>
+
+  <fieldset>
+    <legend>appearance</legend>
+    <div class="seg" id="c-theme">
+      <button data-v="light" aria-pressed="true">light</button>
+      <button data-v="dark" aria-pressed="false">dark</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>the store</legend>
+    <div class="seg" id="c-cats">
+      <button data-v="set" aria-pressed="true">in use</button>
+      <button data-v="none" aria-pressed="false">first run, empty</button>
+    </div>
+    <p class="note">"In use" has invented bills going back to a car insurance renewal last
+      October. "First run" has no expenses and no categories, so your first expense makes your
+      first category. Switching starts the store over.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>try</legend>
+    <p class="note" style="margin-top:0">Scroll down into history: each month's header takes over
+      the top row, beside +. Tap <b>September</b> at the bottom to come back. Add a bill that
+      ends: its rows say "· ends" and its repeat button shows the month it ends. Tap the gear for
+      Settings. "Today" is fixed at 17 September 2026. On a computer you can type the amount on
+      your own keyboard.</p>
+  </fieldset>
+
+  <div class="lies">
+    <b>What this lies about.</b> A browser is not iOS.
+    <ul>
+      <li>no system keyboards: the grey blocks stand in, and the emoji grid stands in for the
+        emoji keyboard; it isn't a proposed set</li>
+      <li>no wheel physics or haptics: the wheel is scroll snapping</li>
+      <li>no Liquid Glass, sheet detents, or a sheet that follows your thumb</li>
+      <li>no Dynamic Type: at accessibility sizes three equal buttons can't hold, and what they
+        become is unsolved</li>
+      <li>no VoiceOver, rubber-band overscroll or iOS momentum</li>
+      <li>no day grouping, no unlock bar for months further ahead, and your place isn't kept
+        between visits</li>
+    </ul>
+  </div>
+</div>
+
+<div class="device" id="device">
+  <div class="timeline" id="timeline"></div>
+  <div class="inset"></div>
+  <button class="glass g-add" id="nav-add" aria-label="Add an expense"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4.5v15M4.5 12h15"/></svg></button>
+  <button class="glass g-month" id="nav-month" aria-label="Back to this month">September</button>
+  <button class="glass g-settings" id="nav-settings" aria-label="Settings"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7.2"/><circle cx="12" cy="12" r="2.8"/><path d="M20.2 12h2.4M17.8 17.8l1.7 1.7M12 20.2v2.4M6.2 17.8l-1.7 1.7M3.8 12H1.4M6.2 6.2L4.5 4.5M12 3.8V1.4M17.8 6.2l1.7-1.7" stroke-width="3"/></svg></button>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="sheet" id="settings" role="dialog" aria-label="Settings">
+    <div class="grabber"></div>
+    <div class="bar" style="position: relative;"><button class="close" id="settings-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="stitle">Settings</span></div>
+    <div class="sbody">
+      <div class="sgroup">Categories</div>
+      <div id="setcats"></div>
+      <p class="snote">What tapping a category does, and what else Settings holds, isn't designed
+        yet. New categories are made while adding an expense.</p>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet" role="dialog" aria-label="New expense">
+    <div class="grabber"></div>
+    <div class="bar"><button class="close" id="close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+
+    <div class="top">
+      <div class="amount zero" id="amount" role="button" aria-label="Amount">€0</div>
+      <input class="name" id="name" placeholder="Name it" autocomplete="off" aria-label="Name">
+    </div>
+
+    <div class="buttons">
+      <button class="btn" id="b-date" aria-label="Date"></button>
+      <button class="btn" id="b-repeat" aria-label="Repeat"></button>
+      <button class="btn" id="b-cat" aria-label="Category"></button>
+    </div>
+
+    <div class="lower">
+      <div class="newcat" id="newcat" hidden>
+        <button class="emoji-slot" id="emoji-slot" aria-label="Choose an emoji"></button>
+        <input class="catname" id="catname" placeholder="Name" autocomplete="off" aria-label="Category name">
+      </div>
+      <div class="area" id="a-keypad"><div class="keypad" id="keypad"></div></div>
+      <div class="area" id="a-date" hidden></div>
+      <div class="area" id="a-repeat" hidden>
+        <div class="wheel">
+          <div class="band"></div>
+          <div class="cols">
+            <div class="col static c-r"><div class="it on">Every</div></div>
+            <div class="col c-c" id="w-n"></div>
+            <div class="col c-l" id="w-unit"></div>
+            <div class="col c-l" id="w-end"></div>
+          </div>
+        </div>
+        <div class="caption" id="caption"></div>
+      </div>
+      <div class="area" id="a-cat" hidden><div class="list" id="catlist"></div></div>
+      <div class="save-wrap" id="save-wrap"><button class="save" id="save" disabled>Save</button></div>
+      <div class="kbd" id="kbd-text" hidden>
+        <span>System keyboard</span>
+        <span class="klabel">type on your own keyboard</span>
+        <button class="done" id="kbd-done">Done</button>
+      </div>
+      <div class="kbd" id="kbd-emoji" hidden>
+        <span class="klabel">stand-in for the system emoji keyboard</span>
+        <div class="egrid" id="egrid"></div>
+      </div>
+      <div class="home" id="home"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const TODAY = { y: 2026, m: 8, d: 17 };                 // month is 0-based
+
+/* ── icons ── */
+const svg = (body, sw = 2, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const ICON = {
+  cal: svg('<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'),
+  calClock: svg('<path d="M21 10.5v-3a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h4.5M3 9.5h18M8 2.5v4M16 2.5v4"/><circle cx="17.5" cy="17.5" r="4.5"/><path d="M17.5 15.3v2.3l1.4 1.2"/>'),
+  repeat: svg('<path d="M17 2.5l3 3-3 3"/><path d="M4 11.5v-1a5 5 0 0 1 5-5h11"/><path d="M7 21.5l-3-3 3-3"/><path d="M20 12.5v1a5 5 0 0 1-5 5H4"/>'),
+  ends: svg('<path d="M3 12h13"/><path d="M11 6.5l5.5 5.5-5.5 5.5"/><path d="M20.5 5v14"/>'),
+  tag: svg('<path d="M3 11.2V4a1 1 0 0 1 1-1h7.2a1 1 0 0 1 .7.3l9 9a1 1 0 0 1 0 1.4l-7.2 7.2a1 1 0 0 1-1.4 0l-9-9a1 1 0 0 1-.3-.7z"/><circle cx="7.5" cy="7.5" r="1.3"/>'),
+  back: svg('<path d="M21 5H9.5L3 12l6.5 7H21a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17.5 9.5l-5 5M12.5 9.5l5 5"/>', 1.6, 26),
+  left: svg('<path d="M15 6l-6 6 6 6"/>', 2.6), right: svg('<path d="M9 6l6 6-6 6"/>', 2.6),
+  check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.6), plus: svg('<path d="M12 5v14M5 12h14"/>', 2.4),
+  smile: svg('<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>', 2, 22),
+};
+
+/* ── calendar arithmetic: whole days and months, never elapsed time ── */
+const dim = (y, m) => new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+const cmp = (a, b) => (a.y - b.y) || (a.m - b.m) || (a.d - b.d);
+function addDays(p, n) { const t = new Date(Date.UTC(p.y, p.m, p.d + n)); return { y: t.getUTCFullYear(), m: t.getUTCMonth(), d: t.getUTCDate() }; }
+// The k-th occurrence, always generated from the anchor, never from the previous one.
+function occurrence(anchor, n, unit, k) {
+  if (unit === "day") return addDays(anchor, k * n);
+  if (unit === "week") return addDays(anchor, k * n * 7);
+  const months = k * n * (unit === "year" ? 12 : 1);
+  const total = anchor.m + months, y = anchor.y + Math.floor(total / 12), m = ((total % 12) + 12) % 12;
+  return { y, m, d: Math.min(anchor.d, dim(y, m)) };
+}
+const short = (p) => `${MONTHS[p.m]} ${p.d}`;
+const long = (p) => `${MONTHS[p.m]} ${p.d}, ${p.y}`;
+const mmyy = (p) => `${String(p.m + 1).padStart(2, "0")}/${String(p.y % 100).padStart(2, "0")}`;
+
+/* ── state ── */
+const UNITS = ["day", "week", "month", "year"];
+const EVERY1 = { day: "Daily", week: "Weekly", month: "Monthly", year: "Yearly" };
+const END_MAX = 120;
+let S, categories, items, catsVariant = "set";
+
+function freshEditor() {
+  return { digits: "", name: "", date: { ...TODAY }, n: 1, unit: "month", end: 0, cat: null,
+           mode: "keypad", view: { y: TODAY.y, m: TODAY.m }, newEmoji: null };
+}
+// Invented sample data.
+const SAMPLE_CATS = [
+  { id: "home", emoji: "🏠", name: "Home" }, { id: "subs", emoji: "📺", name: "Subscriptions" },
+  { id: "phone", emoji: "📱", name: "Phone" }, { id: "car", emoji: "🚗", name: "Car" },
+  { id: "health", emoji: "🏋️", name: "Health" }, { id: "loans", emoji: "💳", name: "Loans" },
+];
+const SAMPLE_ITEMS = [
+  { name: "Rent", amt: 950, anchor: { y: 2026, m: 6, d: 1 }, n: 1, unit: "month", end: 0, cat: "home" },
+  { name: "Cloud storage", amt: 3, anchor: { y: 2026, m: 6, d: 5 }, n: 1, unit: "month", end: 0, cat: "subs" },
+  { name: "Electricity", amt: 68, anchor: { y: 2026, m: 6, d: 8 }, n: 1, unit: "month", end: 0, cat: "home" },
+  { name: "Phone plan", amt: 25, anchor: { y: 2026, m: 6, d: 12 }, n: 1, unit: "month", end: 0, cat: "phone" },
+  { name: "Car insurance", amt: 1240, anchor: { y: 2025, m: 9, d: 14 }, n: 1, unit: "year", end: 0, cat: "car" },
+  { name: "Sofa", amt: 67, anchor: { y: 2026, m: 5, d: 18 }, n: 1, unit: "month", end: 12, cat: "loans" },
+  { name: "Streaming", amt: 13, anchor: { y: 2026, m: 6, d: 20 }, n: 1, unit: "month", end: 0, cat: "subs" },
+  { name: "Water", amt: 45, anchor: { y: 2026, m: 6, d: 22 }, n: 3, unit: "month", end: 0, cat: "home" },
+  { name: "Gym", amt: 40, anchor: { y: 2026, m: 6, d: 28 }, n: 1, unit: "month", end: 0, cat: "health" },
+];
+function seed() {
+  const withCats = catsVariant === "set";
+  categories = withCats ? SAMPLE_CATS.map((c) => ({ ...c })) : [];
+  items = withCats ? SAMPLE_ITEMS.map((it) => ({ ...it })) : [];     // first run: nothing at all
+  S = freshEditor();
+}
+const emojiFor = (it) => (categories.find((c) => c.id === it.cat) || {}).emoji || "";
+const lastOf = (it) => occurrence(it.anchor, it.n, it.unit, it.end - 1);
+// The second line is the date, plus the end on a bill that ends.
+const rowExtra = (it) => (it.end ? ` · ends ${mmyy(lastOf(it))}` : "");
+
+/* ── timeline ── */
+const monthName = (mo) => MONTHS_LONG[mo.m] + (mo.y === TODAY.y ? "" : " " + mo.y);
+function renderTimeline(freshName) {
+  const tl = $("#timeline");
+  if (!items.length) {
+    tl.innerHTML = `<section data-current="1"><div class="mhead"><span class="n">${MONTHS_LONG[TODAY.m]}</span></div>` +
+      `<p class="empty">Add a bill or a subscription and it shows up here before it goes out.</p></section>`;
+    return;
+  }
+  // Next month is open above this one; history runs down to the oldest charge. Empty months aren't listed.
+  const byMonth = new Map();
+  let oldest = null;
+  const top = { y: TODAY.m === 11 ? TODAY.y + 1 : TODAY.y, m: (TODAY.m + 1) % 12 };
+  for (const it of items) {
+    for (let k = 0; k < 400; k++) {
+      if (it.end && k >= it.end) break;
+      const o = occurrence(it.anchor, it.n, it.unit, k);
+      if (o.y > top.y || (o.y === top.y && o.m > top.m)) break;
+      const key = o.y * 12 + o.m;
+      if (!byMonth.has(key)) byMonth.set(key, []);
+      byMonth.get(key).push({ it, o, k });
+      if (!oldest || cmp(o, oldest) < 0) oldest = o;
+    }
+  }
+  let html = "";
+  for (const key of [...byMonth.keys()].sort((a, b) => b - a)) {
+    const mo = { y: Math.floor(key / 12), m: key % 12 };
+    const rows = byMonth.get(key).sort((a, b) => cmp(b.o, a.o));
+    const current = mo.m === TODAY.m && mo.y === TODAY.y;
+    const upcoming = rows.filter((r) => cmp(r.o, TODAY) > 0);
+    const total = (current ? upcoming : rows).reduce((s, r) => s + Math.round(r.it.amt), 0);
+    html += `<section${current ? ' data-current="1"' : ""}><div class="mhead"><span class="n">${monthName(mo)}</span>` +
+      `<span class="t">${total ? "−" : ""}€${total.toLocaleString("en-IE")}${current ? " left" : ""}</span></div>`;
+    for (const r of rows) {
+      const up = cmp(r.o, TODAY) > 0;
+      html += `<div class="trow ${up ? "upcoming" : ""} ${r.it.name === freshName ? "fresh" : ""}">` +
+        `<div class="well">${emojiFor(r.it)}</div>` +
+        `<div class="mid"><div class="nm">${esc(r.it.name)}</div><div class="dt">${short(r.o)}${rowExtra(r.it)}</div></div>` +
+        `<div class="am">−€${Math.round(r.it.amt).toLocaleString("en-IE")}</div></div>`;
+    }
+    html += `</section>`;
+  }
+  const floor = { y: oldest.y, m: oldest.m };
+  tl.innerHTML = html + `<p class="floor">Nothing before ${monthName(floor)}.</p>`;
+  markPinned();
+}
+// A hairline under the header only while it's pinned.
+function markPinned() {
+  const top = $("#timeline").getBoundingClientRect().top + 59;
+  document.querySelectorAll("#timeline section").forEach((sec) => {
+    sec.firstElementChild.classList.toggle("pinned", sec.getBoundingClientRect().top < top - 0.5);
+  });
+}
+$("#timeline").addEventListener("scroll", () => requestAnimationFrame(markPinned), { passive: true });
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+/* ── editor rendering ── */
+function amountText() {
+  if (!S.digits) return "€0";
+  const [w, c] = S.digits.split(".");
+  return "€" + Number(w || 0).toLocaleString("en-IE") + (c !== undefined ? "." + c : "");
+}
+function fitAmount() {
+  const el = $("#amount");
+  el.style.fontSize = "80px";
+  const w = el.scrollWidth;
+  if (w > 353) el.style.fontSize = Math.floor(80 * 353 / w) + "px";
+  el.style.letterSpacing = (-parseFloat(el.style.fontSize) / 40) + "px";
+}
+function repeatLabel() {
+  if (S.end) return mmyy(occurrence(S.date, S.n, S.unit, S.end - 1));
+  return S.n === 1 ? EVERY1[S.unit] : `${S.n} ${S.unit}s`;
+}
+const valid = () => Number(S.digits) > 0 && S.name.trim().length > 0 && categories.some((c) => c.id === S.cat);
+
+function renderButtons() {
+  const future = cmp(S.date, TODAY) > 0;
+  const bd = $("#b-date"), br = $("#b-repeat"), bc = $("#b-cat");
+  bd.innerHTML = (future ? ICON.calClock : ICON.cal) + `<span class="lbl">${short(S.date)}</span>`;
+  br.innerHTML = (S.end ? ICON.ends : ICON.repeat) + `<span class="lbl">${repeatLabel()}</span>`;
+  const cat = categories.find((c) => c.id === S.cat);
+  bc.innerHTML = cat ? `<span class="emo">${cat.emoji}</span>` : ICON.tag;
+  bc.setAttribute("aria-label", cat ? `Category, ${cat.name}` : "Category, none");
+  bd.classList.toggle("active", S.mode === "date");
+  br.classList.toggle("active", S.mode === "repeat");
+  bc.classList.toggle("active", S.mode === "cat" || S.mode.startsWith("new"));
+}
+
+function render() {
+  const a = $("#amount");
+  a.textContent = amountText();
+  a.classList.toggle("zero", !S.digits);
+  fitAmount();
+  if ($("#name").value !== S.name) $("#name").value = S.name;
+  $("#save").disabled = !valid();
+  renderButtons();
+
+  const m = S.mode;
+  const newing = m === "newEmoji" || m === "newName";
+  $("#a-keypad").hidden = m !== "keypad";
+  $("#a-date").hidden = m !== "date";
+  $("#a-repeat").hidden = m !== "repeat";
+  $("#a-cat").hidden = m !== "cat";
+  $("#newcat").hidden = !newing;
+  $("#save-wrap").hidden = newing;
+  $("#save-wrap").classList.toggle("tight", m === "name");
+  $("#kbd-text").hidden = !(m === "name" || m === "newName");
+  $("#kbd-emoji").hidden = m !== "newEmoji";
+  $("#home").hidden = m === "name" || newing;
+
+  if (m === "date") renderCalendar();
+  if (m === "repeat") updateCaption();
+  if (m === "cat") renderCats();
+  if (newing) {
+    const slot = $("#emoji-slot");
+    slot.innerHTML = S.newEmoji || ICON.smile;
+    slot.classList.toggle("filled", !!S.newEmoji);
+    slot.classList.toggle("focus", m === "newEmoji");
+  }
+}
+
+function setMode(m) {
+  const was = S.mode;
+  S.mode = m;
+  if (m !== "name" && document.activeElement === $("#name")) $("#name").blur();
+  if (m !== "newName" && document.activeElement === $("#catname")) $("#catname").blur();
+  render();
+  if (m === "repeat" && was !== "repeat") syncWheel();
+  if (m === "newName") $("#catname").focus();
+}
+// Tapping the open picker's button again puts the keypad back.
+const toggle = (m) => setMode(S.mode === m || (m === "cat" && S.mode.startsWith("new")) ? "keypad" : m);
+
+/* ── keypad ── */
+const KEYS = ["1","2","3","4","5","6","7","8","9",".","0","⌫"];
+$("#keypad").innerHTML = KEYS.map((k) => `<button class="key" data-k="${k}" aria-label="${k === "⌫" ? "Delete" : k}">${k === "⌫" ? ICON.back : k}</button>`).join("");
+function press(k) {
+  if (k === "⌫") S.digits = S.digits.slice(0, -1);
+  else if (k === ".") { if (!S.digits.includes(".")) S.digits = (S.digits || "0") + "."; }
+  else {
+    const [w, c] = S.digits.split(".");
+    if (c !== undefined && c.length >= 2) return;
+    if (c === undefined && w.length >= 7) return;
+    if (S.digits === "0") S.digits = "";
+    S.digits += k;
+  }
+  render();
+}
+$("#keypad").addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (b) press(b.dataset.k); });
+document.addEventListener("keydown", (e) => {
+  if (!$("#sheet").classList.contains("on") || S.mode !== "keypad") return;
+  if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+  if (/^[0-9.]$/.test(e.key)) press(e.key);
+  else if (e.key === "Backspace") press("⌫");
+});
+$("#amount").addEventListener("click", () => setMode("keypad"));
+
+/* ── name ── */
+$("#name").addEventListener("focus", () => { if (S.mode !== "name") setMode("name"); });
+$("#name").addEventListener("input", (e) => { S.name = e.target.value; $("#save").disabled = !valid(); });
+$("#name").addEventListener("keydown", (e) => { if (e.key === "Enter") setMode("keypad"); });
+$("#kbd-done").addEventListener("click", () => {
+  if (S.mode === "newName") addCategory(); else setMode("keypad");
+});
+
+/* ── date ── */
+function renderCalendar() {
+  const { y, m } = S.view;
+  const first = (new Date(Date.UTC(y, m, 1)).getUTCDay() + 6) % 7;   // Monday first
+  let days = "";
+  for (let i = 0; i < first; i++) days += `<div class="day"></div>`;
+  for (let d = 1; d <= dim(y, m); d++) {
+    const p = { y, m, d };
+    const cls = [cmp(p, S.date) === 0 ? "sel" : "", cmp(p, TODAY) === 0 ? "today" : ""].join(" ");
+    days += `<div class="day"><button class="${cls}" data-d="${d}">${d}</button></div>`;
+  }
+  $("#a-date").innerHTML =
+    `<div><div class="cal-head"><span class="m">${MONTHS_LONG[m]} ${y}</span>` +
+    `<span class="cal-nav"><button data-nav="-1" aria-label="Previous month">${ICON.left}</button><button data-nav="1" aria-label="Next month">${ICON.right}</button></span></div>` +
+    `<div class="dow">${["MON","TUE","WED","THU","FRI","SAT","SUN"].map((x) => `<div>${x}</div>`).join("")}</div>` +
+    `<div class="days">${days}</div></div>`;
+}
+$("#a-date").addEventListener("click", (e) => {
+  const nav = e.target.closest("[data-nav]");
+  if (nav) {
+    const t = S.view.m + Number(nav.dataset.nav);
+    S.view = { y: S.view.y + Math.floor(t / 12), m: ((t % 12) + 12) % 12 };
+    renderCalendar();
+    return;
+  }
+  const d = e.target.closest("[data-d]");
+  if (d) { S.date = { y: S.view.y, m: S.view.m, d: Number(d.dataset.d) }; renderCalendar(); renderButtons(); }
+});
+
+/* ── repeat wheel ── */
+const ITEM = 36;
+const wN = $("#w-n"), wUnit = $("#w-unit"), wEnd = $("#w-end");
+wN.innerHTML = Array.from({ length: 30 }, (_, i) => `<div class="it">${i + 1}</div>`).join("");
+wEnd.innerHTML = `<div class="it">no end</div>` +
+  Array.from({ length: END_MAX - 1 }, (_, i) => `<div class="it">${i + 2} payments</div>`).join("");
+function unitRows() {
+  wUnit.innerHTML = UNITS.map((u) => `<div class="it">${S.n === 1 ? u : u + "s"}</div>`).join("");
+}
+function paint(col) {
+  const i = Math.round(col.scrollTop / ITEM);
+  [...col.children].forEach((el, j) => {
+    el.classList.toggle("on", j === i);
+    el.classList.toggle("near", Math.abs(j - i) === 1);
+  });
+  return i;
+}
+function syncWheel() {
+  unitRows();
+  wN.scrollTop = (S.n - 1) * ITEM;
+  wUnit.scrollTop = UNITS.indexOf(S.unit) * ITEM;
+  wEnd.scrollTop = (S.end ? S.end - 1 : 0) * ITEM;
+  [wN, wUnit, wEnd].forEach(paint);
+}
+function updateCaption() {
+  $("#caption").textContent = S.end ? `Last payment ${long(occurrence(S.date, S.n, S.unit, S.end - 1))}` : "";
+}
+function onWheel(col, apply) {
+  let raf = 0;
+  col.addEventListener("scroll", () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const i = paint(col);
+      if (apply(i)) { updateCaption(); renderButtons(); }
+    });
+  }, { passive: true });
+  col.addEventListener("click", (e) => {
+    const it = e.target.closest(".it");
+    if (it) col.scrollTo({ top: [...col.children].indexOf(it) * ITEM, behavior: "smooth" });
+  });
+}
+onWheel(wN, (i) => {
+  const n = Math.min(30, i + 1);
+  if (n === S.n) return false;
+  const plural = (S.n === 1) !== (n === 1);
+  S.n = n;
+  if (plural) { const top = wUnit.scrollTop; unitRows(); wUnit.scrollTop = top; paint(wUnit); }
+  return true;
+});
+onWheel(wUnit, (i) => { const u = UNITS[Math.min(3, i)]; if (u === S.unit) return false; S.unit = u; return true; });
+onWheel(wEnd, (i) => { const e = i === 0 ? 0 : Math.min(END_MAX, i + 1); if (e === S.end) return false; S.end = e; return true; });
+
+/* ── categories ── */
+function renderCats() {
+  $("#catlist").innerHTML = categories.map((c) =>
+    `<button class="lrow" data-cat="${c.id}"><span class="e">${c.emoji}</span><span class="t">${esc(c.name)}</span>` +
+    (c.id === S.cat ? `<span class="ck">${ICON.check}</span>` : "") + `</button>`).join("") +
+    `<button class="lrow add" data-new="1"><span class="e">${ICON.plus}</span><span class="t">New category</span></button>`;
+}
+$("#catlist").addEventListener("click", (e) => {
+  const row = e.target.closest(".lrow");
+  if (!row) return;
+  if (row.dataset.new) { S.newEmoji = null; $("#catname").value = ""; setMode("newEmoji"); return; }
+  S.cat = row.dataset.cat;
+  render();
+});
+// Stand-in for the system emoji keyboard. Not a proposed set: any emoji the keyboard offers is fine.
+const EMOJI = ["🏠","💡","💧","🔥","📱","💻","📺","🎵","🎮","📚","🚗","⛽","🚆","✈️","🚲","🅿️",
+               "🛒","🍽️","☕","🏋️","💊","🩺","🐶","👶","💳","🏦","🧾","🛋️","🎓","🧹","🎁","🌱"];
+$("#egrid").innerHTML = EMOJI.map((x) => `<button data-e="${x}">${x}</button>`).join("");
+$("#egrid").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-e]");
+  if (!b) return;
+  S.newEmoji = b.dataset.e;
+  setMode("newName");
+});
+$("#emoji-slot").addEventListener("click", () => setMode("newEmoji"));
+$("#catname").addEventListener("focus", () => { if (S.mode !== "newName") setMode("newName"); });
+$("#catname").addEventListener("keydown", (e) => { if (e.key === "Enter") addCategory(); });
+function addCategory() {
+  const name = $("#catname").value.trim();
+  if (!S.newEmoji) { setMode("newEmoji"); return; }     // the button shows only the emoji, so it's required
+  if (!name) { $("#catname").focus(); return; }
+  const c = { id: "c" + Date.now(), emoji: S.newEmoji, name };
+  categories.push(c);
+  S.cat = c.id;
+  setMode("cat");
+}
+
+/* ── buttons, sheet ── */
+$("#b-date").addEventListener("click", () => { S.view = { y: S.date.y, m: S.date.m }; toggle("date"); });
+$("#b-repeat").addEventListener("click", () => toggle("repeat"));
+$("#b-cat").addEventListener("click", () => toggle("cat"));
+
+function openSheet() {
+  S = freshEditor();
+  render();
+  $("#scrim").classList.add("on");
+  $("#sheet").classList.add("on");
+}
+function closeSheet() {
+  if (document.activeElement) document.activeElement.blur();
+  $("#scrim").classList.remove("on");
+  $("#sheet").classList.remove("on");
+}
+$("#close").addEventListener("click", closeSheet);
+$("#scrim").addEventListener("click", closeSheet);
+$("#save").addEventListener("click", () => {
+  if (!valid()) return;
+  const name = S.name.trim();
+  const first = !items.length;
+  items.push({ name, amt: Number(S.digits), anchor: { ...S.date }, n: S.n, unit: S.unit, end: S.end, cat: S.cat });
+  closeSheet();
+  renderTimeline(name);
+  if (first) restOnThisMonth();       // the first expense replaces the empty state
+});
+$("#nav-add").addEventListener("click", openSheet);
+
+/* ── this month, and settings ── */
+const currentSection = () => document.querySelector("#timeline section[data-current]");
+// At rest the list sits flush on the current month, with next month above the top.
+function restOnThisMonth() { const sec = currentSection(); if (sec) $("#timeline").scrollTop = sec.offsetTop - 59; markPinned(); }
+$("#nav-month").addEventListener("click", () => {
+  const sec = currentSection();
+  if (sec) $("#timeline").scrollTo({ top: sec.offsetTop - 59, behavior: "smooth" });
+});
+function openSettings() {
+  $("#setcats").innerHTML = categories.length
+    ? categories.map((c) => `<div class="lrow" style="cursor: default;"><span class="e">${c.emoji}</span><span class="t">${esc(c.name)}</span></div>`).join("")
+    : `<p class="snote" style="padding-top: 0;">None yet.</p>`;
+  $("#scrim").classList.add("on");
+  $("#settings").classList.add("on");
+}
+function closeSettings() { $("#settings").classList.remove("on"); if (!$("#sheet").classList.contains("on")) $("#scrim").classList.remove("on"); }
+$("#nav-settings").addEventListener("click", openSettings);
+$("#settings-close").addEventListener("click", closeSettings);
+$("#scrim").addEventListener("click", closeSettings);
+function restart() { closeSheet(); closeSettings(); seed(); renderTimeline(); restOnThisMonth(); }
+$("#reset")?.addEventListener("click", restart);
+
+/* ── controls ── */
+function seg(sel, fn) {
+  document.querySelectorAll(sel + " button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(sel + " button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    fn(b.dataset.v);
+  }));
+}
+seg("#c-theme", (v) => $("#device").classList.toggle("dark", v === "dark"));
+seg("#c-cats", (v) => { catsVariant = v; restart(); });
+
+seed();
+renderTimeline();
+restOnThisMonth();
+</script>
+</body>
+</html>

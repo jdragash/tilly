@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One month's days, descending so the future sits above. Draws no header of its own —
+/// One month's charges, one row each, descending so the future sits above. Draws no header of its own —
 /// `TimelineView` supplies that separately, as a `Section` header, so it can pin. This view
 /// only ever draws an expanded month's content.
 struct MonthSectionView: View {
@@ -9,8 +9,8 @@ struct MonthSectionView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(section.days) { day in
-                DayGroupView(group: day)
+            ForEach(section.entries) { entry in
+                OccurrenceRow(entry: entry)
             }
             if showsFirstWeekLine {
                 Text("This fills in as bills go out.")

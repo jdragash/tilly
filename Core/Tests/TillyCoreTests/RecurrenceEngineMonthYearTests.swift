@@ -27,6 +27,36 @@ import Foundation
         ])
     }
 
+    // A window a century from the anchor. The engine jumps to it rather than walking every
+    // month from the anchor, so these check the jump lands on the right payment.
+    @Test func aWindowFarFromTheAnchorStillClampsFromTheAnchor() {
+        let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: Self.date(2026, 1, 31))
+        let range = DateInterval(start: Self.date(2126, 2, 1), end: Self.date(2126, 2, 28))
+        #expect(RecurrenceEngine.dates(for: rule, in: range, calendar: Self.calendar) == [Self.date(2126, 2, 28)])
+    }
+
+    @Test func aFarWindowStartingMidMonthFindsTheNextPayment() {
+        let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: Self.date(2026, 1, 31))
+        let range = DateInterval(start: Self.date(2126, 3, 15), end: Self.date(2126, 4, 14))
+        #expect(RecurrenceEngine.dates(for: rule, in: range, calendar: Self.calendar) == [Self.date(2126, 3, 31)])
+    }
+
+    @Test func aFarWindowKeepsTheIntervalsPhase() {
+        let rule = RecurrenceRule(interval: 3, unit: .month, anchorDate: Self.date(2026, 1, 31))
+        let range = DateInterval(start: Self.date(2126, 1, 1), end: Self.date(2126, 12, 31))
+        #expect(RecurrenceEngine.dates(for: rule, in: range, calendar: Self.calendar) == [
+            Self.date(2126, 1, 31), Self.date(2126, 4, 30), Self.date(2126, 7, 31), Self.date(2126, 10, 31),
+        ])
+    }
+
+    @Test func aFarYearlyWindowClampsALeapDay() {
+        let rule = RecurrenceRule(interval: 1, unit: .year, anchorDate: Self.date(2028, 2, 29))
+        let ordinary = DateInterval(start: Self.date(2126, 1, 1), end: Self.date(2126, 12, 31))
+        let leap = DateInterval(start: Self.date(2128, 1, 1), end: Self.date(2128, 12, 31))
+        #expect(RecurrenceEngine.dates(for: rule, in: ordinary, calendar: Self.calendar) == [Self.date(2126, 2, 28)])
+        #expect(RecurrenceEngine.dates(for: rule, in: leap, calendar: Self.calendar) == [Self.date(2128, 2, 29)])
+    }
+
     @Test func monthlyAnchoredJan31LeapYearClampsToFeb29() {
         let anchor = Self.date(2028, 1, 31)
         let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor)

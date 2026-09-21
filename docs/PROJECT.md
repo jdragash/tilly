@@ -64,10 +64,11 @@ Ask only for what the app needs in order to work. Everything else is the user's 
 
 **Categories ship empty.** Not a starter set, not suggestions on first run. The user's
 categories are theirs — they might be conventional, they might be private shorthand that
-means nothing to anyone else. Deciding for them is deciding wrong.
+means nothing to anyone else. Deciding for them is deciding wrong. Every expense has one,
+though: amount, name, category and date are the minimum, and the first expense makes the first.
 
-*Test:* is this input required for the feature to function? If not, it's optional, and
-its shape is the user's to choose.
+*Test:* is this input part of that minimum? If not, it's optional, and its shape is the
+user's to choose.
 
 ### 5. Free forever
 

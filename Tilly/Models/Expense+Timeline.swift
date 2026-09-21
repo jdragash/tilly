@@ -6,6 +6,6 @@ extension Expense {
     /// moved into the timeline's query window from outside it, and a date-filtered fetch
     /// would drop exactly the override that says so.
     var timelineExpense: TimelineExpense {
-        TimelineExpense(name: name, snapshot: snapshot, overrides: overrideSnapshots)
+        TimelineExpense(name: name, emoji: category?.emoji, snapshot: snapshot, overrides: overrideSnapshots)
     }
 }

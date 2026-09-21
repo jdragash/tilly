@@ -17,11 +17,10 @@ A month with nothing in it isn't listed rather than shown as €0. A passed date
 never "paid".
 
 **2. The reader's place is theirs: nothing under their eyes moves, and nothing resets it.**
-Unlocking a month opens it above the screen, so the row being read stays exactly where it was.
+The months ahead are all there from the start, so nothing is ever inserted above the row being read.
 
-**3. Bounded, not infinite. Anything that can grow has an end the reader can see.**
-History stops at the oldest charge with a line saying so. Looking further ahead is asked for, and
-puts itself away.
+**3. The list ends where the app's knowledge does, and says so.**
+History stops at the oldest charge with a line saying so. The future runs on for as long as a bill does.
 
 **4. Nothing appears, changes or resets for a reason the reader can't see.**
 Position isn't reset "on next launch", because nobody can tell a relaunch from a switch.
@@ -30,7 +29,7 @@ Position isn't reset "on next launch", because nobody can tell a relaunch from a
 
 **5. A mark that looks the same everywhere says nothing. Spend a distinction only where it
 distinguishes.**
-No separator under every row. A hairline appears only where a grouped day opens and closes.
+No separator under every row. A hairline appears only under a pinned month header.
 
 **6. A word stays only if it does work no other channel does, and then it stays.**
 `−€162 left` keeps "left", and drops "this month" because the month name sits beside it.
@@ -39,7 +38,7 @@ No separator under every row. A hairline appears only where a grouped day opens 
 What's left this month lives in the pinned month header, not in a headline card.
 
 **8. Different kinds of thing never share a look.**
-The pinned header is paper and the floating pill is glass, because only one of them is a control.
+The pinned header is paper and the buttons floating over it are glass, because only they are controls.
 
 ## Shipping
 
@@ -48,8 +47,8 @@ A relaunch returns you to the top of the month you were reading, not the row, an
 says what would lift it.
 
 **10. If a behaviour turns on a number, the design names the number.**
-The return pill appears 240pt from rest. Written as "away from the month", it was built as a full
+The old return pill appeared 240pt from rest. Written as "away from the month", it was built as a full
 screen.
 
 **11. Stock platform first, behind a seam. Layer on the system, don't fight it.**
-The return pill is the stock glass button, and every value it uses sits behind `Tokens`.
+The month button is the stock glass button, and every value it uses sits behind `Tokens`.

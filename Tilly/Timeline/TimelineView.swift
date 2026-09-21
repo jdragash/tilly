@@ -1,15 +1,16 @@
 import SwiftData
 import SwiftUI
 
-/// The timeline: next month always open above, history running continuously below down to
-/// the oldest charge entered. See
-/// "The timeline is one list, future above and past below, bounded at both ends" in
+/// The timeline: months ahead running on above for as long as any bill does, history running
+/// continuously below down to the oldest charge entered. See
+/// "The timeline is one list, future above and past below, and the future runs five years on" in
 /// `docs/DECISIONS.md`.
 struct TimelineView: View {
     @Query private var expenses: [Expense]
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.timelinePlaceStore) private var placeStore
 
     @State private var today = Date()
     @State private var window: TimelineWindow?
@@ -19,14 +20,22 @@ struct TimelineView: View {
     @State private var viewportHeight: CGFloat = 0
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasRestoredPlace = false
-    @State private var isUnlockLatched = false
     @State private var isProgrammaticScroll = false
+    @State private var isScrollHalted = false
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
-    @State private var pillClearance: CGFloat = Tokens.Space.floatingClearance
+    @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
+    @State private var containerHeight: CGFloat = 0
+    @State private var currentContentTop: CGFloat?
+    @State private var floorLineBottom: CGFloat?
+    @State private var floorSpacer: CGFloat = 0
+    @State private var isEditorPresented = false
+    @State private var isSettingsPresented = false
 
-    private let placeStore = TimelinePlaceStore()
     private static let scrollSpace = "timelineScroll"
+    /// The list's own content, which scrolling doesn't move: distances measured here hold
+    /// still while the list scrolls.
+    private static let contentSpace = "timelineContent"
 
     /// The last month (in top-to-bottom document order) whose header has reached the
     /// container's top edge. Derived fresh from every header's live offset rather than
@@ -41,91 +50,79 @@ struct TimelineView: View {
         visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= 0 }
     }
 
-    /// Months from the top of the window down to the floor, with an empty month dropped
-    /// unless it's the current month, the one after, or anything unlocked beyond that — all
-    /// of those always render, empty or not, because they're either the month the header
-    /// speaks for or a month the reader deliberately opened. See "History stops where your
-    /// oldest charge does" in `docs/DESIGN.md`.
+    /// Months from the ceiling down to the floor, with an empty month dropped unless it's the
+    /// current month or the one after, which always render, empty or not. See "The future runs
+    /// five years ahead, or to your last payment" and "History stops where your oldest charge does" in
+    /// `docs/DESIGN.md`.
     private var visibleMonths: [MonthKey] {
         guard let window else { return [] }
+        let nextMonth = window.current.advanced(by: 1)
         return window.months.filter { month in
-            month >= window.current || !(sections[month]?.isEmpty ?? true)
+            month == window.current || month == nextMonth || !(sections[month]?.isEmpty ?? true)
         }
     }
 
     /// The month under the middle of the viewport — the one actually being read, and the
-    /// only anchor that survives opening or closing a month without visibly moving. The
-    /// top-most visible item is wrong (it's the bar about to be tapped, so preserving it
-    /// shoves the read month off screen); total content height is wrong too, because one
-    /// gesture can add a month at one end and drop one at the other. See
-    /// `.claude/rules/swiftui-scrolling.md`.
+    /// only anchor that survives a month being added or dropped without visibly moving. The
+    /// top-most visible item is wrong (preserving it can shove the read month off screen);
+    /// total content height is wrong too, because one change can add a month at one end and
+    /// drop one at the other. See `.claude/rules/swiftui-scrolling.md`.
     private func monthUnderMiddle() -> MonthKey? {
         let middleY = viewportHeight / 2
         return visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= middleY }
     }
 
     /// How far the reader has travelled from the resting position: positive below it (back
-    /// in history), negative above it (in an unlocked month ahead). `nil` until there is
-    /// enough geometry to say.
+    /// in history), negative above it (in a month ahead). `nil` until there is enough
+    /// geometry to say. It sets how long the month button's return takes.
     ///
-    /// Deliberately not `headerOffsets[window.current]`, the way `updateLatch` reads it —
-    /// `LazyVStack` stops laying out (and therefore stops measuring) a header once it is far
-    /// enough off screen, which freezes that dictionary entry at whatever it last was.
-    /// Confirmed on device: scrolling several months into history left it stuck around
-    /// −110pt, well short of a screenful, so a distance check against it never tripped.
-    /// `updateLatch` never meets this because an unlocked month is at most a couple of
-    /// screens away; a reader can scroll arbitrarily far into history, so this needs a
-    /// signal `LazyVStack` can't stop measuring. `scrollOffset` comes straight off the
-    /// `ScrollView` itself, which is never recycled, and `restingContentOffset` is a cached
-    /// "what `scrollOffset` would be if the current month's header were at the top" —
-    /// refreshed whenever that header happens to be mounted, and stable in between because
-    /// nothing but an unlock, a close, or a day change moves the current month within the
-    /// content.
+    /// Deliberately not `headerOffsets[window.current]` — `LazyVStack` stops laying out (and
+    /// therefore stops measuring) a header once it is far enough off screen, which freezes
+    /// that dictionary entry at whatever it last was. Confirmed on device: scrolling several
+    /// months into history left it stuck around −110pt, well short of a screenful. A reader
+    /// can scroll arbitrarily far either way, so this needs a signal `LazyVStack` can't stop
+    /// measuring. `scrollOffset` comes straight off the `ScrollView` itself, which is never
+    /// recycled, and `restingContentOffset` is a cached "what `scrollOffset` would be if the
+    /// current month's header were at the top" — refreshed whenever that header happens to be
+    /// mounted, and stable in between because nothing but a day change moves the current
+    /// month within the content.
     private var returnDistance: CGFloat? {
         guard viewportHeight > 0, let restingContentOffset else { return nil }
         return scrollOffset - restingContentOffset
-    }
-
-    /// Which way `LatestButton` points — deliberately defined at *every* distance, including
-    /// the ones where the pill is hidden. The pill is never removed from the tree (see the
-    /// overlay), so a direction that fell back to a default while hidden would flip at the
-    /// same instant the pill faded in, and the reader would watch the arrow cross-dissolve
-    /// from up to down as it arrived. Reading the sign instead means direction only ever
-    /// changes as the reader passes *through* the resting position, which is the one place
-    /// the pill is guaranteed to be invisible.
-    private var returnDirection: LatestButton.Direction {
-        (returnDistance ?? 0) < 0 ? .down : .up
-    }
-
-    /// Whether the pill shows at all: once the reader is `Tokens.Space.returnThreshold` from
-    /// the resting position in either direction — about a third of a screen, so it arrives
-    /// as soon as the current month is behind you rather than several months later. A full
-    /// viewport was tried and is far too far: it left the pill hidden two months into
-    /// history. See "Getting back" in `docs/DESIGN.md`.
-    private var isReturnVisible: Bool {
-        guard let returnDistance else { return false }
-        return abs(returnDistance) > Tokens.Space.returnThreshold
     }
 
     /// How long the return scroll should take, scaled to the distance actually travelled.
     /// `scrollTo` does animate — measured on device, not the snap it looks like — but at
     /// `.default`'s fixed duration a return from deep history covers two thousand points in
     /// under a third of a second, which reads as a jump rather than as travel.
+    ///
+    /// An unknown distance takes the longest duration, not the shortest. The distance is
+    /// unknown exactly when the current month's header has never been laid out — which means
+    /// it is far off screen, as after a relaunch two years ahead, where the shortest duration
+    /// read as a jump.
     private var returnDuration: TimeInterval {
-        let distance = abs(returnDistance ?? 0)
+        guard let distance = returnDistance.map(abs) else { return Tokens.Motion.returnDurationMax }
         let scaled = TimeInterval(distance / Tokens.Motion.returnPointsPerSecond)
         return min(Tokens.Motion.returnDurationMax, max(Tokens.Motion.returnDurationMin, scaled))
     }
 
     var body: some View {
         GeometryReader { rootProxy in
-            content(topInset: rootProxy.safeAreaInsets.top)
+            content(topInset: rootProxy.safeAreaInsets.top, bottomInset: rootProxy.safeAreaInsets.bottom)
         }
+        // A sheet's keyboard shrinks the screen behind it too, and the bottom row rode up
+        // behind the editor to sit on the keyboard (measured: y 772 → 418). The timeline has
+        // no text field of its own, so it ignores the keyboard whole: ignoring it on the row
+        // alone isn't enough, because the row follows the bottom of what it sits in.
+        .ignoresSafeArea(.keyboard)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
         .onAppear(perform: setUpIfNeeded)
-        .onChange(of: expenses) { _, _ in rebuildSections() }
+        // The first expense arrives with no window yet, because `setUpIfNeeded` found no
+        // floor on appear; without setting up here the list would stay blank.
+        .onChange(of: expenses) { _, _ in
+            if window == nil { setUpIfNeeded() } else { rebuildSections() }
+        }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
-        .onChange(of: headerOffsets) { _, _ in updateLatch() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active, hasRestoredPlace { saveCurrentPlace() }
         }
@@ -135,7 +132,7 @@ struct TimelineView: View {
     }
 
     @ViewBuilder
-    private func content(topInset: CGFloat) -> some View {
+    private func content(topInset: CGFloat, bottomInset: CGFloat) -> some View {
         Group {
             if expenses.isEmpty {
                 TimelineEmptyState()
@@ -143,7 +140,7 @@ struct TimelineView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                            CollapsedMonthBar(section: section(for: window.top.advanced(by: 1)), today: today, open: unlockMonthAbove)
+                            if isLastPayment { ceilingLine(window.ceiling) }
                             ForEach(visibleMonths) { month in
                                 let monthSection = section(for: month)
                                 Section {
@@ -151,6 +148,16 @@ struct TimelineView: View {
                                         section: monthSection,
                                         showsFirstWeekLine: monthSection.isCurrent && !monthSection.hasChargedEntry
                                     )
+                                    // The content, not the `Section`: a geometry modifier there
+                                    // stops headers pinning. And the content, not the header: a
+                                    // pinned header reports 0 however deep into its month you are.
+                                    .onGeometryChange(for: CGFloat.self) { proxy in
+                                        proxy.frame(in: .named(Self.contentSpace)).minY
+                                    } action: { minY in
+                                        guard month == window.current else { return }
+                                        currentContentTop = minY
+                                        updateFloorSpacer()
+                                    }
                                 } header: {
                                     MonthHeader(section: monthSection, today: today, isPinned: pinnedMonth == month)
                                         .onGeometryChange(for: CGRect.self) { proxy in
@@ -160,18 +167,32 @@ struct TimelineView: View {
                                             headerHeights[month] = frame.height
                                             if month == window.current {
                                                 restingContentOffset = scrollOffset + frame.minY
+                                                updateFloorSpacer()
                                             }
                                         }
                                 }
                                 .id(month.id)
                             }
                             floorLine(window.floor)
+                                .onGeometryChange(for: CGFloat.self) { proxy in
+                                    proxy.frame(in: .named(Self.contentSpace)).maxY
+                                } action: { maxY in
+                                    floorLineBottom = maxY
+                                    updateFloorSpacer()
+                                }
+                            Color.clear.frame(height: floorSpacer)
                         }
+                        .coordinateSpace(name: Self.contentSpace)
                         .scrollTargetLayout()
                     }
-                    .contentMargins(.bottom, pillClearance, for: .scrollContent)
+                    .scrollDisabled(isScrollHalted)
+                    .contentMargins(.bottom, bottomClearance, for: .scrollContent)
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                         scrollOffset = newValue
+                    }
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, newValue in
+                        containerHeight = newValue
+                        updateFloorSpacer()
                     }
                     .onScrollPhaseChange { _, newPhase in
                         if newPhase == .idle && !isProgrammaticScroll && hasRestoredPlace { saveCurrentPlace() }
@@ -180,24 +201,6 @@ struct TimelineView: View {
                 }
                 .coordinateSpace(name: Self.scrollSpace)
                 .background(Tokens.Surface.base)
-                .overlay(alignment: .bottom) {
-                    // Always rendered — never conditionally removed — so its real,
-                    // Dynamic-Type-aware height is always available to size
-                    // `pillClearance` from, including the very first time the reader
-                    // scrolls far enough for it to matter. Visibility is opacity plus
-                    // explicit accessibility/hit-testing, not presence in the tree.
-                    LatestButton(month: window.current, direction: returnDirection, today: today, action: returnToResting)
-                        .padding(.bottom, Tokens.Space.section)
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                            pillClearance = height + Tokens.Space.section
-                        }
-                        .opacity(isReturnVisible ? 1 : 0)
-                        .accessibilityHidden(!isReturnVisible)
-                        .allowsHitTesting(isReturnVisible)
-                }
-                // Keyed to visibility alone. Keying it to direction as well is what made the
-                // arrow animate its own change rather than simply being correct on arrival.
-                .animation(.easeInOut, value: isReturnVisible)
                 .overlay(alignment: .top) {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
@@ -212,6 +215,78 @@ struct TimelineView: View {
                 }
             }
         }
+        .overlay(alignment: .topTrailing) {
+            // + never moves: it sits in the `headerRow` band where headers pin, and each
+            // header hands off beneath it. Over the empty state too, where it's the next step.
+            GlassCircleButton(systemImage: "plus", label: "Add an expense") { isEditorPresented = true }
+                .frame(height: Tokens.Size.headerRow)
+                .padding(.trailing, Tokens.Space.gutter)
+        }
+        .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
+        .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
+        .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
+    }
+
+    /// The month button bottom left and settings bottom right, always visible, placed as
+    /// Calendar's bottom row is. How far it reaches above the home indicator's safe area, which
+    /// grows with Dynamic Type, sets the list's bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
+    private func bottomRow(bottomInset: CGFloat) -> some View {
+        HStack {
+            MonthButton(month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today, action: returnToResting)
+            Spacer()
+            GlassCircleButton(systemImage: "gearshape", label: "Settings", diameter: Tokens.Size.bottomButton) {
+                isSettingsPresented = true
+            }
+        }
+        .padding(.horizontal, Tokens.Space.bottomRowInset)
+        .padding(.bottom, Tokens.Space.bottomRowInset)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            // The list's bottom margin sits above the safe area already, so only the part of
+            // the row that reaches above it counts.
+            bottomClearance = max(0, height - bottomInset) + Tokens.Space.section
+        }
+        // Measured from the screen's edge, as Calendar's is, not from the safe area above the
+        // home indicator. The row fills its container first: a view only as tall as its
+        // buttons never reaches the edge it's told to ignore, and stayed 28pt above the safe
+        // area (measured).
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .ignoresSafeArea(.container, edges: .bottom)
+    }
+
+    /// Whether the ceiling is a real last payment, so the list says so above it.
+    private var isLastPayment: Bool {
+        guard let window else { return false }
+        return TimelineCeiling.isLastPayment(window.ceiling, for: expenses, current: window.current, calendar: calendar)
+    }
+
+    /// The history floor's mirror, above the last payment when every bill ends. It fills the
+    /// header row, so it sits clear of + at the very top of the list.
+    private func ceilingLine(_ month: MonthKey) -> some View {
+        Text("Nothing after \(month.name(in: calendar, relativeTo: today, locale: locale)).")
+            .font(Tokens.Text.monthTotal)
+            .foregroundStyle(Tokens.Ink.tertiary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, Tokens.Space.gutter * 2)
+            .frame(minHeight: Tokens.Size.headerRow)
+            .padding(.bottom, Tokens.Space.section)
+    }
+
+    /// Clear space after the floor line, so a list too short to fill the screen can still rest
+    /// flush on the current month: what the container's height lacks of the distance from the
+    /// current month's header down to the floor line's bottom. With a screenful of history it's 0.
+    ///
+    /// The distance is read from two unpinned things — the current month's content (less its
+    /// header's height) and the floor line — in the list's own coordinate space, which
+    /// scrolling doesn't move. Measured in the scroll view's space instead, the two arrived in
+    /// separate callbacks either side of a scroll, and the space flickered 548 → 0.3 → 548 at
+    /// launch. Changes under half a point are ignored.
+    private func updateFloorSpacer() {
+        guard let window, let currentContentTop, let floorLineBottom,
+              let headerHeight = headerHeights[window.current], containerHeight > 0
+        else { return }
+        let currentHeaderTop = currentContentTop - headerHeight
+        let needed = max(0, containerHeight - (floorLineBottom - currentHeaderTop))
+        if abs(needed - floorSpacer) > 0.5 { floorSpacer = needed }
     }
 
     private func floorLine(_ month: MonthKey) -> some View {
@@ -227,15 +302,17 @@ struct TimelineView: View {
         // The placeholder shown for a month `rebuildSections()` hasn't populated yet — never
         // the current month's real answer, so `isCurrent: false` here is a deliberate "not
         // known yet", not a claim.
-        sections[month] ?? MonthSection(month: month, days: [], total: 0, remaining: 0, isCurrent: false)
+        sections[month] ?? MonthSection(month: month, entries: [], total: 0, remaining: 0, isCurrent: false)
     }
 
     private func setUpIfNeeded() {
         guard window == nil else { return }
         today = Date()
         let current = MonthKey(containing: today, calendar: calendar)
-        guard let floor = TimelineFloor.month(for: expenses, calendar: calendar) else { return }
-        window = TimelineWindow(floor: floor, current: current)
+        guard let floor = TimelineFloor.month(for: expenses, calendar: calendar),
+              let ceiling = TimelineCeiling.month(for: expenses, current: current, calendar: calendar)
+        else { return }
+        window = TimelineWindow(floor: floor, ceiling: ceiling, current: current)
         rebuildSections()
     }
 
@@ -291,7 +368,7 @@ struct TimelineView: View {
     }
 
     /// The anchor to save: the month under the middle of the viewport, at its live offset —
-    /// the same rule the unlock and the restore both key on, so gesturing and
+    /// the same rule the restore and a day change both key on, so gesturing and
     /// restoring agree on what "here" means. Nothing is saved when there is no live
     /// geometry to read (nothing has laid out yet, or the screen is the empty state).
     ///
@@ -334,73 +411,55 @@ struct TimelineView: View {
     }
 
     /// `today` moves forward as the calendar day changes underneath a running app. When the
-    /// month itself changes, `window.current` moves up with it — and because the next month
-    /// was always expanded, the month the reader is now in is already on screen and already
-    /// open; nothing is inserted above them. See "Nothing under the reader's eyes moves"
-    /// in `docs/DESIGN.md`.
+    /// month itself changes, the window is rebuilt with the new current month and a
+    /// recomputed ceiling. The month the reader is now in was already listed, so nothing is
+    /// inserted near them; but the ceiling rises by a month far above, and an empty month can
+    /// join or leave the list, so the month under the middle is held where it is. See
+    /// "Nothing under the reader's eyes moves" in `docs/DESIGN.md`.
     private func handleDayChange() {
         today = Date()
         guard let window else { return }
         let newCurrent = MonthKey(containing: today, calendar: calendar)
-        if newCurrent != window.current {
-            self.window = TimelineWindow(floor: window.floor, current: newCurrent, unlocked: window.unlocked)
+        guard newCurrent != window.current,
+              let ceiling = TimelineCeiling.month(for: expenses, current: newCurrent, calendar: calendar)
+        else {
+            rebuildSections()
+            return
         }
+        let anchorMonth = monthUnderMiddle()
+        let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
+        self.window = TimelineWindow(floor: window.floor, ceiling: ceiling, current: newCurrent)
         rebuildSections()
+        if let anchorMonth { anchorAndSettle(anchorMonth, to: max(0, desiredOffset)) }
     }
 
-    /// Opens the month named on the unlock bar. See "Anchoring" in
-    /// `.claude/rules/swiftui-scrolling.md`: a screenful of content lands *above* the viewport, so the
-    /// month under the middle — not the bar, not total content height — is what has to stay
-    /// put.
-    private func unlockMonthAbove() {
-        guard window != nil, let anchorMonth = monthUnderMiddle() else { return }
-        let desiredOffset = headerOffsets[anchorMonth] ?? 0
-        window?.unlocked += 1
-        rebuildSections()
-        anchorAndSettle(anchorMonth, to: desiredOffset)
-    }
-
-    /// The tidy-up: unlocked months close once the reader has actually travelled up into
-    /// one of them and come back. Two guards make this safe — see "Anchoring" in `.claude/rules/swiftui-scrolling.md`.
-    /// `isUnlockLatched` requires the trip up before any close can fire, so this never fires
-    /// in the frame a month opens (it opens outside the viewport, which would otherwise read
-    /// as "no longer visible" instantly). `isProgrammaticScroll` keeps this from firing while
-    /// one of this view's own animated scrolls is still in flight.
-    private func updateLatch() {
-        guard let window, !isProgrammaticScroll else { return }
-        let currentOffset = headerOffsets[window.current] ?? 0
-        if !isUnlockLatched {
-            if window.unlocked > 0 && currentOffset > viewportHeight {
-                isUnlockLatched = true
-            }
-        } else if currentOffset <= 0 {
-            closeUnlockedMonths()
-        }
-    }
-
-    /// `LatestButton`'s action: animates the reader back to the resting position — the
+    /// The month button's action: animates the reader back to the resting position — the
     /// current month's header at the container's top, the same target
-    /// `restorePlaceIfNeeded` uses — then runs the tidy-up once that scroll has
-    /// actually settled. `isProgrammaticScroll` holds `updateLatch` off for the same reason
-    /// it does during `anchorAndSettle`: closing mid-animation would fight the animated
-    /// scroll rather than follow it. See "Getting back" in `docs/DESIGN.md`.
+    /// `restorePlaceIfNeeded` uses. `isProgrammaticScroll` keeps the scroll-idle save from
+    /// recording a mid-flight position. See "Getting back" in `docs/DESIGN.md`.
     ///
-    /// **Not `withAnimation(_:completion:)`.** Tried first, and wrong: confirmed on device
-    /// via logging that its completion handler runs before the scroll has visibly moved at
-    /// all — `scrollProxy.scrollTo` drives a `UIScrollView` under the hood, which doesn't
-    /// report into SwiftUI's animation-completion tracking, so `closeUnlockedMonths` fired
-    /// against the pre-scroll geometry and anchored on the unlocked month instead of the
-    /// one just settled on. A fixed delay matching the animation's own duration is what
-    /// `anchorAndSettle` already relies on elsewhere in this file for the same reason —
-    /// timing-dependent, not sufficient in principle, but held in every trial here too.
-    /// That delay is derived from `returnDuration` rather than hard-coded, because the
-    /// duration now varies with distance and the two must not drift apart.
+    /// **Not `withAnimation(_:completion:)`.** Confirmed on device via logging that its
+    /// completion handler runs before the scroll has visibly moved at all —
+    /// `scrollProxy.scrollTo` drives a `UIScrollView` under the hood, which doesn't report
+    /// into SwiftUI's animation-completion tracking. A fixed delay matching the animation's
+    /// own duration is timing-dependent, not sufficient in principle, but held in every
+    /// trial. That delay is derived from `returnDuration` rather than hard-coded, because the
+    /// duration varies with distance and the two must not drift apart.
     private func returnToResting() {
         guard let window, let scrollProxy else { return }
         let duration = returnDuration
         isProgrammaticScroll = true
-        withAnimation(.easeInOut(duration: duration)) {
-            scrollProxy.scrollTo(window.current.id, anchor: .top)
+        // A tap lands while the list is still flying, and an animated `scrollTo` issued then
+        // loses to the deceleration already in flight — measured: the phase stayed
+        // `decelerating`, never became `animating`, and the list carried on to where the fling
+        // was going. Switching scrolling off for one turn stops the momentum where it is, with
+        // no jump, so the return is issued into a list that is standing still.
+        isScrollHalted = true
+        DispatchQueue.main.async {
+            isScrollHalted = false
+            withAnimation(.easeInOut(duration: duration)) {
+                scrollProxy.scrollTo(window.current.id, anchor: .top)
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.06) {
             isProgrammaticScroll = false
@@ -409,30 +468,20 @@ struct TimelineView: View {
             // normally written as `scrollOffset + frame.minY` from two geometry callbacks
             // that arrive independently, and during an animated scroll they are sampled at
             // different instants — measured on device leaving the cache 702, 493 and 0.2
-            // points wrong across three otherwise identical returns. The pill hides within
-            // one viewport of resting, so an error approaching 778 points would leave it
-            // on screen at rest, pointing the wrong way.
+            // points wrong across three otherwise identical returns, and the next return's
+            // duration is read from it.
             restingContentOffset = scrollOffset
-            closeUnlockedMonths()
+            // And save it. The scroll-idle save is suppressed while this view's own scroll is
+            // in flight, and a fling cut short by this tap never settled to save either — so
+            // without this the saved place is wherever the fling was heading, and a relaunch
+            // returns there rather than to the month just landed on.
+            if hasRestoredPlace { saveCurrentPlace() }
         }
     }
 
-    private func closeUnlockedMonths() {
-        isUnlockLatched = false
-        guard let window, window.unlocked > 0 else { return }
-        let anchorMonth = monthUnderMiddle() ?? window.current
-        let desiredOffset = headerOffsets[anchorMonth] ?? 0
-        self.window?.unlocked = 0
-        rebuildSections()
-        anchorAndSettle(anchorMonth, to: desiredOffset)
-    }
-
     /// Waits a run-loop turn for the resized list to lay out, restores `month`'s position,
-    /// and holds off the close-on-scroll-back latch until that restoring scroll has settled
-    /// — see "Anchoring" in
-    /// `.claude/rules/swiftui-scrolling.md`. Exercised by opening and closing a month directly, and,
-    /// via `returnToResting`, by an animated jump back across several unlocked months —
-    /// both verified on device.
+    /// and holds off the scroll-idle save until that restoring scroll has settled — see
+    /// "Anchoring" in `.claude/rules/swiftui-scrolling.md`.
     private func anchorAndSettle(_ month: MonthKey, to desiredOffset: CGFloat) {
         isProgrammaticScroll = true
         DispatchQueue.main.async {
@@ -454,19 +503,19 @@ struct TimelineView: View {
     /// **The target here is the header, not the section** — measured on device, 2026-09-08.
     /// `.id(_:)` sits on the `Section`, but while `pinnedViews: [.sectionHeaders]` is working,
     /// `scrollTo` resolves that id to the pinned header alone, so `targetHeight` is the
-    /// header's 47 points and not the section's several hundred. Passing a section height
+    /// header's height (47 points when measured) and not the section's several hundred. Passing a section height
     /// here overshoots by a proportion of the difference: the anchor landed 287 points low.
     /// The two facts are coupled, which is why they were mistaken for independent bugs — a
     /// geometry modifier on the `Section` breaks pinning *and* makes `scrollTo` resolve to
     /// the whole section, so a section height is right only while the header is broken.
     ///
-    /// **The container is shorter than the viewport by `pillClearance`.** The pill gave the list
-    /// a bottom `contentMargins` so the floor line clears the floating pill, and `scrollTo`
+    /// **The container is shorter than the viewport by `bottomClearance`.** The bottom row gives
+    /// the list a bottom `contentMargins` so the floor line clears it, and `scrollTo`
     /// aligns within the container's *content area*, not the whole viewport. Dividing by the
     /// viewport instead lands every restore proportionally short — measured on device at
     /// 0.907x of whatever was asked, which is exactly (710 - 47) / (778 - 47). It slipped
-    /// through while only unlocks used it, because those offsets were small enough for the error
-    /// to be a few points; restoring a saved place works from arbitrary depth, where the same ratio is tens of
+    /// through while only small anchoring offsets used it, because the error there was a few
+    /// points; restoring a saved place works from arbitrary depth, where the same ratio is tens of
     /// points and plainly visible. With the right denominator a single pass lands within a
     /// tenth of a point.
     ///
@@ -481,7 +530,7 @@ struct TimelineView: View {
     private func restoreAnchor(_ month: MonthKey, to desiredOffset: CGFloat) {
         guard let scrollProxy else { return }
         let headerHeight = headerHeights[month] ?? 0
-        let denominator = (viewportHeight - pillClearance) - headerHeight
+        let denominator = (viewportHeight - bottomClearance) - headerHeight
         guard headerHeight > 0, denominator > 0.5 else {
             scrollProxy.scrollTo(month.id, anchor: .top)
             return
@@ -495,25 +544,25 @@ struct TimelineView: View {
         let timelineExpenses = expenses.map(\.timelineExpense)
 
         var result: [MonthKey: MonthSection] = [:]
-        var key = window.top.advanced(by: 1) // includes the unlock bar's own month
-        while key >= window.floor {
+        for key in window.months {
             let built = TimelineBuilder.month(key, expenses: timelineExpenses, today: today, calendar: calendar)
             result[key] = MonthSection(
-                month: built.month, days: built.days, total: built.total,
+                month: built.month, entries: built.entries, total: built.total,
                 remaining: built.remaining, isCurrent: key == window.current
             )
-            key = key.advanced(by: -1)
         }
         sections = result
     }
 }
 
-#Preview("Seeded current month") {
+#if DEBUG
+#Preview("Preview data") {
     let container = try! TillyStore.container(inMemory: true)
-    try! SampleData.insert(into: container.mainContext, today: Date(), calendar: .current)
+    try! PreviewData.insert(into: container.mainContext, today: Date(), calendar: .current)
     return TimelineView()
         .modelContainer(container)
 }
+#endif
 
 #Preview("Empty state") {
     TimelineView()

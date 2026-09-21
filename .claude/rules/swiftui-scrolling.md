@@ -53,8 +53,7 @@ measurement, so Opus builds it.
   scroll.
 - `restingContentOffset` is built from two callbacks that are sampled at different moments
   during animation, and was measured 702pt and 493pt wrong. Set it outright at the end of a
-  return. **Known and unfixed:** it can still drift, and the 240pt pill threshold is smaller
-  than that error.
+  return. **Known and unfixed:** it can still drift.
 
 **Diagnosing:** a correcting second pass that converges is how a missing term hides. A constant
 ratio error usually means two heights are confused. Find the term before adding machinery.
