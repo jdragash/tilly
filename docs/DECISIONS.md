@@ -115,3 +115,34 @@ system emoji keyboard.
 **Decided:** 2026-09-19
 Two charges on one day are two rows, each with its date. The timeline has no day groups.
 - **Rejected — grouping a day under a heading with a day total:** the list changes shape, and rows inside lose their dates.
+
+## Editing a charge is Calendar's: edit first, then this charge or future ones
+**Decided:** 2026-09-22
+Tapping a row opens the editor for that charge, keypad up. When the amount or date changed, ✓ asks
+"this charge only" or "future charges". Future starts at the opened charge, and the past never
+changes, except from a bill's first charge. The wheel's payment count counts the whole bill.
+- **Rejected — a read-only page before the editor, as Calendar has:** an expense has five fields, and the editor already shows them all.
+- **Rejected — the editor opening at rest, actions where the keypad goes:** opening a charge is editing it.
+- **Rejected — choosing the scope first:** a control on every tap, and its default is the one people save by accident.
+- **Rejected — a third answer, "all charges":** every price rise gets a one-line route to rewriting what the past cost.
+- **Rejected — a series edit that corrects the whole timeline:** the same rewrite, with no way to avoid it.
+- **Rejected — counting only the payments left:** the number would change with the charge you opened.
+- **Rejected — scrolling to a bill saved out of sight:** the list stays where you were.
+
+## Deleting asks Calendar's question, and a skip is €0
+**Decided:** 2026-09-22
+A red trash button beside ✓ asks `Delete All Future Charges`, which ends the bill and keeps its
+past, or `Delete All Charges`. Skipping one charge is saving it at €0.
+- **Rejected — separate skip, stop and delete actions:** ending a subscription is deleting what's ahead.
+- **Rejected — a skip button:** rare, and €0 is what a skip means.
+- **Rejected — a ⋯ menu holding Delete:** its only item, a tap further away.
+
+## A bill is a series of rules, and "future charges" starts the next one
+**Decided:** 2026-09-22
+Saving for future charges ends the open charge's rule at the charge before and starts a new
+`Expense` at this one, sharing a `seriesID`. The engine is unchanged. Name, category, the payment
+count, "ends 08/26" and deleting all read the series; one-off changes to later charges move to the
+new rule when it still generates their date.
+- **Rejected — rule versions inside one `Expense`:** a new model and engine work for what two rows already express.
+- **Rejected — editing the one rule in place:** rewrites every past charge.
+- **Rejected — a required `seriesID`:** a migration would give every existing bill the same default, so `nil` means "its own series".

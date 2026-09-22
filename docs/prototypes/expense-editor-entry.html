@@ -3,12 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tilly — expense entry prototype</title>
+<title>Tilly — expense editor prototype</title>
 <!--
-  Tilly · the expense editor's entry flow, and the app shell around it · 2026-09-19
+  Tilly · the expense editor, adding and editing, and the app shell around it · 2026-09-22
 
-  Built during tilly-explore, from docs/briefs/expense-editor/brief.md, after five rounds on the
-  design canvas. First built 2026-09-17 for the entry design; revised 2026-09-19 for the shell.
+  Built during tilly-explore, from docs/briefs/expense-editor/brief.md. First built 2026-09-17 for
+  the entry design; revised 2026-09-19 for the shell, and 2026-09-22 for editing an existing
+  expense (phase 2), settled on the canvas page "Round 6 · Editing an expense".
+
+  Editing, settled 2026-09-22:
+    · Tapping a row opens the editor for that charge, filled in, keypad up: opening a charge is
+          editing it. The date is the charge's own date. ✓ waits for a change; a red trash
+          button sits left of it. (A detail page before the editor, as Calendar has, lost: the
+          editor already shows everything it would.)
+    · Edit first, then choose, as Calendar. On ✓, if the amount or date changed and a charge
+          follows this one, it asks: "Save for this charge only" or "Save for future charges".
+          Future means this charge and after. The past never changes, except from a bill's
+          first charge, where future is all of it. (Choosing first, and a third "all charges"
+          answer, both lost.)
+    · Name and category belong to the whole bill and change without asking. A change to how
+          often it repeats applies from this charge on, without asking. The payment count on the
+          wheel counts the whole bill, whichever charge you opened.
+    · Skipping one charge is saving it at €0: ✓ doesn't ask, and the row draws as skipped,
+          its usual amount struck through and not counted. Type the amount back to undo.
+    · Trash asks, as Calendar: "Delete All Future Charges" (this charge on goes, the past stays:
+          how you end a subscription) or "Delete All Charges" (the bill is gone, past included).
+          On a bill's first charge there's one answer, "Delete Gym".
+    · After saving or deleting, the timeline stays where you were.
 
   The shell, settled on the canvas in rounds 3–5:
     · Like iOS Calendar. The month header pins to the top with its total beside the name
@@ -24,11 +45,11 @@
     · A timeline row's second line is the date, plus "· ends 05/27" on a bill that ends. Once a
           bill ends, its repeat button reads "09/27".
 
-  The entry design, settled in rounds 1–2:
-    · Amount, name and category are required. Save waits for all three.
-    · The editor is a sheet over the timeline: close top left, amount, name, three buttons,
-          keypad, and a full-width Save at the bottom.
-    · The three buttons are equal thirds: date, repeat, category. Each opens its picker where the
+  The entry design, settled in rounds 1–2, and revised after using phase 1 on a phone:
+    · Amount, name and category are required. ✓ waits for all three.
+    · The editor is a sheet over the timeline: close top left, ✓ top right (it was a full-width
+          Save at the bottom until 2026-09-19), amount, name, three buttons, keypad.
+    · The three buttons are equal thirds: date, category, repeat. Each opens its picker where the
           keypad was, and every picker is the keypad's height, so the amount never moves
           (TASTE 2).
     · The icon says what kind of thing, the label says the value (TASTE 6). A third leaves about
@@ -44,9 +65,8 @@
     · A repeat's end is a payment count on the wheel, which works out the last date. There is no
           separate end-date option.
 
-  Still open: what editing an existing expense asks (this one or all future), what the Settings
-  sheet holds beyond the category list and what tapping a category does, Insights, and what the
-  three buttons become at accessibility text sizes.
+  Still open: what the Settings sheet holds beyond the category list and what tapping a category
+  does, and Insights.
 
   Direction A ("amount is the screen") won at rung 1; the canvas rounds are in the Tilly Expense
   Editor design canvas. docs/prototypes/expense-editor.html is the earlier prototype for the
@@ -60,8 +80,10 @@
     · Dynamic Type: at accessibility sizes three equal thirds cannot hold, and what they become
       there is unsolved
     · VoiceOver, rubber-band overscroll, or iOS momentum
-    · the timeline's day grouping, the unlock bar, or your place surviving a relaunch: next
-      month is open above, and history runs down to the oldest charge
+    · the full five years ahead, or your place surviving a relaunch: a year runs above this
+      month, and history runs down to the oldest charge
+    · the system's menus and dialogs: the scope menu and the delete question are drawn here, and
+      iOS 26 draws its own
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the
   docs win.
@@ -76,6 +98,7 @@
   --scrim: rgba(0,0,0,0.2); --btn-bg: #000; --btn-ink: #fff;
   --glass: rgba(255,255,255,0.78); --glass-line: rgba(0,0,0,0.06);
   --glass-shadow: 0 6px 20px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06);
+  --red: #ff3b30; --menu: rgba(242,242,247,0.97); --cancel: #fff;
 }
 .dark {
   --paper: #000; --sheet: #1c1c1e;
@@ -85,6 +108,7 @@
   --tint: #0a84ff; --tint-soft: rgba(10,132,255,0.22);
   --scrim: rgba(0,0,0,0.48); --btn-bg: #fff; --btn-ink: #000;
   --glass: rgba(44,44,46,0.80); --glass-line: rgba(255,255,255,0.10); --glass-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  --red: #ff453a; --menu: rgba(44,44,46,0.97); --cancel: #2c2c2e;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -159,6 +183,13 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; opaci
 .trow.upcoming .nm, .trow.upcoming .am { color: var(--ink-2); }
 .trow.upcoming .dt { color: var(--ink-3); }
 .trow.upcoming .well { opacity: .55; }
+.trow { cursor: pointer; }
+.trow:active { background: var(--fill-4); }
+/* Skipped: withdrawn further than upcoming, the usual amount struck through and not counted. */
+.trow.skipped .nm { color: var(--ink-2); }
+.trow.skipped .dt { color: var(--ink-3); }
+.trow.skipped .am { color: var(--ink-3); text-decoration: line-through; }
+.trow.skipped .well { opacity: .45; }
 .trow.fresh { animation: fresh 1.6s ease-out; }
 @keyframes fresh { from { background: var(--tint-soft); } to { background: transparent; } }
 
@@ -174,7 +205,29 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; opaci
 }
 .sheet.on { transform: none; }
 .grabber { flex: none; width: 36px; height: 5px; border-radius: 3px; background: var(--ink-4); margin: 5px auto 0; }
-.bar { flex: none; height: 44px; margin-top: 4px; padding: 0 16px; display: flex; align-items: center; }
+.bar { flex: none; height: 44px; margin-top: 4px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; }
+.bar-r { display: flex; gap: 8px; }
+.check, .trash { width: 44px; height: 44px; border-radius: 22px; border: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.check { background: var(--tint); color: #fff; }
+.check:disabled { background: var(--fill-3); color: var(--ink-3); cursor: default; }
+.trash { background: var(--fill-3); color: var(--red); }
+.trash[hidden] { display: none; }
+
+/* the scope menu, out of ✓, and the delete question: stand-ins for the system's */
+.veil { position: absolute; inset: 0; z-index: 30; background: rgba(0,0,0,.08); }
+.veil[hidden], .menu[hidden], .asheet[hidden] { display: none; }
+.menu { position: absolute; z-index: 31; top: 176px; right: 16px; width: 256px; border-radius: 22px; overflow: hidden;
+  background: var(--menu); box-shadow: 0 10px 40px rgba(0,0,0,.22); }
+.menu button { display: block; width: 100%; height: 46px; padding: 0 16px; border: 0; background: transparent; text-align: left;
+  font: inherit; font-size: 17px; color: var(--ink-1); cursor: pointer; }
+.menu button + button { border-top: .5px solid var(--sep); }
+.asheet { position: absolute; z-index: 31; left: 8px; right: 8px; bottom: 34px; display: flex; flex-direction: column; gap: 8px; }
+.asheet .grp { border-radius: 14px; overflow: hidden; background: var(--menu); }
+.asheet .hd { padding: 14px 16px; text-align: center; font-size: 13px; color: var(--ink-2); }
+.asheet .hd b { display: block; font-weight: 600; margin-bottom: 2px; }
+.asheet button { display: block; width: 100%; height: 56px; border: 0; border-top: .5px solid var(--sep); background: transparent;
+  font: inherit; font-size: 19px; color: var(--red); cursor: pointer; }
+.asheet .cancel { border: 0; border-radius: 14px; background: var(--cancel); color: var(--tint); font-weight: 600; }
 .close { width: 44px; height: 44px; border-radius: 22px; background: var(--fill-3); border: 0; color: var(--ink-1);
   display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
@@ -196,18 +249,13 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; opaci
 
 .lower { flex: none; display: flex; flex-direction: column; }
 .area { height: 300px; padding: 16px 20px 0; display: flex; flex-direction: column; gap: 12px; }
-.area[hidden], .kbd[hidden], .save-wrap[hidden], .newcat[hidden], .home[hidden] { display: none; }
+.area[hidden], .kbd[hidden], .newcat[hidden], .home[hidden] { display: none; }
 
 .keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 65px; row-gap: 8px; }
 .key { border: 0; background: transparent; color: var(--ink-1); font-family: inherit; font-size: 28px; font-weight: 400; line-height: 1;
   display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 12px; }
 .key:active { background: var(--fill-3); }
 
-.save-wrap { flex: none; padding: 16px 20px 0; }
-.save-wrap.tight { padding-top: 12px; }
-.save { width: 100%; height: 56px; border: 0; border-radius: 14px; background: var(--btn-bg); color: var(--btn-ink);
-  font-family: inherit; font-size: 19px; font-weight: 600; cursor: pointer; }
-.save:disabled { background: var(--fill-3); color: var(--ink-3); cursor: default; }
 .home { flex: none; height: 34px; }
 
 /* calendar */
@@ -280,7 +328,7 @@ input:focus, input:focus-visible { outline: none; }
 
 <div class="panel">
   <h1>Tilly — adding an expense</h1>
-  <p class="sub">Prototype · 19 September 2026 · the entry design and the Calendar-style shell</p>
+  <p class="sub">Prototype · 22 September 2026 · adding and editing, and the Calendar-style shell</p>
 
   <fieldset>
     <legend>appearance</legend>
@@ -303,11 +351,11 @@ input:focus, input:focus-visible { outline: none; }
 
   <fieldset>
     <legend>try</legend>
-    <p class="note" style="margin-top:0">Scroll down into history: each month's header takes over
-      the top row, beside +. Tap <b>September</b> at the bottom to come back. Add a bill that
-      ends: its rows say "· ends" and its repeat button shows the month it ends. Tap the gear for
-      Settings. "Today" is fixed at 17 September 2026. On a computer you can type the amount on
-      your own keyboard.</p>
+    <p class="note" style="margin-top:0">Tap a row to edit that charge. Change the amount and tap
+      ✓: it asks whether you mean this charge or the ones after it. Type 0 to skip one. The red
+      trash button deletes what's ahead, or everything. Scroll down into history: each month's
+      header takes over the top row, beside +. Tap <b>September</b> to come back. "Today" is fixed
+      at 17 September 2026. On a computer you can type the amount on your own keyboard.</p>
   </fieldset>
 
   <div class="lies">
@@ -320,8 +368,8 @@ input:focus, input:focus-visible { outline: none; }
       <li>no Dynamic Type: at accessibility sizes three equal buttons can't hold, and what they
         become is unsolved</li>
       <li>no VoiceOver, rubber-band overscroll or iOS momentum</li>
-      <li>no day grouping, no unlock bar for months further ahead, and your place isn't kept
-        between visits</li>
+      <li>a year ahead rather than five, and your place isn't kept between visits</li>
+      <li>no system menus or dialogs: the scope menu and the delete question are drawn</li>
     </ul>
   </div>
 </div>
@@ -347,7 +395,7 @@ input:focus, input:focus-visible { outline: none; }
 
   <div class="sheet" id="sheet" role="dialog" aria-label="New expense">
     <div class="grabber"></div>
-    <div class="bar"><button class="close" id="close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar"><button class="close" id="close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="bar-r"><button class="trash" id="trash" hidden aria-label="Delete"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16M9.5 6.5V4.5h5v2M6 6.5l1 14h10l1-14"/></svg></button><button class="check" id="check" disabled aria-label="Save"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></span></div>
 
     <div class="top">
       <div class="amount zero" id="amount" role="button" aria-label="Amount">€0</div>
@@ -356,8 +404,8 @@ input:focus, input:focus-visible { outline: none; }
 
     <div class="buttons">
       <button class="btn" id="b-date" aria-label="Date"></button>
-      <button class="btn" id="b-repeat" aria-label="Repeat"></button>
       <button class="btn" id="b-cat" aria-label="Category"></button>
+      <button class="btn" id="b-repeat" aria-label="Repeat"></button>
     </div>
 
     <div class="lower">
@@ -380,7 +428,6 @@ input:focus, input:focus-visible { outline: none; }
         <div class="caption" id="caption"></div>
       </div>
       <div class="area" id="a-cat" hidden><div class="list" id="catlist"></div></div>
-      <div class="save-wrap" id="save-wrap"><button class="save" id="save" disabled>Save</button></div>
       <div class="kbd" id="kbd-text" hidden>
         <span>System keyboard</span>
         <span class="klabel">type on your own keyboard</span>
@@ -392,6 +439,16 @@ input:focus, input:focus-visible { outline: none; }
       </div>
       <div class="home" id="home"></div>
     </div>
+  </div>
+
+  <div class="veil" id="veil" hidden></div>
+  <div class="menu" id="menu" hidden>
+    <button data-scope="one">Save for this charge only</button>
+    <button data-scope="future">Save for future charges</button>
+  </div>
+  <div class="asheet" id="asheet" hidden>
+    <div class="grp"><div class="hd" id="asheet-hd"></div><div id="asheet-acts"></div></div>
+    <button class="cancel" id="asheet-cancel">Cancel</button>
   </div>
 </div>
 
@@ -440,7 +497,7 @@ let S, categories, items, catsVariant = "set";
 
 function freshEditor() {
   return { digits: "", name: "", date: { ...TODAY }, n: 1, unit: "month", end: 0, cat: null,
-           mode: "keypad", view: { y: TODAY.y, m: TODAY.m }, newEmoji: null };
+           mode: "keypad", view: { y: TODAY.y, m: TODAY.m }, newEmoji: null, edit: null };
 }
 // Invented sample data.
 const SAMPLE_CATS = [
@@ -462,13 +519,20 @@ const SAMPLE_ITEMS = [
 function seed() {
   const withCats = catsVariant === "set";
   categories = withCats ? SAMPLE_CATS.map((c) => ({ ...c })) : [];
-  items = withCats ? SAMPLE_ITEMS.map((it) => ({ ...it })) : [];     // first run: nothing at all
+  // A bill is a series of one or more rules. "Save for future charges" ends one rule the charge
+  // before and starts the next at this charge, so the past never changes. ov holds this-charge-only
+  // changes, keyed on the charge's number within its rule: an amount, a moved date, or a skip.
+  items = withCats ? SAMPLE_ITEMS.map((it, i) => ({ ...it, sid: "s" + i, ov: {} })) : [];     // first run: nothing at all
   S = freshEditor();
 }
 const emojiFor = (it) => (categories.find((c) => c.id === it.cat) || {}).emoji || "";
 const lastOf = (it) => occurrence(it.anchor, it.n, it.unit, it.end - 1);
+const series = (it) => items.filter((x) => x.sid === it.sid).sort((a, b) => cmp(a.anchor, b.anchor));
+const lastRule = (it) => series(it).slice(-1)[0];
+// Charges in the rules before this one, so a payment count can count the whole bill.
+const priorCount = (it) => series(it).filter((x) => cmp(x.anchor, it.anchor) < 0).reduce((n, x) => n + x.end, 0);
 // The second line is the date, plus the end on a bill that ends.
-const rowExtra = (it) => (it.end ? ` · ends ${mmyy(lastOf(it))}` : "");
+const rowExtra = (it) => { const l = lastRule(it); return l.end ? ` · ends ${mmyy(lastOf(l))}` : ""; };
 
 /* ── timeline ── */
 const monthName = (mo) => MONTHS_LONG[mo.m] + (mo.y === TODAY.y ? "" : " " + mo.y);
@@ -479,36 +543,40 @@ function renderTimeline(freshName) {
       `<p class="empty">Add a bill or a subscription and it shows up here before it goes out.</p></section>`;
     return;
   }
-  // Next month is open above this one; history runs down to the oldest charge. Empty months aren't listed.
+  // A year runs above this one (the app runs five); history runs down to the oldest charge. Empty months aren't listed.
   const byMonth = new Map();
   let oldest = null;
-  const top = { y: TODAY.m === 11 ? TODAY.y + 1 : TODAY.y, m: (TODAY.m + 1) % 12 };
-  for (const it of items) {
+  const top = { y: TODAY.y + 1, m: TODAY.m };
+  items.forEach((it, i) => {
     for (let k = 0; k < 400; k++) {
       if (it.end && k >= it.end) break;
       const o = occurrence(it.anchor, it.n, it.unit, k);
       if (o.y > top.y || (o.y === top.y && o.m > top.m)) break;
-      const key = o.y * 12 + o.m;
+      const ov = it.ov[k] || {};
+      const at = ov.date || o;                                   // a moved charge shows where it landed
+      const amt = ov.amt ?? it.amt;
+      const key = at.y * 12 + at.m;
       if (!byMonth.has(key)) byMonth.set(key, []);
-      byMonth.get(key).push({ it, o, k });
-      if (!oldest || cmp(o, oldest) < 0) oldest = o;
+      byMonth.get(key).push({ it, i, k, o: at, amt, skip: !!ov.skip });
+      if (!oldest || cmp(at, oldest) < 0) oldest = at;
     }
-  }
+  });
   let html = "";
   for (const key of [...byMonth.keys()].sort((a, b) => b - a)) {
     const mo = { y: Math.floor(key / 12), m: key % 12 };
-    const rows = byMonth.get(key).sort((a, b) => cmp(b.o, a.o));
+    const rows = byMonth.get(key).sort((a, b) => cmp(b.o, a.o) || (b.amt - a.amt) || a.it.name.localeCompare(b.it.name));
     const current = mo.m === TODAY.m && mo.y === TODAY.y;
-    const upcoming = rows.filter((r) => cmp(r.o, TODAY) > 0);
-    const total = (current ? upcoming : rows).reduce((s, r) => s + Math.round(r.it.amt), 0);
+    const counted = rows.filter((r) => !r.skip && (!current || cmp(r.o, TODAY) > 0));
+    const total = counted.reduce((s, r) => s + Math.round(r.amt), 0);
     html += `<section${current ? ' data-current="1"' : ""}><div class="mhead"><span class="n">${monthName(mo)}</span>` +
       `<span class="t">${total ? "−" : ""}€${total.toLocaleString("en-IE")}${current ? " left" : ""}</span></div>`;
     for (const r of rows) {
       const up = cmp(r.o, TODAY) > 0;
-      html += `<div class="trow ${up ? "upcoming" : ""} ${r.it.name === freshName ? "fresh" : ""}">` +
+      const shown = r.skip ? r.it.amt : r.amt;                  // a skip strikes the usual amount through
+      html += `<div class="trow ${up ? "upcoming" : ""} ${r.skip ? "skipped" : ""} ${r.it.name === freshName ? "fresh" : ""}" data-i="${r.i}" data-c="${r.k}">` +
         `<div class="well">${emojiFor(r.it)}</div>` +
         `<div class="mid"><div class="nm">${esc(r.it.name)}</div><div class="dt">${short(r.o)}${rowExtra(r.it)}</div></div>` +
-        `<div class="am">−€${Math.round(r.it.amt).toLocaleString("en-IE")}</div></div>`;
+        `<div class="am">−€${Math.round(shown).toLocaleString("en-IE")}</div></div>`;
     }
     html += `</section>`;
   }
@@ -539,11 +607,30 @@ function fitAmount() {
   if (w > 353) el.style.fontSize = Math.floor(80 * 353 / w) + "px";
   el.style.letterSpacing = (-parseFloat(el.style.fontSize) / 40) + "px";
 }
+// The last payment. Editing, the count is the whole bill's, so it's worked out from this charge on.
+function lastPayment() {
+  if (!S.edit) return occurrence(S.date, S.n, S.unit, S.end - 1);
+  const { it, k, prior } = S.edit, o = S.edit.orig;
+  const same = S.n === o.n && S.unit === o.unit && cmp(S.date, o.date) === 0;
+  return same ? occurrence(it.anchor, S.n, S.unit, S.end - prior - 1)
+              : occurrence(S.date, S.n, S.unit, S.end - prior - k - 1);
+}
+const endsTooSoon = () => S.edit && S.end && S.end <= S.edit.prior + S.edit.k;
 function repeatLabel() {
-  if (S.end) return mmyy(occurrence(S.date, S.n, S.unit, S.end - 1));
+  if (S.end) return endsTooSoon() ? "Ends" : mmyy(lastPayment());
   return S.n === 1 ? EVERY1[S.unit] : `${S.n} ${S.unit}s`;
 }
-const valid = () => Number(S.digits) > 0 && S.name.trim().length > 0 && categories.some((c) => c.id === S.cat);
+const valid = () => (S.edit ? S.digits !== "" : Number(S.digits) > 0) && S.name.trim().length > 0 &&
+  categories.some((c) => c.id === S.cat) && !endsTooSoon();
+function changes() {
+  const o = S.edit.orig;
+  return { amt: Number(S.digits) !== Number(o.digits), date: cmp(S.date, o.date) !== 0,
+           name: S.name.trim() !== o.name, cat: S.cat !== o.cat,
+           rpt: S.n !== o.n || S.unit !== o.unit, end: S.end !== o.end };
+}
+const dirty = () => Object.values(changes()).some(Boolean);
+// ✓ waits for everything required, and when editing, for a change.
+const canSave = () => valid() && (!S.edit || dirty());
 
 function renderButtons() {
   const future = cmp(S.date, TODAY) > 0;
@@ -564,7 +651,8 @@ function render() {
   a.classList.toggle("zero", !S.digits);
   fitAmount();
   if ($("#name").value !== S.name) $("#name").value = S.name;
-  $("#save").disabled = !valid();
+  $("#check").disabled = !canSave();
+  $("#trash").hidden = !S.edit;
   renderButtons();
 
   const m = S.mode;
@@ -574,8 +662,6 @@ function render() {
   $("#a-repeat").hidden = m !== "repeat";
   $("#a-cat").hidden = m !== "cat";
   $("#newcat").hidden = !newing;
-  $("#save-wrap").hidden = newing;
-  $("#save-wrap").classList.toggle("tight", m === "name");
   $("#kbd-text").hidden = !(m === "name" || m === "newName");
   $("#kbd-emoji").hidden = m !== "newEmoji";
   $("#home").hidden = m === "name" || newing;
@@ -629,7 +715,7 @@ $("#amount").addEventListener("click", () => setMode("keypad"));
 
 /* ── name ── */
 $("#name").addEventListener("focus", () => { if (S.mode !== "name") setMode("name"); });
-$("#name").addEventListener("input", (e) => { S.name = e.target.value; $("#save").disabled = !valid(); });
+$("#name").addEventListener("input", (e) => { S.name = e.target.value; $("#check").disabled = !canSave(); });
 $("#name").addEventListener("keydown", (e) => { if (e.key === "Enter") setMode("keypad"); });
 $("#kbd-done").addEventListener("click", () => {
   if (S.mode === "newName") addCategory(); else setMode("keypad");
@@ -661,7 +747,7 @@ $("#a-date").addEventListener("click", (e) => {
     return;
   }
   const d = e.target.closest("[data-d]");
-  if (d) { S.date = { y: S.view.y, m: S.view.m, d: Number(d.dataset.d) }; renderCalendar(); renderButtons(); }
+  if (d) { S.date = { y: S.view.y, m: S.view.m, d: Number(d.dataset.d) }; renderCalendar(); renderButtons(); $("#check").disabled = !canSave(); }
 });
 
 /* ── repeat wheel ── */
@@ -689,7 +775,8 @@ function syncWheel() {
   [wN, wUnit, wEnd].forEach(paint);
 }
 function updateCaption() {
-  $("#caption").textContent = S.end ? `Last payment ${long(occurrence(S.date, S.n, S.unit, S.end - 1))}` : "";
+  $("#caption").textContent = !S.end ? "" : endsTooSoon() ? "That ends before this charge. Delete does that."
+    : `Last payment ${long(lastPayment())}`;
 }
 function onWheel(col, apply) {
   let raf = 0;
@@ -697,7 +784,7 @@ function onWheel(col, apply) {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
       const i = paint(col);
-      if (apply(i)) { updateCaption(); renderButtons(); }
+      if (apply(i)) { updateCaption(); renderButtons(); $("#check").disabled = !canSave(); }
     });
   }, { passive: true });
   col.addEventListener("click", (e) => {
@@ -766,19 +853,126 @@ function openSheet() {
 }
 function closeSheet() {
   if (document.activeElement) document.activeElement.blur();
+  hideMenus();
   $("#scrim").classList.remove("on");
   $("#sheet").classList.remove("on");
 }
 $("#close").addEventListener("click", closeSheet);
 $("#scrim").addEventListener("click", closeSheet);
-$("#save").addEventListener("click", () => {
-  if (!valid()) return;
-  const name = S.name.trim();
-  const first = !items.length;
-  items.push({ name, amt: Number(S.digits), anchor: { ...S.date }, n: S.n, unit: S.unit, end: S.end, cat: S.cat });
-  closeSheet();
-  renderTimeline(name);
-  if (first) restOnThisMonth();       // the first expense replaces the empty state
+
+// The timeline stays where you were after a save or a delete.
+function refresh(freshName) { const tl = $("#timeline"), top = tl.scrollTop; renderTimeline(freshName); tl.scrollTop = top; markPinned(); }
+
+$("#check").addEventListener("click", () => {
+  if (!canSave()) return;
+  if (!S.edit) {
+    const name = S.name.trim();
+    const first = !items.length;
+    items.push({ name, amt: Number(S.digits), anchor: { ...S.date }, n: S.n, unit: S.unit, end: S.end, cat: S.cat, sid: "s" + Date.now(), ov: {} });
+    closeSheet();
+    renderTimeline(name);
+    if (first) restOnThisMonth();       // the first expense replaces the empty state
+    return;
+  }
+  const c = changes();
+  if (Number(S.digits) === 0 && c.amt) return finish(skipThis);          // €0 is a skip; nothing to ask
+  if (c.rpt) return finish(applyFuture);                                // how often it repeats: from here on
+  if ((c.amt || c.date) && hasLater()) { $("#veil").hidden = false; $("#menu").hidden = false; return; }
+  finish(c.amt || c.date ? applyThis : applyBill);
+});
+$("#menu").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-scope]");
+  if (!b) return;
+  hideMenus();
+  finish(b.dataset.scope === "one" ? applyThis : applyFuture);
+});
+function hideMenus() { $("#veil").hidden = true; $("#menu").hidden = true; $("#asheet").hidden = true; }
+$("#veil").addEventListener("click", hideMenus);
+$("#asheet-cancel").addEventListener("click", hideMenus);
+function finish(apply) { apply(); closeSheet(); refresh(); }
+
+/* ── editing ── */
+function openEdit(i, k) {
+  const it = items[i], ov = it.ov[k] || {}, sched = occurrence(it.anchor, it.n, it.unit, k);
+  const prior = priorCount(it);
+  const tail = lastRule(it);
+  S = freshEditor();
+  S.digits = ov.skip ? "0" : String(ov.amt ?? it.amt);
+  S.name = it.name; S.date = { ...(ov.date || sched) }; S.n = it.n; S.unit = it.unit; S.cat = it.cat;
+  S.end = tail.end ? priorCount(tail) + tail.end : 0;                  // the whole bill's count
+  S.view = { y: S.date.y, m: S.date.m };
+  S.edit = { it, k, sched, prior, orig: { digits: S.digits, date: { ...S.date }, name: S.name, cat: S.cat, n: S.n, unit: S.unit, end: S.end } };
+  render();
+  $("#scrim").classList.add("on");
+  $("#sheet").classList.add("on");
+}
+$("#timeline").addEventListener("click", (e) => {
+  const row = e.target.closest(".trow[data-i]");
+  if (row) openEdit(Number(row.dataset.i), Number(row.dataset.c));
+});
+const hasLater = () => { const { it, k } = S.edit; return !(it.end && k >= it.end - 1) || lastRule(it) !== it; };
+const isFirstCharge = () => S.edit.k === 0 && series(S.edit.it)[0] === S.edit.it;
+
+// Name and category are the whole bill's, past included.
+function applyBill() {
+  const { it } = S.edit, c = changes();
+  for (const x of series(it)) { x.name = S.name.trim(); x.cat = S.cat; }
+  if (c.end) { const l = lastRule(it); l.end = S.end ? S.end - priorCount(l) : 0; }
+}
+function applyThis() {
+  const { it, k, sched } = S.edit, amt = Number(S.digits);
+  const ov = { ...(it.ov[k] || {}) };
+  delete ov.skip;
+  if (amt === it.amt) delete ov.amt; else ov.amt = amt;
+  if (cmp(S.date, sched) === 0) delete ov.date; else ov.date = { ...S.date };
+  if (Object.keys(ov).length) it.ov[k] = ov; else delete it.ov[k];
+  applyBill();
+}
+function skipThis() {
+  const { it, k, sched } = S.edit;
+  it.ov[k] = { ...(it.ov[k] || {}), skip: true };
+  if (cmp(S.date, sched) !== 0) it.ov[k].date = { ...S.date };
+  applyBill();
+}
+// This charge and after. From a bill's first charge that's all of it; otherwise the rule ends the
+// charge before and a new one starts here, so what the timeline said about the past stays true.
+function applyFuture() {
+  const { it, k, prior } = S.edit;
+  const next = { name: S.name.trim(), amt: Number(S.digits), anchor: { ...S.date }, n: S.n, unit: S.unit,
+                 end: S.end ? S.end - prior - k : 0, cat: S.cat, sid: it.sid, ov: {} };
+  for (const x of series(it)) if (cmp(x.anchor, it.anchor) > 0) items.splice(items.indexOf(x), 1);
+  if (k === 0) items.splice(items.indexOf(it), 1, next);
+  else { it.end = k; for (const key of Object.keys(it.ov)) if (Number(key) >= k) delete it.ov[key]; items.push(next); }
+  for (const x of series(next)) { x.name = next.name; x.cat = next.cat; }
+}
+
+/* ── deleting: Calendar's two answers ── */
+$("#trash").addEventListener("click", () => {
+  const { it, k } = S.edit, name = esc(it.name);
+  const prev = k > 0 ? occurrence(it.anchor, it.n, it.unit, k - 1)
+                     : (() => { const s = series(it), p = s[s.indexOf(it) - 1]; return p && lastOf(p); })();
+  if (isFirstCharge()) {
+    $("#asheet-hd").innerHTML = `<b>Delete ${name}?</b>Every charge goes, past ones too.`;
+    $("#asheet-acts").innerHTML = `<button data-del="all">Delete ${name}</button>`;
+  } else {
+    const every = it.n === 1 ? `every ${it.unit}` : `every ${it.n} ${it.unit}s`;
+    $("#asheet-hd").innerHTML = `<b>${name} repeats ${every}.</b>Deleting future charges keeps ${short(prev)} and earlier.`;
+    $("#asheet-acts").innerHTML = `<button data-del="future">Delete All Future Charges</button><button data-del="all">Delete All Charges</button>`;
+  }
+  $("#veil").hidden = false; $("#asheet").hidden = false;
+});
+$("#asheet-acts").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-del]");
+  if (!b) return;
+  const { it, k } = S.edit;
+  if (b.dataset.del === "all") for (const x of series(it)) items.splice(items.indexOf(x), 1);
+  else {
+    for (const x of series(it)) if (cmp(x.anchor, it.anchor) > 0) items.splice(items.indexOf(x), 1);
+    if (k === 0) items.splice(items.indexOf(it), 1);
+    else { it.end = k; for (const key of Object.keys(it.ov)) if (Number(key) >= k) delete it.ov[key]; }
+  }
+  hideMenus(); closeSheet(); refresh();
+  if (!items.length) { renderTimeline(); restOnThisMonth(); }
 });
 $("#nav-add").addEventListener("click", openSheet);
 

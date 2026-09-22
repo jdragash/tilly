@@ -25,8 +25,8 @@ than replacing them.
 | **Certainty** | estimated / known | *Not rendered in v1.* Returns with variable bills |
 
 An upcoming row sits back: name, date, icon and amount all at secondary weight. A charged row
-comes forward at full weight. A skipped row withdraws further and strikes its amount through:
-listed, visibly known about, visibly not counted.
+comes forward at full weight. A skipped row, a charge saved at €0, withdraws further and strikes
+its usual amount through: listed, visibly known about, visibly not counted.
 
 An occurrence dated today is charged. An occurrence with no amount shows an em dash and adds
 nothing to any total.
@@ -63,14 +63,14 @@ emoji; every expense has one. A bill that ends adds its last month to the date, 
 
 Every amount carries a minus sign: rows and month totals. Nothing on this screen is money
 arriving, so the sign sets the register. A zero is unsigned (`€0`), because nothing is going out.
-
-Amounts round to whole units before anything is totalled, so a total always equals the figures
-above it.
+Amounts round to whole units before anything is totalled, so a total always equals the figures above.
 
 ### Rules delimit, they don't decorate
 
 No separator between rows; space does that work. A hairline appears only under a pinned month
-header. A rule means something is being closed.
+header. A rule means something is being closed. Nothing marks where upcoming meets charged either:
+the change of weight is the boundary, and there is no `TODAY` badge, since the latest charge
+usually isn't today.
 
 ### Every charge is its own row
 
@@ -87,11 +87,6 @@ month has nothing charged, and a past month has nothing left.
 That header is the headline number, so it doesn't get a second home above the content. Totals
 everywhere exclude skipped occurrences. A month name carries its year only when that year isn't
 the current one.
-
-### Nothing marks the boundary between upcoming and charged
-
-The last row at secondary weight and the first at full weight are the boundary. No divider. No
-`TODAY` badge either: the most recent charge usually isn't today.
 
 ### One list, and the future runs on
 
@@ -111,20 +106,8 @@ the last payment instead: `Nothing after May 2027.` An empty month ahead isn't l
 
 The list runs down to the oldest occurrence the rules generate and stops, with one line: `Nothing
 before March.` A month between there and today that holds nothing isn't listed at all. No month
-ever shows €0 for a month the app knows nothing about.
-
-Expenses are entered for their next occurrence, not their historical start. Backdating stays
-possible, and a deliberately backdated bill is shown.
-
-### No reserved space
-
-No slot is held open for features that don't exist yet, such as look-ahead nudges. An empty box
-above the content is the competitor's defining mistake.
-
-### A moved occurrence appears at its new date only
-
-No ghost row at the original date, and no "moved from the 1st". Whether an edit applies to this
-occurrence or the series is asked at the moment of editing.
+ever shows €0 for a month the app knows nothing about. Expenses are entered for their next
+occurrence, not their historical start; a deliberately backdated bill is shown.
 
 ### Getting back
 
@@ -145,14 +128,15 @@ month name rather than at the edge: `September −€53 left`. Its ground is opa
 as the page, so content passing beneath is hidden rather than tinted, and it carries that ground at
 rest too. Glass is for things that float over content; a full-bleed sticky header doesn't float.
 
-The row gives + 8pt of clear space above and below. It keeps its full size when pinned. Condensing would save a point, cost three points of type, and
-make the month you're *in* the same shape as a month you could *open*. The hairline under it appears
-only while it's pinned.
+The row gives + 8pt of clear space above and below. It keeps its full size when pinned: condensing
+would cost three points of type and make the month you're *in* the same shape as one you could
+*open*. The hairline under it appears only while it's pinned.
 
 ### Nothing under the reader's eyes moves
 
 Nothing is ever inserted above the reader: the months ahead are all there from the start. Crossing
 midnight into a new month moves the header figure and reclassifies passed rows, and nothing else.
+Saving or deleting leaves the list where it was, even when the charge lands out of sight.
 
 ### Your place survives
 
@@ -164,9 +148,8 @@ process survived. The current month decides where you land only on first run.
 The area behind the status bar and Dynamic Island carries the page's own background, opaque and full
 width. Content scrolls under it and is hidden. It has to hide a month header, not just a row: during a
 hand-off the outgoing header sits in that inset. iOS 26's scroll edge effect had no visible effect
-here, and a scrim or progressive blur leaks exactly where that header sits.
-
-Mockups leave the inset empty rather than painting a clock into it.
+here, and a scrim or progressive blur leaks exactly where that header sits. Mockups leave the
+inset empty rather than painting a clock into it.
 
 ---
 
@@ -175,15 +158,13 @@ Mockups leave the inset empty rather than painting a clock into it.
 ### The amount is the screen
 
 The amount is the largest thing on it, and the keypad is up when the editor opens. The name sits
-under the amount. Close is top left, and Save is the system's prominent checkmark top right.
-
-The keyboard covers the editor rather than pushing it, except at accessibility sizes, where it scrolls.
+under the amount. Close is top left, and Save is the system's prominent checkmark top right. The
+keyboard covers the editor rather than pushing it, except at accessibility sizes, where it scrolls.
 
 ### Amount, name and category are required
 
-Save stays disabled until all three are there, and while a new category is half made. The date
-starts as today. The row leads with the
-emoji and the name, and insights stand on the category.
+✓ stays disabled until all three are there, and while a new category is half made. The date
+starts as today. The row leads with the emoji and the name, and insights stand on the category.
 
 ### Three buttons: date, category, repeat
 
@@ -209,6 +190,31 @@ the amount and name never move. Nothing stacks a second sheet over the editor.
   keyboard, then asks for the name. Both are required: without the emoji, the button couldn't tell
   a category from none.
 
+### Opening a charge edits it
+
+Tapping a row opens the editor for that charge, filled in, keypad up. The date is the charge's own,
+where it landed if it was moved; a moved charge shows only there, with no trace at the old date. ✓
+waits for a change, and a red trash button sits left of it.
+
+### This charge, or future charges
+
+Edit first, then choose, as Calendar. On ✓, when the amount or date changed and a charge follows,
+a menu from ✓ asks `Save for this charge only` or `Save for future charges`. Future means this
+charge and every one after, except a later charge changed on its own, which keeps its change while
+its date still exists. The past never changes, except from a bill's first charge.
+
+Name and category belong to the whole bill and change without asking, as does the payment count,
+which counts the whole bill whichever charge is open and offers no count ending before it. A new
+repeat applies from this charge on.
+
+Skipping is saving a charge at €0: ✓ doesn't ask, and typing the amount back undoes it.
+
+### Deleting asks which
+
+The trash button asks, as Calendar: `Delete All Future Charges` keeps the charges before this one,
+which is how a subscription ends, and the bill then reads `ends 08/26` like any bill with an end.
+`Delete All Charges` takes the past too. A bill's first charge offers only `Delete Gym`.
+
 ---
 
 ## Copy rules
@@ -225,12 +231,6 @@ an account.
 ---
 
 ## Interaction patterns
-
-### "This occurrence" vs. "all future"
-
-When editing something that recurs, the scope being changed is unmistakable *at the moment of
-choosing*, not inferable afterwards. One occurrence writes an override. The series edits the rule and
-corrects the whole timeline.
 
 ### Nothing to confirm
 
