@@ -9,6 +9,9 @@ import os
 /// panel rather than pushing the editor up. See "The editor" in `docs/DESIGN.md`.
 struct ExpenseEditor: View {
     let today: Date
+    /// Set when the editor opened from a row: editing a real charge rather than adding a new
+    /// bill. See "Opening a charge edits it" in `docs/DESIGN.md`.
+    let session: EditSession?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -19,6 +22,8 @@ struct ExpenseEditor: View {
 
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
+    @State private var showingScopeDialog = false
+    @State private var showingDeleteDialog = false
     @FocusState private var nameFocused: Bool
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.editorAmountSize
     @ScaledMetric(relativeTo: .title3) private var nameHeight = Tokens.Size.editorNameHeight
@@ -26,10 +31,12 @@ struct ExpenseEditor: View {
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
-    /// `draft` and `panel` exist so previews can open the editor part-way through.
-    init(today: Date, draft: ExpenseDraft? = nil, panel: EditorPanel = .keypad) {
+    /// `draft` and `panel` exist so previews can open the editor part-way through. With a
+    /// `session` and no explicit `draft`, the draft opens from the session's own baseline.
+    init(today: Date, draft: ExpenseDraft? = nil, panel: EditorPanel = .keypad, session: EditSession? = nil) {
         self.today = today
-        _draft = State(initialValue: draft ?? ExpenseDraft(today: today, calendar: .current))
+        self.session = session
+        _draft = State(initialValue: draft ?? session?.draft ?? ExpenseDraft(today: today, calendar: .current))
         _panel = State(initialValue: panel)
     }
 
@@ -72,10 +79,32 @@ struct ExpenseEditor: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(role: .close) { dismiss() }
                 }
+                if let session {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showingDeleteDialog = true
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .tint(Tokens.Ink.destructive)
+                        .accessibilityLabel("Delete")
+                        .confirmationDialog(
+                            deleteTitle(for: session), isPresented: $showingDeleteDialog, titleVisibility: .visible
+                        ) {
+                            deleteButtons(for: session)
+                        } message: {
+                            Text(deleteMessage(for: session))
+                        }
+                    }
+                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                }
                 // A half-made category is finished or cancelled before the expense is saved.
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm, action: save)
-                        .disabled(!isValid || panel == .newCategory)
+                        .disabled(!canSave)
+                        .confirmationDialog("", isPresented: $showingScopeDialog, titleVisibility: .hidden) {
+                            scopeButtons
+                        }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -153,6 +182,13 @@ struct ExpenseEditor: View {
         draft.isValid { id in categories.contains { $0.id == id } }
     }
 
+    /// ✓ waits for a change once there's a charge open — an untouched edit has nothing to save.
+    private var canSave: Bool {
+        guard panel != .newCategory else { return false }
+        guard session != nil else { return isValid }
+        return isValid && draft.changes.any
+    }
+
     private var dateBinding: Binding<Date> {
         Binding(
             get: { draft.date },
@@ -173,6 +209,26 @@ struct ExpenseEditor: View {
     }
 
     private func save() {
+        guard let session else {
+            saveNewExpense()
+            return
+        }
+        guard canSave else { return }
+        switch draft.saveIntent(hasLaterCharge: session.hasLaterCharge) {
+        case .nothing:
+            break
+        case .askScope:
+            showingScopeDialog = true
+        case .thisCharge:
+            saveThisCharge(session)
+        case .futureCharges:
+            saveFutureCharges(session)
+        case .wholeBill:
+            saveWholeBill(session)
+        }
+    }
+
+    private func saveNewExpense() {
         guard isValid, let amount = draft.amount, let category = selectedCategory else { return }
         let expense = Expense(
             name: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -190,6 +246,124 @@ struct ExpenseEditor: View {
         } catch {
             Self.logger.error("Saving an expense failed: \(error)")
         }
+    }
+
+    // MARK: Editing
+
+    @ViewBuilder
+    private var scopeButtons: some View {
+        if let session {
+            Button("Save for this charge only") { saveThisCharge(session) }
+            Button("Save for future charges") { saveFutureCharges(session) }
+        }
+    }
+
+    private func saveThisCharge(_ session: EditSession) {
+        edit(session) { expense, category in
+            try BillEditor.saveThisCharge(
+                draft, expense: expense, scheduledDate: session.scheduledDate, category: category,
+                context: modelContext, calendar: calendar
+            )
+        }
+    }
+
+    private func saveFutureCharges(_ session: EditSession) {
+        edit(session) { expense, category in
+            try BillEditor.saveFutureCharges(
+                draft, expense: expense, scheduledDate: session.scheduledDate, category: category,
+                context: modelContext, calendar: calendar
+            )
+        }
+    }
+
+    private func saveWholeBill(_ session: EditSession) {
+        edit(session) { expense, category in
+            try BillEditor.saveWholeBill(draft, expense: expense, category: category, context: modelContext, calendar: calendar)
+        }
+    }
+
+    @ViewBuilder
+    private func deleteButtons(for session: EditSession) -> some View {
+        if session.isFirstCharge {
+            Button("Delete \(draft.name)", role: .destructive) {
+                deleteAllCharges(session)
+            }
+        } else {
+            Button("Delete All Future Charges", role: .destructive) {
+                deleteFutureCharges(session)
+            }
+            Button("Delete All Charges", role: .destructive) {
+                deleteAllCharges(session)
+            }
+        }
+    }
+
+    private func deleteFutureCharges(_ session: EditSession) {
+        guard let expense = fetchExpense(session.expenseID) else { return }
+        performEdit {
+            try BillEditor.deleteFutureCharges(
+                from: session.scheduledDate, of: expense, context: modelContext, calendar: calendar
+            )
+        }
+    }
+
+    private func deleteAllCharges(_ session: EditSession) {
+        guard let expense = fetchExpense(session.expenseID) else { return }
+        performEdit {
+            try BillEditor.deleteAllCharges(of: expense, context: modelContext)
+        }
+    }
+
+    private func deleteTitle(for session: EditSession) -> String {
+        session.isFirstCharge ? "Delete \(draft.name)?" : "\(draft.name) repeats \(repeatPhrase)."
+    }
+
+    private func deleteMessage(for session: EditSession) -> String {
+        guard !session.isFirstCharge else { return "Every charge goes, past ones too." }
+        let previous = session.previousChargeDate.map(shortDate) ?? ""
+        return "Deleting future charges keeps \(previous) and earlier."
+    }
+
+    /// "every month", "every 3 months", "every week" — the trash dialog's own phrasing, apart
+    /// from `repeatLabel`'s button-sized noun.
+    private var repeatPhrase: String {
+        if draft.interval == 1 {
+            switch draft.unit {
+            case .day: return "every day"
+            case .week: return "every week"
+            case .month: return "every month"
+            case .year: return "every year"
+            }
+        }
+        return "every \(draft.interval) \(draft.unit.rawValue)s"
+    }
+
+    /// "Oct 31", never a year — matches `ExpenseDraft.dateLabel`.
+    private func shortDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.locale = locale
+        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        return formatter.string(from: date)
+    }
+
+    private func edit(_ session: EditSession, _ operation: (Expense, ExpenseCategory) throws -> Void) {
+        guard let category = selectedCategory, let expense = fetchExpense(session.expenseID) else { return }
+        performEdit { try operation(expense, category) }
+    }
+
+    private func performEdit(_ operation: () throws -> Void) {
+        do {
+            try operation()
+            dismiss()
+        } catch {
+            Self.logger.error("Editing an expense failed: \(error)")
+        }
+    }
+
+    private func fetchExpense(_ id: UUID) -> Expense? {
+        (try? modelContext.fetch(FetchDescriptor<Expense>()))?.first { $0.id == id }
     }
 }
 
@@ -240,5 +414,43 @@ private func previewContainer() -> (ModelContainer, ExpenseCategory) {
     draft.categoryID = category.id
     return ExpenseEditor(today: Date(), draft: draft)
         .modelContainer(container)
+        .dynamicTypeSize(.accessibility3)
+}
+
+/// A bill running on with no end, anchored `monthsAgo` months back, so the charge opened
+/// always has a later one — `EditSession.make` reads it straight from the store, the same
+/// way a real row tap would.
+private func previewEditSession(monthsAgo: Int, in container: ModelContainer, category: ExpenseCategory) -> EditSession {
+    let context = container.mainContext
+    let calendar = Calendar.current
+    let anchor = calendar.date(byAdding: .month, value: -monthsAgo, to: calendar.startOfDay(for: Date()))!
+    let expense = Expense(name: "Gym", amount: 50, anchorDate: anchor, category: category)
+    context.insert(expense)
+    try! context.save()
+    return try! EditSession.make(expenseID: expense.id, scheduledDate: anchor, context: context, calendar: calendar)!
+}
+
+#Preview("Editing a charge") {
+    let (container, category) = previewContainer()
+    let session = previewEditSession(monthsAgo: 0, in: container, category: category)
+    return ExpenseEditor(today: Date(), session: session)
+        .modelContainer(container)
+}
+
+#Preview("Editing, scope question") {
+    let (container, category) = previewContainer()
+    let session = previewEditSession(monthsAgo: 3, in: container, category: category)
+    var draft = session.draft
+    draft.digits = "75"
+    return ExpenseEditor(today: Date(), draft: draft, session: session)
+        .modelContainer(container)
+}
+
+#Preview("Editing, dark, accessibility size") {
+    let (container, category) = previewContainer()
+    let session = previewEditSession(monthsAgo: 0, in: container, category: category)
+    return ExpenseEditor(today: Date(), session: session)
+        .modelContainer(container)
+        .preferredColorScheme(.dark)
         .dynamicTypeSize(.accessibility3)
 }

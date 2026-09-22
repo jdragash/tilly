@@ -400,6 +400,10 @@ shows nothing on the timeline, stop and report rather than building an undo cont
 
 ## Lessons
 
+- Step 5: both the scope `confirmationDialog` (attached to ✓) and the delete `confirmationDialog`
+  (attached to trash) draw as a menu off their button on iOS 26, not as a bottom sheet. Confirmed
+  on device.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be
