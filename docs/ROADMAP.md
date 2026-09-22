@@ -18,7 +18,7 @@ The smallest thing that does the job.
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
 | Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere, mid-flick included. |
 | Expense editor | Creating done; editing designed | Adding an expense is built, in the Calendar-style shell. Editing an existing one is designed and planned: tapping a row, "this charge only or future charges", deleting. `docs/plans/expense-editor-editing.md`. |
-| Occurrence overrides | In the editor | A different amount or date for one charge, and a skip, which is €0. Planned with editing. |
+| Occurrence overrides | In the editor | A different amount or date for one charge, €0 included. Planned with editing. Skipping is left out. |
 | Categories | In the editor, partly | Emoji and name, user-created, ships empty, required on every expense. Created in the editor; listed in Settings. Editing them there isn't designed yet. |
 | Insights, thin | Exploring | A category breakdown over a chosen period (this month, last month, monthly average, next 12 months, this year). Early ideas on the editor canvas. |
 | Token gallery | — | `DesignSystem/Gallery.swift`: every token and component in light, dark and accessibility sizes. |
@@ -31,6 +31,7 @@ The smallest thing that does the job.
 
 | Item | Why not v1 |
 |---|---|
+| Viewing a charge before editing it | Prototyped and set aside on 2026-09-22 (the "view first" switch in `docs/prototypes/expense-editor-entry.html`): the editor-first version read better. Worth reopening with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
 | Look-ahead nudges ("next month has a large annual bill") | Arguably the core promise, but the rules need real usage to design well. The engine already computes any future range. No space is reserved for it. |
 | Custom and pay-period months | Plenty of people read money from one payday to the next. Cheaper than it looks: "the month starts on the Nth" redefines one interval, and the engine windows on any `DateInterval`. |

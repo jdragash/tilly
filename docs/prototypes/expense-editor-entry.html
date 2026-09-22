@@ -18,18 +18,29 @@
           editor already shows everything it would.)
     · Edit first, then choose, as Calendar. On ✓, if the amount or date changed and a charge
           follows this one, it asks: "Save for this charge only" or "Save for future charges".
-          Future means this charge and after. The past never changes, except from a bill's
-          first charge, where future is all of it. (Choosing first, and a third "all charges"
-          answer, both lost.)
+          Future means this charge and after; a later charge changed on its own keeps its change.
+          Nothing before the open charge changes; from a bill's first charge, future is all of
+          it. (Choosing first, and a third "all charges" answer, both lost.)
     · Name and category belong to the whole bill and change without asking. A change to how
           often it repeats applies from this charge on, without asking. The payment count on the
           wheel counts the whole bill, whichever charge you opened.
-    · Skipping one charge is saving it at €0: ✓ doesn't ask, and the row draws as skipped,
-          its usual amount struck through and not counted. Type the amount back to undo.
+    · One charge can be €0, for a free month: an ordinary amount, saved for that charge alone
+          without asking, and drawn as "€0". Nothing skips a charge. (€0 drawn as a skip, struck
+          through, lost: a second idea for a case met once or twice a year.)
     · Trash asks, as Calendar: "Delete All Future Charges" (this charge on goes, the past stays:
           how you end a subscription) or "Delete All Charges" (the bill is gone, past included).
           On a bill's first charge there's one answer, "Delete Gym".
-    · After saving or deleting, the timeline stays where you were.
+    · After saving or deleting, the timeline stays where you were. Shaking undoes it (not
+          prototyped).
+    · A bill whose last payment is today or past reads "ended 08/26" rather than "ends".
+
+  Explored 2026-09-22 and set aside the same day, kept on the switch for later — "view first"
+  under "opening a row" (Jake preferred the editor with its trash button): a page about the charge first,
+  as Calendar has, with Edit top right. There the scope is chosen by which button you press,
+  so ✓ never asks: "Change this charge" edits the amount and date of this charge alone, and
+  Edit changes this charge and every one after. A charge that differs from its bill shows
+  "usually €68", which is where a variable bill's actual amount would live. The editor opening
+  straight away ("edit") is what's being built; see ROADMAP.md for the view.
 
   The shell, settled on the canvas in rounds 3–5:
     · Like iOS Calendar. The month header pins to the top with its total beside the name
@@ -116,7 +127,7 @@ html, body { margin: 0; min-height: 100%; }
 body {
   font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   background: #ececf0; color: #1c1c1e;
-  display: flex; justify-content: center; align-items: flex-start; gap: 40px; padding: 32px;
+  display: flex; flex-wrap: wrap; justify-content: safe center; align-items: flex-start; gap: 40px; padding: 32px;
 }
 @media (prefers-color-scheme: dark) { body { background: #101012; color: #f2f2f7; } }
 
@@ -184,6 +195,23 @@ legend { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; opaci
 .trow.upcoming .dt { color: var(--ink-3); }
 .trow.upcoming .well { opacity: .55; }
 .trow { cursor: pointer; }
+.btn.off { opacity: .35; pointer-events: none; }
+.name[readonly] { color: var(--ink-2); }
+/* view mode: a page about the charge */
+.vtop { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px 20px 28px; }
+.vwell { width: 64px; height: 64px; border-radius: 16px; background: var(--fill-4); display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.vname { font-size: 26px; font-weight: 700; letter-spacing: -.4px; margin-top: 6px; }
+.vamt { font-size: 44px; font-weight: 600; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.vamt.up { color: var(--ink-2); }
+.vusual { font-size: 15px; color: var(--ink-2); min-height: 20px; }
+.vgrp { margin: 0 20px 20px; border-radius: 12px; background: var(--fill-4); overflow: hidden; }
+.vrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 50px; padding: 0 16px; font-size: 17px; }
+.vrow + .vrow { border-top: .5px solid var(--sep); }
+.vrow .sub { color: var(--ink-2); font-size: 15px; }
+button.vrow { width: 100%; border: 0; background: transparent; font: inherit; font-size: 17px; color: var(--tint); cursor: pointer; text-align: left; }
+button.vrow.red { color: var(--red); }
+.vspace { flex: 1; }
+.textbtn { height: 44px; padding: 0 18px; border-radius: 22px; border: 0; background: var(--fill-3); color: var(--ink-1); font: inherit; font-size: 17px; font-weight: 600; cursor: pointer; }
 .trow:active { background: var(--fill-4); }
 /* Skipped: withdrawn further than upcoming, the usual amount struck through and not counted. */
 .trow.skipped .nm { color: var(--ink-2); }
@@ -327,7 +355,7 @@ input:focus, input:focus-visible { outline: none; }
 <body>
 
 <div class="panel">
-  <h1>Tilly — adding an expense</h1>
+  <h1>Tilly — adding and editing</h1>
   <p class="sub">Prototype · 22 September 2026 · adding and editing, and the Calendar-style shell</p>
 
   <fieldset>
@@ -336,6 +364,17 @@ input:focus, input:focus-visible { outline: none; }
       <button data-v="light" aria-pressed="true">light</button>
       <button data-v="dark" aria-pressed="false">dark</button>
     </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>opening a row</legend>
+    <div class="seg" id="c-open">
+      <button data-v="edit" aria-pressed="true">edit (being built)</button>
+      <button data-v="view" aria-pressed="false">view first (set aside)</button>
+    </div>
+    <p class="note">"Edit" opens the editor on the keypad; ✓ asks which charges you mean.
+      "View first" opens a page about the charge, as Calendar does: "Change this charge" or Edit,
+      and ✓ never asks, because the button you chose already said.</p>
   </fieldset>
 
   <fieldset>
@@ -352,8 +391,8 @@ input:focus, input:focus-visible { outline: none; }
   <fieldset>
     <legend>try</legend>
     <p class="note" style="margin-top:0">Tap a row to edit that charge. Change the amount and tap
-      ✓: it asks whether you mean this charge or the ones after it. Type 0 to skip one. The red
-      trash button deletes what's ahead, or everything. Scroll down into history: each month's
+      ✓: it asks whether you mean this charge or the ones after it. Type 0 for a free month. The
+      red trash button deletes what's ahead, or everything. Scroll down into history: each month's
       header takes over the top row, beside +. Tap <b>September</b> to come back. "Today" is fixed
       at 17 September 2026. On a computer you can type the amount on your own keyboard.</p>
   </fieldset>
@@ -439,6 +478,18 @@ input:focus, input:focus-visible { outline: none; }
       </div>
       <div class="home" id="home"></div>
     </div>
+  </div>
+
+  <div class="sheet" id="viewer" role="dialog" aria-label="Charge">
+    <div class="grabber"></div>
+    <div class="bar"><button class="close" id="viewer-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="textbtn" id="viewer-edit">Edit</button></div>
+    <div class="vtop"><div class="vwell" id="v-well"></div><div class="vname" id="v-name"></div>
+      <div class="vamt" id="v-amt"></div><div class="vusual" id="v-usual"></div></div>
+    <div class="vgrp" id="v-facts"></div>
+    <div class="vgrp"><button class="vrow" id="v-change">Change this charge</button></div>
+    <div class="vspace"></div>
+    <div class="vgrp" style="margin-bottom: 50px;"><button class="vrow red" id="v-delete">Delete</button></div>
   </div>
 
   <div class="veil" id="veil" hidden></div>
@@ -532,7 +583,12 @@ const lastRule = (it) => series(it).slice(-1)[0];
 // Charges in the rules before this one, so a payment count can count the whole bill.
 const priorCount = (it) => series(it).filter((x) => cmp(x.anchor, it.anchor) < 0).reduce((n, x) => n + x.end, 0);
 // The second line is the date, plus the end on a bill that ends.
-const rowExtra = (it) => { const l = lastRule(it); return l.end ? ` · ends ${mmyy(lastOf(l))}` : ""; };
+const rowExtra = (it) => {
+  const l = lastRule(it);
+  if (!l.end) return "";
+  const last = lastOf(l);
+  return ` · ${cmp(last, TODAY) <= 0 ? "ended" : "ends"} ${mmyy(last)}`;   // "ended" once it's today or past
+};
 
 /* ── timeline ── */
 const monthName = (mo) => MONTHS_LONG[mo.m] + (mo.y === TODAY.y ? "" : " " + mo.y);
@@ -576,7 +632,7 @@ function renderTimeline(freshName) {
       html += `<div class="trow ${up ? "upcoming" : ""} ${r.skip ? "skipped" : ""} ${r.it.name === freshName ? "fresh" : ""}" data-i="${r.i}" data-c="${r.k}">` +
         `<div class="well">${emojiFor(r.it)}</div>` +
         `<div class="mid"><div class="nm">${esc(r.it.name)}</div><div class="dt">${short(r.o)}${rowExtra(r.it)}</div></div>` +
-        `<div class="am">−€${Math.round(shown).toLocaleString("en-IE")}</div></div>`;
+        `<div class="am">${Math.round(shown) ? "−" : ""}€${Math.round(shown).toLocaleString("en-IE")}</div></div>`;
     }
     html += `</section>`;
   }
@@ -620,7 +676,8 @@ function repeatLabel() {
   if (S.end) return endsTooSoon() ? "Ends" : mmyy(lastPayment());
   return S.n === 1 ? EVERY1[S.unit] : `${S.n} ${S.unit}s`;
 }
-const valid = () => (S.edit ? S.digits !== "" : Number(S.digits) > 0) && S.name.trim().length > 0 &&
+const valid = () => (S.edit ? S.digits !== "" && !(Number(S.digits) === 0 && S.n + S.unit !== S.edit.orig.n + S.edit.orig.unit)
+                             : Number(S.digits) > 0) && S.name.trim().length > 0 &&
   categories.some((c) => c.id === S.cat) && !endsTooSoon();
 function changes() {
   const o = S.edit.orig;
@@ -652,7 +709,10 @@ function render() {
   fitAmount();
   if ($("#name").value !== S.name) $("#name").value = S.name;
   $("#check").disabled = !canSave();
-  $("#trash").hidden = !S.edit;
+  $("#trash").hidden = !S.edit || !!S.scope;          // from the view page, Delete lives there
+  $("#b-cat").classList.toggle("off", S.scope === "one");   // one charge has only an amount and a date
+  $("#b-repeat").classList.toggle("off", S.scope === "one");
+  $("#name").readOnly = S.scope === "one";
   renderButtons();
 
   const m = S.mode;
@@ -875,7 +935,9 @@ $("#check").addEventListener("click", () => {
     return;
   }
   const c = changes();
-  if (Number(S.digits) === 0 && c.amt) return finish(skipThis);          // €0 is a skip; nothing to ask
+  if (S.scope === "one") return finish(applyThis);                      // view mode: the button chose
+  if (S.scope === "future") return finish(c.amt || c.date || c.rpt ? applyFuture : applyBill);
+  if (Number(S.digits) === 0 && c.amt) return finish(applyThis);         // €0 is this charge's alone
   if (c.rpt) return finish(applyFuture);                                // how often it repeats: from here on
   if ((c.amt || c.date) && hasLater()) { $("#veil").hidden = false; $("#menu").hidden = false; return; }
   finish(c.amt || c.date ? applyThis : applyBill);
@@ -889,15 +951,21 @@ $("#menu").addEventListener("click", (e) => {
 function hideMenus() { $("#veil").hidden = true; $("#menu").hidden = true; $("#asheet").hidden = true; }
 $("#veil").addEventListener("click", hideMenus);
 $("#asheet-cancel").addEventListener("click", hideMenus);
-function finish(apply) { apply(); closeSheet(); refresh(); }
+function finish(apply) {
+  const back = S.fromView;
+  const ret = apply();
+  closeSheet(); refresh();
+  if (back && ret) openView(ret.i, ret.k);          // as Calendar, back to the page about it
+}
 
 /* ── editing ── */
-function openEdit(i, k) {
+function openEdit(i, k, scope) {
   const it = items[i], ov = it.ov[k] || {}, sched = occurrence(it.anchor, it.n, it.unit, k);
   const prior = priorCount(it);
   const tail = lastRule(it);
   S = freshEditor();
-  S.digits = ov.skip ? "0" : String(ov.amt ?? it.amt);
+  S.digits = String(ov.amt ?? it.amt);
+  S.scope = scope || null; S.fromView = !!scope;
   S.name = it.name; S.date = { ...(ov.date || sched) }; S.n = it.n; S.unit = it.unit; S.cat = it.cat;
   S.end = tail.end ? priorCount(tail) + tail.end : 0;                  // the whole bill's count
   S.view = { y: S.date.y, m: S.date.m };
@@ -908,7 +976,9 @@ function openEdit(i, k) {
 }
 $("#timeline").addEventListener("click", (e) => {
   const row = e.target.closest(".trow[data-i]");
-  if (row) openEdit(Number(row.dataset.i), Number(row.dataset.c));
+  if (!row) return;
+  if (openMode === "view") openView(Number(row.dataset.i), Number(row.dataset.c));
+  else openEdit(Number(row.dataset.i), Number(row.dataset.c));
 });
 const hasLater = () => { const { it, k } = S.edit; return !(it.end && k >= it.end - 1) || lastRule(it) !== it; };
 const isFirstCharge = () => S.edit.k === 0 && series(S.edit.it)[0] === S.edit.it;
@@ -918,21 +988,15 @@ function applyBill() {
   const { it } = S.edit, c = changes();
   for (const x of series(it)) { x.name = S.name.trim(); x.cat = S.cat; }
   if (c.end) { const l = lastRule(it); l.end = S.end ? S.end - priorCount(l) : 0; }
+  return { i: items.indexOf(it), k: S.edit.k };
 }
 function applyThis() {
   const { it, k, sched } = S.edit, amt = Number(S.digits);
   const ov = { ...(it.ov[k] || {}) };
-  delete ov.skip;
   if (amt === it.amt) delete ov.amt; else ov.amt = amt;
   if (cmp(S.date, sched) === 0) delete ov.date; else ov.date = { ...S.date };
   if (Object.keys(ov).length) it.ov[k] = ov; else delete it.ov[k];
-  applyBill();
-}
-function skipThis() {
-  const { it, k, sched } = S.edit;
-  it.ov[k] = { ...(it.ov[k] || {}), skip: true };
-  if (cmp(S.date, sched) !== 0) it.ov[k].date = { ...S.date };
-  applyBill();
+  return applyBill();
 }
 // This charge and after. From a bill's first charge that's all of it; otherwise the rule ends the
 // charge before and a new one starts here, so what the timeline said about the past stays true.
@@ -941,13 +1005,25 @@ function applyFuture() {
   const next = { name: S.name.trim(), amt: Number(S.digits), anchor: { ...S.date }, n: S.n, unit: S.unit,
                  end: S.end ? S.end - prior - k : 0, cat: S.cat, sid: it.sid, ov: {} };
   for (const x of series(it)) if (cmp(x.anchor, it.anchor) > 0) items.splice(items.indexOf(x), 1);
+  // A later charge changed on its own keeps its change, while the new rule still has its date.
+  for (const key of Object.keys(it.ov)) {
+    if (Number(key) <= k) continue;
+    const at = occurrence(it.anchor, it.n, it.unit, Number(key));
+    for (let j = 0; j < 400; j++) {
+      const d = occurrence(next.anchor, next.n, next.unit, j), c = cmp(d, at);
+      if (c === 0) { next.ov[j] = it.ov[key]; break; }
+      if (c > 0) break;
+    }
+  }
   if (k === 0) items.splice(items.indexOf(it), 1, next);
   else { it.end = k; for (const key of Object.keys(it.ov)) if (Number(key) >= k) delete it.ov[key]; items.push(next); }
   for (const x of series(next)) { x.name = next.name; x.cat = next.cat; }
+  return { i: items.indexOf(next), k: 0 };
 }
 
 /* ── deleting: Calendar's two answers ── */
-$("#trash").addEventListener("click", () => {
+$("#trash").addEventListener("click", askDelete);
+function askDelete() {
   const { it, k } = S.edit, name = esc(it.name);
   const prev = k > 0 ? occurrence(it.anchor, it.n, it.unit, k - 1)
                      : (() => { const s = series(it), p = s[s.indexOf(it) - 1]; return p && lastOf(p); })();
@@ -960,7 +1036,7 @@ $("#trash").addEventListener("click", () => {
     $("#asheet-acts").innerHTML = `<button data-del="future">Delete All Future Charges</button><button data-del="all">Delete All Charges</button>`;
   }
   $("#veil").hidden = false; $("#asheet").hidden = false;
-});
+}
 $("#asheet-acts").addEventListener("click", (e) => {
   const b = e.target.closest("[data-del]");
   if (!b) return;
@@ -971,10 +1047,43 @@ $("#asheet-acts").addEventListener("click", (e) => {
     if (k === 0) items.splice(items.indexOf(it), 1);
     else { it.end = k; for (const key of Object.keys(it.ov)) if (Number(key) >= k) delete it.ov[key]; }
   }
-  hideMenus(); closeSheet(); refresh();
+  hideMenus(); closeSheet(); closeView(); refresh();
   if (!items.length) { renderTimeline(); restOnThisMonth(); }
 });
 $("#nav-add").addEventListener("click", openSheet);
+
+/* ── view first: a page about the charge (exploring) ── */
+let openMode = "edit";
+function openView(i, k) {
+  const it = items[i], ov = it.ov[k] || {}, sched = occurrence(it.anchor, it.n, it.unit, k);
+  const at = ov.date || sched, amt = ov.amt ?? it.amt, cat = categories.find((c) => c.id === it.cat) || {};
+  const tail = lastRule(it);
+  S = freshEditor();
+  S.edit = { it, k, sched, prior: priorCount(it), orig: {} };        // enough for Delete
+  S.viewRef = { i, k };
+  $("#v-well").textContent = cat.emoji || "";
+  $("#v-name").textContent = it.name;
+  $("#v-amt").textContent = "€" + Math.round(amt).toLocaleString("en-IE");
+  $("#v-amt").classList.toggle("up", cmp(at, TODAY) > 0);
+  $("#v-usual").textContent = amt !== it.amt ? `usually €${Math.round(it.amt).toLocaleString("en-IE")}` : "";
+  const every = it.n === 1 ? EVERY1[it.unit] : `Every ${it.n} ${it.unit}s`;
+  const end = tail.end ? `${cmp(lastOf(tail), TODAY) <= 0 ? "ended" : "ends"} ${short(lastOf(tail))}, ${lastOf(tail).y}` : "no end";
+  const wd = new Date(Date.UTC(at.y, at.m, at.d)).toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
+  $("#v-facts").innerHTML =
+    `<div class="vrow"><span>${wd}, ${short(at)}</span><span class="sub">${cmp(at, TODAY) > 0 ? "to come" : "charged"}</span></div>` +
+    `<div class="vrow"><span>${every}</span><span class="sub">${end}</span></div>` +
+    `<div class="vrow"><span>${cat.emoji || ""} ${esc(cat.name || "")}</span></div>`;
+  $("#v-delete").textContent = "Delete " + it.name;
+  $("#scrim").classList.add("on");
+  $("#viewer").classList.add("on");
+}
+function closeView() { $("#viewer").classList.remove("on"); if (!$("#sheet").classList.contains("on")) $("#scrim").classList.remove("on"); }
+function fromView(scope) { const { i, k } = S.viewRef; $("#viewer").classList.remove("on"); openEdit(i, k, scope); }
+$("#v-change").addEventListener("click", () => fromView("one"));
+$("#viewer-edit").addEventListener("click", () => fromView("future"));
+$("#viewer-close").addEventListener("click", closeView);
+$("#scrim").addEventListener("click", closeView);
+$("#v-delete").addEventListener("click", askDelete);
 
 /* ── this month, and settings ── */
 const currentSection = () => document.querySelector("#timeline section[data-current]");
@@ -995,7 +1104,7 @@ function closeSettings() { $("#settings").classList.remove("on"); if (!$("#sheet
 $("#nav-settings").addEventListener("click", openSettings);
 $("#settings-close").addEventListener("click", closeSettings);
 $("#scrim").addEventListener("click", closeSettings);
-function restart() { closeSheet(); closeSettings(); seed(); renderTimeline(); restOnThisMonth(); }
+function restart() { closeSheet(); closeView(); closeSettings(); seed(); renderTimeline(); restOnThisMonth(); }
 $("#reset")?.addEventListener("click", restart);
 
 /* ── controls ── */
@@ -1007,6 +1116,7 @@ function seg(sel, fn) {
 }
 seg("#c-theme", (v) => $("#device").classList.toggle("dark", v === "dark"));
 seg("#c-cats", (v) => { catsVariant = v; restart(); });
+seg("#c-open", (v) => { openMode = v; closeSheet(); closeView(); });
 
 seed();
 renderTimeline();

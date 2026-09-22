@@ -1,20 +1,21 @@
 # Editing an existing expense — implementation plan
 
 **Brief:** docs/briefs/expense-editor/brief.md (phase 2: the part it puts "In" that phase 1 didn't build)
-**Settled by:** `DESIGN.md` → "State grammar" (skipped rows), "Nothing under the reader's eyes
+**Settled by:** `DESIGN.md` → "The row" (ends and ended), "Nothing under the reader's eyes
 moves", "The editor" → "Opening a charge edits it", "This charge, or future charges", "Deleting
 asks which". `DECISIONS.md` → "Editing a charge is Calendar's", "Deleting asks Calendar's
-question, and a skip is €0", "A bill is a series of rules, and "future charges" starts the next
+question, and €0 is an ordinary amount", "A bill is a series of rules, and "future charges" starts the next
 one". Canvas page "Round 6 · Editing an expense (settled)"; working prototype
-`docs/prototypes/expense-editor-entry.html`, whose `applyThis` / `applyFuture` / delete handlers
-are the reference behaviour where this plan is silent on a detail.
+`docs/prototypes/expense-editor-entry.html` in its "edit" mode, whose `applyThis` / `applyFuture` /
+delete handlers are the reference behaviour where this plan is silent on a detail. Its "view
+first" mode was prototyped and set aside (`DECISIONS.md`); don't build it.
 
 ## Already decided — do not reopen
 
 - Tapping a row opens `ExpenseEditor` for that charge, keypad up, filled in. No detail page.
 - ✓ is disabled until something changed. A red trash button sits left of ✓, edit mode only.
-- On ✓: a repeat change (interval or unit) saves as future charges without asking. €0 skips this
-  charge without asking. Otherwise an amount or date change asks `Save for this charge only` /
+- On ✓: a repeat change (interval or unit) saves as future charges without asking. €0 saves for
+  this charge alone without asking; it is an ordinary amount, and nothing skips a charge. Otherwise an amount or date change asks `Save for this charge only` /
   `Save for future charges` when a later charge exists, and saves for this charge when none does.
   Name, category and payment count alone save to the whole bill without asking.
 - "Future charges" never changes a charge before the open one. From a bill's first charge it is
@@ -24,14 +25,15 @@ are the reference behaviour where this plan is silent on a detail.
 - The wheel's payment count is the whole bill's, and offers no count that ends before the open
   charge.
 - Trash asks `Delete All Future Charges` / `Delete All Charges`; on a bill's first charge only
-  `Delete <name>`. No undo.
+  `Delete <name>`. Shaking undoes the last save or delete (step 8).
+- A row of a bill whose last payment is today or past reads `ended 08/26`; otherwise `ends 05/27`.
 - After a save or delete the timeline stays where it was. It never scrolls to the edited charge.
 - A split writes a second `Expense` sharing `seriesID`; the engine (`Core/`) does not change.
 - `isArchived` stays on the model, unused. Removing a stored property is a migration for no gain.
 
 ## Model routing
 
-Steps 1–6 prove themselves with tests: Sonnet. Step 7 is scroll anchoring, which a green suite
+Steps 1–6 and 8 prove themselves with tests: Sonnet. Step 7 is scroll anchoring, which a green suite
 can't see (`.claude/rules/swiftui-scrolling.md`): Opus.
 
 ## Steps
@@ -42,6 +44,7 @@ Depends on nothing.
 
 **Files:** `Tilly/Models/Expense.swift` (modified), `Tilly/Models/Expense+Timeline.swift`
 (modified), `Tilly/Timeline/TimelineModels.swift` (modified), `Tilly/Timeline/TimelineBuilder.swift`
+(modified), `Tilly/Timeline/TimelineFormatting.swift` (modified), `TillyTests/TimelineFormattingTests.swift`
 (modified), `Tilly/Timeline/TimelineView.swift` (modified: `rebuildSections` only),
 `TillyTests/ModelLayerTests.swift`, `TillyTests/TimelineBuilderTests.swift` (modified)
 
@@ -64,6 +67,11 @@ let seriesEndDate: Date?
 // TimelineEntry gains, after `id`:
 let expenseID: UUID
 let scheduledDate: Date // the rule's date, start of day; `date` stays the effective one
+// and, after `endDate`:
+let endHasPassed: Bool // endDate is today or earlier
+
+// TimelineFormatting.dateLine: "Fri 18 · ends 05/27", or "Fri 18 · ended 08/26" when
+// `entry.endHasPassed`. The accessibility label says "ended" the same way.
 ```
 `TimelineBuilder` sets `endDate` from `expense.seriesEndDate` (start of day) instead of the rule's
 own end. `TimelineView.rebuildSections` calls `Expense.timelineExpenses(expenses)`. Keep
@@ -74,10 +82,13 @@ own end. `TimelineView.rebuildSections` calls `Expense.timelineExpenses(expenses
   `timelineExpensesCarryTheSeriesEnd` (two records, one series: the earlier ended, the later
   open → both carry nil), `aSeriesEndingLaterCarriesTheLaterEnd`, `separateSeriesKeepTheirOwnEnds`.
 - `TimelineBuilderTests`: `anEntryCarriesItsExpenseIDAndScheduledDate`,
-  `aMovedEntryCarriesItsScheduledDateNotItsNewOne`. The existing `anEntryCarriesItsRulesEnd` and
+  `aMovedEntryCarriesItsScheduledDateNotItsNewOne`, `anEndOnTodayHasPassed`,
+  `anEndBeforeTodayHasPassed`, `anEndAfterTodayHasNot`. The existing `anEntryCarriesItsRulesEnd` and
   `anEntryWithNoEndCarriesNone` are edited to read `seriesEndDate` and renamed
   `anEntryCarriesItsSeriesEnd` / `anEntryWithNoSeriesEndCarriesNone`; this step exists to change
   what they assert. The `expense(...)` helper gains `seriesEndDate: Date? = nil`.
+- `TimelineFormattingTests`: `aPassedEndReadsEnded`, `aPassedEndIsSpokenAsEnded`; existing tests
+  that build a `TimelineEntry` gain the new fields and keep what they assert.
 
 **Verify:** `xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test`
 
@@ -111,7 +122,7 @@ struct DraftChanges: Equatable, Sendable {
 }
 
 enum SaveIntent: Equatable, Sendable {
-    case nothing, askScope, thisCharge, futureCharges, skipThisCharge, wholeBill
+    case nothing, askScope, thisCharge, futureCharges, wholeBill
 }
 
 // ExpenseDraft gains:
@@ -123,9 +134,10 @@ var changes: DraftChanges { get }             // all false when not editing; nam
 var minimumPaymentCount: Int { get }          // 2, or max(2, paymentsBeforeRule + chargeIndex + 1)
 func saveIntent(hasLaterCharge: Bool) -> SaveIntent
 ```
-`isValid(categoryExists:)` accepts a zero amount when editing, and never when adding.
+`isValid(categoryExists:)` accepts a zero amount when editing, unless the repeat also changed (a
+whole rule at €0), and never when adding.
 `saveIntent`, in order: no change → `.nothing`; repeat changed → `.futureCharges`; zero and amount
-changed → `.skipThisCharge`; amount or date changed → `hasLaterCharge ? .askScope : .thisCharge`;
+changed → `.thisCharge`; amount or date changed → `hasLaterCharge ? .askScope : .thisCharge`;
 otherwise `.wholeBill`.
 `lastPaymentDate(calendar:)` when editing: if interval, unit and date are unchanged, payment
 `paymentCount − paymentsBeforeRule − 1` of the rule anchored at `ruleAnchor`; otherwise payment
@@ -137,7 +149,7 @@ otherwise `.wholeBill`.
 `editingCopiesTheBaseline`, `anUntouchedEditHasNoChanges`, `retypingTheSameAmountIsNoChange`,
 `aTrailingSpaceInTheNameIsNoChange`, `zeroIsValidWhenEditing`, `zeroIsInvalidWhenAdding`,
 `intentIsNothingWithoutAChange`, `aRepeatChangeIsFutureWithoutAsking`,
-`aRepeatChangeWinsOverZero`, `zeroSkipsWithoutAsking`, `anAmountChangeAsksWhenAChargeFollows`,
+`zeroWithARepeatChangeIsInvalid`, `zeroSavesForThisChargeWithoutAsking`, `anAmountChangeAsksWhenAChargeFollows`,
 `anAmountChangeOnTheLastChargeIsThisCharge`, `aDateChangeAsks`, `aNameChangeIsTheWholeBill`,
 `aCountChangeIsTheWholeBill`, `theMinimumCountIncludesTheOpenCharge`,
 `theMinimumCountIsNeverBelowTwo`, `lastPaymentCountsTheWholeBill` (count 12, 4 before the rule,
@@ -169,8 +181,6 @@ enum BillEditor {
 
     static func saveThisCharge(_ draft: ExpenseDraft, expense: Expense, scheduledDate: Date,
                                category: ExpenseCategory, context: ModelContext, calendar: Calendar) throws
-    static func skipThisCharge(_ draft: ExpenseDraft, expense: Expense, scheduledDate: Date,
-                               category: ExpenseCategory, context: ModelContext, calendar: Calendar) throws
     static func saveFutureCharges(_ draft: ExpenseDraft, expense: Expense, scheduledDate: Date,
                                   category: ExpenseCategory, context: ModelContext, calendar: Calendar) throws
     static func saveWholeBill(_ draft: ExpenseDraft, expense: Expense,
@@ -187,7 +197,6 @@ Behaviour, each ending in `context.save()`:
   `actualAmount` = the draft amount, or nil when it equals the record's amount; `movedDate` = the
   draft date, or nil when it equals `scheduledDate`; `isSkipped` = false. Delete the override when
   all three are empty.
-- **Skip:** as this charge, but `isSkipped` = true and `actualAmount` nil; a moved date is kept.
 - **Future charges:** if the charge is its record's first (`chargeIndex` 0), edit that record in
   place: amount, interval, unit, `anchorDate` = draft date. Otherwise end the record at payment
   `chargeIndex − 1` (`RecurrenceEngine.date(ofPayment:for:calendar:)`), insert a new `Expense`
@@ -195,8 +204,8 @@ Behaviour, each ending in `context.save()`:
   `seriesID = old.seriesKey`. In both cases: delete records in the series anchored after the open
   one; for each override scheduled after the open charge, on the open record or a deleted later
   one, keep it on (or reassign it to) the record now carrying the new rule if that rule generates
-  its `scheduledDate`, else delete it; delete the open charge's own override. When the draft amount is zero (a repeat change with €0,
-  see step 2), the new rule takes the baseline amount and its first charge gets a skip override.
+  its `scheduledDate`, else delete it; delete the open charge's own override. Never write
+  `isSkipped`; nothing in v1 skips.
 - **Whole-bill payment count:** nil → the last record's `endDate` = nil. A count N → walk the
   series in order, counting each ended record's charges; in the record where charge N falls, set
   `endDate` to that charge's date and delete every record after it. If N runs past the last record,
@@ -210,13 +219,13 @@ Behaviour, each ending in `context.save()`:
 `TillyStore.container(inMemory: true)` and a pinned UTC Gregorian calendar, using a month-end
 anchor (the 31st) wherever dates are generated:
 `thisChargeWritesAnAmountOverride`, `thisChargeBackToTheRuleAmountRemovesTheOverride`,
-`thisChargeWritesAMove`, `editingAMovedChargeReusesItsOverride`, `skipKeepsAMove`,
-`typingTheAmountBackUnskips`, `futureFromTheFirstChargeEditsInPlace`,
+`thisChargeWritesAMove`, `editingAMovedChargeReusesItsOverride`, `zeroIsStoredAsAnAmount`,
+`futureFromTheFirstChargeEditsInPlace`,
 `futureFromALaterChargeSplitsTheBill`, `futureLeavesEveryPastChargeAsItWas` (engine query over
 the months before the split returns the old amounts), `futureSharesTheSeriesID`,
-`futureFromAnAlreadySplitBillReplacesTheLaterRecord`, `aLaterSkipSurvivesAPriceChange`,
-`aLaterSkipIsDroppedWhenItsDayNoLongerExists`, `futureDropsTheOpenChargesOwnOverride`,
-`futureWithZeroSkipsTheNewRulesFirstCharge`, `aRenameReachesEveryRecord`,
+`futureFromAnAlreadySplitBillReplacesTheLaterRecord`, `aLaterFreeMonthSurvivesAPriceChange`,
+`aLaterFreeMonthIsDroppedWhenItsDayNoLongerExists`, `futureDropsTheOpenChargesOwnOverride`,
+`aRenameReachesEveryRecord`,
 `aCategoryReachesEveryRecord`, `aCountEndingInAnEarlierRecordDeletesTheLaterOnes`,
 `noEndReopensTheLastRecord`, `aLongerCountExtendsTheLastRecord`,
 `deleteFutureFromALaterChargeKeepsThePast`, `deleteFutureFromARecordsFirstChargeRemovesIt`,
@@ -253,12 +262,12 @@ struct EditSession: Identifiable, Equatable {
 }
 ```
 `make` builds the baseline: digits from the override's amount, else the record's (`"0"` when the
-override is a skip); date = the override's `movedDate` or `scheduledDate`; whole-bill
+override is a skip, which only older data could hold); date = the override's `movedDate` or `scheduledDate`; whole-bill
 `paymentCount` = sum of the series' counts when its last record has an end, else nil;
 `chargeIndex` = the number of the record's dates from its anchor to `scheduledDate`, minus one.
 
 **Done when:** `EditSessionTests`: `aPlainChargeOpensWithTheRuleAmount`,
-`anOverriddenChargeOpensWithItsAmount`, `aSkippedChargeOpensAtZero`,
+`anOverriddenChargeOpensWithItsAmount`, `aFreeChargeOpensAtZero`,
 `aMovedChargeOpensOnItsNewDate`, `theCountIsTheWholeBills`, `aBillWithNoEndHasNoCount`,
 `theChargeIndexCountsFromTheRecordsAnchor`, `paymentsBeforeRuleCountsEarlierRecords`,
 `thePreviousChargeOfARecordsFirstIsTheEarlierRecordsLast`, `anUnknownExpenseGivesNil`.
@@ -325,11 +334,11 @@ Each row is a `Button` with `.buttonStyle(.plain)` and a full-row `contentShape`
 `scheduledDate` and presents `.sheet(item: $editing) { ExpenseEditor(today: today, session: $0) }`.
 VoiceOver keeps the row's combined label and adds the hint "Edits this charge".
 
-**Done when:** in the Simulator: tap a charged row, an upcoming row, a skipped row, a moved row;
+**Done when:** in the Simulator: tap a charged row, an upcoming row, a €0 row, a moved row;
 each opens with its own amount and date. Change an amount and save for this charge only; the row
 changes and nothing else does. Save for future charges on a charge mid-series; earlier rows keep
-their amounts. Type 0 on an upcoming charge; it draws struck through and leaves the header total.
-Delete all future charges on a bill; its earlier rows read "ends MM/YY". Screenshots light, dark
+their amounts. Type 0 on an upcoming charge; it saves without asking, reads `€0`, and leaves the header total.
+Delete all future charges on a bill; its earlier rows read "ended MM/YY" once that date is past. Screenshots light, dark
 and at an accessibility size. Both suites green.
 
 **Verify:** both commands in CLAUDE.md's Verification section, then the Simulator walk above.
@@ -357,6 +366,31 @@ empty state, and adding one after that lands on the current month. Both suites g
 with their numbers written into Lessons.
 
 **Out of scope:** scrolling to an edited charge (decided against), place-saving changes.
+
+### Step 8 — Shake to undo
+
+Depends on step 3; independent of 7.
+
+**Files:** `Tilly/TillyApp.swift`, `Tilly/Developer/DeveloperSession.swift` if it builds the debug
+container, `Tilly/Models/BillEditor.swift`, `TillyTests/BillEditorTests.swift` (all modified)
+
+**Interface:** both `.modelContainer(...)` calls in `TillyApp` pass `isUndoEnabled: true`, which
+hands the main context the window's `UndoManager`, so the system's shake gesture reaches it. Each
+`BillEditor` save and delete names its undo action, `context.undoManager?.setActionName("Save")`
+or `("Delete")`, so the system offers "Undo Delete".
+
+**Done when:** `BillEditorTests` gains, each with a context whose `undoManager` is a fresh
+`UndoManager`: `undoingADeleteBringsTheWholeSeriesBack`, `undoingAFutureSaveRejoinsTheBill`
+(one record again, its old end and overrides restored), `undoingAThisChargeSaveRestoresTheAmount`,
+`oneSaveIsOneUndo`. In the Simulator (Device → Shake), deleting a bill then shaking offers
+"Undo Delete" and brings its rows back. Adding an expense becomes undoable too, as a side effect;
+that's fine.
+
+**Verify:** both commands in CLAUDE.md's Verification section, then the shake above.
+
+**Out of scope:** an undo button or toast; the keypad's own typing. If one save needs manual
+`beginUndoGrouping` to be one undo, do it inside `BillEditor` and say so in Lessons. If shaking
+shows nothing on the timeline, stop and report rather than building an undo control.
 
 ## Lessons
 

@@ -25,11 +25,9 @@ than replacing them.
 | **Certainty** | estimated / known | *Not rendered in v1.* Returns with variable bills |
 
 An upcoming row sits back: name, date, icon and amount all at secondary weight. A charged row
-comes forward at full weight. A skipped row, a charge saved at €0, withdraws further and strikes
-its usual amount through: listed, visibly known about, visibly not counted.
-
-An occurrence dated today is charged. An occurrence with no amount shows an em dash and adds
-nothing to any total.
+comes forward at full weight. A skipped row withdraws further and strikes its amount through:
+listed, visibly known about, visibly not counted. Nothing in v1 skips a charge. An occurrence
+dated today is charged. One with no amount shows an em dash and adds nothing to any total.
 
 When certainty returns, it takes its own channel, a mark beside the amount, and never lightness.
 Lightness already means upcoming, and an estimated past charge would read as upcoming.
@@ -45,9 +43,8 @@ for a date still to come and a plain calendar otherwise. A lighter button would 
 The timeline is the app's one screen, laid out like iOS Calendar. Three glass controls float over
 it: + at the right end of the pinned header's row, the month button bottom left, and settings bottom
 right. Everything else opens as a sheet over the timeline, the editor and settings alike, so the
-reader never leaves their place. No tab bar and no pushed pages.
-
-Categories are kept in Settings. There is no list of every expense: the timeline is that list.
+reader never leaves their place. No tab bar and no pushed pages. Categories are kept in Settings.
+There is no list of every expense: the timeline is that list.
 
 ---
 
@@ -57,7 +54,7 @@ Categories are kept in Settings. There is no list of every expense: the timeline
 
 Icon well, then name with the date beneath it, then the amount. The well holds the category's
 emoji; every expense has one. A bill that ends adds its last month to the date, `Fri 18 · ends
-05/27`, and nothing else joins that line.
+05/27`, or `ended 08/26` once that payment is today or past. Nothing else joins that line.
 
 ### Amounts
 
@@ -201,19 +198,22 @@ waits for a change, and a red trash button sits left of it.
 Edit first, then choose, as Calendar. On ✓, when the amount or date changed and a charge follows,
 a menu from ✓ asks `Save for this charge only` or `Save for future charges`. Future means this
 charge and every one after, except a later charge changed on its own, which keeps its change while
-its date still exists. The past never changes, except from a bill's first charge.
+its date still exists. Nothing before the open charge changes; from a bill's first charge, future
+is all of it.
 
 Name and category belong to the whole bill and change without asking, as does the payment count,
 which counts the whole bill whichever charge is open and offers no count ending before it. A new
 repeat applies from this charge on.
 
-Skipping is saving a charge at €0: ✓ doesn't ask, and typing the amount back undoes it.
+One charge can be €0, for a free month: an ordinary amount, saved for that charge alone without
+asking, and drawn as `€0`. A new bill, or a whole bill's amount, still needs more than zero.
 
 ### Deleting asks which
 
 The trash button asks, as Calendar: `Delete All Future Charges` keeps the charges before this one,
 which is how a subscription ends, and the bill then reads `ends 08/26` like any bill with an end.
-`Delete All Charges` takes the past too. A bill's first charge offers only `Delete Gym`.
+`Delete All Charges` takes the past too. A bill's first charge offers only `Delete Gym`. Shaking
+undoes the last save or delete, as everywhere in iOS.
 
 ---
 

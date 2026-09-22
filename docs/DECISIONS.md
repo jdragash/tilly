@@ -121,7 +121,8 @@ Two charges on one day are two rows, each with its date. The timeline has no day
 Tapping a row opens the editor for that charge, keypad up. When the amount or date changed, ✓ asks
 "this charge only" or "future charges". Future starts at the opened charge, and the past never
 changes, except from a bill's first charge. The wheel's payment count counts the whole bill.
-- **Rejected — a read-only page before the editor, as Calendar has:** an expense has five fields, and the editor already shows them all.
+- **Rejected — a page about the charge first, with Edit and "Change this charge" (prototyped, the "view first" switch):** the button you press picks the scope so ✓ never asks, and a charge that differs shows "usually €25". Lost on an extra tap every edit, for five fields the editor already shows.
+- **Revisit when:** variable bills are designed. That page is the natural home for a bill's actual amount beside its estimate.
 - **Rejected — the editor opening at rest, actions where the keypad goes:** opening a charge is editing it.
 - **Rejected — choosing the scope first:** a control on every tap, and its default is the one people save by accident.
 - **Rejected — a third answer, "all charges":** every price rise gets a one-line route to rewriting what the past cost.
@@ -129,13 +130,14 @@ changes, except from a bill's first charge. The wheel's payment count counts the
 - **Rejected — counting only the payments left:** the number would change with the charge you opened.
 - **Rejected — scrolling to a bill saved out of sight:** the list stays where you were.
 
-## Deleting asks Calendar's question, and a skip is €0
+## Deleting asks Calendar's question, and €0 is an ordinary amount
 **Decided:** 2026-09-22
 A red trash button beside ✓ asks `Delete All Future Charges`, which ends the bill and keeps its
-past, or `Delete All Charges`. Skipping one charge is saving it at €0.
+past, or `Delete All Charges`. One charge can be €0, for a free month; nothing skips a charge.
 - **Rejected — separate skip, stop and delete actions:** ending a subscription is deleting what's ahead.
-- **Rejected — a skip button:** rare, and €0 is what a skip means.
+- **Rejected — a skip, as a button or as €0 drawn struck through:** a second idea for a case met once or twice a year, when a plain `€0` keeps the total right.
 - **Rejected — a ⋯ menu holding Delete:** its only item, a tap further away.
+- **Revisit when:** a view mode for a charge is designed (`ROADMAP.md`); skipping could be one of its actions.
 
 ## A bill is a series of rules, and "future charges" starts the next one
 **Decided:** 2026-09-22
