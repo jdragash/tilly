@@ -25,12 +25,16 @@ import TillyCore
         anchoredOn anchor: Date,
         emoji: String? = nil,
         endDate: Date? = nil,
+        seriesEndDate: Date? = nil,
         isArchived: Bool = false,
         overrides: [OccurrenceOverride] = []
     ) -> TimelineExpense {
         let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor, endDate: endDate)
         let snapshot = ExpenseSnapshot(id: UUID(), amount: amount, isEstimate: false, rule: rule, isArchived: isArchived)
-        return TimelineExpense(name: name, emoji: emoji, snapshot: snapshot, overrides: overrides)
+        return TimelineExpense(
+            name: name, emoji: emoji, snapshot: snapshot, overrides: overrides,
+            seriesEndDate: seriesEndDate ?? endDate
+        )
     }
 
     static func month(
@@ -72,15 +76,51 @@ import TillyCore
         #expect(section.entries.first?.emoji == "🏠")
     }
 
-    @Test func anEntryCarriesItsRulesEnd() {
+    @Test func anEntryCarriesItsSeriesEnd() {
         let end = Self.date(2027, 5, 10)
-        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), endDate: end)])
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), seriesEndDate: end)])
         #expect(section.entries.first?.endDate == end)
     }
 
-    @Test func anEntryWithNoEndCarriesNone() {
+    @Test func anEntryWithNoSeriesEndCarriesNone() {
         let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10))])
         #expect(section.entries.first?.endDate == nil)
+    }
+
+    @Test func anEntryCarriesItsExpenseIDAndScheduledDate() {
+        let anchor = Self.date(2027, 1, 10)
+        let timelineExpense = Self.expense(anchoredOn: anchor)
+        let section = Self.month([timelineExpense])
+        #expect(section.entries.first?.expenseID == timelineExpense.snapshot.id)
+        #expect(section.entries.first?.scheduledDate == anchor)
+    }
+
+    @Test func aMovedEntryCarriesItsScheduledDateNotItsNewOne() {
+        let scheduled = Self.date(2027, 1, 5)
+        let moved = Self.date(2027, 1, 20)
+        let override = OccurrenceOverride(scheduledDate: scheduled, actualAmount: nil, movedDate: moved, isSkipped: false)
+        let section = Self.month([Self.expense(anchoredOn: scheduled, overrides: [override])])
+        #expect(section.entries.first?.date == moved)
+        #expect(section.entries.first?.scheduledDate == scheduled)
+    }
+
+    @Test func anEndOnTodayHasPassed() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), seriesEndDate: Self.today)])
+        #expect(section.entries.first?.endHasPassed == true)
+    }
+
+    @Test func anEndBeforeTodayHasPassed() {
+        let section = Self.month([
+            Self.expense(anchoredOn: Self.date(2027, 1, 10), seriesEndDate: Self.date(2026, 12, 1))
+        ])
+        #expect(section.entries.first?.endHasPassed == true)
+    }
+
+    @Test func anEndAfterTodayHasNot() {
+        let section = Self.month([
+            Self.expense(anchoredOn: Self.date(2027, 1, 10), seriesEndDate: Self.date(2027, 6, 1))
+        ])
+        #expect(section.entries.first?.endHasPassed == false)
     }
 
     @Test func entriesInADayDescendByAmount() {

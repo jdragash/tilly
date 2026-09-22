@@ -10,12 +10,15 @@ enum OccurrenceState: Equatable, Sendable {
 
 struct TimelineEntry: Identifiable, Equatable, Sendable {
     let id: String // Occurrence.id — stable across launches
+    let expenseID: UUID
+    let scheduledDate: Date // the rule's date, start of day; `date` stays the effective one
     let name: String
     let emoji: String? // the category's; nil only for data saved before categories existed
     let date: Date // effectiveDate, start of day
     let amount: Decimal? // already rounded to whole units
     let state: OccurrenceState
-    let endDate: Date? // the rule's end, start of day; nil when it runs on
+    let endDate: Date? // the series' end, start of day; nil when it runs on
+    let endHasPassed: Bool // endDate is today or earlier
 }
 
 struct MonthSection: Identifiable, Equatable, Sendable {
@@ -55,4 +58,8 @@ struct TimelineExpense: Equatable, Sendable {
     let emoji: String? // nil only for data saved before categories existed
     let snapshot: ExpenseSnapshot
     let overrides: [OccurrenceOverride]
+    /// The end of the latest-anchored record sharing this expense's series; nil when that
+    /// record runs on. A bill split by "future charges" reads its whole series' end, not its
+    /// own record's.
+    let seriesEndDate: Date?
 }

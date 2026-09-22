@@ -18,6 +18,9 @@ final class Expense {
     /// Optional because CloudKit requires it; the editor requires one, so `nil` only occurs in a
     /// store saved before categories existed.
     var category: ExpenseCategory?
+    /// Optional so a migrated store gives existing bills no shared default: nil is "its own
+    /// series". Set when "future charges" splits a bill into a new record sharing this one.
+    var seriesID: UUID?
 
     @Relationship(deleteRule: .cascade, inverse: \OverrideRecord.expense)
     var overrides: [OverrideRecord]?
@@ -32,7 +35,8 @@ final class Expense {
         recurrenceUnit: RecurrenceUnit = .month,
         anchorDate: Date = Date(),
         endDate: Date? = nil,
-        category: ExpenseCategory? = nil
+        category: ExpenseCategory? = nil,
+        seriesID: UUID? = nil
     ) {
         self.id = id
         self.name = name
@@ -44,7 +48,14 @@ final class Expense {
         self.anchorDate = anchorDate
         self.endDate = endDate
         self.category = category
+        self.seriesID = seriesID
     }
+}
+
+extension Expense {
+    /// Falls back to its own id: a migrated store gives every existing bill a nil `seriesID`,
+    /// and nil must mean "its own series" rather than sharing one default with every other bill.
+    var seriesKey: UUID { seriesID ?? id }
 }
 
 extension Expense {

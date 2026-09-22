@@ -227,4 +227,81 @@ import TillyCore
 
         #expect(expense.timelineExpense.emoji == nil)
     }
+
+    // MARK: Series
+
+    @Test func seriesIDDefaultsToNil() throws {
+        let context = try Self.makeContext()
+        let expense = Expense(name: "Rent")
+        context.insert(expense)
+        try context.save()
+
+        #expect(expense.seriesID == nil)
+    }
+
+    @Test func seriesKeyFallsBackToID() throws {
+        let context = try Self.makeContext()
+        let expense = Expense(name: "Rent")
+        context.insert(expense)
+        try context.save()
+
+        #expect(expense.seriesKey == expense.id)
+    }
+
+    @Test func seriesIDRoundTrips() throws {
+        let context = try Self.makeContext()
+        let series = UUID()
+        let expense = Expense(name: "Rent", seriesID: series)
+        context.insert(expense)
+        try context.save()
+
+        let fetched = try #require(try context.fetch(FetchDescriptor<Expense>()).first)
+        #expect(fetched.seriesID == series)
+        #expect(fetched.seriesKey == series)
+    }
+
+    @Test func timelineExpensesCarryTheSeriesEnd() throws {
+        let context = try Self.makeContext()
+        let series = UUID()
+        let earlier = Expense(
+            name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1), seriesID: series
+        )
+        let later = Expense(name: "Gym", anchorDate: Self.date(2026, 6, 1), endDate: nil, seriesID: series)
+        context.insert(earlier)
+        context.insert(later)
+        try context.save()
+
+        let timelineExpenses = Expense.timelineExpenses([earlier, later])
+        #expect(timelineExpenses.allSatisfy { $0.seriesEndDate == nil })
+    }
+
+    @Test func aSeriesEndingLaterCarriesTheLaterEnd() throws {
+        let context = try Self.makeContext()
+        let series = UUID()
+        let earlier = Expense(
+            name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1), seriesID: series
+        )
+        let later = Expense(
+            name: "Gym", anchorDate: Self.date(2026, 6, 1), endDate: Self.date(2027, 3, 1), seriesID: series
+        )
+        context.insert(earlier)
+        context.insert(later)
+        try context.save()
+
+        let timelineExpenses = Expense.timelineExpenses([earlier, later])
+        #expect(timelineExpenses.allSatisfy { $0.seriesEndDate == Self.date(2027, 3, 1) })
+    }
+
+    @Test func separateSeriesKeepTheirOwnEnds() throws {
+        let context = try Self.makeContext()
+        let gym = Expense(name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1))
+        let rent = Expense(name: "Rent", anchorDate: Self.date(2026, 1, 1), endDate: nil)
+        context.insert(gym)
+        context.insert(rent)
+        try context.save()
+
+        let timelineExpenses = Expense.timelineExpenses([gym, rent])
+        #expect(timelineExpenses.first { $0.name == "Gym" }?.seriesEndDate == Self.date(2026, 6, 1))
+        #expect(timelineExpenses.first { $0.name == "Rent" }?.seriesEndDate == nil)
+    }
 }

@@ -541,7 +541,7 @@ struct TimelineView: View {
 
     private func rebuildSections() {
         guard let window else { return }
-        let timelineExpenses = expenses.map(\.timelineExpense)
+        let timelineExpenses = Expense.timelineExpenses(expenses)
 
         var result: [MonthKey: MonthSection] = [:]
         for key in window.months {

@@ -23,7 +23,8 @@ enum TimelineBuilder {
                 in: range,
                 calendar: calendar
             )
-            let endDate = expense.snapshot.rule.endDate.map { calendar.startOfDay(for: $0) }
+            let endDate = expense.seriesEndDate.map { calendar.startOfDay(for: $0) }
+            let endHasPassed = endDate.map { $0 <= todayStart } ?? false
             for occurrence in occurrences {
                 let day = calendar.startOfDay(for: occurrence.effectiveDate)
                 let state: OccurrenceState = occurrence.isSkipped
@@ -31,12 +32,15 @@ enum TimelineBuilder {
                     : (day <= todayStart ? .charged : .upcoming)
                 entries.append(TimelineEntry(
                     id: occurrence.id,
+                    expenseID: occurrence.expenseID,
+                    scheduledDate: calendar.startOfDay(for: occurrence.scheduledDate),
                     name: expense.name,
                     emoji: expense.emoji,
                     date: day,
                     amount: occurrence.amount.map(roundedToWholeUnits),
                     state: state,
-                    endDate: endDate
+                    endDate: endDate,
+                    endHasPassed: endHasPassed
                 ))
             }
         }
