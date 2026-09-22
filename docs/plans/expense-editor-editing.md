@@ -152,10 +152,16 @@ otherwise `.wholeBill`.
 `zeroWithARepeatChangeIsInvalid`, `zeroSavesForThisChargeWithoutAsking`, `anAmountChangeAsksWhenAChargeFollows`,
 `anAmountChangeOnTheLastChargeIsThisCharge`, `aDateChangeAsks`, `aNameChangeIsTheWholeBill`,
 `aCountChangeIsTheWholeBill`, `theMinimumCountIncludesTheOpenCharge`,
-`theMinimumCountIsNeverBelowTwo`, `lastPaymentCountsTheWholeBill` (count 12, 4 before the rule,
-anchored Jun 18 → May 18 next year), `lastPaymentFromAMonthEndAnchorDoesNotDrift` (anchor Jan 31,
-opened on Feb 28, count unchanged → last payment on the 31st of its month),
-`lastPaymentAfterARepeatChangeCountsFromTheCharge`.
+`theMinimumCountIsNeverBelowTwo`,
+`lastPaymentCountsTheWholeBill` (one record anchored Jun 18, count 12, 0 before the rule, opened
+on its fourth charge, Sep 18, chargeIndex 3 → May 18 next year),
+`lastPaymentCountsEarlierRecords` (count 12, 4 before the rule, this record anchored Jun 18 →
+it makes the remaining 8, so Jan 18 next year),
+`lastPaymentFromAMonthEndAnchorDoesNotDrift` (anchor Jan 31, opened on Feb 28, count unchanged →
+last payment on the 31st of its month),
+`lastPaymentAfterARepeatChangeCountsFromTheCharge` (one record anchored Jun 18 2026, count 12, opened
+on Sep 18, chargeIndex 3, unit changed to weekly → 9 payments from Sep 18, so the 9th weekly
+date from Sep 18 2026: Nov 13 2026).
 
 **Verify:** `xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test`
 

@@ -43,6 +43,25 @@ import TillyCore
         return draft
     }
 
+    static func baseline(
+        digits: String = "12",
+        name: String = "Rent",
+        date: Date = today,
+        interval: Int = 1,
+        unit: RecurrenceUnit = .month,
+        paymentCount: Int? = nil,
+        categoryID: UUID? = UUID(),
+        ruleAnchor: Date = today,
+        paymentsBeforeRule: Int = 0,
+        chargeIndex: Int = 0
+    ) -> EditBaseline {
+        EditBaseline(
+            digits: digits, name: name, date: date, interval: interval, unit: unit,
+            paymentCount: paymentCount, categoryID: categoryID, ruleAnchor: ruleAnchor,
+            paymentsBeforeRule: paymentsBeforeRule, chargeIndex: chargeIndex
+        )
+    }
+
     // MARK: Keypad
 
     @Test func digitsAppend() {
@@ -217,6 +236,183 @@ import TillyCore
         let caption = draft.lastPaymentCaption(calendar: Self.calendar, locale: Self.locale)
         #expect(caption == "Last payment Sep 30, 2027")
         #expect(Self.draft().lastPaymentCaption(calendar: Self.calendar, locale: Self.locale) == nil)
+    }
+
+    // MARK: Editing — digits from a stored amount
+
+    @Test func digitsForWholeAmount() {
+        #expect(ExpenseDraft.digits(for: 950) == "950")
+    }
+
+    @Test func digitsForOneDecimal() {
+        #expect(ExpenseDraft.digits(for: Decimal(string: "74.1")!) == "74.1")
+    }
+
+    @Test func digitsDropATrailingZero() {
+        #expect(ExpenseDraft.digits(for: Decimal(string: "12.50")!) == "12.5")
+    }
+
+    // MARK: Editing — opening a baseline
+
+    @Test func editingCopiesTheBaseline() {
+        let categoryID = UUID()
+        let baseline = Self.baseline(
+            digits: "45", name: "Gym", date: Self.date(2026, 10, 1), interval: 2, unit: .week,
+            paymentCount: 20, categoryID: categoryID, ruleAnchor: Self.date(2026, 1, 1),
+            paymentsBeforeRule: 2, chargeIndex: 5
+        )
+        let draft = ExpenseDraft(editing: baseline)
+        #expect(draft.digits == "45")
+        #expect(draft.name == "Gym")
+        #expect(draft.date == Self.date(2026, 10, 1))
+        #expect(draft.interval == 2)
+        #expect(draft.unit == .week)
+        #expect(draft.paymentCount == 20)
+        #expect(draft.categoryID == categoryID)
+        #expect(draft.baseline == baseline)
+    }
+
+    @Test func anUntouchedEditHasNoChanges() {
+        let draft = ExpenseDraft(editing: Self.baseline())
+        #expect(!draft.changes.any)
+    }
+
+    @Test func retypingTheSameAmountIsNoChange() {
+        var draft = ExpenseDraft(editing: Self.baseline(digits: "12"))
+        draft.digits = "12.00"
+        #expect(!draft.changes.amount)
+    }
+
+    @Test func aTrailingSpaceInTheNameIsNoChange() {
+        var draft = ExpenseDraft(editing: Self.baseline(name: "Rent"))
+        draft.name = "Rent  "
+        #expect(!draft.changes.name)
+    }
+
+    // MARK: Editing — validity
+
+    @Test func zeroIsValidWhenEditing() {
+        var draft = ExpenseDraft(editing: Self.baseline(digits: "12"))
+        draft.digits = "0"
+        #expect(draft.isValid(categoryExists: { _ in true }))
+    }
+
+    @Test func zeroIsInvalidWhenAdding() {
+        var draft = Self.draft()
+        draft.digits = "0"
+        draft.name = "Rent"
+        draft.categoryID = UUID()
+        #expect(!draft.isValid(categoryExists: { _ in true }))
+    }
+
+    @Test func zeroWithARepeatChangeIsInvalid() {
+        var draft = ExpenseDraft(editing: Self.baseline(digits: "12"))
+        draft.digits = "0"
+        draft.interval = 3
+        #expect(!draft.isValid(categoryExists: { _ in true }))
+    }
+
+    // MARK: Editing — save intent
+
+    @Test func intentIsNothingWithoutAChange() {
+        let draft = ExpenseDraft(editing: Self.baseline())
+        #expect(draft.saveIntent(hasLaterCharge: true) == .nothing)
+    }
+
+    @Test func aRepeatChangeIsFutureWithoutAsking() {
+        var draft = ExpenseDraft(editing: Self.baseline())
+        draft.interval = 3
+        #expect(draft.saveIntent(hasLaterCharge: true) == .futureCharges)
+        #expect(draft.saveIntent(hasLaterCharge: false) == .futureCharges)
+    }
+
+    @Test func zeroSavesForThisChargeWithoutAsking() {
+        var draft = ExpenseDraft(editing: Self.baseline(digits: "12"))
+        draft.digits = "0"
+        #expect(draft.saveIntent(hasLaterCharge: true) == .thisCharge)
+    }
+
+    @Test func anAmountChangeAsksWhenAChargeFollows() {
+        var draft = ExpenseDraft(editing: Self.baseline(digits: "12"))
+        draft.digits = "15"
+        #expect(draft.saveIntent(hasLaterCharge: true) == .askScope)
+    }
+
+    @Test func anAmountChangeOnTheLastChargeIsThisCharge() {
+        var draft = ExpenseDraft(editing: Self.baseline(digits: "12"))
+        draft.digits = "15"
+        #expect(draft.saveIntent(hasLaterCharge: false) == .thisCharge)
+    }
+
+    @Test func aDateChangeAsks() {
+        var draft = ExpenseDraft(editing: Self.baseline())
+        draft.date = Self.date(2026, 9, 20)
+        #expect(draft.saveIntent(hasLaterCharge: true) == .askScope)
+        #expect(draft.saveIntent(hasLaterCharge: false) == .thisCharge)
+    }
+
+    @Test func aNameChangeIsTheWholeBill() {
+        var draft = ExpenseDraft(editing: Self.baseline())
+        draft.name = "Gym membership"
+        #expect(draft.saveIntent(hasLaterCharge: true) == .wholeBill)
+    }
+
+    @Test func aCountChangeIsTheWholeBill() {
+        var draft = ExpenseDraft(editing: Self.baseline(paymentCount: 12))
+        draft.paymentCount = 10
+        #expect(draft.saveIntent(hasLaterCharge: true) == .wholeBill)
+    }
+
+    // MARK: Editing — the minimum count
+
+    @Test func theMinimumCountIncludesTheOpenCharge() {
+        let draft = ExpenseDraft(editing: Self.baseline(paymentsBeforeRule: 4, chargeIndex: 3))
+        #expect(draft.minimumPaymentCount == 8)
+    }
+
+    @Test func theMinimumCountIsNeverBelowTwo() {
+        let draft = ExpenseDraft(editing: Self.baseline(paymentsBeforeRule: 0, chargeIndex: 0))
+        #expect(draft.minimumPaymentCount == 2)
+    }
+
+    // MARK: Editing — the last payment
+
+    @Test func lastPaymentCountsTheWholeBill() {
+        let baseline = Self.baseline(
+            date: Self.date(2026, 9, 18), paymentCount: 12, ruleAnchor: Self.date(2026, 6, 18),
+            paymentsBeforeRule: 0, chargeIndex: 3
+        )
+        let draft = ExpenseDraft(editing: baseline)
+        #expect(draft.lastPaymentDate(calendar: Self.calendar) == Self.date(2027, 5, 18))
+    }
+
+    @Test func lastPaymentCountsEarlierRecords() {
+        let baseline = Self.baseline(
+            date: Self.date(2026, 6, 18), paymentCount: 12, ruleAnchor: Self.date(2026, 6, 18),
+            paymentsBeforeRule: 4, chargeIndex: 0
+        )
+        let draft = ExpenseDraft(editing: baseline)
+        #expect(draft.lastPaymentDate(calendar: Self.calendar) == Self.date(2027, 1, 18))
+    }
+
+    @Test func lastPaymentFromAMonthEndAnchorDoesNotDrift() throws {
+        let baseline = Self.baseline(
+            date: Self.date(2027, 2, 28), paymentCount: 12, ruleAnchor: Self.date(2027, 1, 31),
+            paymentsBeforeRule: 0, chargeIndex: 1
+        )
+        let draft = ExpenseDraft(editing: baseline)
+        let last = try #require(draft.lastPaymentDate(calendar: Self.calendar))
+        #expect(Self.calendar.component(.day, from: last) == 31)
+    }
+
+    @Test func lastPaymentAfterARepeatChangeCountsFromTheCharge() {
+        let baseline = Self.baseline(
+            date: Self.date(2026, 9, 18), paymentCount: 12, ruleAnchor: Self.date(2026, 6, 18),
+            paymentsBeforeRule: 0, chargeIndex: 3
+        )
+        var draft = ExpenseDraft(editing: baseline)
+        draft.unit = .week
+        #expect(draft.lastPaymentDate(calendar: Self.calendar) == Self.date(2026, 11, 13))
     }
 }
 
