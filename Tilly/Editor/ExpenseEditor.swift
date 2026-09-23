@@ -22,8 +22,6 @@ struct ExpenseEditor: View {
 
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
-    @State private var showingScopeDialog = false
-    @State private var showingDeleteDialog = false
     @FocusState private var nameFocused: Bool
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.editorAmountSize
     @ScaledMetric(relativeTo: .title3) private var nameHeight = Tokens.Size.editorNameHeight
@@ -81,31 +79,43 @@ struct ExpenseEditor: View {
                 }
                 if let session {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            showingDeleteDialog = true
+                        // A `Menu`, not a `confirmationDialog`: the dialog ran its button's action
+                        // only once its closing transition had finished, a second after it had
+                        // visibly gone (measured), and it couldn't be dismissed while opening.
+                        Menu {
+                            Section {
+                                deleteButtons(for: session)
+                            } header: {
+                                Text("\(deleteTitle(for: session)) \(deleteMessage(for: session))")
+                            }
                         } label: {
                             Image(systemName: "trash")
                         }
                         .tint(Tokens.Ink.destructive)
                         .accessibilityLabel("Delete")
-                        .confirmationDialog(
-                            deleteTitle(for: session), isPresented: $showingDeleteDialog, titleVisibility: .visible
-                        ) {
-                            deleteButtons(for: session)
-                        } message: {
-                            Text(deleteMessage(for: session))
-                        }
                     }
                     ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 }
                 // A half-made category is finished or cancelled before the expense is saved.
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .confirm, action: save)
-                        .disabled(!canSave)
-                        .confirmationDialog("", isPresented: $showingScopeDialog, titleVisibility: .hidden) {
+                    if asksScope {
+                        // A `Menu` for the same reason as trash. Styled to match the system ✓, with
+                        // the toolbar's own glass hidden so it isn't drawn twice.
+                        Menu {
                             scopeButtons
+                        } label: {
+                            Image(systemName: "checkmark")
                         }
+                        .menuStyle(.button)
+                        .buttonStyle(.glassProminent)
+                        .buttonBorderShape(.circle)
+                        .accessibilityLabel("Save")
+                    } else {
+                        Button(role: .confirm, action: save)
+                            .disabled(!canSave)
+                    }
                 }
+                .sharedBackgroundVisibility(asksScope ? .hidden : .automatic)
             }
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -208,6 +218,12 @@ struct ExpenseEditor: View {
         panel = .category
     }
 
+    /// Whether ✓ asks "this charge or future charges" rather than saving.
+    private var asksScope: Bool {
+        guard let session, canSave else { return false }
+        return draft.saveIntent(hasLaterCharge: session.hasLaterCharge) == .askScope
+    }
+
     private func save() {
         guard let session else {
             saveNewExpense()
@@ -218,7 +234,7 @@ struct ExpenseEditor: View {
         case .nothing:
             break
         case .askScope:
-            showingScopeDialog = true
+            break // ✓ is a menu then, and never calls save()
         case .thisCharge:
             saveThisCharge(session)
         case .futureCharges:

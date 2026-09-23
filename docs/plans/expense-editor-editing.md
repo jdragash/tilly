@@ -382,9 +382,13 @@ with their numbers written into Lessons.
 
 ## Lessons
 
-- Step 5: both the scope `confirmationDialog` (attached to ✓) and the delete `confirmationDialog`
-  (attached to trash) draw as a menu off their button on iOS 26, not as a bottom sheet. Confirmed
-  on device.
+- Step 5, replaced after phone testing: trash and the scope question on ✓ are `Menu`s, not
+  `confirmationDialog`s. The dialog ran its button's action only once its closing transition
+  had finished, 1.1s after it had visibly gone (measured from video against app timestamps),
+  and couldn't be dismissed while opening. A `Menu` acts on the tap: tap to editor gone went
+  from 1.9s to 0.5s. ✓ is a `Menu` only while the draft would ask; styled `.glassProminent`,
+  `.buttonBorderShape(.circle)`, with `sharedBackgroundVisibility(.hidden)` on its toolbar item,
+  or the toolbar draws a second glass circle around it.
 - Step 6: saving an edit (an `OverrideRecord` insert, or a field change on an existing `Expense`)
   left the row showing its old value until the app relaunched. `@Query`'s array compares by model
   identity, not by the fields within it, and a relationship-only write doesn't reliably trigger
