@@ -17,8 +17,8 @@ The smallest thing that does the job.
 | Recurrence engine | Done | Every N days, weeks, months or years from a fixed anchor. Pure and tested. |
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
 | Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere, mid-flick included. |
-| Expense editor | Creating done; editing designed | Adding an expense is built, in the Calendar-style shell. Editing an existing one is designed and planned: tapping a row, "this charge only or future charges", deleting. `docs/plans/expense-editor-editing.md`. |
-| Occurrence overrides | In the editor | A different amount or date for one charge, €0 included. Planned with editing. Skipping is left out. |
+| Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. |
+| Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
 | Categories | In the editor, partly | Emoji and name, user-created, ships empty, required on every expense. Created in the editor; listed in Settings. Editing them there isn't designed yet. |
 | Insights, thin | Exploring | A category breakdown over a chosen period (this month, last month, monthly average, next 12 months, this year). Early ideas on the editor canvas. |
 | Token gallery | — | `DesignSystem/Gallery.swift`: every token and component in light, dark and accessibility sizes. |

@@ -18,6 +18,12 @@ Learned in the simulator, invisible to tests.
   label the opposite ground (`Tokens.Surface.base`).
 - A wheel `Picker`'s natural width is unbounded: `fixedSize` on one widens the whole layout. Give
   narrow wheels explicit widths.
+- A `confirmationDialog`'s button ran only once its closing transition finished, 1.1s after it
+  had visibly gone (measured), and couldn't be dismissed mid-open. A `Menu` acts on the tap
+  itself; style it `.buttonBorderShape(.circle)` with `sharedBackgroundVisibility(.hidden)` on
+  its toolbar item, or the toolbar draws a second glass circle around it.
+- A `.plain` `Button` hit-tests its label's shape, not the button's: put `.contentShape(Rectangle())`
+  on the label, or the gap between a row's parts (a name and its trailing amount) stays dead.
 
 ## Keyboards and safe areas
 
@@ -49,3 +55,6 @@ Learned in the simulator, invisible to tests.
   outgoing container until the next switch.
 - `#Preview` blocks survive into Release. One that uses a `#if DEBUG` type sits inside
   `#if DEBUG` too. Check with `xcodebuild -scheme Tilly -configuration Release build`.
+- `@Query`'s array compares by model identity, not its fields, and a relationship-only write
+  (an override insert, a field edit on an existing model) doesn't reliably notify either. Don't
+  lean on `.onChange(of:)` alone: give the writing sheet its own `onDismiss` refresh.
