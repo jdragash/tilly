@@ -326,7 +326,7 @@ out of its button, that's acceptable: say so in Lessons.
 Depends on steps 1, 4 and 5.
 
 **Files:** `Tilly/Timeline/MonthSectionView.swift`, `Tilly/Timeline/TimelineView.swift`,
-`Tilly/Timeline/OccurrenceRow.swift` (all modified)
+`Tilly/Timeline/OccurrenceRow.swift`, `Tilly/Editor/ExpenseEditor.swift` (all modified)
 
 **Interface:**
 ```swift
@@ -340,10 +340,15 @@ Each row is a `Button` with `.buttonStyle(.plain)` and a full-row `contentShape`
 `scheduledDate` and presents `.sheet(item: $editing) { ExpenseEditor(today: today, session: $0) }`.
 VoiceOver keeps the row's combined label and adds the hint "Edits this charge".
 
+Also fix in `ExpenseEditor.swift`: the trash dialog's title, message and `Delete <name>` button
+describe the bill as saved, so read name, interval and unit from `draft.baseline`, not the
+draft. Otherwise renaming a bill to "Gym2" and then tapping trash asks to delete "Gym2", as the
+prototype's `askDelete` doesn't.
+
 **Done when:** in the Simulator: tap a charged row, an upcoming row, a €0 row, a moved row;
 each opens with its own amount and date. Change an amount and save for this charge only; the row
 changes and nothing else does. Save for future charges on a charge mid-series; earlier rows keep
-their amounts. Type 0 on an upcoming charge; it saves without asking, reads `€0`, and leaves the header total.
+their amounts. Type 0 on an upcoming charge; it saves without asking, reads `€0`, and its old amount drops out of the header total.
 Delete all future charges on a bill; its earlier rows read "ended MM/YY" once that date is past. Screenshots light, dark
 and at an accessibility size. Both suites green.
 
@@ -360,6 +365,8 @@ Depends on step 6.
 **Interface:** none public. `onChange(of: expenses)` recomputes floor and ceiling; when the
 `TimelineWindow` changes it replaces it and anchors on the month under the middle of the viewport,
 as `handleDayChange` does. With no expenses left, `window` becomes nil and the empty state shows.
+`onChange(of: expenses)` misses edits that only change fields, such as delete-future ending a
+record (Lessons, step 6), so the edit sheet's `onDismiss` runs the same recompute.
 
 **Done when:** measured in the Simulator (method in `.claude/rules/swiftui-scrolling.md`), the
 month header in view holds its position within 1pt in each of: deleting all future charges on the
@@ -403,6 +410,15 @@ shows nothing on the timeline, stop and report rather than building an undo cont
 - Step 5: both the scope `confirmationDialog` (attached to ✓) and the delete `confirmationDialog`
   (attached to trash) draw as a menu off their button on iOS 26, not as a bottom sheet. Confirmed
   on device.
+- Step 6: saving an edit (an `OverrideRecord` insert, or a field change on an existing `Expense`)
+  left the row showing its old value until the app relaunched. `@Query`'s array compares by model
+  identity, not by the fields within it, and a relationship-only write doesn't reliably trigger
+  its own change notification either — so `.onChange(of: expenses)` never fired. Fixed by giving
+  the edit sheet its own `onDismiss: rebuildSections`, unconditional on what `@Query` noticed.
+- Step 6: a `.plain` button hit-tests its label's shape, so `.contentShape(Rectangle())` goes on
+  the label. Put on the `Button` it did nothing: the gap between a row's name and amount was
+  dead, and a tap there looked like a broken automation tool. `.onTapGesture` honours an outer
+  `contentShape`, which is why swapping to it "fixed" the row.
 
 ## If a step is wrong
 

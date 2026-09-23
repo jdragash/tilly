@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import os
 
 /// The timeline: months ahead running on above for as long as any bill does, history running
 /// continuously below down to the oldest charge entered. See
@@ -11,6 +12,7 @@ struct TimelineView: View {
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.timelinePlaceStore) private var placeStore
+    @Environment(\.modelContext) private var modelContext
 
     @State private var today = Date()
     @State private var window: TimelineWindow?
@@ -31,7 +33,9 @@ struct TimelineView: View {
     @State private var floorSpacer: CGFloat = 0
     @State private var isEditorPresented = false
     @State private var isSettingsPresented = false
+    @State private var editing: EditSession?
 
+    private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "TimelineView")
     private static let scrollSpace = "timelineScroll"
     /// The list's own content, which scrolling doesn't move: distances measured here hold
     /// still while the list scrolls.
@@ -146,7 +150,8 @@ struct TimelineView: View {
                                 Section {
                                     MonthSectionView(
                                         section: monthSection,
-                                        showsFirstWeekLine: monthSection.isCurrent && !monthSection.hasChargedEntry
+                                        showsFirstWeekLine: monthSection.isCurrent && !monthSection.hasChargedEntry,
+                                        onOpen: openEntry
                                     )
                                     // The content, not the `Section`: a geometry modifier there
                                     // stops headers pinning. And the content, not the header: a
@@ -225,6 +230,29 @@ struct TimelineView: View {
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
+        // `onDismiss` rebuilds explicitly: a save writes an `OverrideRecord` or edits fields
+        // on the same `Expense` instances this view already holds, so the in-memory objects
+        // are correct the moment the sheet closes, but `@Query`'s own change notification
+        // doesn't reliably fire for a relationship-only edit, and `.onChange(of: expenses)`
+        // compares the array by model identity, not by the fields within it — so without
+        // this, a saved amount left the row showing what it read before the edit.
+        .sheet(item: $editing, onDismiss: rebuildSections) { session in
+            ExpenseEditor(today: today, session: session)
+        }
+    }
+
+    /// A row tap builds the session fresh from the store, keyed on what the entry itself
+    /// carries — never from `sections`, which is a snapshot rebuilt on every change. See
+    /// "Opening a charge edits it" in `docs/DESIGN.md`.
+    private func openEntry(_ entry: TimelineEntry) {
+        do {
+            editing = try EditSession.make(
+                expenseID: entry.expenseID, scheduledDate: entry.scheduledDate,
+                context: modelContext, calendar: calendar
+            )
+        } catch {
+            Self.logger.error("Opening a charge failed: \(error)")
+        }
     }
 
     /// The month button bottom left and settings bottom right, always visible, placed as

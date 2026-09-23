@@ -285,7 +285,7 @@ struct ExpenseEditor: View {
     @ViewBuilder
     private func deleteButtons(for session: EditSession) -> some View {
         if session.isFirstCharge {
-            Button("Delete \(draft.name)", role: .destructive) {
+            Button("Delete \(deleteBillName)", role: .destructive) {
                 deleteAllCharges(session)
             }
         } else {
@@ -315,7 +315,7 @@ struct ExpenseEditor: View {
     }
 
     private func deleteTitle(for session: EditSession) -> String {
-        session.isFirstCharge ? "Delete \(draft.name)?" : "\(draft.name) repeats \(repeatPhrase)."
+        session.isFirstCharge ? "Delete \(deleteBillName)?" : "\(deleteBillName) repeats \(deleteRepeatPhrase)."
     }
 
     private func deleteMessage(for session: EditSession) -> String {
@@ -324,18 +324,29 @@ struct ExpenseEditor: View {
         return "Deleting future charges keeps \(previous) and earlier."
     }
 
+    /// The bill's name as saved, not as the live draft reads it: renaming, then tapping
+    /// trash before saving, still asks about the bill on record ("Delete Gym", not "Delete
+    /// Gym2"). Falls back to the live name only when there's no baseline to read, which
+    /// doesn't happen while `session` exists.
+    private var deleteBillName: String {
+        draft.baseline?.name ?? draft.name
+    }
+
     /// "every month", "every 3 months", "every week" — the trash dialog's own phrasing, apart
-    /// from `repeatLabel`'s button-sized noun.
-    private var repeatPhrase: String {
-        if draft.interval == 1 {
-            switch draft.unit {
+    /// from `repeatLabel`'s button-sized noun. Reads the saved repeat, not the live draft, for
+    /// the same reason as `deleteBillName`.
+    private var deleteRepeatPhrase: String {
+        let interval = draft.baseline?.interval ?? draft.interval
+        let unit = draft.baseline?.unit ?? draft.unit
+        if interval == 1 {
+            switch unit {
             case .day: return "every day"
             case .week: return "every week"
             case .month: return "every month"
             case .year: return "every year"
             }
         }
-        return "every \(draft.interval) \(draft.unit.rawValue)s"
+        return "every \(interval) \(unit.rawValue)s"
     }
 
     /// "Oct 31", never a year — matches `ExpenseDraft.dateLabel`.
