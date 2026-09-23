@@ -6,11 +6,21 @@ import SwiftUI
 struct MonthSectionView: View {
     let section: MonthSection
     let showsFirstWeekLine: Bool
+    let onOpen: (TimelineEntry) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(section.entries) { entry in
-                OccurrenceRow(entry: entry)
+                Button {
+                    onOpen(entry)
+                } label: {
+                    // On the label, not the button: a plain button hit-tests its label's
+                    // shape, so outside it the gap between name and amount stays dead.
+                    OccurrenceRow(entry: entry)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Edits this charge")
             }
             if showsFirstWeekLine {
                 Text("This fills in as bills go out.")

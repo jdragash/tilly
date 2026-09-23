@@ -25,7 +25,7 @@ first" mode was prototyped and set aside (`DECISIONS.md`); don't build it.
 - The wheel's payment count is the whole bill's, and offers no count that ends before the open
   charge.
 - Trash asks `Delete All Future Charges` / `Delete All Charges`; on a bill's first charge only
-  `Delete <name>`. Shaking undoes the last save or delete (step 8).
+  `Delete <name>`.
 - A row of a bill whose last payment is today or past reads `ended 08/26`; otherwise `ends 05/27`.
 - After a save or delete the timeline stays where it was. It never scrolls to the edited charge.
 - A split writes a second `Expense` sharing `seriesID`; the engine (`Core/`) does not change.
@@ -33,7 +33,7 @@ first" mode was prototyped and set aside (`DECISIONS.md`); don't build it.
 
 ## Model routing
 
-Steps 1–6 and 8 prove themselves with tests: Sonnet. Step 7 is scroll anchoring, which a green suite
+Steps 1–6 prove themselves with tests: Sonnet. Step 7 is scroll anchoring, which a green suite
 can't see (`.claude/rules/swiftui-scrolling.md`): Opus.
 
 ## Steps
@@ -152,10 +152,16 @@ otherwise `.wholeBill`.
 `zeroWithARepeatChangeIsInvalid`, `zeroSavesForThisChargeWithoutAsking`, `anAmountChangeAsksWhenAChargeFollows`,
 `anAmountChangeOnTheLastChargeIsThisCharge`, `aDateChangeAsks`, `aNameChangeIsTheWholeBill`,
 `aCountChangeIsTheWholeBill`, `theMinimumCountIncludesTheOpenCharge`,
-`theMinimumCountIsNeverBelowTwo`, `lastPaymentCountsTheWholeBill` (count 12, 4 before the rule,
-anchored Jun 18 → May 18 next year), `lastPaymentFromAMonthEndAnchorDoesNotDrift` (anchor Jan 31,
-opened on Feb 28, count unchanged → last payment on the 31st of its month),
-`lastPaymentAfterARepeatChangeCountsFromTheCharge`.
+`theMinimumCountIsNeverBelowTwo`,
+`lastPaymentCountsTheWholeBill` (one record anchored Jun 18, count 12, 0 before the rule, opened
+on its fourth charge, Sep 18, chargeIndex 3 → May 18 next year),
+`lastPaymentCountsEarlierRecords` (count 12, 4 before the rule, this record anchored Jun 18 →
+it makes the remaining 8, so Jan 18 next year),
+`lastPaymentFromAMonthEndAnchorDoesNotDrift` (anchor Jan 31, opened on Feb 28, count unchanged →
+last payment on the 31st of its month),
+`lastPaymentAfterARepeatChangeCountsFromTheCharge` (one record anchored Jun 18 2026, count 12, opened
+on Sep 18, chargeIndex 3, unit changed to weekly → 9 payments from Sep 18, so the 9th weekly
+date from Sep 18 2026: Nov 13 2026).
 
 **Verify:** `xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test`
 
@@ -320,7 +326,7 @@ out of its button, that's acceptable: say so in Lessons.
 Depends on steps 1, 4 and 5.
 
 **Files:** `Tilly/Timeline/MonthSectionView.swift`, `Tilly/Timeline/TimelineView.swift`,
-`Tilly/Timeline/OccurrenceRow.swift` (all modified)
+`Tilly/Timeline/OccurrenceRow.swift`, `Tilly/Editor/ExpenseEditor.swift` (all modified)
 
 **Interface:**
 ```swift
@@ -334,10 +340,15 @@ Each row is a `Button` with `.buttonStyle(.plain)` and a full-row `contentShape`
 `scheduledDate` and presents `.sheet(item: $editing) { ExpenseEditor(today: today, session: $0) }`.
 VoiceOver keeps the row's combined label and adds the hint "Edits this charge".
 
+Also fix in `ExpenseEditor.swift`: the trash dialog's title, message and `Delete <name>` button
+describe the bill as saved, so read name, interval and unit from `draft.baseline`, not the
+draft. Otherwise renaming a bill to "Gym2" and then tapping trash asks to delete "Gym2", as the
+prototype's `askDelete` doesn't.
+
 **Done when:** in the Simulator: tap a charged row, an upcoming row, a €0 row, a moved row;
 each opens with its own amount and date. Change an amount and save for this charge only; the row
 changes and nothing else does. Save for future charges on a charge mid-series; earlier rows keep
-their amounts. Type 0 on an upcoming charge; it saves without asking, reads `€0`, and leaves the header total.
+their amounts. Type 0 on an upcoming charge; it saves without asking, reads `€0`, and its old amount drops out of the header total.
 Delete all future charges on a bill; its earlier rows read "ended MM/YY" once that date is past. Screenshots light, dark
 and at an accessibility size. Both suites green.
 
@@ -354,6 +365,8 @@ Depends on step 6.
 **Interface:** none public. `onChange(of: expenses)` recomputes floor and ceiling; when the
 `TimelineWindow` changes it replaces it and anchors on the month under the middle of the viewport,
 as `handleDayChange` does. With no expenses left, `window` becomes nil and the empty state shows.
+`onChange(of: expenses)` misses edits that only change fields, such as delete-future ending a
+record (Lessons, step 6), so the edit sheet's `onDismiss` runs the same recompute.
 
 **Done when:** measured in the Simulator (method in `.claude/rules/swiftui-scrolling.md`), the
 month header in view holds its position within 1pt in each of: deleting all future charges on the
@@ -367,32 +380,45 @@ with their numbers written into Lessons.
 
 **Out of scope:** scrolling to an edited charge (decided against), place-saving changes.
 
-### Step 8 — Shake to undo
-
-Depends on step 3; independent of 7.
-
-**Files:** `Tilly/TillyApp.swift`, `Tilly/Developer/DeveloperSession.swift` if it builds the debug
-container, `Tilly/Models/BillEditor.swift`, `TillyTests/BillEditorTests.swift` (all modified)
-
-**Interface:** both `.modelContainer(...)` calls in `TillyApp` pass `isUndoEnabled: true`, which
-hands the main context the window's `UndoManager`, so the system's shake gesture reaches it. Each
-`BillEditor` save and delete names its undo action, `context.undoManager?.setActionName("Save")`
-or `("Delete")`, so the system offers "Undo Delete".
-
-**Done when:** `BillEditorTests` gains, each with a context whose `undoManager` is a fresh
-`UndoManager`: `undoingADeleteBringsTheWholeSeriesBack`, `undoingAFutureSaveRejoinsTheBill`
-(one record again, its old end and overrides restored), `undoingAThisChargeSaveRestoresTheAmount`,
-`oneSaveIsOneUndo`. In the Simulator (Device → Shake), deleting a bill then shaking offers
-"Undo Delete" and brings its rows back. Adding an expense becomes undoable too, as a side effect;
-that's fine.
-
-**Verify:** both commands in CLAUDE.md's Verification section, then the shake above.
-
-**Out of scope:** an undo button or toast; the keypad's own typing. If one save needs manual
-`beginUndoGrouping` to be one undo, do it inside `BillEditor` and say so in Lessons. If shaking
-shows nothing on the timeline, stop and report rather than building an undo control.
-
 ## Lessons
+
+- Step 5, replaced after phone testing: trash and the scope question on ✓ are `Menu`s, not
+  `confirmationDialog`s. The dialog ran its button's action only once its closing transition
+  had finished, 1.1s after it had visibly gone (measured from video against app timestamps),
+  and couldn't be dismissed while opening. A `Menu` acts on the tap: tap to editor gone went
+  from 1.9s to 0.5s. ✓ is a `Menu` only while the draft would ask; styled `.glassProminent`,
+  `.buttonBorderShape(.circle)`, with `sharedBackgroundVisibility(.hidden)` on its toolbar item,
+  or the toolbar draws a second glass circle around it.
+- Step 6: saving an edit (an `OverrideRecord` insert, or a field change on an existing `Expense`)
+  left the row showing its old value until the app relaunched. `@Query`'s array compares by model
+  identity, not by the fields within it, and a relationship-only write doesn't reliably trigger
+  its own change notification either — so `.onChange(of: expenses)` never fired. Fixed by giving
+  the edit sheet its own `onDismiss: rebuildSections`, unconditional on what `@Query` noticed.
+- Step 6: a `.plain` button hit-tests its label's shape, so `.contentShape(Rectangle())` goes on
+  the label. Put on the `Button` it did nothing: the gap between a row's name and amount was
+  dead, and a tap there looked like a broken automation tool. `.onTapGesture` honours an outer
+  `contentShape`, which is why swapping to it "fixed" the row.
+- Step 7, measured on the iOS 27 iPhone 17, the month under the middle before → after:
+  ending the only bill that runs on 385.17 → 385.33pt; deleting the oldest bill (floor rises)
+  385.27 → 385.27; saving an amount a month above, no change at all; adding a backdated bill that
+  runs on (floor drops, ceiling back up five years) 385.33 → 385.17. Deleting the last bill shows
+  the empty state and the next bill lands on the current month.
+- Step 7: anything above the months that reads `expenses` live moves the list before the anchor
+  is read. The "Nothing after" line did, and adding a bill that runs on dropped the list 60pt
+  while the anchor, read a turn later, "held" at the dropped place. It now changes with the
+  window, in `replaceWindow`.
+- Step 7: the anchoring scroll lands a turn after the new months, so for a few frames the list
+  sits at its raw offset (65pt instead of 385pt, measured), while the sheet is still closing
+  over it. Not yet checked by eye on a phone.
+- Step 7: when the months above the reader can't fill the space the anchor asks for, the list
+  settles on the current month at rest.
+- Undo (deferred): SwiftData's automatic undo (a context `undoManager`) undoes a delete in memory, but
+  once that delete was saved, the next save silently drops the revived object, even on disk, and
+  crashes (`Unexpected backing data for snapshot creation … OverrideRecord`) when it had an
+  override. `.modelContainer(_:)` for a built container has no `isUndoEnabled` either. Undo
+  that must survive a save inserts fresh objects from a value snapshot.
+- Undo (deferred): in a test, `UndoManager.groupsByEvent` opens a group on the first registration that no
+  run loop ever closes, so one `undo()` also took back the test's own setup.
 
 ## If a step is wrong
 

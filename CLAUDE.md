@@ -109,7 +109,7 @@ Report actual output, never "should pass".
 
 ```
 cd Core && swift test
-xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test
+xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' test
 ```
 
 Both green before landing on `main`. For UI work, also screenshot in the Simulator, in dark mode

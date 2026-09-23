@@ -11,7 +11,6 @@ struct RepeatWheel: View {
     @Environment(\.locale) private var locale
 
     private static let intervals = Array(1...30)
-    private static let counts = Array(2...120)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,9 +31,11 @@ struct RepeatWheel: View {
                 .frame(width: Tokens.Size.wheelUnit)
                 .accessibilityLabel("Unit")
                 // Takes what's left: "120 payments" is the widest row and must not truncate.
+                // The lowest count offered is the open charge's own — editing never offers an
+                // end before it.
                 wheel(selection: $draft.paymentCount) {
                     Text("no end").tag(Int?.none)
-                    ForEach(Self.counts, id: \.self) { Text("\($0) payments").tag(Int?.some($0)) }
+                    ForEach(counts, id: \.self) { Text("\($0) payments").tag(Int?.some($0)) }
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityLabel("Ends after")
@@ -59,4 +60,6 @@ struct RepeatWheel: View {
     private func unitName(_ unit: RecurrenceUnit) -> String {
         draft.interval == 1 ? unit.rawValue : unit.rawValue + "s"
     }
+
+    private var counts: [Int] { Array(draft.minimumPaymentCount...120) }
 }

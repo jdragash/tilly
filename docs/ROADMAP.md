@@ -36,6 +36,7 @@ The smallest thing that does the job.
 | Look-ahead nudges ("next month has a large annual bill") | Arguably the core promise, but the rules need real usage to design well. The engine already computes any future range. No space is reserved for it. |
 | Custom and pay-period months | Plenty of people read money from one payday to the next. Cheaper than it looks: "the month starts on the Nth" redefines one interval, and the engine windows on any `DateInterval`. |
 | Header figure as a setting (remaining or total) | Remaining is the right default. A switch can wait for a settings screen. |
+| Shake to undo a save or delete | Not core to knowing what's coming. SwiftData's own undo can't do it (a revived bill vanishes on the next save, or crashes), so it needs its own snapshot-based undo in `BillEditor`. |
 | Calendar view | Would duplicate the timeline. Live with the timeline first and see whether it's missed. A view switch beside + is where it would go. |
 | iCloud sync | The schema is CloudKit-shaped, so this is close to a flag. But it adds container setup, merge conflicts and latency. |
 

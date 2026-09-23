@@ -45,6 +45,8 @@ enum Tokens {
         static let tertiary: Color = Color(.tertiaryLabel)
         static let quaternary: Color = Color(.quaternaryLabel)
         static let accent: Color = .accentColor
+        /// The editor's trash button, and its confirmation dialog's destructive buttons.
+        static let destructive: Color = .red
     }
 
     enum Surface {

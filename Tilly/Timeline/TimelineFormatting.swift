@@ -29,7 +29,8 @@ enum TimelineFormatting {
         return formatter.string(from: date)
     }
 
-    /// "Fri 18 · ends 05/27" when the entry has an end; "Fri 18" otherwise.
+    /// "Fri 18 · ends 05/27" when the entry has an end; "Fri 18 · ended 08/26" once that
+    /// payment is today or past; "Fri 18" otherwise.
     static func dateLine(for entry: TimelineEntry, calendar: Calendar = .current, locale: Locale = .current) -> String {
         let day = dayLine(entry.date, calendar: calendar, locale: locale)
         guard let endDate = entry.endDate else { return day }
@@ -39,7 +40,8 @@ enum TimelineFormatting {
         formatter.timeZone = calendar.timeZone
         formatter.locale = locale
         formatter.dateFormat = "MM/yy"
-        return "\(day) \u{00B7} ends \(formatter.string(from: endDate))"
+        let word = entry.endHasPassed ? "ended" : "ends"
+        return "\(day) \u{00B7} \(word) \(formatter.string(from: endDate))"
     }
 
     /// "Rent, Saturday 12 September, 950 US dollars out, upcoming" — name, date, amount,
@@ -63,7 +65,8 @@ enum TimelineFormatting {
         var parts = [entry.name, dateString, amountString]
         if let endDate = entry.endDate {
             dateFormatter.dateFormat = "MMMM yyyy"
-            parts.append("ends \(dateFormatter.string(from: endDate))")
+            let word = entry.endHasPassed ? "ended" : "ends"
+            parts.append("\(word) \(dateFormatter.string(from: endDate))")
         }
         parts.append(stateWord(for: entry.state))
         return parts.joined(separator: ", ")
