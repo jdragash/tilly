@@ -25,7 +25,7 @@ first" mode was prototyped and set aside (`DECISIONS.md`); don't build it.
 - The wheel's payment count is the whole bill's, and offers no count that ends before the open
   charge.
 - Trash asks `Delete All Future Charges` / `Delete All Charges`; on a bill's first charge only
-  `Delete <name>`. Shaking undoes the last save or delete (step 8).
+  `Delete <name>`.
 - A row of a bill whose last payment is today or past reads `ended 08/26`; otherwise `ends 05/27`.
 - After a save or delete the timeline stays where it was. It never scrolls to the edited charge.
 - A split writes a second `Expense` sharing `seriesID`; the engine (`Core/`) does not change.
@@ -33,7 +33,7 @@ first" mode was prototyped and set aside (`DECISIONS.md`); don't build it.
 
 ## Model routing
 
-Steps 1–6 and 8 prove themselves with tests: Sonnet. Step 7 is scroll anchoring, which a green suite
+Steps 1–6 prove themselves with tests: Sonnet. Step 7 is scroll anchoring, which a green suite
 can't see (`.claude/rules/swiftui-scrolling.md`): Opus.
 
 ## Steps
@@ -380,31 +380,6 @@ with their numbers written into Lessons.
 
 **Out of scope:** scrolling to an edited charge (decided against), place-saving changes.
 
-### Step 8 — Shake to undo
-
-Depends on step 3; independent of 7.
-
-**Files:** `Tilly/TillyApp.swift`, `Tilly/Developer/DeveloperSession.swift` if it builds the debug
-container, `Tilly/Models/BillEditor.swift`, `TillyTests/BillEditorTests.swift` (all modified)
-
-**Interface:** both `.modelContainer(...)` calls in `TillyApp` pass `isUndoEnabled: true`, which
-hands the main context the window's `UndoManager`, so the system's shake gesture reaches it. Each
-`BillEditor` save and delete names its undo action, `context.undoManager?.setActionName("Save")`
-or `("Delete")`, so the system offers "Undo Delete".
-
-**Done when:** `BillEditorTests` gains, each with a context whose `undoManager` is a fresh
-`UndoManager`: `undoingADeleteBringsTheWholeSeriesBack`, `undoingAFutureSaveRejoinsTheBill`
-(one record again, its old end and overrides restored), `undoingAThisChargeSaveRestoresTheAmount`,
-`oneSaveIsOneUndo`. In the Simulator (Device → Shake), deleting a bill then shaking offers
-"Undo Delete" and brings its rows back. Adding an expense becomes undoable too, as a side effect;
-that's fine.
-
-**Verify:** both commands in CLAUDE.md's Verification section, then the shake above.
-
-**Out of scope:** an undo button or toast; the keypad's own typing. If one save needs manual
-`beginUndoGrouping` to be one undo, do it inside `BillEditor` and say so in Lessons. If shaking
-shows nothing on the timeline, stop and report rather than building an undo control.
-
 ## Lessons
 
 - Step 5: both the scope `confirmationDialog` (attached to ✓) and the delete `confirmationDialog`
@@ -419,6 +394,13 @@ shows nothing on the timeline, stop and report rather than building an undo cont
   the label. Put on the `Button` it did nothing: the gap between a row's name and amount was
   dead, and a tap there looked like a broken automation tool. `.onTapGesture` honours an outer
   `contentShape`, which is why swapping to it "fixed" the row.
+- Undo (deferred): SwiftData's automatic undo (a context `undoManager`) undoes a delete in memory, but
+  once that delete was saved, the next save silently drops the revived object, even on disk, and
+  crashes (`Unexpected backing data for snapshot creation … OverrideRecord`) when it had an
+  override. `.modelContainer(_:)` for a built container has no `isUndoEnabled` either. Undo
+  that must survive a save inserts fresh objects from a value snapshot.
+- Undo (deferred): in a test, `UndoManager.groupsByEvent` opens a group on the first registration that no
+  run loop ever closes, so one `undo()` also took back the test's own setup.
 
 ## If a step is wrong
 

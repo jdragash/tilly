@@ -212,8 +212,7 @@ asking, and drawn as `€0`. A new bill, or a whole bill's amount, still needs m
 
 The trash button asks, as Calendar: `Delete All Future Charges` keeps the charges before this one,
 which is how a subscription ends, and the bill then reads `ends 08/26` like any bill with an end.
-`Delete All Charges` takes the past too. A bill's first charge offers only `Delete Gym`. Shaking
-undoes the last save or delete, as everywhere in iOS.
+`Delete All Charges` takes the past too. A bill's first charge offers only `Delete Gym`.
 
 ---
 
