@@ -394,6 +394,20 @@ with their numbers written into Lessons.
   the label. Put on the `Button` it did nothing: the gap between a row's name and amount was
   dead, and a tap there looked like a broken automation tool. `.onTapGesture` honours an outer
   `contentShape`, which is why swapping to it "fixed" the row.
+- Step 7, measured on the iOS 27 iPhone 17, the month under the middle before → after:
+  ending the only bill that runs on 385.17 → 385.33pt; deleting the oldest bill (floor rises)
+  385.27 → 385.27; saving an amount a month above, no change at all; adding a backdated bill that
+  runs on (floor drops, ceiling back up five years) 385.33 → 385.17. Deleting the last bill shows
+  the empty state and the next bill lands on the current month.
+- Step 7: anything above the months that reads `expenses` live moves the list before the anchor
+  is read. The "Nothing after" line did, and adding a bill that runs on dropped the list 60pt
+  while the anchor, read a turn later, "held" at the dropped place. It now changes with the
+  window, in `replaceWindow`.
+- Step 7: the anchoring scroll lands a turn after the new months, so for a few frames the list
+  sits at its raw offset (65pt instead of 385pt, measured), while the sheet is still closing
+  over it. Not yet checked by eye on a phone.
+- Step 7: when the months above the reader can't fill the space the anchor asks for, the list
+  settles on the current month at rest.
 - Undo (deferred): SwiftData's automatic undo (a context `undoManager`) undoes a delete in memory, but
   once that delete was saved, the next save silently drops the revived object, even on disk, and
   crashes (`Unexpected backing data for snapshot creation … OverrideRecord`) when it had an

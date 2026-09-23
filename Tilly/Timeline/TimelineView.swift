@@ -16,6 +16,7 @@ struct TimelineView: View {
 
     @State private var today = Date()
     @State private var window: TimelineWindow?
+    @State private var isLastPayment = false
     @State private var sections: [MonthKey: MonthSection] = [:]
     @State private var headerOffsets: [MonthKey: CGFloat] = [:]
     @State private var headerHeights: [MonthKey: CGFloat] = [:]
@@ -121,11 +122,7 @@ struct TimelineView: View {
         .ignoresSafeArea(.keyboard)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
         .onAppear(perform: setUpIfNeeded)
-        // The first expense arrives with no window yet, because `setUpIfNeeded` found no
-        // floor on appear; without setting up here the list would stay blank.
-        .onChange(of: expenses) { _, _ in
-            if window == nil { setUpIfNeeded() } else { rebuildSections() }
-        }
+        .onChange(of: expenses) { _, _ in refreshWindow() }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active, hasRestoredPlace { saveCurrentPlace() }
@@ -230,13 +227,14 @@ struct TimelineView: View {
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
-        // `onDismiss` rebuilds explicitly: a save writes an `OverrideRecord` or edits fields
+        // `onDismiss` refreshes explicitly: a save writes an `OverrideRecord` or edits fields
         // on the same `Expense` instances this view already holds, so the in-memory objects
         // are correct the moment the sheet closes, but `@Query`'s own change notification
         // doesn't reliably fire for a relationship-only edit, and `.onChange(of: expenses)`
         // compares the array by model identity, not by the fields within it — so without
-        // this, a saved amount left the row showing what it read before the edit.
-        .sheet(item: $editing, onDismiss: rebuildSections) { session in
+        // this, a saved amount left the row showing what it read before the edit, and
+        // deleting future charges, which only ends a record, left the months ahead standing.
+        .sheet(item: $editing, onDismiss: refreshWindow) { session in
             ExpenseEditor(today: today, session: session)
         }
     }
@@ -281,10 +279,16 @@ struct TimelineView: View {
         .ignoresSafeArea(.container, edges: .bottom)
     }
 
-    /// Whether the ceiling is a real last payment, so the list says so above it.
-    private var isLastPayment: Bool {
-        guard let window else { return false }
-        return TimelineCeiling.isLastPayment(window.ceiling, for: expenses, current: window.current, calendar: calendar)
+    /// Replaces the months, and in the same update whether the ceiling is a real last payment, so
+    /// the list says so above it. The two change together or not at all: read live from
+    /// `expenses`, the line above the months went the moment a bill that runs on arrived, a turn
+    /// before the window it belongs to, and everything below it jumped 60pt before the
+    /// anchor was read (measured).
+    private func replaceWindow(with newWindow: TimelineWindow?) {
+        window = newWindow
+        isLastPayment = newWindow.map {
+            TimelineCeiling.isLastPayment($0.ceiling, for: expenses, current: $0.current, calendar: calendar)
+        } ?? false
     }
 
     /// The history floor's mirror, above the last payment when every bill ends. It fills the
@@ -340,8 +344,57 @@ struct TimelineView: View {
         guard let floor = TimelineFloor.month(for: expenses, calendar: calendar),
               let ceiling = TimelineCeiling.month(for: expenses, current: current, calendar: calendar)
         else { return }
-        window = TimelineWindow(floor: floor, ceiling: ceiling, current: current)
+        replaceWindow(with: TimelineWindow(floor: floor, ceiling: ceiling, current: current))
         rebuildSections()
+    }
+
+    /// Bills changed, so the floor or ceiling may have moved: ending the only bill that runs on
+    /// drops every month above its last payment, and a backdated bill or a deleted old one moves
+    /// the floor. The months are replaced and the month under the middle is held where it is,
+    /// as a day change does. See "Nothing under the reader's eyes moves" in `docs/DESIGN.md`.
+    ///
+    /// The first bill arrives with no window yet, because `setUpIfNeeded` found no floor on
+    /// appear; without setting up here the list would stay blank.
+    private func refreshWindow() {
+        guard let window else {
+            setUpIfNeeded()
+            return
+        }
+        guard let floor = TimelineFloor.month(for: expenses, calendar: calendar),
+              let ceiling = TimelineCeiling.month(for: expenses, current: window.current, calendar: calendar)
+        else {
+            forgetWindow()
+            return
+        }
+        let newWindow = TimelineWindow(floor: floor, ceiling: ceiling, current: window.current)
+        guard newWindow != window else {
+            rebuildSections()
+            return
+        }
+        let anchorMonth = monthUnderMiddle()
+        let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
+        replaceWindow(with: newWindow)
+        rebuildSections()
+        if let anchorMonth, visibleMonths.contains(anchorMonth) {
+            anchorAndSettle(anchorMonth, to: max(0, desiredOffset))
+        }
+    }
+
+    /// The last bill is gone and the empty state shows. Everything measured from the old list
+    /// goes with it, the saved place too, so the next bill sets up as a first run does and
+    /// lands on the current month rather than on a place in a list that no longer exists.
+    private func forgetWindow() {
+        replaceWindow(with: nil)
+        sections = [:]
+        headerOffsets = [:]
+        headerHeights = [:]
+        scrollProxy = nil
+        hasRestoredPlace = false
+        restingContentOffset = nil
+        currentContentTop = nil
+        floorLineBottom = nil
+        floorSpacer = 0
+        placeStore.clear()
     }
 
     /// Restores where the reader left off, exactly once. With a saved place, scrolls so its
@@ -456,7 +509,7 @@ struct TimelineView: View {
         }
         let anchorMonth = monthUnderMiddle()
         let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
-        self.window = TimelineWindow(floor: window.floor, ceiling: ceiling, current: newCurrent)
+        replaceWindow(with: TimelineWindow(floor: window.floor, ceiling: ceiling, current: newCurrent))
         rebuildSections()
         if let anchorMonth { anchorAndSettle(anchorMonth, to: max(0, desiredOffset)) }
     }
