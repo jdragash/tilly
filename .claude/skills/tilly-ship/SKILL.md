@@ -21,7 +21,7 @@ judgement call is the final step — deciding what's genuinely durable enough to
 ## Verification — run these, report actual output
 
 ```
-xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17' test
+xcodebuild -scheme Tilly -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' test
 ```
 
 Report what it printed. Never "should pass", never "tests look fine". If anything fails, fix
