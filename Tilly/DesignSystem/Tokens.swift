@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum Tokens {
     enum Text {
@@ -133,5 +134,48 @@ enum Tokens {
         static let icon: CGFloat = 10
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
+    }
+}
+
+extension Tokens {
+    /// What each `CategoryColour` looks like, light and dark. Checked for contrast and for telling
+    /// apart in both modes with the dataviz validator, 2026-09-24. Green is the same in both.
+    enum CategoryColour {
+        static func color(_ colour: Tilly.CategoryColour) -> Color {
+            switch colour {
+            case .blue: blue
+            case .orange: orange
+            case .aqua: aqua
+            case .yellow: yellow
+            case .magenta: magenta
+            case .green: green
+            case .violet: violet
+            case .red: red
+            }
+        }
+
+        private static let blue = dynamic(light: 0x2a78d6, dark: 0x3987e5)
+        private static let orange = dynamic(light: 0xeb6834, dark: 0xd95926)
+        private static let aqua = dynamic(light: 0x1baf7a, dark: 0x199e70)
+        private static let yellow = dynamic(light: 0xeda100, dark: 0xc98500)
+        private static let magenta = dynamic(light: 0xe87ba4, dark: 0xd55181)
+        private static let green = dynamic(light: 0x008300, dark: 0x008300)
+        private static let violet = dynamic(light: 0x4a3aa7, dark: 0x9085e9)
+        private static let red = dynamic(light: 0xe34948, dark: 0xe66767)
+
+        private static func dynamic(light: UInt32, dark: UInt32) -> Color {
+            Color(UIColor { traits in
+                rgb(traits.userInterfaceStyle == .dark ? dark : light)
+            })
+        }
+
+        private static func rgb(_ hex: UInt32) -> UIColor {
+            UIColor(
+                red: CGFloat((hex >> 16) & 0xff) / 255,
+                green: CGFloat((hex >> 8) & 0xff) / 255,
+                blue: CGFloat(hex & 0xff) / 255,
+                alpha: 1
+            )
+        }
     }
 }

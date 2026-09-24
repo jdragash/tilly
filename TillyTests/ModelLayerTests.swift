@@ -181,6 +181,17 @@ import TillyCore
         #expect(fetched.emoji == "📺")
     }
 
+    @Test func categoryDefaultsToNoColourAndOrderZero() throws {
+        let context = try Self.makeContext()
+        context.insert(ExpenseCategory(name: "Home", emoji: "🏠"))
+        try context.save()
+
+        let fetched = try #require(try context.fetch(FetchDescriptor<ExpenseCategory>()).first)
+        #expect(fetched.colourRaw == "")
+        #expect(fetched.colour == nil)
+        #expect(fetched.sortOrder == 0)
+    }
+
     @Test func anExpenseKeepsItsCategory() throws {
         let context = try Self.makeContext()
         let category = ExpenseCategory(name: "Home", emoji: "🏠")

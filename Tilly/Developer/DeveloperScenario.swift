@@ -29,7 +29,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         case .yourData, .empty:
             return
         case .oneExpense:
-            let subscriptions = ExpenseCategory(name: "Subscriptions", emoji: "📺")
+            let subscriptions = ExpenseCategory(name: "Subscriptions", emoji: "📺", colour: .blue, sortOrder: 0)
             context.insert(subscriptions)
             context.insert(Expense(name: "Music", amount: 15, anchorDate: calendar.startOfDay(for: today), category: subscriptions))
         case .typicalYear:
@@ -37,7 +37,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         case .longHistory:
             try PreviewData.insert(into: context, today: today, calendar: calendar, historyMonths: 36)
         case .nothingChargedYet:
-            let home = ExpenseCategory(name: "Home", emoji: "🏠")
+            let home = ExpenseCategory(name: "Home", emoji: "🏠", colour: .blue, sortOrder: 0)
             context.insert(home)
             let start = calendar.startOfDay(for: today)
             let internet = calendar.date(byAdding: .day, value: 2, to: start)!
