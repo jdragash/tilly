@@ -6,7 +6,7 @@ annual costs — so you know what's coming and when.
 It is a personal hobby project, built in the open. It is **free forever**: no paywalls,
 no in-app purchases, no locked features. Nothing about it is for sale, now or later.
 
-## What it does
+## What it's for
 
 - Set up recurring expenses on any interval — every N days, weeks, months or years
 - See them on one timeline: what's coming above, what's already been charged below
@@ -19,15 +19,20 @@ maintain.
 
 ## Status
 
-The timeline is built and is the whole app so far. It's one list you scroll: this month
-open with what's left to come out, history running continuously behind it as far back as
-your oldest charge, and next month already open above. You can look one month further
-ahead — it puts itself away when you come back — jump to the current month from anywhere,
-and close the app without losing your place.
+The timeline and the editor are built, and the app is usable day to day.
 
-**You can't add an expense yet.** The editor is the next piece of work; until it exists
-the app only shows data it was seeded with. The recurrence engine underneath it is done
-and tested.
+The timeline is one list you scroll, laid out like iOS Calendar: this month open with
+what's left to come out, the months ahead running on above it, and history running on
+below as far back as your oldest charge. The month button brings you back from anywhere,
+and the app reopens where you left it.
+
+Tap + to add a bill, or tap a charge to edit it. A change can apply to that one charge
+(a different amount or date, even nothing at all) or to every charge from then on. Every
+expense has a category with an emoji, name and colour you choose; none come built in.
+Settings is where you put them in order and recolour them.
+
+Next is a view by category: each one a lane across the month, with a dot for every
+charge. Bills whose amount you only know roughly come after that.
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the order things are coming in, and
 [`docs/PROJECT.md`](docs/PROJECT.md) for what the app is trying to be.
@@ -42,6 +47,8 @@ database, so it can be tested in isolation:
 ```bash
 cd Core && swift test
 ```
+
+The app itself opens in Xcode from `Tilly.xcodeproj`, with nothing to install first.
 
 ## Acknowledgements
 
