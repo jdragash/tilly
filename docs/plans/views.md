@@ -370,6 +370,15 @@ starts on a dot doesn't open it. Jake feels the ticks and the response on his ph
 - **`simctl launch --console-pty` hung here with no output** (from the agent's shell, with and
   without `script`), and `--stdout=` to the scratchpad wrote nothing. A temporary `NSLog` read back
   with `simctl spawn booted log show --last 1m --predicate 'eventMessage CONTAINS "…"'` worked.
+- **Step 3: a `List` `.onMove` reorders by long-press drag outside edit mode** (iOS 27 simulator).
+- **A `Menu` draws an SF Symbol in one ink, whatever its `foregroundStyle`.** A colour swatch in a
+  menu item needs the colour in the image: `Tokens.CategoryColour.menuSwatch` tints a `UIImage` with
+  `.alwaysOriginal`, and it follows light and dark.
+- **A 44pt minimum height on a list row's trailing control makes the row taller** (about 52 → 74pt).
+  Give it the minimum width only; the row already clears 44pt.
+- **Sample scenarios reseed on every launch**, so "survives relaunch" can't be seen in one. It's
+  covered by a test that reopens an on-disk store instead.
+- `xcodebuild … test` shut the booted simulator down; boot it again before driving the app.
 
 ## If a step is wrong
 

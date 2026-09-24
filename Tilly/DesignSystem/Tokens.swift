@@ -113,6 +113,10 @@ enum Tokens {
         static let emojiSlot: CGFloat = 48
         static let categoryField: CGFloat = 44
         static let categoryRow: CGFloat = 48
+        /// A category's colour, drawn as a filled circle in Settings and the new-category row.
+        static let colourSwatch: CGFloat = 22
+        /// The least a control smaller than this is given to be tapped by: Apple's 44pt minimum.
+        static let minimumTapTarget: CGFloat = 44
         /// The repeat wheels' two narrow columns; the end column takes the rest. Tuning values:
         /// a wheel's natural width is unbounded, so equal thirds truncated "12 payments".
         static let wheelInterval: CGFloat = 64
@@ -142,6 +146,17 @@ extension Tokens {
     /// apart in both modes with the dataviz validator, 2026-09-24. Green is the same in both.
     enum CategoryColour {
         static func color(_ colour: Tilly.CategoryColour) -> Color {
+            Color(uiColor(colour))
+        }
+
+        /// A filled circle in the colour, for a menu item's icon. Menus draw a plain symbol in
+        /// one ink whatever its `foregroundStyle`, so this one carries its colour in the image.
+        static func menuSwatch(_ colour: Tilly.CategoryColour) -> Image {
+            let circle = UIImage(systemName: "circle.fill") ?? UIImage()
+            return Image(uiImage: circle.withTintColor(uiColor(colour), renderingMode: .alwaysOriginal))
+        }
+
+        private static func uiColor(_ colour: Tilly.CategoryColour) -> UIColor {
             switch colour {
             case .blue: blue
             case .orange: orange
@@ -163,10 +178,10 @@ extension Tokens {
         private static let violet = dynamic(light: 0x4a3aa7, dark: 0x9085e9)
         private static let red = dynamic(light: 0xe34948, dark: 0xe66767)
 
-        private static func dynamic(light: UInt32, dark: UInt32) -> Color {
-            Color(UIColor { traits in
+        private static func dynamic(light: UInt32, dark: UInt32) -> UIColor {
+            UIColor { traits in
                 rgb(traits.userInterfaceStyle == .dark ? dark : light)
-            })
+            }
         }
 
         private static func rgb(_ hex: UInt32) -> UIColor {

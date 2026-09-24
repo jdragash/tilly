@@ -122,4 +122,28 @@ import Testing
         CategoryOrdering.move(made.sorted { $0.sortOrder < $1.sortOrder }, from: IndexSet(integer: 3), to: 0)
         #expect(Self.byOrder(made) == ["D", "B", "C", "A"])
     }
+
+    /// What Settings does on a drag and a colour pick, then a relaunch: a fresh container on the
+    /// same file. The sample scenarios reseed on launch, so the Simulator can't show this.
+    @Test func aMoveAndAColourSurviveReopeningTheStore() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CategoryOrderingTests-\(UUID().uuidString).store")
+        defer { try? FileManager.default.removeItem(at: url) }
+        func open() throws -> ModelContext {
+            ModelContext(try ModelContainer(for: TillyStore.schema, configurations: [ModelConfiguration(url: url)]))
+        }
+
+        let first = try open()
+        let made = ["A", "B", "C"].enumerated().map { index, name in
+            ExpenseCategory(name: name, emoji: "🏠", colour: .blue, sortOrder: index)
+        }
+        made.forEach(first.insert)
+        CategoryOrdering.move(made, from: IndexSet(integer: 2), to: 0)
+        made[0].colour = .violet
+        try first.save()
+
+        let reopened = try open().fetch(FetchDescriptor<ExpenseCategory>(sortBy: [SortDescriptor(\.sortOrder)]))
+        #expect(reopened.map(\.name) == ["C", "A", "B"])
+        #expect(reopened.first { $0.name == "A" }?.colour == .violet)
+    }
 }
