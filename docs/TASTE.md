@@ -33,7 +33,7 @@ distinguishes.**
 No separator under every row. A hairline appears only under a pinned month header.
 
 **6. A word stays only if it does work no other channel does, and then it stays.**
-`−€162 left` keeps "left", and drops "this month" because the month name sits beside it.
+`−€162 left` keeps "left", and drops "this month" because the month name sits above it.
 
 **7. The content is the screen. A figure goes on the thing it describes, not in a box above it.**
 What's left this month lives in the pinned month header, not in a headline card.

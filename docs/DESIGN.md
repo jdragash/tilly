@@ -121,10 +121,10 @@ line of history clears it.
 ### The month you're reading stays named
 
 The month header pins to the top while its rows scroll under it, and hands off when the next header
-arrives. It shares that row with +, which floats over its right end, so the total sits beside the
-month name rather than at the edge: `September −€53 left`. Its ground is opaque and the same paper
-as the page, so content passing beneath is hidden rather than tinted, and it carries that ground at
-rest too. Glass is for things that float over content; a full-bleed sticky header doesn't float.
+arrives. It shares that row with +, which floats over its right end. The figure sits on its own
+line under the month name, secondary, so the name reads first and the controls beside it can grow.
+Its ground is opaque and the same paper as the page, so content passing beneath is hidden rather
+than tinted, and it carries that ground at rest too. Glass is for things that float over content.
 
 The row gives + 8pt of clear space above and below. It keeps its full size when pinned: condensing
 would cost three points of type and make the month you're *in* the same shape as one you could
@@ -221,7 +221,7 @@ which is how a subscription ends, and the bill then reads `ends 08/26` like any 
 
 **No label that restates its control** (tenet 3). **The test cuts both ways:** a word stays when
 removing it leaves a slot meaning two things. `−€162 left` keeps "left", and drops "this month"
-because the month name sits beside it. The month button says only `September`.
+because the month name sits above it. The month button says only `September`.
 
 **The app never says a bill was paid.** It says *charged*. Tilly knows a date passed, not what left
 an account.
