@@ -363,6 +363,14 @@ starts on a dot doesn't open it. Jake feels the ticks and the response on his ph
 
 ## Lessons
 
+- **Step 1: two lines fit the 60pt row.** Name over figure measured 60.00pt at the default size on
+  the iPhone 17 simulator (iOS 27), every header, before and after a relaunch; `accessibility-large`
+  stays on its own branch at 104.33pt. The standard branch needs `.frame(maxWidth: .infinity,
+  alignment: .leading)` once the `HStack`'s `Spacer` goes, or the pinned ground stops short of full width.
+- **`simctl launch --console-pty` hung here with no output** (from the agent's shell, with and
+  without `script`), and `--stdout=` to the scratchpad wrote nothing. A temporary `NSLog` read back
+  with `simctl spawn booted log show --last 1m --predicate 'eventMessage CONTAINS "…"'` worked.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

@@ -76,9 +76,9 @@ enum Tokens {
         static let bottomRowInset: CGFloat = 28
         /// Clear space above and below + in the header row.
         static let headerRowInset: CGFloat = 8
-        /// What a month header keeps clear at its trailing end so its total never runs under +:
-        /// the button's width, the gutter it sits in, and a gap.
-        static let headerTrailingClearance: CGFloat = Size.floatingButton + gutter + gap
+        /// What a month header keeps clear at its trailing end so its text never runs under the
+        /// glass pair: the view button and +, the gutter they sit in, and a gap.
+        static let headerTrailingClearance: CGFloat = 2 * Size.groupSlot + gutter + gap
     }
 
     enum Size {
@@ -92,6 +92,9 @@ enum Tokens {
         /// +, at the top. Calendar's top glass buttons, measured on the iPhone 17 simulator
         /// (iOS 26.5, month view, 3x): 44.00pt tall.
         static let floatingButton: CGFloat = 44
+        /// One button's width in a top glass group. Calendar's top group measured 158pt for three
+        /// icons on the iPhone 17 simulator.
+        static let groupSlot: CGFloat = 52
         /// The month button and settings, at the bottom. Calendar's bottom glass buttons, Today and
         /// the pair beside it, measured the same way: 48.00pt tall, 4pt taller than the top ones.
         static let bottomButton: CGFloat = 48

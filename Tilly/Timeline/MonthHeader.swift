@@ -8,18 +8,25 @@ import SwiftUI
 /// points of type, landing the month you're *in* on the same shape as one you could open.
 /// `isPinned` only ever changes the hairline beneath it.
 ///
-/// It shares its row with +, which floats over the trailing end, so the total sits beside the
-/// name and the trailing edge keeps `Tokens.Space.headerTrailingClearance` clear. Its minimum
-/// height is `Tokens.Size.headerRow`, the band + is centred in, with the text centred too.
+/// The figure sits under the name on its own line. The row is shared with the glass pair, which
+/// floats over the trailing end, so the trailing edge keeps `trailingClearance` clear. Its minimum
+/// height is `Tokens.Size.headerRow`, the band the pair is centred in, with the text centred too.
 struct MonthHeader: View {
     let section: MonthSection
     let today: Date
     let isPinned: Bool
+    /// Replaces the section's own figure when set, as a picked-out category does.
+    let figure: String?
+    let trailingClearance: CGFloat
 
-    init(section: MonthSection, today: Date, isPinned: Bool = false) {
+    init(section: MonthSection, today: Date, isPinned: Bool = false,
+         figure: String? = nil,
+         trailingClearance: CGFloat = Tokens.Space.headerTrailingClearance) {
         self.section = section
         self.today = today
         self.isPinned = isPinned
+        self.figure = figure
+        self.trailingClearance = trailingClearance
     }
 
     @Environment(\.calendar) private var calendar
@@ -40,15 +47,15 @@ struct MonthHeader: View {
                 // clear space above and below rather than touching the hairline.
                 .padding(.vertical, Tokens.Space.headerRowInset)
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.tight) {
+                VStack(alignment: .leading, spacing: 0) {
                     nameText
                     totalText
-                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(.leading, Tokens.Space.gutter)
-        .padding(.trailing, Tokens.Space.headerTrailingClearance)
+        .padding(.trailing, trailingClearance)
         .frame(minHeight: Tokens.Size.headerRow)
         // Carried at rest as well as pinned. The pinned ground is the same paper as the
         // page, so drawing it unconditionally looks identical at rest — and it removes the
@@ -79,7 +86,7 @@ struct MonthHeader: View {
     }
 
     private var totalText: some View {
-        Text(TimelineFormatting.headerFigure(for: section, locale: locale))
+        Text(figure ?? TimelineFormatting.headerFigure(for: section, locale: locale))
             .font(Tokens.Text.monthTotal)
             .monospacedDigit()
             .foregroundStyle(Tokens.Ink.secondary)
