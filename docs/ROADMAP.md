@@ -19,8 +19,8 @@ The smallest thing that does the job.
 | Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere; on an iPhone a tap mid-flick is still ignored (open). |
 | Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
-| Categories | In the editor, partly | Emoji and name, user-created, ships empty, required on every expense. Created in the editor; listed in Settings. Editing them there isn't designed yet. |
-| Insights, thin | Exploring | A category breakdown over a chosen period (this month, last month, monthly average, next 12 months, this year). Early ideas on the editor canvas. |
+| Categories | In the editor, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming and changing an emoji there aren't designed yet. |
+| Category view | Planned | Lanes across one month, a dot per charge, beside the timeline behind a view menu. `docs/plans/views.md`. Other periods (a year, a monthly average) were tried and set aside. |
 | Token gallery | — | `DesignSystem/Gallery.swift`: every token and component in light, dark and accessibility sizes. |
 
 **Done when:** it holds a real set of recurring expenses and gets opened instead of guessed at.

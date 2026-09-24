@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilly — lanes prototype</title>
+<!--
+  Tilly · the category view, direction F ("lanes through the month") · 2026-09-24
+
+  Built during tilly-explore after round 1 of the Tilly Views canvas, where Jake picked F
+  for a deep dive: "you get a real picture of what the month looks like". Questions it explores:
+
+    1. What happens with many categories? (slider, 1 to 16)
+    2. How do amounts show without a number on every dot? Dragging across the month
+       (scrubbing), labelling only the big charges, or a totals column.
+    3. Can the lanes merge into one line, each charge coloured by its category, or drawn
+       as its category's emoji? And a running total, where each step's height is a charge.
+    4. How do you move between months: one month at a time, or months stacked like the
+       timeline, future above?
+
+  Direction chosen: lanes. A second round added a full options menu (spans, filters, compare)
+  and was rolled back the same day: the filters complicated the view.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees with the docs,
+  the docs win.
+
+  Invented bills and amounts throughout. Today is Thursday 24 September 2026 unless the
+  slider moves it.
+-->
+<style>
+:root { --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font); background: #e9e9e6; color: #1d1d1f; -webkit-font-smoothing: antialiased; }
+.stage { display: flex; gap: 40px; padding: 32px; align-items: flex-start; min-height: 100vh; }
+.phone {
+  --bg: #fff; --label: #000; --sec: rgba(60,60,67,.6); --ter: rgba(60,60,67,.3); --quat: rgba(60,60,67,.14);
+  --fill: rgba(116,116,128,.08); --fill2: rgba(120,120,128,.16); --sep: rgba(60,60,67,.29);
+  --glass: rgba(255,255,255,.8); --gborder: rgba(0,0,0,.07); --shadow: 0 4px 18px rgba(0,0,0,.1);
+  --pop: rgba(250,250,250,.97);
+  position: relative; width: 402px; height: 874px; flex-shrink: 0; border-radius: 52px; overflow: hidden;
+  background: var(--bg); color: var(--label); box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 30px 80px rgba(0,0,0,.12);
+  font-variant-numeric: tabular-nums; user-select: none; -webkit-user-select: none;
+}
+.phone[data-theme="dark"] {
+  --bg: #000; --label: #fff; --sec: rgba(235,235,245,.6); --ter: rgba(235,235,245,.3); --quat: rgba(235,235,245,.14);
+  --fill: rgba(118,118,128,.18); --fill2: rgba(118,118,128,.3); --sep: rgba(84,84,88,.65);
+  --glass: rgba(40,40,42,.82); --gborder: rgba(255,255,255,.1); --shadow: 0 4px 18px rgba(0,0,0,.6);
+  --pop: rgba(38,38,40,.97);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 30px 80px rgba(0,0,0,.3);
+}
+.inset { position: absolute; top: 0; left: 0; right: 0; height: 54px; background: var(--bg); z-index: 5; }
+.scroll { position: absolute; top: 54px; left: 0; right: 0; bottom: 0; overflow-y: auto; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.glassy { background: var(--glass); border: .5px solid var(--gborder); box-shadow: var(--shadow); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.group { position: absolute; top: 62px; right: 18px; width: 104px; height: 44px; border-radius: 22px; display: flex; z-index: 6; }
+.arrows { position: absolute; top: 62px; right: 130px; width: 104px; height: 44px; border-radius: 22px; display: flex; z-index: 6; }
+.arrows div { width: 52px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.arrows div.off { opacity: .3; cursor: default; }
+.group div { width: 52px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.monthbtn { position: absolute; left: 28px; bottom: 28px; height: 48px; padding: 0 16px; border-radius: 24px; display: flex; align-items: center; font-size: 17px; font-weight: 500; z-index: 6; cursor: pointer; }
+.gear { position: absolute; right: 28px; bottom: 28px; width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; z-index: 6; }
+svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+.section { position: relative; }
+.mhead { position: sticky; top: 0; z-index: 3; height: 60px; display: flex; flex-direction: column; justify-content: center; padding: 0 250px 0 20px; background: var(--bg); }
+.mhead.pinned { border-bottom: .5px solid var(--sep); }
+.mname { font-size: 20px; font-weight: 600; white-space: nowrap; line-height: 24px; }
+.mfig { font-size: 15px; line-height: 19px; color: var(--sec); white-space: nowrap; overflow: visible; transition: color .12s; }
+.mfig.live { color: var(--label); font-weight: 600; }
+
+.plot { position: relative; touch-action: pan-y; cursor: crosshair; }
+.axis { position: relative; height: 18px; font-size: 11px; color: var(--sec); }
+.axis span { position: absolute; top: 2px; width: 24px; margin-left: -12px; text-align: center; }
+.axis span.now { color: var(--label); font-weight: 600; }
+.lane { position: relative; border-bottom: .5px solid var(--quat); }
+.lane:last-child { border-bottom: 0; }
+.lab { position: absolute; left: 12px; top: 0; bottom: 0; width: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 10px; }
+.lab.focus { background: var(--fill2); }
+.ltot { position: absolute; right: 20px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 15px; white-space: nowrap; }
+.ltot.sub { color: var(--sec); }
+.dot { position: absolute; border-radius: 50%; transition: opacity .12s, transform .12s; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.dot.ring { box-shadow: 0 0 0 2px var(--bg); }
+.dot.hot { transform: scale(1.18); z-index: 2; }
+.dim .dot:not(.hot) { opacity: .28; }
+.faded { opacity: .22; }
+.today { position: absolute; width: 1.5px; background: var(--label); opacity: .75; pointer-events: none; }
+.cursor { position: absolute; width: 2px; margin-left: -1px; background: var(--label); pointer-events: none; display: none; z-index: 2; }
+.scrubbing .cursor { display: block; }
+.scrubbing .today { opacity: .2; }
+.tag { position: absolute; font-size: 11px; color: var(--sec); white-space: nowrap; pointer-events: none; }
+.tag b { color: var(--label); font-weight: 500; }
+.emptyline { padding: 10px 20px 4px 20px; font-size: 13px; color: var(--sec); line-height: 1.5; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 20px 0; }
+.chip { display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px 0 8px; border-radius: 14px; background: var(--fill); font-size: 13px; cursor: pointer; white-space: nowrap; }
+.chip i { width: 8px; height: 8px; border-radius: 4px; display: block; }
+.chip.focus { background: var(--fill2); font-weight: 600; }
+.chip.off { opacity: .35; }
+.next { padding: 18px 20px 0; }
+.next h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--sec); letter-spacing: .02em; }
+.nrow { display: flex; gap: 8px; font-size: 15px; padding: 5px 0; align-items: baseline; }
+.nrow .n { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nrow .w { color: var(--sec); white-space: nowrap; }
+.floor { padding: 22px 20px 120px; font-size: 13px; color: var(--sec); text-align: center; }
+.spacer { height: 130px; }
+
+.callout { position: absolute; z-index: 8; min-width: 150px; max-width: 250px; padding: 10px 12px; border-radius: 16px; background: var(--pop); border: .5px solid var(--gborder); box-shadow: 0 10px 30px rgba(0,0,0,.18); display: none; pointer-events: none; font-size: 13px; }
+.callout .d { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.callout .r { display: flex; gap: 6px; padding: 2px 0; white-space: nowrap; }
+.callout .r .n { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; }
+.callout .r.up { color: var(--sec); }
+.callout .t { margin-top: 6px; padding-top: 6px; border-top: .5px solid var(--sep); color: var(--sec); white-space: nowrap; }
+.callout .t b { color: var(--label); font-weight: 600; }
+.toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); padding: 10px 14px; border-radius: 14px; background: var(--pop); box-shadow: 0 8px 24px rgba(0,0,0,.2); font-size: 13px; white-space: nowrap; z-index: 9; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: 1; }
+
+aside { width: 380px; flex-shrink: 0; font-size: 13px; }
+aside h1 { font-size: 20px; margin: 0 0 4px; }
+aside p.lede { margin: 0 0 18px; color: #6e6e73; line-height: 1.45; }
+.ctl { margin-bottom: 14px; }
+.ctl label.t { display: block; font-weight: 600; margin-bottom: 6px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button { font: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid #d2d2d0; background: #fff; cursor: pointer; color: #1d1d1f; }
+.seg button.on { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
+.ctl .hint { color: #6e6e73; margin-top: 5px; line-height: 1.4; }
+input[type=range] { width: 100%; }
+.lies { margin-top: 22px; padding: 14px 16px; border-radius: 12px; background: #f6f6f4; color: #48484a; line-height: 1.5; }
+.lies b { color: #1d1d1f; }
+.lies ul { margin: 6px 0 0; padding-left: 18px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone" id="phone" data-theme="light">
+    <div class="inset"></div>
+    <div class="scroll" id="scroll"></div>
+    <div class="group glassy"><div><svg class="i" viewBox="0 0 22 22"><path d="M8 5h11M8 11h11M8 17h11"/><circle cx="4" cy="5" r="1.6"/><circle cx="4" cy="11" r="2.4"/><circle cx="4" cy="17" r="1.2"/></svg></div><div><svg class="i" viewBox="0 0 22 22" style="stroke-width:2"><path d="M11 3.5v15M3.5 11h15"/></svg></div></div>
+    <div class="arrows glassy" id="arrows"><div data-step="-1"><svg class="i" viewBox="0 0 22 22" style="stroke-width:2.2"><path d="M14 4l-7 7 7 7"/></svg></div><div data-step="1"><svg class="i" viewBox="0 0 22 22" style="stroke-width:2.2"><path d="M8 4l7 7-7 7"/></svg></div></div>
+    <div class="monthbtn glassy" id="monthbtn">September</div>
+    <div class="gear glassy"><svg class="i" viewBox="0 0 22 22"><circle cx="11" cy="11" r="3"/><circle cx="11" cy="11" r="7.2" style="stroke-dasharray:2.6 3.05;stroke-width:3.4"/><circle cx="11" cy="11" r="5.6"/></svg></div>
+    <div class="callout" id="callout"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <aside>
+    <h1>Lanes, deep dive</h1>
+    <p class="lede">Drag across the month to read it. Tap a lane's emoji or a chip to pick out one category. Tap a dot to open that charge. The controls change the design, not the data.</p>
+    <div id="controls"></div>
+    <div class="lies"><b>What this lies about</b>
+      <ul>
+        <li>A browser has no press-and-hold timing, haptics or momentum like iOS. The "after a hold" option imitates the hold; on a phone, each day crossed would tick.</li>
+        <li>No Liquid Glass, no Dynamic Type. Accessibility text sizes aren't drawn, and lanes are where they'd bite.</li>
+        <li>A mouse drag is not a thumb: on a phone your finger covers the dot you're reading, which is why the readout sits above it.</li>
+        <li>Colours are a fixed set checked for colour blindness, assigned in the order categories were made. Past eight categories there are no more: the rest go grey. That's deliberate: the slider shows where colour runs out.</li>
+        <li>Invented bills. Months stacked runs July to December 2026 only.</li>
+        <li>The arrows' size and the 8pt gap between the two glass groups are drawn, not measured: Calendar has no pair like this.</li>
+        <li>Round 1 picks, 2026-09-24: lanes, lanes that shrink to fit, order as in Settings, empty categories folded into one line, a totals column, a readout above the finger that names only the charges, one month at a time.</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ---------------------------------------------------------------- data (invented)
+const CATS = [
+  ['home','🏠','Home'], ['car','🚗','Car'], ['phone','📱','Phone & internet'],
+  ['subs','🎬','Subscriptions I keep meaning to cancel'], ['health','💪','Health'], ['learn','📗','Learning'],
+  ['pet','🐶','Pet'], ['kids','🧒','Kids'], ['soft','💻','Software'], ['travel','✈️','Travel'],
+  ['garden','🌱','Garden'], ['give','🎁','Giving'], ['hobby','🎨','Hobbies'], ['coffee','☕️','Coffee'],
+  ['games','🎮','Games'], ['bank','🏦','Bank'],
+].map(([key, e, name], i) => ({ key, e, name, i }));
+const B = (name, amt, unit, iv, anchor, cat, end) => {
+  const [y, m, d] = anchor.split('-').map(Number);
+  return { name, amt, unit, iv, y, m, d, cat, end: end ? Number(end.replace(/-/g, '')) : null, over: {} };
+};
+const BILLS = [
+  B('Rent',1150,'m',1,'2026-07-01','home'), B('Electricity',68,'m',1,'2026-07-12','home'), B('Water',41,'m',2,'2026-07-30','home'),
+  B('Parking',35,'m',1,'2026-07-05','car'), B('Car insurance',640,'y',1,'2026-09-29','car'),
+  B('Broadband',38,'m',1,'2026-07-15','phone'), B('Phone',22,'m',1,'2026-07-20','phone'),
+  B('Film club',13,'m',1,'2026-07-08','subs'), B('Music',11,'m',1,'2026-07-17','subs'), B('Cloud storage',3,'m',1,'2026-07-26','subs'),
+  B('News',9,'m',1,'2026-07-27','subs','2026-11-27'),
+  B('Gym',25,'m',1,'2026-07-10','health'), B('Dentist plan',16,'m',1,'2026-07-25','health'),
+  B('Language course',90,'m',3,'2026-08-03','learn'),
+  B('Pet insurance',18,'m',1,'2026-07-03','pet'), B('Vet plan',12,'m',1,'2026-07-21','pet'),
+  B('Swimming',30,'m',1,'2026-07-06','kids'), B('School trip fund',20,'m',1,'2026-07-16','kids'),
+  B('Design app',12,'m',1,'2026-07-19','soft'), B('Password manager',36,'y',1,'2026-10-02','soft'),
+  B('Travel insurance',89,'y',1,'2027-01-12','travel'),
+  B('Seed box',15,'m',2,'2026-07-23','garden'), B('Charity',10,'m',1,'2026-07-02','give'),
+  B('Pottery class',45,'m',1,'2026-07-14','hobby'), B('Coffee beans',24,'m',1,'2026-07-11','coffee'),
+  B('Game pass',15,'m',1,'2026-07-04','games'), B('Bank fee',5,'m',1,'2026-07-28','bank'),
+];
+BILLS.find(b => b.name === 'Gym').over[20260910] = 0; // a free month
+
+const SERIES = {
+  light: ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'],
+  dark:  ['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9','#e66767'],
+};
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// ---------------------------------------------------------------- state
+const S = {
+  layout: 'lanes', n: 6, colour: 'on', sort: 'made', empty: 'fold', amounts: 'column',
+  cur: [2026, 9], readout: 'callout', snap: 'charges', start: 'touch', months: 'one', today: 24, theme: 'light', focus: null,
+};
+const CONTROLS = [
+  { k: 'layout', t: 'Layout', o: [['lanes','Lanes'],['dots','One line, colour dots'],['emoji','One line, emoji dots'],['stairs','Running total'],['stairslanes','Running total over lanes']],
+    hint: 'One line merges every lane. The running total climbs one step per charge, so a step\'s height is its amount.' },
+  { k: 'n', t: 'Categories', range: [1, 16] },
+  { k: 'colour', t: 'Colour', o: [['on','Per category'],['off','None, emoji identifies']] },
+  { k: 'sort', t: 'Lane order', o: [['made','As in Settings'],['total','Largest first'],['next','Next charge first']],
+    hint: 'Your own order, kept in Settings, the way Dime does it. Settings can\'t reorder categories yet, so this is the order they were made.' },
+  { k: 'empty', t: 'Nothing this month', o: [['fold','Folded into one line'],['lanes','Keeps its lane']] },
+  { k: 'amounts', t: 'Amounts', o: [['drag','Only while dragging'],['big','Label the big charges'],['column','Totals column']] },
+  { k: 'readout', t: 'Readout while dragging', o: [['callout','Above the finger'],['header','In the month header']] },
+  { k: 'snap', t: 'Dragging moves', o: [['charges','Charge to charge'],['days','Day by day']],
+    hint: 'Charge to charge: the line jumps between days that have a charge, and never stops on an empty one. On a phone, each jump would tick.' },
+  { k: 'start', t: 'Dragging starts', o: [['touch','On touch'],['hold','After a hold']],
+    hint: 'On a list that scrolls, a touch has to mean scroll. Health and Stocks read a chart after a short hold.' },
+  { k: 'months', t: 'Months', o: [['one','One month'],['stack','Stacked, future above']] },
+  { k: 'today', t: 'Today', range: [1, 30] },
+  { k: 'theme', t: 'Appearance', o: [['light','Light'],['dark','Dark']] },
+];
+
+// ---------------------------------------------------------------- engine
+const dim = (y, m) => new Date(y, m, 0).getDate();
+const key = (y, m, d) => y * 10000 + m * 100 + d;
+const todayKey = () => key(2026, 9, S.today);
+const active = () => CATS.slice(0, S.n);
+const activeKeys = () => new Set(active().map(c => c.key));
+const catOf = k => CATS.find(c => c.key === k);
+
+function occ(y, m) {
+  const out = [], D = dim(y, m), keys = activeKeys(), tk = todayKey();
+  for (const b of BILLS) {
+    if (!keys.has(b.cat)) continue;
+    const step = b.unit === 'y' ? 12 * b.iv : b.iv;
+    const diff = (y - b.y) * 12 + (m - b.m);
+    if (diff < 0 || diff % step) continue;
+    const d = Math.min(b.d, D), k = key(y, m, d);
+    if (b.end && k > b.end) continue;
+    const amt = b.over[k] !== undefined ? b.over[k] : b.amt;
+    out.push({ name: b.name, cat: b.cat, d, amt, k, charged: k <= tk });
+  }
+  return out.sort((a, b) => a.d - b.d || b.amt - a.amt);
+}
+function nextOf(cat) {
+  const tk = todayKey();
+  for (let i = 0; i < 20; i++) {
+    const y = 2026 + Math.floor((8 + i) / 12), m = (8 + i) % 12 + 1;
+    const hit = occ(y, m).find(o => o.cat === cat && o.k > tk);
+    if (hit) return { ...hit, y, m };
+  }
+  return null;
+}
+function yearTotal(cat) {
+  let t = 0;
+  for (let m = 1; m <= 12; m++) t += occ(2026, m).filter(o => o.cat === cat).reduce((s, o) => s + o.amt, 0);
+  return t;
+}
+const money = (v, sign = true) => v === 0 ? '€0' : (sign ? '−' : '') + '€' + Math.round(v).toLocaleString('en-US');
+const wd = (y, m, d) => WD[new Date(y, m - 1, d).getDay()];
+const shortDate = (y, m, d) => (y === 2026 && m === 9) ? `${wd(y, m, d)} ${d}` : `${MONTH_NAMES[m - 1].slice(0, 3)} ${d}`;
+function rel(o) {
+  const n = (new Date(o.y, o.m - 1, o.d) - new Date(2026, 8, S.today)) / 864e5;
+  if (n === 1) return 'Tomorrow';
+  if (n < 7) return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date(o.y, o.m - 1, o.d).getDay()];
+  return shortDate(o.y, o.m, o.d);
+}
+const colourOf = c => S.colour === 'off' ? 'var(--label)' : (c.i < 8 ? SERIES[S.theme][c.i] : '#8e8e93');
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+// ---------------------------------------------------------------- geometry
+const X0_LANES = 64, X1 = 382;
+function xr(x0, x1, D) { return d => x0 + (d - 1) / (D - 1) * (x1 - x0); }
+const MAXAMT = 1150;
+
+// ---------------------------------------------------------------- render pieces
+function axis(x, D, y, m) {
+  const isNow = y === 2026 && m === 9;
+  const ticks = [1, 8, 15, 22, D].filter(d => !(isNow && Math.abs(d - S.today) < 3));
+  let s = ticks.map(d => `<span style="left:${x(d)}px">${d}</span>`).join('');
+  if (isNow) s += `<span class="now" style="left:${x(S.today)}px">${S.today}</span>`;
+  return `<div class="axis">${s}</div>`;
+}
+
+function markStyle(o, c, d, emoji) {
+  const col = colourOf(c);
+  if (emoji) {
+    const bg = o.charged ? 'var(--fill2)' : 'var(--bg)';
+    const border = o.charged ? '' : `border:1.5px ${o.amt === 0 ? 'dashed' : 'solid'} var(--ter);`;
+    return `background:${bg};${border}font-size:${Math.round(d * .58)}px;${o.charged ? '' : 'opacity:.9;'}`;
+  }
+  if (o.amt === 0) return `border:1.5px dashed ${col};background:var(--bg)`;
+  return o.charged ? `background:${col}` : `border:2px solid ${col};background:var(--bg)`;
+}
+
+function dot(o, cx, cy, d, emoji, month) {
+  const c = catOf(o.cat);
+  return `<div class="dot ring" data-day="${o.d}" data-cat="${o.cat}" data-name="${esc(o.name)}" data-amt="${o.amt}" data-month="${month}"
+    style="left:${(cx - d / 2).toFixed(1)}px;top:${(cy - d / 2).toFixed(1)}px;width:${d.toFixed(1)}px;height:${d.toFixed(1)}px;${markStyle(o, c, d, emoji)}">${emoji ? c.e : ''}</div>`;
+}
+
+function bigTag(o, x, y, anchorRight) {
+  return `<div class="tag" style="${anchorRight ? `right:${402 - x}px` : `left:${x}px`};top:${y}px">${esc(o.name)} <b>${money(o.amt)}</b></div>`;
+}
+
+function lanesPlot(y, m, list, stacked) {
+  const D = dim(y, m), mk = `${y}-${m}`;
+  const x1 = S.amounts === 'column' ? X1 - 70 : X1 - 12;
+  const x = xr(X0_LANES + 10, x1, D);
+  const all = list.length;
+  let laneH = stacked ? 44 : Math.max(30, Math.min(60, Math.floor(520 / Math.max(all, 1))));
+  const maxD = Math.min(laneH * .78, 36);
+  const monthTotal = list.reduce((s, r) => s + r.total, 0) || 1;
+  const isNow = y === 2026 && m === 9;
+  let lanes = list.map(r => {
+    const c = r.c, h = laneH;
+    const byDay = {};
+    let dots = r.occ.map(o => {
+      const d = o.amt ? 7 + (maxD - 7) * Math.sqrt(o.amt / MAXAMT) : 8;
+      const n = (byDay[o.d] = (byDay[o.d] || 0) + 1) - 1;
+      return dot(o, x(o.d) + n * 5, h / 2, d, false, mk);
+    }).join('');
+    if (S.amounts === 'big') dots += r.occ.filter(o => o.amt >= monthTotal * .1).map(o => {
+      const right = x(o.d) > 250;
+      return bigTag(o, right ? x(o.d) - (maxD / 2 + 4) : x(o.d) + maxD / 2 + 4, h / 2 - 7, right);
+    }).join('');
+    if (!r.occ.length) {
+      const n = r.next;
+      dots += `<div class="tag" style="left:${X0_LANES + 10}px;top:${h / 2 - 7}px">nothing this month${n ? ' · next ' + shortDate(n.y, n.m, n.d) : ''}</div>`;
+    }
+    const fontE = Math.max(15, Math.min(26, h * .46));
+    const tot = S.amounts === 'column' ? `<div class="ltot${r.occ.length ? '' : ' sub'}">${r.occ.length ? money(r.total) : '–'}</div>` : '';
+    const faded = S.focus && S.focus !== c.key ? ' faded' : '';
+    return `<div class="lane" style="height:${h}px"><div class="lab${S.focus === c.key ? ' focus' : ''}" data-focus="${c.key}" style="font-size:${fontE}px">${c.e}</div>
+      <div class="${faded.trim()}" style="position:absolute;inset:0;pointer-events:none">${dots}</div>${tot}</div>`;
+  }).join('');
+  const H = laneH * all;
+  const today = isNow ? `<div class="today" style="left:${x(S.today)}px;top:0;height:${H}px"></div>` : '';
+  return { html: `<div class="plot" data-month="${mk}" data-x0="${x(1)}" data-x1="${x(D)}" data-d="${D}">${axis(x, D, y, m)}<div style="position:relative">${today}<div class="cursor" style="top:-18px;height:${H + 18}px"></div><div class="lanes">${lanes}</div></div></div>`, x };
+}
+
+function linePlot(y, m, rows, emoji) {
+  const D = dim(y, m), mk = `${y}-${m}`, x = xr(28, X1 - 8, D);
+  const all = rows.flatMap(r => r.occ.map(o => ({ ...o, c: r.c })));
+  // A packed swarm: largest first, each dot rises from the baseline until it clears the ones placed.
+  const monthTotal = all.reduce((s, o) => s + o.amt, 0) || 1;
+  const placed = [];
+  all.slice().sort((a, b) => b.amt - a.amt).forEach(o => {
+    const size = emoji ? (o.amt ? 20 + 24 * Math.sqrt(o.amt / MAXAMT) : 20) : (o.amt ? 7 + 30 * Math.sqrt(o.amt / MAXAMT) : 8);
+    const r = size / 2, cx = x(o.d);
+    let lift = r;
+    while (placed.some(p => Math.hypot(p.cx - cx, p.lift - lift) < p.r + r + 1)) lift += 1;
+    placed.push({ o, cx, lift, r, size });
+  });
+  const H = Math.max(80, Math.max(...placed.map(p => p.lift + p.r), 0) + 30), base = H - 6;
+  let marks = '', tags = '';
+  placed.forEach(({ o, cx, lift, r, size }) => {
+    const cy = base - lift;
+    const faded = S.focus && S.focus !== o.cat;
+    marks += dot(o, cx, cy, size, emoji, mk).replace('class="dot ring"', `class="dot ring${faded ? ' faded' : ''}"`);
+    if (S.amounts !== 'drag' && o.amt >= monthTotal * .1) {
+      const right = cx > 250;
+      tags += bigTag(o, right ? cx - r - 4 : cx + r + 4, cy - 7, right);
+    }
+  });
+  const isNow = y === 2026 && m === 9;
+  const today = isNow ? `<div class="today" style="left:${x(S.today)}px;top:0;height:${H}px"></div>` : '';
+  const baseRule = `<div style="position:absolute;left:20px;right:20px;top:${base + .5}px;height:.5px;background:var(--quat)"></div>`;
+  return { html: `<div class="plot" data-month="${mk}" data-x0="${x(1)}" data-x1="${x(D)}" data-d="${D}"><div style="position:relative;height:${H}px">${baseRule}${today}<div class="cursor" style="top:0;height:${H + 18}px"></div>${marks}${tags}</div>${axis(x, D, y, m)}</div>`, x };
+}
+
+function stairsPlot(y, m, rows, compact) {
+  const D = dim(y, m), mk = `${y}-${m}`;
+  const x0 = compact ? X0_LANES + 10 : 28, x1 = compact ? (S.amounts === 'column' ? X1 - 70 : X1 - 12) : X1 - 64;
+  const x = xr(x0, x1, D);
+  const all = rows.flatMap(r => r.occ.map(o => ({ ...o, c: r.c }))).sort((a, b) => a.d - b.d || b.amt - a.amt);
+  const total = all.reduce((s, o) => s + o.amt, 0) || 1;
+  const H = compact ? 130 : 240, top = 14, bot = H - 4;
+  const yv = v => bot - (bot - top) * v / total;
+  let run = 0, prevX = x(1), segs = '', steps = '', tags = '';
+  const isNow = y === 2026 && m === 9;
+  const tk = todayKey();
+  all.forEach(o => {
+    const xx = x(o.d);
+    const past = o.charged;
+    segs += `<line x1="${prevX}" y1="${yv(run)}" x2="${xx}" y2="${yv(run)}" style="stroke:var(--${past ? 'sec' : 'ter'});stroke-width:1.5;${past ? '' : 'stroke-dasharray:3 3'}"/>`;
+    const faded = S.focus && S.focus !== o.cat;
+    const col = colourOf(o.c);
+    if (o.amt > 0) {
+      const y1 = yv(run), y2 = yv(run + o.amt);
+      steps += past
+        ? `<line x1="${xx}" y1="${y1}" x2="${xx}" y2="${y2}" style="stroke:${col};stroke-width:5;stroke-linecap:round;${faded ? 'opacity:.2' : ''}"/>`
+        : `<rect x="${xx - 2.5}" y="${y2}" width="5" height="${Math.max(y1 - y2, 1)}" rx="2.5" style="fill:var(--bg);stroke:${col};stroke-width:1.5;${faded ? 'opacity:.2' : ''}"/>`;
+      if (S.amounts !== 'drag' && o.amt >= total * .1) {
+        tags += `<div class="tag" style="left:${xx + 8}px;top:${(y1 + y2) / 2 - 7}px">${esc(o.name)} <b>${money(o.amt)}</b></div>`;
+      }
+    } else {
+      steps += `<circle cx="${xx}" cy="${yv(run)}" r="3.5" style="fill:var(--bg);stroke:${col};stroke-width:1.5;stroke-dasharray:2 2"/>`;
+    }
+    run += o.amt; prevX = xx;
+  });
+  segs += `<line x1="${prevX}" y1="${yv(run)}" x2="${x(D)}" y2="${yv(run)}" style="stroke:var(--${isNow && S.today < D ? 'ter' : 'sec'});stroke-width:1.5;${isNow && S.today < D ? 'stroke-dasharray:3 3' : ''}"/>`;
+  const soFar = all.filter(o => o.k <= tk).reduce((s, o) => s + o.amt, 0);
+  const endLbl = compact ? '' : `<div class="tag" style="left:${x(D) + 8}px;top:${yv(total) - 8}px"><b>${money(total)}</b></div>`;
+  const nowLbl = isNow && !compact ? `<div class="tag" style="right:${402 - x(S.today) + 6}px;top:${yv(soFar) - 18}px">so far <b>${money(soFar)}</b></div>` : '';
+  const grid = compact ? '' : `<div style="position:absolute;left:${x0}px;right:${402 - x(D)}px;top:${bot}px;height:.5px;background:var(--quat)"></div>`;
+  const today = isNow ? `<div class="today" style="left:${x(S.today)}px;top:0;height:${H}px"></div>` : '';
+  return { html: `<div class="plot" data-month="${mk}" data-x0="${x(1)}" data-x1="${x(D)}" data-d="${D}"><div style="position:relative;height:${H}px">${grid}${today}<div class="cursor" style="top:0;height:${H + 18}px"></div><svg width="402" height="${H}" style="position:absolute;left:0;top:0;overflow:visible">${segs}${steps}</svg>${tags}${endLbl}${nowLbl}</div>${compact ? '' : axis(x, D, y, m)}</div>`, x };
+}
+
+function rowsFor(y, m, stacked) {
+  const list = active().map(c => {
+    const o = occ(y, m).filter(q => q.cat === c.key);
+    return { c, occ: o, total: o.reduce((s, q) => s + q.amt, 0), next: nextOf(c.key) };
+  });
+  const cmp = {
+    total: stacked ? (a, b) => yearTotal(b.c.key) - yearTotal(a.c.key) : (a, b) => b.total - a.total || a.c.i - b.c.i,
+    next: (a, b) => ((a.next ? key(a.next.y, a.next.m, a.next.d) : 9e9) - (b.next ? key(b.next.y, b.next.m, b.next.d) : 9e9)),
+    made: (a, b) => a.c.i - b.c.i,
+  }[S.sort];
+  return list.sort(cmp);
+}
+
+function chips(rows) {
+  return `<div class="chips">${rows.filter(r => r.occ.length).map(r =>
+    `<div class="chip${S.focus === r.c.key ? ' focus' : ''}${S.focus && S.focus !== r.c.key ? ' off' : ''}" data-focus="${r.c.key}">${S.colour === 'on' ? `<i style="background:${colourOf(r.c)}"></i>` : ''}${r.c.e} ${money(r.total)}</div>`).join('')}</div>`;
+}
+
+function emptyLine(y, m, rows) {
+  const e = rows.filter(r => !r.occ.length);
+  if (!e.length) return '';
+  const parts = e.map(r => `${r.c.e} ${r.next ? 'next ' + shortDate(r.next.y, r.next.m, r.next.d) : ''}`).join(' · ');
+  return `<div class="emptyline">Nothing in ${MONTH_NAMES[m - 1]}: ${parts}</div>`;
+}
+
+function headerFig(y, m, rows) {
+  if (S.focus) {
+    const r = rows.find(r => r.c.key === S.focus);
+    if (r) return `${r.c.e} ${esc(r.c.name)} ${r.occ.length ? money(r.total) : 'nothing'}`;
+  }
+  const all = rows.flatMap(r => r.occ);
+  if (y === 2026 && m === 9) return money(all.filter(o => !o.charged).reduce((s, o) => s + o.amt, 0)) + ' left';
+  return all.length ? money(all.reduce((s, o) => s + o.amt, 0)) : '';
+}
+
+function section(y, m, stacked) {
+  const rows = rowsFor(y, m, stacked);
+  const lanesRows = S.empty === 'fold' ? rows.filter(r => r.occ.length) : rows;
+  const yr = y === 2026 ? '' : ' ' + y;
+  let body = '';
+  if (S.layout === 'lanes') body = lanesPlot(y, m, lanesRows, stacked).html + (S.empty === 'fold' ? emptyLine(y, m, rows) : '');
+  else if (S.layout === 'dots' || S.layout === 'emoji') body = linePlot(y, m, rows, S.layout === 'emoji').html + chips(rows) + emptyLine(y, m, rows);
+  else if (S.layout === 'stairs') body = stairsPlot(y, m, rows, false).html + chips(rows) + emptyLine(y, m, rows);
+  else body = `<div style="padding-bottom:6px">${stairsPlot(y, m, rows, true).html}</div>` + lanesPlot(y, m, lanesRows, true).html.replace('class="plot"', 'class="plot" data-twin="1"') + (S.empty === 'fold' ? emptyLine(y, m, rows) : '');
+  return `<div class="section" data-sec="${y}-${m}"><div class="mhead" data-hmonth="${y}-${m}"><span class="mname">${MONTH_NAMES[m - 1]}${yr}</span><span class="mfig" data-fig="${y}-${m}">${headerFig(y, m, rows)}</span></div>${body}</div>`;
+}
+
+function nextList() {
+  const up = [];
+  active().forEach(c => { const n = nextOf(c.key); if (n) up.push({ ...n, c }); });
+  up.sort((a, b) => key(a.y, a.m, a.d) - key(b.y, b.m, b.d));
+  return `<div class="next"><h4>NEXT</h4>${up.slice(0, 3).map(o => `<div class="nrow"><span>${o.c.e}</span><span class="n">${esc(o.name)}</span><span class="w">${rel(o)}</span><span>${money(o.amt)}</span></div>`).join('')}</div>`;
+}
+
+// ---------------------------------------------------------------- render
+const scroll = document.getElementById('scroll'), phone = document.getElementById('phone');
+function render(keepScroll) {
+  phone.dataset.theme = S.theme;
+  const prev = scroll.scrollTop;
+  if (S.months === 'one') {
+    const [cy, cm] = S.cur, isNow = cy === 2026 && cm === 9;
+    scroll.innerHTML = section(cy, cm, false) + (isNow ? nextList() : '') + '<div class="spacer"></div>';
+  } else {
+    const months = [[2026, 12], [2026, 11], [2026, 10], [2026, 9], [2026, 8], [2026, 7]];
+    scroll.innerHTML = months.map(([y, m]) => section(y, m, true)).join('<div style="height:18px"></div>') + '<div class="floor">Nothing before July.</div>';
+  }
+  if (keepScroll) scroll.scrollTop = prev; else if (S.months === 'stack') jumpToNow(false);
+  const arrows = document.getElementById('arrows');
+  arrows.style.display = S.months === 'one' ? 'flex' : 'none';
+  arrows.children[0].classList.toggle('off', cmpMonth(S.cur, FIRST) <= 0);
+  arrows.children[1].classList.toggle('off', cmpMonth(S.cur, LAST) >= 0);
+  markPinned();
+}
+function jumpToNow(smooth) {
+  const sec = scroll.querySelector('[data-sec="2026-9"]');
+  if (sec) scroll.scrollTo({ top: sec.offsetTop, behavior: smooth ? 'smooth' : 'auto' });
+}
+function markPinned() {
+  scroll.querySelectorAll('.mhead').forEach(h => {
+    const sec = h.parentElement;
+    h.classList.toggle('pinned', S.months === 'stack' && sec.offsetTop < scroll.scrollTop && sec.offsetTop + sec.offsetHeight > scroll.scrollTop + 60);
+  });
+}
+scroll.addEventListener('scroll', markPinned);
+document.getElementById('monthbtn').addEventListener('click', () => { if (S.months === 'stack') jumpToNow(true); else { S.cur = [2026, 9]; S.focus = null; render(false); } });
+// Paging months: back to the oldest charge (July), ahead five years. Each end stops, and says so by dimming.
+const FIRST = [2026, 7], LAST = [2031, 9];
+const cmpMonth = (a, b) => (a[0] - b[0]) * 12 + (a[1] - b[1]);
+document.getElementById('arrows').addEventListener('click', e => {
+  const b = e.target.closest('[data-step]'); if (!b || b.classList.contains('off')) return;
+  let [y, m] = S.cur; m += +b.dataset.step;
+  if (m > 12) { m = 1; y++; } if (m < 1) { m = 12; y--; }
+  S.cur = [y, m]; S.focus = null; render(false);
+});
+
+// ---------------------------------------------------------------- scrubbing
+const callout = document.getElementById('callout'), toast = document.getElementById('toast');
+let drag = null;
+function dayAt(plot, clientX) {
+  const r = plot.getBoundingClientRect(), x0 = +plot.dataset.x0, x1 = +plot.dataset.x1, D = +plot.dataset.d;
+  const px = clientX - r.left;
+  return Math.max(1, Math.min(D, Math.round((px - x0) / (x1 - x0) * (D - 1)) + 1));
+}
+function plotsOf(mk) { return [...scroll.querySelectorAll(`.plot[data-month="${mk}"]`)]; }
+function showDay(mk, d) {
+  const [y, m] = mk.split('-').map(Number);
+  if (S.snap === 'charges') {
+    const hits = [...new Set(occ(y, m).filter(o => !S.focus || o.cat === S.focus).map(o => o.d))];
+    if (!hits.length) return;
+    d = hits.reduce((b, h) => Math.abs(h - d) < Math.abs(b - d) ? h : b, hits[0]);
+  }
+  const plots = plotsOf(mk), sec = scroll.querySelector(`[data-sec="${mk}"]`);
+  sec.classList.add('scrubbing', 'dim');
+  plots.forEach(p => {
+    const x0 = +p.dataset.x0, x1 = +p.dataset.x1, D = +p.dataset.d;
+    const cx = x0 + (d - 1) / (D - 1) * (x1 - x0);
+    p.querySelectorAll('.cursor').forEach(c => c.style.left = cx + 'px');
+    p.querySelectorAll('.dot').forEach(el => el.classList.toggle('hot', +el.dataset.day === d));
+  });
+  const list = occ(y, m).filter(o => !S.focus || o.cat === S.focus);
+  const today = list.filter(o => o.d === d);
+  const soFar = list.filter(o => o.d <= d).reduce((s, o) => s + o.amt, 0);
+  const total = list.reduce((s, o) => s + o.amt, 0);
+  const dateLbl = `${wd(y, m, d)} ${d} ${MONTH_NAMES[m - 1].slice(0, 3)}`;
+  if (S.readout === 'header') {
+    const fig = scroll.querySelector(`[data-fig="${mk}"]`);
+    fig.classList.add('live');
+    fig.textContent = today.length
+      ? `${dateLbl} · ${today.length === 1 ? today[0].name + ' ' + money(today[0].amt) : today.length + ' charges ' + money(today.reduce((s, o) => s + o.amt, 0))}`
+      : `${dateLbl} · ${money(soFar)} by then`;
+    callout.style.display = 'none';
+    return;
+  }
+  callout.innerHTML = `<div class="d">${dateLbl}</div>` +
+    (today.length ? today.map(o => `<div class="r${o.charged ? '' : ' up'}"><span>${catOf(o.cat).e}</span><span class="n">${esc(o.name)}</span><span>${money(o.amt)}</span></div>`).join('')
+                  : `<div class="r up"><span class="n">Nothing this day</span></div>`);
+  callout.style.display = 'block';
+  const pr = phone.getBoundingClientRect(), plot = plots[0], r = plot.getBoundingClientRect();
+  const x0 = +plot.dataset.x0, x1 = +plot.dataset.x1, D = +plot.dataset.d;
+  const cx = r.left - pr.left + x0 + (d - 1) / (D - 1) * (x1 - x0);
+  const w = callout.offsetWidth, h = callout.offsetHeight;
+  let top = r.top - pr.top - h - 10;
+  if (top < 62) top = 62;
+  callout.style.left = Math.max(12, Math.min(402 - w - 12, cx - w / 2)) + 'px';
+  callout.style.top = top + 'px';
+}
+function endScrub() {
+  if (!drag) return;
+  const mk = drag.mk;
+  const sec = scroll.querySelector(`[data-sec="${mk}"]`);
+  if (sec) sec.classList.remove('scrubbing', 'dim');
+  scroll.querySelectorAll('.dot.hot').forEach(el => el.classList.remove('hot'));
+  callout.style.display = 'none';
+  const fig = scroll.querySelector(`[data-fig="${mk}"]`);
+  if (fig) { fig.classList.remove('live'); const [y, m] = mk.split('-').map(Number); fig.textContent = headerFig(y, m, rowsFor(y, m, S.months === 'stack')); }
+  clearTimeout(drag.timer);
+  drag = null;
+}
+function tapAt(target, e) {
+  const focusEl = target.closest('[data-focus]');
+  if (focusEl) { S.focus = S.focus === focusEl.dataset.focus ? null : focusEl.dataset.focus; render(true); return true; }
+  const dots = [...scroll.querySelectorAll('.dot')];
+  let best = null, bd = 22;
+  dots.forEach(el => {
+    const r = el.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const dd = Math.hypot(dx, dy) - r.width / 2;
+    if (dd < bd) { bd = dd; best = el; }
+  });
+  if (best) {
+    const [y, m] = best.dataset.month.split('-').map(Number);
+    toast.textContent = `Opens the editor on ${best.dataset.name}, ${shortDate(y, m, +best.dataset.day)}`;
+    toast.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => toast.classList.remove('on'), 1600);
+    return true;
+  }
+  return false;
+}
+scroll.addEventListener('pointerdown', e => {
+  if (e.target.closest('[data-focus]')) { drag = { tapOnly: true, x: e.clientX, y: e.clientY }; return; }
+  const plot = e.target.closest('.plot');
+  if (!plot) return;
+  const mk = plot.dataset.month;
+  drag = { mk, plot, x: e.clientX, y: e.clientY, t: Date.now(), live: false, moved: false };
+  const go = () => { if (!drag) return; drag.live = true; plot.setPointerCapture?.(e.pointerId); showDay(mk, dayAt(plot, drag.lastX ?? e.clientX)); };
+  if (S.start === 'touch') go(); else drag.timer = setTimeout(go, 250);
+});
+scroll.addEventListener('pointermove', e => {
+  if (!drag || drag.tapOnly) return;
+  drag.lastX = e.clientX;
+  if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) drag.moved = true;
+  if (!drag.live) { if (drag.moved) { clearTimeout(drag.timer); drag = null; } return; }
+  showDay(drag.mk, dayAt(drag.plot, e.clientX));
+});
+window.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const quick = !drag.moved && (drag.tapOnly || Date.now() - drag.t < 220);
+  const target = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+  endScrub();
+  if (quick) tapAt(target, e);
+});
+window.addEventListener('pointercancel', endScrub);
+
+// ---------------------------------------------------------------- controls
+const ctlBox = document.getElementById('controls');
+function buildControls() {
+  ctlBox.innerHTML = CONTROLS.map(c => {
+    if (c.range) return `<div class="ctl"><label class="t">${c.t}: <span id="v-${c.k}">${S[c.k]}</span></label><input type="range" min="${c.range[0]}" max="${c.range[1]}" value="${S[c.k]}" data-k="${c.k}">${c.hint ? `<div class="hint">${c.hint}</div>` : ''}</div>`;
+    return `<div class="ctl"><label class="t">${c.t}</label><div class="seg">${c.o.map(([v, l]) => `<button data-k="${c.k}" data-v="${v}" class="${S[c.k] === v ? 'on' : ''}">${l}</button>`).join('')}</div>${c.hint ? `<div class="hint">${c.hint}</div>` : ''}</div>`;
+  }).join('');
+}
+ctlBox.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  S[b.dataset.k] = b.dataset.v; S.focus = null;
+  buildControls(); render(b.dataset.k !== 'months');
+});
+ctlBox.addEventListener('input', e => {
+  const r = e.target.closest('input[data-k]'); if (!r) return;
+  S[r.dataset.k] = +r.value; document.getElementById('v-' + r.dataset.k).textContent = r.value;
+  if (S.focus && !activeKeys().has(S.focus)) S.focus = null;
+  render(true);
+});
+// A preset in the address, e.g. #layout=stairs&n=12&theme=dark
+for (const [k, v] of new URLSearchParams(location.hash.slice(1))) if (k in S) S[k] = typeof S[k] === 'number' ? +v : v;
+buildControls(); render(false);
+</script>
+</body>
+</html>
