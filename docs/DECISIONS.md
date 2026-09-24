@@ -90,26 +90,42 @@ not the process survived. The current month decides where you land only on first
 - **Rejected — hold the timeline until the row is restored:** the gap is a few rows in one known direction.
 - **Revisit when:** the list's two scroll coordinate spaces are calibrated (`.claude/rules/swiftui-scrolling.md`).
 
-## The timeline is the only screen, and everything else is a sheet
-**Decided:** 2026-09-19
-Laid out like iOS Calendar: + in the pinned header's row, the month button bottom left, settings
-bottom right. The editor and settings open as sheets over the timeline. Categories live in Settings.
+## Views switch in place from a menu beside +, and everything else is a sheet
+**Decided:** 2026-09-19, views added 2026-09-24
+Laid out like iOS Calendar: a view button and + as one glass pair in the pinned header's row, the
+month button bottom left, settings bottom right. The view button's menu lists the views, as
+Calendar's does, so more can join it. The editor and settings open as sheets. Categories live in Settings.
+- **Rejected — a toggle that flips between two views:** a tap fewer, but the icon must show where you'd go, and a third view has nowhere to live.
 - **Rejected — a list of every expense:** the timeline is that list, and grouped by category it became half an insights screen.
 - **Rejected — a categories button:** categories are set up rarely, which is what Settings is for.
 - **Rejected — the buttons in their own strip above the pinned header:** gives up a row of the screen for good.
 - **Rejected — a return pill that appears 240pt away:** a control that comes and goes; the month button is always there.
 - **Rejected — pushed pages:** they replace the timeline instead of sitting over it.
 
-## Every expense has a category, and a category is an emoji and a name
-**Decided:** 2026-09-19
+## Every expense has a category, and a category is an emoji, a name and a colour
+**Decided:** 2026-09-19, colour and order added 2026-09-24
 Amount, name, category and date are all required. The app ships with no categories, so the first
-expense makes the first. Both fields are required and there is no colour. The emoji comes from the
-system emoji keyboard.
+expense makes the first. The emoji comes from the system emoji keyboard; the colour is one of eight
+tokens, checked so neighbours stay distinct for colour-blind readers, and a new category starts on
+the next one unused. Categories keep an order the user sets in Settings.
+- **Rejected — Tilly assigning colours in the order categories were made:** a colour the user didn't pick means nothing to them.
+- **Rejected — a colour taken from the emoji:** 🏠 and 🚗 land on orange and red, too close to tell apart as dots.
+- **Rejected — ordering by size or by name:** an order that reshuffles as bills change, where the user's own holds still.
 - **Rejected — an optional category:** the row's icon and any insight by category would need a stand-in that means nothing.
-- **Rejected — a colour per category:** a second identity to choose and keep distinct, when the emoji already distinguishes.
 - **Rejected — a starter set:** the user's categories are theirs (tenet 4).
 - **Rejected — a custom emoji grid:** a curated set, and weaker than the system keyboard's search.
-- **Revisit when:** managing categories in Settings, or Insights, is designed.
+- **Revisit when:** icons are explored as an alternative to emoji; the pairing with a colour stays.
+
+## The category view is lanes across one month
+**Decided:** 2026-09-24
+A lane per category, a dot per charge on its day, sized by amount; one month at a time, paged by
+arrows; dragging reads charges one at a time. Chosen from ten directions and a working prototype
+(`docs/prototypes/views-lanes.html`) because it shows what the month looks like, where and when together.
+- **Rejected — rows filled to their share of the month (recommended at the time):** ranks well, but no picture of the month.
+- **Rejected — one merged line of coloured dots, and a running total over the lanes:** tried in the prototype; plain lanes read best.
+- **Rejected — months stacked like the timeline:** dragging a lane would fight scrolling for the same touch.
+- **Rejected — an options menu of spans, filters and a comparison with last month:** built and set aside; it complicated the view.
+- **Rejected — a readout with a running total, stopping on every day:** clutter, and most days hold nothing.
 
 ## Every charge is its own row
 **Decided:** 2026-09-19
