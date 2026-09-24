@@ -114,8 +114,9 @@ there, like Calendar's Today: a control that appears or changes on its own does 
 reader can't see. VoiceOver reads "Back to September".
 
 Tapping it scrolls back rather than jumping, with a duration that scales with distance, even
-mid-flick. It is a system glass button at Calendar's size, weight and place, 28pt in from the screen's edges. The list carries a bottom inset of the
-button's height plus its margin, so the last line of history clears it.
+mid-flick. It is a system glass button at Calendar's size, weight and place, 28pt in from the
+screen's edges. The list carries a bottom inset of the button's height plus its margin, so the last
+line of history clears it.
 
 ### The month you're reading stays named
 
@@ -131,7 +132,8 @@ would cost three points of type and make the month you're *in* the same shape as
 
 ### Nothing under the reader's eyes moves
 
-Nothing is ever inserted above the reader: the months ahead are all there from the start. Crossing
+The months ahead are all there from the start, so scrolling never inserts anything. When a change
+to a bill adds or drops months above, the month being read holds where it is, to the point. Crossing
 midnight into a new month moves the header figure and reclassifies passed rows, and nothing else.
 Saving or deleting leaves the list where it was, even when the charge lands out of sight.
 
@@ -145,8 +147,7 @@ process survived. The current month decides where you land only on first run.
 The area behind the status bar and Dynamic Island carries the page's own background, opaque and full
 width. Content scrolls under it and is hidden. It has to hide a month header, not just a row: during a
 hand-off the outgoing header sits in that inset. iOS 26's scroll edge effect had no visible effect
-here, and a scrim or progressive blur leaks exactly where that header sits. Mockups leave the
-inset empty rather than painting a clock into it.
+here, and a scrim or progressive blur leaks exactly where that header sits.
 
 ---
 

@@ -16,7 +16,7 @@ The smallest thing that does the job.
 |---|---|---|
 | Recurrence engine | Done | Every N days, weeks, months or years from a fixed anchor. Pure and tested. |
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
-| Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere, mid-flick included. |
+| Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere; on an iPhone a tap mid-flick is still ignored (open). |
 | Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
 | Categories | In the editor, partly | Emoji and name, user-created, ships empty, required on every expense. Created in the editor; listed in Settings. Editing them there isn't designed yet. |

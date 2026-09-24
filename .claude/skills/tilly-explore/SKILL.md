@@ -68,7 +68,7 @@ side-by-side). Never all of them — that's the exact cost rung 1 exists to cut.
 
 Use `/design` to build artboards: real type scale, real spacing, real colour, real content.
 Not lorem — actual expense names and amounts, including the awkward cases, because those
-are where layouts fail.
+are where layouts fail. Leave the status-bar inset empty rather than painting a clock into it.
 
 For anything on the timeline, the awkward cases are at minimum:
 
