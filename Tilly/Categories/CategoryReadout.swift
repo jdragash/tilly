@@ -21,11 +21,17 @@ struct CategoryReadout: View {
             ForEach(charges) { charge in
                 HStack(spacing: Tokens.Space.readoutGap) {
                     Text(emojiOf(charge) ?? "")
+                        .fixedSize()
+                    // The name gives way, truncating; the amount never wraps or shortens.
                     Text(charge.name)
                         .lineLimit(1)
+                        .truncationMode(.tail)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(TimelineFormatting.amount(charge.amount, locale: locale))
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                        .layoutPriority(1)
                 }
                 .font(Tokens.Text.readoutRow)
                 .foregroundStyle(charge.state == .upcoming ? Tokens.Ink.secondary : Tokens.Ink.primary)
@@ -50,9 +56,8 @@ struct CategoryReadoutPlacement: Equatable {
     let charges: [TimelineEntry]
     /// Each charge's emoji, by `TimelineEntry.id`.
     let emojis: [String: String]
-    /// The line's x, and the top of the lanes' axis, in the category view, which fills the shell.
+    /// The line's x in the category view, which fills the shell.
     let lineX: CGFloat
-    let lanesTop: CGFloat
 }
 
 struct CategoryReadoutKey: PreferenceKey {
@@ -62,8 +67,8 @@ struct CategoryReadoutKey: PreferenceKey {
     }
 }
 
-/// Places the readout: centred on the line and clamped to the gutters, `readoutClearance` above
-/// the lanes' axis, over the header when it has to be, never above the top of the screen.
+/// Places the readout: centred on the line and clamped to the gutters, in the header row, whose
+/// name and controls step aside while it shows. A day of several charges runs down over the lanes.
 struct CategoryReadoutLayer: View {
     let placement: CategoryReadoutPlacement?
 
@@ -74,7 +79,7 @@ struct CategoryReadoutLayer: View {
             if let placement {
                 let x = min(max(placement.lineX - size.width / 2, Tokens.Space.gutter),
                             proxy.size.width - Tokens.Space.gutter - size.width)
-                let y = max(placement.lanesTop - Tokens.Space.readoutClearance - size.height, Tokens.Space.headerRowInset)
+                let y = Tokens.Space.readoutTop
                 CategoryReadout(date: placement.date, charges: placement.charges, emojiOf: { placement.emojis[$0.id] })
                     .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
                     // Unplaced until it has been measured once, rather than a frame in the wrong place.

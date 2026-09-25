@@ -144,12 +144,13 @@ enum Tokens {
         static let nextTop: CGFloat = 18
         static let nextHeadingBottom: CGFloat = 4
         static let nextRowVertical: CGFloat = 5
-        /// The readout floats this far clear above the lanes' axis; from the prototype.
-        static let readoutClearance: CGFloat = 10
+        /// The readout's top in the header row. With one charge it is 52pt tall, so it sits
+        /// inside the 60pt row, clear of the axis beneath; more charges run down over the lanes.
+        static let readoutTop: CGFloat = 4
         static let readoutHorizontal: CGFloat = 12
-        static let readoutVertical: CGFloat = 10
-        static let readoutDateBottom: CGFloat = 4
-        static let readoutRowVertical: CGFloat = 2
+        static let readoutVertical: CGFloat = 6
+        static let readoutDateBottom: CGFloat = 2
+        static let readoutRowVertical: CGFloat = 1
         static let readoutGap: CGFloat = 6
     }
 
@@ -232,6 +233,14 @@ enum Tokens {
         static let returnDurationMax: TimeInterval = 0.9
         /// The dots settling onto and off the dragging line; from the prototype.
         static let scrub: TimeInterval = 0.12
+        /// The header and its controls fading aside while dragging across the lanes,
+        /// and back. Out is quick so nothing lies under the readout as it lands; back is a touch
+        /// slower. Guesses: 0.2s both ways felt slow in the Simulator.
+        static let asideOut: TimeInterval = 0.08
+        static let asideBack: TimeInterval = 0.15
+        static func aside(hiding: Bool) -> Animation {
+            .easeOut(duration: hiding ? asideOut : asideBack)
+        }
     }
 
     enum Radius {

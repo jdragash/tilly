@@ -153,9 +153,11 @@ struct TimelineView: View {
                 )
             }
         }
-        .overlay(alignment: .topTrailing) {
-            // The pair never moves: it sits in the `headerRow` band where headers pin, and each
-            // header hands off beneath it. Over the empty state too, where + is the next step.
+        // The pair never moves: it sits in the `headerRow` band where headers pin, and each
+        // header hands off beneath it. Over the empty state too, where + is the next step.
+        // While a finger drags across the lanes the controls step aside with the month's name,
+        // and the readout takes the row alone. The bottom row stays: hiding it felt wrong.
+        .overlayPreferenceValue(CategoryReadoutKey.self, alignment: .topTrailing) { readout in
             HStack(spacing: Tokens.Space.groupGap) {
                 if showsCategories, let window {
                     MonthArrows(
@@ -168,9 +170,12 @@ struct TimelineView: View {
             }
             .frame(height: Tokens.Size.headerRow)
             .padding(.trailing, Tokens.Space.gutter)
+            .opacity(readout == nil ? 1 : 0)
+            .allowsHitTesting(readout == nil)
+            .animation(Tokens.Motion.aside(hiding: readout != nil), value: readout == nil)
         }
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
-        // Above the glass controls: the readout floats over the header row when it has to.
+        // Above the glass controls, which fade while it shows: the readout takes the header row.
         .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
         .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }

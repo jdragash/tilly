@@ -42,6 +42,9 @@ struct CategoryView: View {
                 figureLabel: pickedLane.map(CategoryFormatting.focusLabel),
                 trailingClearance: Tokens.Space.categoryHeaderTrailingClearance
             )
+            // Steps aside with the shell's controls while the readout holds the row.
+            .opacity(scrub == nil ? 1 : 0)
+            .animation(Tokens.Motion.aside(hiding: scrub != nil), value: scrub == nil)
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     LanesView(
@@ -93,7 +96,7 @@ struct CategoryView: View {
         )) ?? today
         return CategoryReadoutPlacement(
             date: date, charges: charges, emojis: emojis,
-            lineX: lanesFrame.minX + scrub.lineX, lanesTop: lanesFrame.minY
+            lineX: lanesFrame.minX + scrub.lineX
         )
     }
 
