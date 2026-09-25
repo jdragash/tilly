@@ -388,6 +388,15 @@ starts on a dot doesn't open it. Jake feels the ticks and the response on his ph
 - **Measuring the editor needs the on-screen keyboard.** With the Simulator's hardware keyboard
   connected, no keyboard shows and the amount centres in the full height.
 - The emoji keyboard shows a one-time skin-tone tip on first use, over the emoji grid.
+- **Step 5: `DateFormatter.doesRelativeDateFormatting` measures from the real clock**, not an
+  injected `today`, so "Tomorrow" failed the test. `RelativeDateTimeFormatter` fed the day count
+  (`.named`, `.beginningOfSentence`) is deterministic and localised.
+- **A failing Swift Testing run in `xcodebuild` looks like a hang**: it then runs `simctl diagnose`
+  for up to 600s. Read the `.xcresult` (`xcresulttool get test-results summary`) instead of waiting.
+- Calls step 5 made where the plan was silent: a quiet category's `next` is its first charge after
+  the month shown; a category whose only charge this month is skipped is quiet; the uncategorised
+  lane is named "No category"; `laneLabel` speaks the currency in full ("Home, 1,259 euros out,
+  3 charges"), as the timeline's labels do, not the symbol form in the interface sketch.
 
 ## If a step is wrong
 
