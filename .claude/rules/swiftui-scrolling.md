@@ -52,7 +52,7 @@ measurement, so Opus builds it.
 - Suppress saving a place during the app's own scroll, then save once it settles: a fling cut
   short never settles to save.
 
-**Measuring:** temporary `print`s of frames, read through `simctl launch --console-pty`, beat
+**Measuring:** temporary `print`s of frames, read through `simctl launch --console-pty` (or `simulator.md`), beat
 pixels; `simctl io booted screenshot` while it runs. Fling with `touch_path` at 8ms; `swipe`
 carries no momentum. Tool taps land ~1s late, too late to interrupt a fling.
 

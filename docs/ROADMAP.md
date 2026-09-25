@@ -17,10 +17,10 @@ The smallest thing that does the job.
 | Recurrence engine | Done | Every N days, weeks, months or years from a fixed anchor. Pure and tested. |
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
 | Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere; on an iPhone a tap mid-flick is still ignored (open). |
-| Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. |
+| Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. Making a category lifts the amount 20pt over the emoji keyboard, against "never moves" (open). |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
-| Categories | In the editor, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming and changing an emoji there aren't designed yet. |
-| Category view | Planned | Lanes across one month, a dot per charge, beside the timeline behind a view menu. `docs/plans/views.md`. Other periods (a year, a monthly average) were tried and set aside. |
+| Categories | Done, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming, changing an emoji and deleting there aren't designed yet. |
+| Category view | Done | Lanes across one month, a dot per charge, beside the timeline behind a view menu; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
 | Token gallery | — | `DesignSystem/Gallery.swift`: every token and component in light, dark and accessibility sizes. |
 
 **Done when:** it holds a real set of recurring expenses and gets opened instead of guessed at.
