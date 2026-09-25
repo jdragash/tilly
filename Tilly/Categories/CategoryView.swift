@@ -24,6 +24,12 @@ struct CategoryView: View {
     @State private var containerHeight: CGFloat = 0
     @State private var footerHeight: CGFloat = 0
     @State private var isScrolled = false
+    /// The day under a dragging finger and where its line is.
+    @State private var scrub: LanesView.Scrub?
+    /// Where the lanes sit on this screen, for placing the readout.
+    @State private var lanesFrame: CGRect = .zero
+
+    private static let space = "categoryView"
 
     var body: some View {
         let built = categoryMonth
@@ -40,9 +46,12 @@ struct CategoryView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     LanesView(
                         month: built, laneHeight: laneHeight, today: today, picked: pickedLane?.id,
+                        scrubDay: scrub?.day,
                         onPick: { lane in picked = picked == lane.id ? nil : lane.id },
-                        onOpen: onOpen
+                        onOpen: onOpen,
+                        onScrub: { scrub = $0 }
                     )
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.space)) } action: { lanesFrame = $0 }
                     footer(built)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { footerHeight = $0 }
                 }
@@ -58,8 +67,34 @@ struct CategoryView: View {
                 isScrolled = scrolled
             }
         }
+        .coordinateSpace(.named(Self.space))
+        .preference(key: CategoryReadoutKey.self, value: scrub.map { readout($0, built: built, pickedID: pickedLane?.id) })
         .background(Tokens.Surface.base)
-        .onChange(of: month) { _, _ in picked = nil }
+        .sensoryFeedback(.selection, trigger: scrub?.day) { _, new in new != nil }
+        .onChange(of: month) { _, _ in
+            picked = nil
+            scrub = nil
+        }
+    }
+
+    /// The charges on the day under the finger, in the picked-out lane alone while one is.
+    private func readout(_ scrub: LanesView.Scrub, built: CategoryMonth, pickedID: String?) -> CategoryReadoutPlacement {
+        let lanes = built.lanes.filter { pickedID == nil || $0.id == pickedID }
+        var charges: [TimelineEntry] = []
+        var emojis: [String: String] = [:]
+        for lane in lanes {
+            for dot in lane.dots where dot.day == scrub.day {
+                charges.append(dot.entry)
+                emojis[dot.entry.id] = lane.category?.emoji ?? dot.entry.emoji
+            }
+        }
+        let date = calendar.date(from: DateComponents(
+            year: built.section.month.year, month: built.section.month.month, day: scrub.day
+        )) ?? today
+        return CategoryReadoutPlacement(
+            date: date, charges: charges, emojis: emojis,
+            lineX: lanesFrame.minX + scrub.lineX, lanesTop: lanesFrame.minY
+        )
     }
 
     // MARK: Fitting

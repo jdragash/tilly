@@ -33,6 +33,8 @@ enum Tokens {
         static let quietLine: Font = .footnote
         static let nextHeading: Font = .footnote.weight(.semibold)
         static let nextRow: Font = .subheadline
+        static let readoutDate: Font = .footnote.weight(.semibold)
+        static let readoutRow: Font = .footnote
     }
 
     enum Stroke {
@@ -54,6 +56,8 @@ enum Tokens {
         static let headerMin: CGFloat = 0.8
         /// A lane's total, before it would run out of its column.
         static let laneTotalMin: CGFloat = 0.5
+        /// The dots on the day under a dragging finger; from the prototype.
+        static let dotOnLine: CGFloat = 1.18
     }
 
     enum Opacity {
@@ -65,6 +69,10 @@ enum Tokens {
         static let unpickedLane: Double = 0.22
         /// A month arrow at the end of what can be paged to; from the prototype.
         static let disabledArrow: Double = 0.3
+        /// While dragging across the lanes: the dots off the line, and the today line, which would
+        /// otherwise read as a second line. From the prototype.
+        static let offLineDot: Double = 0.28
+        static let todayLineWhileDragging: Double = 0.2
     }
 
     enum Ink {
@@ -136,6 +144,13 @@ enum Tokens {
         static let nextTop: CGFloat = 18
         static let nextHeadingBottom: CGFloat = 4
         static let nextRowVertical: CGFloat = 5
+        /// The readout floats this far clear above the lanes' axis; from the prototype.
+        static let readoutClearance: CGFloat = 10
+        static let readoutHorizontal: CGFloat = 12
+        static let readoutVertical: CGFloat = 10
+        static let readoutDateBottom: CGFloat = 4
+        static let readoutRowVertical: CGFloat = 2
+        static let readoutGap: CGFloat = 6
     }
 
     enum Size {
@@ -194,6 +209,12 @@ enum Tokens {
         /// The ground-coloured ring round every dot, which keeps touching dots apart.
         static let dotHalo: CGFloat = 2
         static let todayLine: CGFloat = 1.5
+        /// The line at the day under a dragging finger.
+        static let dragLine: CGFloat = 2
+        /// How far a tap may land outside a dot and still open it; from the prototype.
+        static let dotTapReach: CGFloat = 22
+        static let readoutMinWidth: CGFloat = 150
+        static let readoutMaxWidth: CGFloat = 250
         /// The repeat wheels' two narrow columns; the end column takes the rest. Tuning values:
         /// a wheel's natural width is unbounded, so equal thirds truncated "12 payments".
         static let wheelInterval: CGFloat = 64
@@ -209,12 +230,15 @@ enum Tokens {
         static let returnPointsPerSecond: CGFloat = 3000
         static let returnDurationMin: TimeInterval = 0.35
         static let returnDurationMax: TimeInterval = 0.9
+        /// The dots settling onto and off the dragging line; from the prototype.
+        static let scrub: TimeInterval = 0.12
     }
 
     enum Radius {
         static let icon: CGFloat = 10
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
+        static let readout: CGFloat = 16
     }
 }
 

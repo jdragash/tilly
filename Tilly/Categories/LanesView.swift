@@ -3,17 +3,38 @@ import SwiftUI
 /// One month of lanes: the day axis, a line at today, and one lane per category, each starting
 /// with its emoji, its charges as dots on their days, and ending with its total. See "The
 /// category view" in `docs/DESIGN.md`.
+///
+/// Dragging across the plot starts on touch and moves charge to charge; the parent draws the
+/// readout from `onScrub`. A quick touch is a tap instead, and opens the nearest dot. The emoji
+/// column sits outside the drag, so picking a category never starts one.
 struct LanesView: View {
     let month: CategoryMonth
     let laneHeight: CGFloat
     let today: Date
-    /// The lane picked out, by `CategoryLane.id`; the others fade.
+    /// The lane picked out, by `CategoryLane.id`; the others fade, and dragging reads only it.
     let picked: String?
+    /// The day under a dragging finger, which the line and the dots follow.
+    let scrubDay: Int?
     let onPick: (CategoryLane) -> Void
     let onOpen: (TimelineEntry) -> Void
+    /// A new day under the finger, with the line's x in this view; nil when the finger lifts.
+    let onScrub: (Scrub?) -> Void
+
+    struct Scrub: Equatable {
+        let day: Int
+        let lineX: CGFloat
+    }
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
+
+    /// When the touch under way began, to tell a tap from a drag.
+    @State private var touchStart: Date?
+    /// True while a finger is down. Gesture state resets even when the scroll view takes the
+    /// touch over and `onEnded` never runs, which would otherwise leave the line standing.
+    @GestureState private var isTouching = false
+
+    private static let space = "lanes"
 
     var body: some View {
         GeometryReader { proxy in
@@ -24,9 +45,9 @@ struct LanesView: View {
                     if let todayDay {
                         Rectangle()
                             .fill(Tokens.Ink.primary)
-                            .opacity(Tokens.Opacity.todayLine)
-                            .frame(width: Tokens.Size.todayLine, height: laneHeight * CGFloat(month.lanes.count))
-                            .position(x: plot.x(day: todayDay), y: laneHeight * CGFloat(month.lanes.count) / 2)
+                            .opacity(scrubDay == nil ? Tokens.Opacity.todayLine : Tokens.Opacity.todayLineWhileDragging)
+                            .frame(width: Tokens.Size.todayLine, height: lanesHeight)
+                            .position(x: plot.x(day: todayDay), y: lanesHeight / 2)
                             .accessibilityHidden(true)
                     }
                     VStack(spacing: 0) {
@@ -36,8 +57,90 @@ struct LanesView: View {
                     }
                 }
             }
+            .overlay(alignment: .topLeading) {
+                if let scrubDay {
+                    // Across the axis too, so the line meets the day's number.
+                    Rectangle()
+                        .fill(Tokens.Ink.primary)
+                        .frame(width: Tokens.Size.dragLine, height: Tokens.Size.laneAxis + lanesHeight)
+                        .position(x: plot.x(day: scrubDay), y: (Tokens.Size.laneAxis + lanesHeight) / 2)
+                        // Jumps from charge to charge, as the tick does, rather than sliding.
+                        .transaction { $0.animation = nil }
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .overlay { dragSurface(plot) }
+            .coordinateSpace(.named(Self.space))
         }
-        .frame(height: Tokens.Size.laneAxis + laneHeight * CGFloat(month.lanes.count))
+        .onChange(of: isTouching) { _, touching in
+            // Only ever clears. Setting the start here landed a view update late, after `onEnded`
+            // had cleared it, and the stale start made the next tap read as a long hold.
+            guard !touching else { return }
+            touchStart = nil
+            if scrubDay != nil { onScrub(nil) }
+        }
+        .frame(height: Tokens.Size.laneAxis + lanesHeight)
+        .animation(.easeOut(duration: Tokens.Motion.scrub), value: scrubDay)
+    }
+
+    private var lanesHeight: CGFloat { laneHeight * CGFloat(month.lanes.count) }
+
+    // MARK: Dragging
+
+    /// Clear, over the plot and the totals but not the emoji column.
+    private func dragSurface(_ plot: PlotGeometry) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .gesture(scrubGesture(plot))
+            .padding(.leading, Tokens.Space.laneLeading + Tokens.Size.laneEmojiColumn)
+            .accessibilityHidden(true)
+    }
+
+    private func scrubGesture(_ plot: PlotGeometry) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.space))
+            .updating($isTouching) { _, touching, _ in touching = true }
+            .onChanged { value in
+                if touchStart == nil { touchStart = value.time }
+                let day = LaneScrubbing.snappedDay(
+                    at: value.location.x, plot: plot.start...plot.end, daysInMonth: daysInMonth, chargeDays: chargeDays
+                )
+                if day != scrubDay {
+                    onScrub(day.map { Scrub(day: $0, lineX: plot.x(day: $0)) })
+                }
+            }
+            .onEnded { value in
+                let travel = hypot(value.translation.width, value.translation.height)
+                let isTap = travel < LaneScrubbing.tapSlop
+                    && value.time.timeIntervalSince(touchStart ?? value.time) < LaneScrubbing.tapDuration
+                touchStart = nil
+                onScrub(nil)
+                if isTap, let entry = dot(nearest: value.location, plot: plot) {
+                    onOpen(entry)
+                }
+            }
+    }
+
+    /// Days with a charge, in the picked-out lane alone while one is.
+    private var chargeDays: [Int] {
+        let lanes = month.lanes.filter { picked == nil || $0.id == picked }
+        return Array(Set(lanes.flatMap { $0.dots.map(\.day) }))
+    }
+
+    /// The dot whose edge is nearest `point`, within `dotTapReach`.
+    private func dot(nearest point: CGPoint, plot: PlotGeometry) -> TimelineEntry? {
+        var best: (entry: TimelineEntry, distance: CGFloat)?
+        for (index, lane) in month.lanes.enumerated() {
+            let centreY = Tokens.Size.laneAxis + CGFloat(index) * laneHeight + laneHeight / 2
+            for placed in placedDots(lane) {
+                let centreX = plot.x(day: placed.dot.day) + CGFloat(placed.sameDayIndex) * Tokens.Space.sameDayOffset
+                let distance = hypot(point.x - centreX, point.y - centreY) - plot.diameter(placed.dot.entry.amount) / 2
+                if distance < Tokens.Size.dotTapReach, distance < (best?.distance ?? .infinity) {
+                    best = (placed.dot.entry, distance)
+                }
+            }
+        }
+        return best?.entry
     }
 
     // MARK: The axis
@@ -84,7 +187,7 @@ struct LanesView: View {
 
             ZStack(alignment: .topLeading) {
                 ForEach(placedDots(lane), id: \.dot.id) { placed in
-                    dotButton(placed.dot, colour: colour(of: lane), plot: plot)
+                    dotMark(placed.dot, colour: colour(of: lane), plot: plot)
                         .position(x: plot.x(day: placed.dot.day) + CGFloat(placed.sameDayIndex) * Tokens.Space.sameDayOffset,
                                   y: laneHeight / 2)
                 }
@@ -139,14 +242,17 @@ struct LanesView: View {
         .accessibilityAddTraits(isPicked ? .isSelected : [])
     }
 
-    private func dotButton(_ dot: LaneDot, colour: Color, plot: PlotGeometry) -> some View {
-        let diameter = plot.diameter(dot.entry.amount)
-        return Button { onOpen(dot.entry) } label: {
-            LaneDotMark(entry: dot.entry, colour: colour, diameter: diameter)
-                .contentShape(Circle().inset(by: -Tokens.Size.dotHalo))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: dot.entry, calendar: calendar, locale: locale))
+    /// Touch reaches a dot through the drag surface's tap; VoiceOver reaches it as a button.
+    private func dotMark(_ dot: LaneDot, colour: Color, plot: PlotGeometry) -> some View {
+        let onLine = scrubDay == dot.day
+        return LaneDotMark(entry: dot.entry, colour: colour, diameter: plot.diameter(dot.entry.amount))
+            .scaleEffect(onLine ? Tokens.Scale.dotOnLine : 1)
+            .opacity(scrubDay == nil || onLine ? 1 : Tokens.Opacity.offLineDot)
+            .zIndex(onLine ? 1 : 0)
+            .accessibilityElement()
+            .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: dot.entry, calendar: calendar, locale: locale))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onOpen(dot.entry) }
     }
 
     // MARK: Helpers

@@ -170,6 +170,8 @@ struct TimelineView: View {
             .padding(.trailing, Tokens.Space.gutter)
         }
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
+        // Above the glass controls: the readout floats over the header row when it has to.
+        .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
         .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
         // `onDismiss` refreshes explicitly: a save writes an `OverrideRecord` or edits fields

@@ -409,6 +409,19 @@ starts on a dot doesn't open it. Jake feels the ticks and the response on his ph
   shrinking to 0.8 and then truncating the category's name, never its total; another year's month
   reads `September ’27`.
 
+- **Step 7: an overlay inside the category view draws beneath the shell's glass controls**, which
+  are a later overlay on the shell. The readout rides a `PreferenceKey` up to the shell and is
+  drawn by `overlayPreferenceValue` after the controls. The prototype also let it cover the header.
+- **A `DragGesture(minimumDistance: 0)` on content inside a scrolling `ScrollView` still lets a
+  vertical swipe scroll** (iOS 27 simulator, accessibility-large, where the lanes scroll), and a
+  sideways drag still reads. When the scroll view takes a touch over, `onEnded` never runs;
+  `@GestureState` resets regardless, so clear the line from its change.
+- **Don't start a touch's clock from `onChange` of gesture state.** It lands a view update after
+  `onEnded`, which had already cleared it, and the stale start made the next tap read as a hold
+  and not open. Set it in the first `onChanged`; clear it in `onEnded` and on the state reset.
+- Holding a drag for a screenshot: a background `sleep 4; simctl io booted screenshot` alongside a
+  `touch_path` whose last points hold for 1000ms each.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be
