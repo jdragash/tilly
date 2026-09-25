@@ -3,6 +3,8 @@
 Tilly gives you a bird's-eye view of your recurring expenses — bills, subscriptions,
 annual costs — so you know what's coming and when.
 
+https://github.com/user-attachments/assets/6acba3b8-9222-42ff-8fa0-a0db58a38334
+
 It is a personal hobby project, built in the open. It is **free forever**: no paywalls,
 no in-app purchases, no locked features. Nothing about it is for sale, now or later.
 
@@ -19,7 +21,8 @@ maintain.
 
 ## Status
 
-The timeline and the editor are built, and the app is usable day to day.
+The timeline, the editor and a view by category are built, and the app is usable day to
+day.
 
 The timeline is one list you scroll, laid out like iOS Calendar: this month open with
 what's left to come out, the months ahead running on above it, and history running on
@@ -31,8 +34,9 @@ Tap + to add a bill, or tap a charge to edit it. A change can apply to that one 
 expense has a category with an emoji, name and colour you choose; none come built in.
 Settings is where you put them in order and recolour them.
 
-Next is a view by category: each one a lane across the month, with a dot for every
-charge. Bills whose amount you only know roughly come after that.
+Beside the timeline, a menu switches to a view by category: each one a lane across the
+month, with a dot for every charge. Drag across it to read a day's charges. Bills whose
+amount you only know roughly come next.
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the order things are coming in, and
 [`docs/PROJECT.md`](docs/PROJECT.md) for what the app is trying to be.
