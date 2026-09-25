@@ -77,7 +77,8 @@ The month name, and under it on its own line, secondary, the figure: the current
 what is still to go, and says so, `−€162 left`, or `€0 left` once it runs out. Every other month
 carries its plain total with no qualifier. That header is the headline number, so it doesn't get a
 second home above the content. Totals exclude skipped occurrences. A month name carries its year
-only when that year isn't the current one.
+only when that year isn't the current one, and in two digits, `September ’27`; VoiceOver hears it
+in full.
 
 ### One list, and the future runs on, five years or to your last payment
 

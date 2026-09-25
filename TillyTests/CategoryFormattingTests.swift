@@ -76,6 +76,11 @@ import Testing
 
     // MARK: Lane text
 
+    @Test func focusLabelIsTheFigureWithoutItsTotal() {
+        let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950])
+        #expect(CategoryFormatting.focusLabel(lane) == "🏠 Home")
+    }
+
     @Test func focusFigureReadsEmojiNameAndTotal() {
         let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950, 241, 68])
         #expect(CategoryFormatting.focusFigure(lane, locale: Self.euro) == "🏠 Home \u{2212}€1,259")

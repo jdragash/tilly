@@ -22,6 +22,17 @@ enum Tokens {
         /// `Size.editorAmountSize` with `@ScaledMetric` and builds the font here, where a
         /// fixed-size font belongs.
         static func editorAmount(size: CGFloat) -> Font { .system(size: size, weight: .semibold) }
+        /// A lane's emoji follows the lane's height, which already answers to the screen, so it
+        /// doesn't scale with Dynamic Type too. From the prototype.
+        static func laneEmoji(laneHeight: CGFloat) -> Font {
+            .system(size: min(26, max(15, (0.46 * laneHeight).rounded())))
+        }
+        static let laneTotal: Font = .subheadline
+        static let axisDay: Font = .caption2
+        static let axisToday: Font = .caption2.weight(.semibold)
+        static let quietLine: Font = .footnote
+        static let nextHeading: Font = .footnote.weight(.semibold)
+        static let nextRow: Font = .subheadline
     }
 
     enum Stroke {
@@ -29,17 +40,31 @@ enum Tokens {
         static let emojiSlot = StrokeStyle(lineWidth: 1.5, dash: [4, 3])
         /// The ring round the chosen colour swatch.
         static let swatchRing: CGFloat = 2
+        /// A €0 or amountless dot in the lanes.
+        static let zeroDot = StrokeStyle(lineWidth: 1.5, dash: [2, 2])
+        /// A still-to-come dot's ring.
+        static let upcomingDot: CGFloat = 2
     }
 
     /// How far text may shrink to fit a line before it truncates.
     enum Scale {
         static let editorAmountMin: CGFloat = 0.3
         static let editorButtonMin: CGFloat = 0.8
+        /// A month header's name and a picked-out category's name, before they truncate.
+        static let headerMin: CGFloat = 0.8
+        /// A lane's total, before it would run out of its column.
+        static let laneTotalMin: CGFloat = 0.5
     }
 
     enum Opacity {
         /// How far an upcoming or skipped row's icon well sits back; from the prototype.
         static let upcomingIcon: Double = 0.55
+        /// The category view's today line; from the prototype.
+        static let todayLine: Double = 0.75
+        /// The lanes not picked out while one category is; from the prototype.
+        static let unpickedLane: Double = 0.22
+        /// A month arrow at the end of what can be paged to; from the prototype.
+        static let disabledArrow: Double = 0.3
     }
 
     enum Ink {
@@ -63,6 +88,15 @@ enum Tokens {
         /// floating buttons are and a full-bleed sticky header is not.
         static let pinned: Color = Color(.systemBackground)
         static let editorButtonActive: Color = Color(.tertiarySystemFill)
+        /// Behind a picked-out lane's emoji.
+        static let pickedLane: Color = Color(.secondarySystemFill)
+    }
+
+    enum Chart {
+        /// A dot for a category without a colour, or charges with no category.
+        static let uncoloured: Color = Color(.systemGray)
+        /// The hairline between two lanes: fainter than `Surface.rule`, since it only groups.
+        static let laneRule: Color = Color(.quaternaryLabel)
     }
 
     enum Space {
@@ -82,6 +116,26 @@ enum Tokens {
         /// What a month header keeps clear at its trailing end so its text never runs under the
         /// glass pair: the view button and +, the gutter they sit in, and a gap.
         static let headerTrailingClearance: CGFloat = 2 * Size.groupSlot + gutter + gap
+        /// Between the category view's arrows and the view-and-+ pair. Drawn, not measured:
+        /// Calendar has no two groups side by side.
+        static let groupGap: CGFloat = 8
+        /// Between a picked-out category's name and its total in the month header: a word space.
+        static let figureLabelGap: CGFloat = 4
+        /// The month header's clearance in the category view, where the arrows sit left of the pair.
+        static let categoryHeaderTrailingClearance: CGFloat = 4 * Size.groupSlot + groupGap + gutter + gap
+        /// The lanes' emoji column sits this far from the screen's leading edge; from the prototype.
+        static let laneLeading: CGFloat = 12
+        /// From the emoji column to day 1; from the prototype.
+        static let lanePlotLeading: CGFloat = 22
+        /// Two charges on one day sit this far apart, the later one to the right.
+        static let sameDayOffset: CGFloat = 5
+        /// Above and below the line naming the categories with nothing this month.
+        static let quietTop: CGFloat = 10
+        static let quietBottom: CGFloat = 4
+        /// Above the `Next` list, under its heading, and around each of its rows.
+        static let nextTop: CGFloat = 18
+        static let nextHeadingBottom: CGFloat = 4
+        static let nextRowVertical: CGFloat = 5
     }
 
     enum Size {
@@ -121,6 +175,25 @@ enum Tokens {
         static let swatchRingGap: CGFloat = 3
         /// The least a control smaller than this is given to be tapped by: Apple's 44pt minimum.
         static let minimumTapTarget: CGFloat = 44
+        /// A lane's height: the lanes shrink between these to fit the screen, then the page
+        /// scrolls. See "The category view" in `docs/DESIGN.md`.
+        static let laneHeightMax: CGFloat = 60
+        static let laneHeightMin: CGFloat = 30
+        static let laneEmojiColumn: CGFloat = 40
+        /// The lanes' totals, right-aligned in this much at the trailing end.
+        static let laneTotalsColumn: CGFloat = 70
+        /// The day numbers above the lanes.
+        static let laneAxis: CGFloat = 18
+        /// A dot's diameter runs from `dotMin` for the smallest charge up to `dotMaxRatio` of the
+        /// lane's height, never past `dotMax`, its area following the amount. From the prototype.
+        static let dotMin: CGFloat = 7
+        static let dotMax: CGFloat = 36
+        static let dotMaxRatio: CGFloat = 0.78
+        /// A €0 or amountless charge.
+        static let dotZero: CGFloat = 8
+        /// The ground-coloured ring round every dot, which keeps touching dots apart.
+        static let dotHalo: CGFloat = 2
+        static let todayLine: CGFloat = 1.5
         /// The repeat wheels' two narrow columns; the end column takes the rest. Tuning values:
         /// a wheel's natural width is unbounded, so equal thirds truncated "12 payments".
         static let wheelInterval: CGFloat = 64

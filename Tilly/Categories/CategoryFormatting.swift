@@ -40,8 +40,12 @@ enum CategoryFormatting {
 
     /// "🏠 Home −€1,259": the header's figure while a category is picked out.
     static func focusFigure(_ lane: CategoryLane, locale: Locale) -> String {
-        let label = lane.category.map { "\($0.emoji) \($0.name)" } ?? uncategorisedName
-        return "\(label) \(TimelineFormatting.amount(lane.total, locale: locale))"
+        "\(focusLabel(lane)) \(TimelineFormatting.amount(lane.total, locale: locale))"
+    }
+
+    /// "🏠 Home": the part of `focusFigure` before the total, which the header truncates first.
+    static func focusLabel(_ lane: CategoryLane) -> String {
+        lane.category.map { "\($0.emoji) \($0.name)" } ?? uncategorisedName
     }
 
     /// "Home, 1,259 euros out, 3 charges", for VoiceOver: the currency spoken in full, as the

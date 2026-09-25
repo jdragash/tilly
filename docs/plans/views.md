@@ -398,6 +398,17 @@ starts on a dot doesn't open it. Jake feels the ticks and the response on his ph
   lane is named "No category"; `laneLabel` speaks the currency in full ("Home, 1,259 euros out,
   3 charges"), as the timeline's labels do, not the symbol form in the interface sketch.
 
+- **Step 6: `simctl spawn booted defaults write com.jdragash.Tilly …` doesn't reach the app**, and
+  editing the container's plist with `plutil` is overwritten by cfprefsd's cache. Write through
+  cfprefsd to the container's path: `simctl spawn booted defaults write "$(simctl
+  get_app_container booted com.jdragash.Tilly data)/Library/Preferences/com.jdragash.Tilly" key value`,
+  with the app terminated. That switches scenario (`tillyDeveloperScenario`) and view (`viewMode`).
+- **Step 6: the category view's header keeps 134pt beside the arrows and the pair** (402 − 20 −
+  248), iPhone 17. A `fixedSize` figure wider than that widened the whole screen past both edges,
+  and "September 2027" wrapped, moving the lanes down. The header now holds each line to one,
+  shrinking to 0.8 and then truncating the category's name, never its total; another year's month
+  reads `September ’27`.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

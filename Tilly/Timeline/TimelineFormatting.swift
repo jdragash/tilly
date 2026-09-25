@@ -83,7 +83,7 @@ enum TimelineFormatting {
     /// "September, 162 US dollars left" for the current month; "August, total 1,539 US
     /// dollars out" for every other month.
     static func accessibilityLabel(for section: MonthSection, calendar: Calendar, today: Date, locale: Locale) -> String {
-        let name = section.month.name(in: calendar, relativeTo: today, locale: locale)
+        let name = section.month.spokenName(in: calendar, relativeTo: today, locale: locale)
         if section.isCurrent {
             return "\(name), \(spokenAmount(abs(section.remaining), locale: locale)) left"
         }
