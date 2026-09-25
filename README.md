@@ -3,8 +3,6 @@
 Tilly gives you a bird's-eye view of your recurring expenses — bills, subscriptions,
 annual costs — so you know what's coming and when.
 
-https://github.com/user-attachments/assets/6acba3b8-9222-42ff-8fa0-a0db58a38334
-
 It is a personal hobby project, built in the open. It is **free forever**: no paywalls,
 no in-app purchases, no locked features. Nothing about it is for sale, now or later.
 
