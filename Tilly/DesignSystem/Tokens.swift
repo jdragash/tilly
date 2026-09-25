@@ -27,6 +27,8 @@ enum Tokens {
     enum Stroke {
         /// The empty emoji slot's dashed outline.
         static let emojiSlot = StrokeStyle(lineWidth: 1.5, dash: [4, 3])
+        /// The ring round the chosen colour swatch.
+        static let swatchRing: CGFloat = 2
     }
 
     /// How far text may shrink to fit a line before it truncates.
@@ -115,6 +117,8 @@ enum Tokens {
         static let categoryRow: CGFloat = 48
         /// A category's colour, drawn as a filled circle in Settings and the new-category row.
         static let colourSwatch: CGFloat = 22
+        /// Clear space between a chosen swatch and the ring drawn round it.
+        static let swatchRingGap: CGFloat = 3
         /// The least a control smaller than this is given to be tapped by: Apple's 44pt minimum.
         static let minimumTapTarget: CGFloat = 44
         /// The repeat wheels' two narrow columns; the end column takes the rest. Tuning values:

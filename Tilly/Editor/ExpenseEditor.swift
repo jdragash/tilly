@@ -26,6 +26,12 @@ struct ExpenseEditor: View {
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.editorAmountSize
     @ScaledMetric(relativeTo: .title3) private var nameHeight = Tokens.Size.editorNameHeight
     @State private var viewportHeight: CGFloat = 0
+    /// The amount and name's height, and the height of the space they centre in. Measured, so
+    /// making a category can hold them where they rest. See `heldOffset`.
+    @State private var amountBlockHeight: CGFloat = 0
+    @State private var amountAreaHeight: CGFloat = 0
+    /// How far below the top of its space the amount rests while a picker or the keypad shows.
+    @State private var restingAmountInset: CGFloat?
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
@@ -44,17 +50,27 @@ struct ExpenseEditor: View {
                 VStack(spacing: Tokens.Space.section) {
                     // The amount and name are the flexible part: they centre in whatever height the
                     // buttons and panel leave, so those sit at the bottom. Accessibility sizes
-                    // overflow instead, and scroll.
+                    // overflow instead, and scroll. While a category is made the keyboard pushes
+                    // the editor up instead of covering it, so the two hold their resting place and
+                    // the space under the name gives way.
                     VStack(spacing: Tokens.Space.section) {
                         amountView
                         nameField
                     }
-                    .frame(maxHeight: .infinity)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { amountBlockHeight = $0 }
+                    // An offset, not padding: it draws the two lower without asking for more room,
+                    // so the space they're given can't depend on where they're drawn.
+                    .offset(y: heldOffset ?? 0)
+                    .frame(maxHeight: .infinity, alignment: heldOffset == nil ? .center : .top)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        amountAreaHeight = height
+                        if heldOffset == nil { restingAmountInset = max(0, (height - amountBlockHeight) / 2) }
+                    }
                     EditorButtonRow(draft: draft, category: selectedCategory, today: today, panel: $panel)
                     // A new category takes the panel's place, above its keyboard. At accessibility
                     // sizes the keyboard pushes the editor up, so the panel goes while a name is typed.
                     if panel == .newCategory {
-                        NewCategoryRow(onCreate: create, onCancel: { panel = .category })
+                        NewCategoryRow(existing: categories, onCreate: create, onCancel: { panel = .category })
                     } else if keyboardCovers || !nameFocused {
                         // Where the keyboard covers, the panel stays in the layout so nothing above
                         // it moves, and hides so it can't show above a shorter keyboard.
@@ -182,6 +198,16 @@ struct ExpenseEditor: View {
     /// would cover the name field.
     private var keyboardCovers: Bool {
         !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
+    }
+
+    /// While a category is made, at standard sizes, the amount and name are drawn from the top of
+    /// their space at the inset they rest at, rather than centred, so they don't move: the keyboard
+    /// pushes the editor up there instead of covering it. Where the space left is too short for
+    /// that, they rise by the shortfall and no more, so the row never goes under the keyboard.
+    /// nil means centre as usual. At accessibility sizes the editor scrolls, and centring is moot.
+    private var heldOffset: CGFloat? {
+        guard panel == .newCategory, !dynamicTypeSize.isAccessibilitySize, let restingAmountInset else { return nil }
+        return max(0, min(restingAmountInset, amountAreaHeight - amountBlockHeight))
     }
 
     private var selectedCategory: ExpenseCategory? {

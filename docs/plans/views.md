@@ -379,6 +379,15 @@ starts on a dot doesn't open it. Jake feels the ticks and the response on his ph
 - **Sample scenarios reseed on every launch**, so "survives relaunch" can't be seen in one. It's
   covered by a test that reopens an on-disk store instead.
 - `xcodebuild … test` shut the booted simulator down; boot it again before driving the app.
+- **Step 4: the editor centred the amount in what the keyboard left, so it already moved 31pt when
+  a category was made** (emoji keyboard; 1pt under the name keyboard), before any swatches. The
+  swatch row (28pt) made it 49pt. The amount and name now hold their resting inset while a category
+  is made, drawn with `.offset` so the space they're given can't depend on where they're drawn, and
+  rise only by the shortfall: 0pt under the name keyboard, 20pt under the emoji keyboard, which is
+  taller than the space under the name (iPhone 17 simulator, iOS 27).
+- **Measuring the editor needs the on-screen keyboard.** With the Simulator's hardware keyboard
+  connected, no keyboard shows and the amount centres in the full height.
+- The emoji keyboard shows a one-time skin-tone tip on first use, over the emoji grid.
 
 ## If a step is wrong
 
