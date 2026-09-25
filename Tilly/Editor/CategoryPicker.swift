@@ -1,14 +1,15 @@
 import SwiftData
 import SwiftUI
 
-/// The category panel: every category as an emoji and a name, then `New category` last. Tapping
+/// The category panel: every category as an emoji and a name, in the Settings order, then
+/// `New category` last. Tapping
 /// a row selects it, and tapping the selected one keeps it selected. See "Pickers open where
 /// the keypad was" in `docs/DESIGN.md`.
 struct CategoryPicker: View {
     @Binding var selection: UUID?
     let onNew: () -> Void
 
-    @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
+    @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
 
     var body: some View {
         ScrollView {

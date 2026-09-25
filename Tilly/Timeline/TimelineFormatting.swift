@@ -83,7 +83,7 @@ enum TimelineFormatting {
     /// "September, 162 US dollars left" for the current month; "August, total 1,539 US
     /// dollars out" for every other month.
     static func accessibilityLabel(for section: MonthSection, calendar: Calendar, today: Date, locale: Locale) -> String {
-        let name = section.month.name(in: calendar, relativeTo: today, locale: locale)
+        let name = section.month.spokenName(in: calendar, relativeTo: today, locale: locale)
         if section.isCurrent {
             return "\(name), \(spokenAmount(abs(section.remaining), locale: locale)) left"
         }
@@ -101,7 +101,7 @@ enum TimelineFormatting {
     /// "950 US dollars" — the currency named in full, so VoiceOver speaks it rather than
     /// reading a symbol. Taken from `locale`, never assumed: the screen renders whatever
     /// currency the device is set to, and the spoken label has to agree with it.
-    private static func spokenAmount(_ value: Decimal, locale: Locale) -> String {
+    static func spokenAmount(_ value: Decimal, locale: Locale) -> String {
         guard let code = locale.currency?.identifier else {
             return "\(value)"
         }

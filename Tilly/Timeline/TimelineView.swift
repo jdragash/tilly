@@ -35,6 +35,10 @@ struct TimelineView: View {
     @State private var isEditorPresented = false
     @State private var isSettingsPresented = false
     @State private var editing: EditSession?
+    /// Which view shows. The app opens on the one it was left on, as Calendar does.
+    @AppStorage("viewMode") private var mode: ViewMode = .firstRun
+    /// The month the category view shows. Set properly once the window is.
+    @State private var categoryMonth = MonthKey(containing: Date(), calendar: .current)
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "TimelineView")
     private static let scrollSpace = "timelineScroll"
@@ -132,8 +136,63 @@ struct TimelineView: View {
         }
     }
 
-    @ViewBuilder
+    /// The category view lies over the timeline, which stays mounted beneath it, hidden, so its
+    /// place survives a switch: rebuilt, the list would restore only to the month, and pay
+    /// for laying itself out again. With no expenses both views are the empty state.
     private func content(topInset: CGFloat, bottomInset: CGFloat) -> some View {
+        let showsCategories = mode == .categories && !expenses.isEmpty && window != nil
+        return ZStack {
+            timeline(topInset: topInset)
+                .opacity(showsCategories ? 0 : 1)
+                .allowsHitTesting(!showsCategories)
+                .accessibilityHidden(showsCategories)
+            if showsCategories, let window {
+                CategoryView(
+                    month: $categoryMonth, window: window, expenses: expenses, today: today,
+                    bottomClearance: bottomClearance, onOpen: openEntry
+                )
+            }
+        }
+        // The pair never moves: it sits in the `headerRow` band where headers pin, and each
+        // header hands off beneath it. Over the empty state too, where + is the next step.
+        // While a finger drags across the lanes the controls step aside with the month's name,
+        // and the readout takes the row alone. The bottom row stays: hiding it felt wrong.
+        .overlayPreferenceValue(CategoryReadoutKey.self, alignment: .topTrailing) { readout in
+            HStack(spacing: Tokens.Space.groupGap) {
+                if showsCategories, let window {
+                    MonthArrows(
+                        canGoBack: categoryMonth > window.floor,
+                        canGoForward: categoryMonth < window.ceiling,
+                        step: { categoryMonth = categoryMonth.advanced(by: $0) }
+                    )
+                }
+                HeaderControls(mode: $mode) { isEditorPresented = true }
+            }
+            .frame(height: Tokens.Size.headerRow)
+            .padding(.trailing, Tokens.Space.gutter)
+            .opacity(readout == nil ? 1 : 0)
+            .allowsHitTesting(readout == nil)
+            .animation(Tokens.Motion.aside(hiding: readout != nil), value: readout == nil)
+        }
+        .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
+        // Above the glass controls, which fade while it shows: the readout takes the header row.
+        .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
+        .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
+        .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
+        // `onDismiss` refreshes explicitly: a save writes an `OverrideRecord` or edits fields
+        // on the same `Expense` instances this view already holds, so the in-memory objects
+        // are correct the moment the sheet closes, but `@Query`'s own change notification
+        // doesn't reliably fire for a relationship-only edit, and `.onChange(of: expenses)`
+        // compares the array by model identity, not by the fields within it — so without
+        // this, a saved amount left the row showing what it read before the edit, and
+        // deleting future charges, which only ends a record, left the months ahead standing.
+        .sheet(item: $editing, onDismiss: refreshWindow) { session in
+            ExpenseEditor(today: today, session: session)
+        }
+    }
+
+    @ViewBuilder
+    private func timeline(topInset: CGFloat) -> some View {
         Group {
             if expenses.isEmpty {
                 TimelineEmptyState()
@@ -217,26 +276,6 @@ struct TimelineView: View {
                 }
             }
         }
-        .overlay(alignment: .topTrailing) {
-            // + never moves: it sits in the `headerRow` band where headers pin, and each
-            // header hands off beneath it. Over the empty state too, where it's the next step.
-            GlassCircleButton(systemImage: "plus", label: "Add an expense") { isEditorPresented = true }
-                .frame(height: Tokens.Size.headerRow)
-                .padding(.trailing, Tokens.Space.gutter)
-        }
-        .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
-        .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
-        .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
-        // `onDismiss` refreshes explicitly: a save writes an `OverrideRecord` or edits fields
-        // on the same `Expense` instances this view already holds, so the in-memory objects
-        // are correct the moment the sheet closes, but `@Query`'s own change notification
-        // doesn't reliably fire for a relationship-only edit, and `.onChange(of: expenses)`
-        // compares the array by model identity, not by the fields within it — so without
-        // this, a saved amount left the row showing what it read before the edit, and
-        // deleting future charges, which only ends a record, left the months ahead standing.
-        .sheet(item: $editing, onDismiss: refreshWindow) { session in
-            ExpenseEditor(today: today, session: session)
-        }
     }
 
     /// A row tap builds the session fresh from the store, keyed on what the entry itself
@@ -258,7 +297,13 @@ struct TimelineView: View {
     /// grows with Dynamic Type, sets the list's bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
     private func bottomRow(bottomInset: CGFloat) -> some View {
         HStack {
-            MonthButton(month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today, action: returnToResting)
+            MonthButton(month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today) {
+                if mode == .categories, let window {
+                    categoryMonth = window.current
+                } else {
+                    returnToResting()
+                }
+            }
             Spacer()
             GlassCircleButton(systemImage: "gearshape", label: "Settings", diameter: Tokens.Size.bottomButton) {
                 isSettingsPresented = true
@@ -285,6 +330,12 @@ struct TimelineView: View {
     /// before the window it belongs to, and everything below it jumped 60pt before the
     /// anchor was read (measured).
     private func replaceWindow(with newWindow: TimelineWindow?) {
+        if let newWindow {
+            // The category view starts on the current month, and stays inside the window when
+            // a bill's change moves its floor or ceiling past the month it shows.
+            let month = window == nil ? newWindow.current : categoryMonth
+            categoryMonth = min(max(month, newWindow.floor), newWindow.ceiling)
+        }
         window = newWindow
         isLastPayment = newWindow.map {
             TimelineCeiling.isLastPayment($0.ceiling, for: expenses, current: $0.current, calendar: calendar)

@@ -298,6 +298,11 @@ import TillyCore
 
     @Test func aMonthInAnotherYearCarriesItsYear() {
         let name = MonthKey(year: 2025, month: 9).name(in: Self.calendar, relativeTo: Self.today, locale: Locale(identifier: "en_IE"))
+        #expect(name == "September \u{2019}25")
+    }
+
+    @Test func aMonthInAnotherYearIsSpokenWithItsYearInFull() {
+        let name = MonthKey(year: 2025, month: 9).spokenName(in: Self.calendar, relativeTo: Self.today, locale: Locale(identifier: "en_IE"))
         #expect(name == "September 2025")
     }
 }

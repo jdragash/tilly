@@ -68,6 +68,14 @@ import Testing
     @Test func titlesAreInOrder() {
         #expect(DeveloperScenario.allCases.map(\.title) == [
             "Your data", "Empty", "One expense", "Typical year", "Long history", "Nothing charged yet",
+            "Many categories",
         ])
+    }
+
+    @Test func manyCategoriesHasFourteenInOrderEachColoured() throws {
+        let (_, categories) = try Self.seeded(.manyCategories)
+        #expect(categories.count == 14)
+        #expect(Set(categories.map(\.sortOrder)) == Set(0..<14))
+        #expect(categories.allSatisfy { $0.colour != nil })
     }
 }

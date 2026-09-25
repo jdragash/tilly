@@ -370,6 +370,57 @@ starts on a dot doesn't open it. Jake feels the ticks and the response on his ph
 - **`simctl launch --console-pty` hung here with no output** (from the agent's shell, with and
   without `script`), and `--stdout=` to the scratchpad wrote nothing. A temporary `NSLog` read back
   with `simctl spawn booted log show --last 1m --predicate 'eventMessage CONTAINS "…"'` worked.
+- **Step 3: a `List` `.onMove` reorders by long-press drag outside edit mode** (iOS 27 simulator).
+- **A `Menu` draws an SF Symbol in one ink, whatever its `foregroundStyle`.** A colour swatch in a
+  menu item needs the colour in the image: `Tokens.CategoryColour.menuSwatch` tints a `UIImage` with
+  `.alwaysOriginal`, and it follows light and dark.
+- **A 44pt minimum height on a list row's trailing control makes the row taller** (about 52 → 74pt).
+  Give it the minimum width only; the row already clears 44pt.
+- **Sample scenarios reseed on every launch**, so "survives relaunch" can't be seen in one. It's
+  covered by a test that reopens an on-disk store instead.
+- `xcodebuild … test` shut the booted simulator down; boot it again before driving the app.
+- **Step 4: the editor centred the amount in what the keyboard left, so it already moved 31pt when
+  a category was made** (emoji keyboard; 1pt under the name keyboard), before any swatches. The
+  swatch row (28pt) made it 49pt. The amount and name now hold their resting inset while a category
+  is made, drawn with `.offset` so the space they're given can't depend on where they're drawn, and
+  rise only by the shortfall: 0pt under the name keyboard, 20pt under the emoji keyboard, which is
+  taller than the space under the name (iPhone 17 simulator, iOS 27).
+- **Measuring the editor needs the on-screen keyboard.** With the Simulator's hardware keyboard
+  connected, no keyboard shows and the amount centres in the full height.
+- The emoji keyboard shows a one-time skin-tone tip on first use, over the emoji grid.
+- **Step 5: `DateFormatter.doesRelativeDateFormatting` measures from the real clock**, not an
+  injected `today`, so "Tomorrow" failed the test. `RelativeDateTimeFormatter` fed the day count
+  (`.named`, `.beginningOfSentence`) is deterministic and localised.
+- **A failing Swift Testing run in `xcodebuild` looks like a hang**: it then runs `simctl diagnose`
+  for up to 600s. Read the `.xcresult` (`xcresulttool get test-results summary`) instead of waiting.
+- Calls step 5 made where the plan was silent: a quiet category's `next` is its first charge after
+  the month shown; a category whose only charge this month is skipped is quiet; the uncategorised
+  lane is named "No category"; `laneLabel` speaks the currency in full ("Home, 1,259 euros out,
+  3 charges"), as the timeline's labels do, not the symbol form in the interface sketch.
+
+- **Step 6: `simctl spawn booted defaults write com.jdragash.Tilly …` doesn't reach the app**, and
+  editing the container's plist with `plutil` is overwritten by cfprefsd's cache. Write through
+  cfprefsd to the container's path: `simctl spawn booted defaults write "$(simctl
+  get_app_container booted com.jdragash.Tilly data)/Library/Preferences/com.jdragash.Tilly" key value`,
+  with the app terminated. That switches scenario (`tillyDeveloperScenario`) and view (`viewMode`).
+- **Step 6: the category view's header keeps 134pt beside the arrows and the pair** (402 − 20 −
+  248), iPhone 17. A `fixedSize` figure wider than that widened the whole screen past both edges,
+  and "September 2027" wrapped, moving the lanes down. The header now holds each line to one,
+  shrinking to 0.8 and then truncating the category's name, never its total; another year's month
+  reads `September ’27`.
+
+- **Step 7: an overlay inside the category view draws beneath the shell's glass controls**, which
+  are a later overlay on the shell. The readout rides a `PreferenceKey` up to the shell and is
+  drawn by `overlayPreferenceValue` after the controls. The prototype also let it cover the header.
+- **A `DragGesture(minimumDistance: 0)` on content inside a scrolling `ScrollView` still lets a
+  vertical swipe scroll** (iOS 27 simulator, accessibility-large, where the lanes scroll), and a
+  sideways drag still reads. When the scroll view takes a touch over, `onEnded` never runs;
+  `@GestureState` resets regardless, so clear the line from its change.
+- **Don't start a touch's clock from `onChange` of gesture state.** It lands a view update after
+  `onEnded`, which had already cleared it, and the stale start made the next tap read as a hold
+  and not open. Set it in the first `onChanged`; clear it in `onEnded` and on the state reset.
+- Holding a drag for a screenshot: a background `sleep 4; simctl io booted screenshot` alongside a
+  `touch_path` whose last points hold for 1000ms each.
 
 ## If a step is wrong
 

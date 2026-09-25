@@ -77,7 +77,8 @@ The month name, and under it on its own line, secondary, the figure: the current
 what is still to go, and says so, `−€162 left`, or `€0 left` once it runs out. Every other month
 carries its plain total with no qualifier. That header is the headline number, so it doesn't get a
 second home above the content. Totals exclude skipped occurrences. A month name carries its year
-only when that year isn't the current one.
+only when that year isn't the current one, and in two digits, `September ’27`; VoiceOver hears it
+in full.
 
 ### One list, and the future runs on, five years or to your last payment
 
@@ -145,7 +146,8 @@ The header is the timeline's, with a glass pair of arrows left of the view butto
 month at a time and stopping, dimmed, at the oldest charge and the timeline's last month.
 
 Dragging across the lanes starts on touch and moves charge to charge, never stopping on an empty
-day, with a tick at each. Above the finger a readout names that day's charges and nothing else.
+day, with a tick at each. A readout names that day's charges and nothing else, in the header's row,
+whose name and controls step aside while the finger is down; a name shortens before an amount does.
 Tapping a dot opens its charge in the editor. Tapping a lane's emoji picks the category out: the
 other lanes fade and the header figure becomes its total, until it's tapped again.
 

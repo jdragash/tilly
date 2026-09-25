@@ -31,4 +31,14 @@ extension Expense {
             )
         }
     }
+
+    /// Each expense's snapshot id to its category's id, for `CategoryMonthBuilder`. An expense
+    /// with no category is left out.
+    static func categoryMap(_ expenses: [Expense]) -> [UUID: UUID] {
+        var map: [UUID: UUID] = [:]
+        for expense in expenses {
+            if let category = expense.category { map[expense.snapshot.id] = category.id }
+        }
+        return map
+    }
 }

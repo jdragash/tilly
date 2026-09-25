@@ -37,9 +37,19 @@ struct MonthKey: Hashable, Comparable, Identifiable, Sendable {
         return DateInterval(start: calendar.startOfDay(for: first), end: calendar.startOfDay(for: last))
     }
 
-    /// "September" when `year` is the year `today` falls in; "September 2025" otherwise —
-    /// the year only earns its place once it resolves a genuine ambiguity.
+    /// "September" when `year` is the year `today` falls in; "September ’25" otherwise —
+    /// the year only earns its place once it resolves a genuine ambiguity, and two digits say it
+    /// in the room a header has beside the glass.
     func name(in calendar: Calendar, relativeTo today: Date, locale: Locale) -> String {
+        formatted(in: calendar, relativeTo: today, locale: locale, yearFormat: "\u{2019}yy")
+    }
+
+    /// `name`, with the year in full for VoiceOver, which reads "’25" as punctuation and a number.
+    func spokenName(in calendar: Calendar, relativeTo today: Date, locale: Locale) -> String {
+        formatted(in: calendar, relativeTo: today, locale: locale, yearFormat: "yyyy")
+    }
+
+    private func formatted(in calendar: Calendar, relativeTo today: Date, locale: Locale, yearFormat: String) -> String {
         let currentYear = calendar.component(.year, from: today)
         let first = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
 
@@ -47,7 +57,7 @@ struct MonthKey: Hashable, Comparable, Identifiable, Sendable {
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone
         formatter.locale = locale
-        formatter.dateFormat = year == currentYear ? "LLLL" : "LLLL yyyy"
+        formatter.dateFormat = year == currentYear ? "LLLL" : "LLLL \(yearFormat)"
         return formatter.string(from: first)
     }
 

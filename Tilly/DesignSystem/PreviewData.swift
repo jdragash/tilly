@@ -18,12 +18,12 @@ enum PreviewData {
             calendar.date(from: DateComponents(year: year, month: month + monthOffset, day: day))!
         }
 
-        let home = ExpenseCategory(name: "Home", emoji: "🏠")
-        let subscriptions = ExpenseCategory(name: "Subscriptions", emoji: "📺")
-        let phone = ExpenseCategory(name: "Phone", emoji: "📱")
-        let car = ExpenseCategory(name: "Car", emoji: "🚗")
-        let health = ExpenseCategory(name: "Health", emoji: "🏋️")
-        let loans = ExpenseCategory(name: "Loans", emoji: "💳")
+        let home = ExpenseCategory(name: "Home", emoji: "🏠", colour: .blue, sortOrder: 0)
+        let subscriptions = ExpenseCategory(name: "Subscriptions", emoji: "📺", colour: .orange, sortOrder: 1)
+        let phone = ExpenseCategory(name: "Phone", emoji: "📱", colour: .aqua, sortOrder: 2)
+        let car = ExpenseCategory(name: "Car", emoji: "🚗", colour: .yellow, sortOrder: 3)
+        let health = ExpenseCategory(name: "Health", emoji: "🏋️", colour: .magenta, sortOrder: 4)
+        let loans = ExpenseCategory(name: "Loans", emoji: "💳", colour: .green, sortOrder: 5)
         [home, subscriptions, phone, car, health, loans].forEach(context.insert)
 
         let rent = Expense(name: "Rent", amount: 950, anchorDate: anchor(day: 1, monthOffset: -historyMonths), category: home)
