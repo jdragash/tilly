@@ -96,7 +96,7 @@ his life aren't, and an example of a banned disclosure is itself a disclosure.
 
 ## Code
 
-- Swift 6, SwiftUI, SwiftData. iOS 26, iPhone and portrait only. No third-party dependencies.
+- Swift 6, SwiftUI, SwiftData. iOS 27, iPhone and portrait only. No third-party dependencies.
 - **Swift Testing** (`@Test`, `#expect`), not XCTest.
 - SwiftData models stay CloudKit-compatible. More in `.claude/rules/` (views and tokens, controls, engine).
 - **Building a pinned or scroll-anchored list anywhere?** Read `.claude/rules/swiftui-scrolling.md`.
