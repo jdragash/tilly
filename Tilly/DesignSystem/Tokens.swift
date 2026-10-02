@@ -35,6 +35,17 @@ enum Tokens {
         static let nextRow: Font = .subheadline
         static let readoutDate: Font = .footnote.weight(.semibold)
         static let readoutRow: Font = .footnote
+        /// The calendar's month title, over its figure.
+        static let calendarTitle: Font = .title.weight(.bold)
+        static let weekday: Font = .caption2.weight(.semibold)
+        static let dayNumber: Font = .footnote
+        static let dayNumberToday: Font = .footnote.weight(.semibold)
+        /// A day's one emoji; two share a smaller size so they fit side by side.
+        static let dayEmoji: Font = .title3
+        static let dayEmojiPair: Font = .callout
+        /// The "+N" after a day's two emoji.
+        static let dayMore: Font = .caption2.weight(.bold)
+        static let dayTotal: Font = .caption2.weight(.semibold)
     }
 
     enum Stroke {
@@ -56,6 +67,8 @@ enum Tokens {
         static let headerMin: CGFloat = 0.8
         /// A lane's total, before it would run out of its column.
         static let laneTotalMin: CGFloat = 0.5
+        /// A day's total, before it would run out of its column.
+        static let dayTotalMin: CGFloat = 0.6
         /// The dots on the day under a dragging finger; from the prototype.
         static let dotOnLine: CGFloat = 1.18
     }
@@ -83,6 +96,9 @@ enum Tokens {
         static let accent: Color = .accentColor
         /// The editor's trash button, and its confirmation dialog's destructive buttons.
         static let destructive: Color = .red
+        /// Today's circle on the calendar, as Calendar draws it, and the number inside it.
+        static let today: Color = Color(.systemRed)
+        static let onToday: Color = .white
     }
 
     enum Surface {
@@ -152,6 +168,19 @@ enum Tokens {
         static let readoutDateBottom: CGFloat = 2
         static let readoutRowVertical: CGFloat = 1
         static let readoutGap: CGFloat = 6
+        /// Between the calendar's cells and weekday columns; from the prototype.
+        static let gridGap: CGFloat = 2
+        /// A day's second emoji tucks under the first by this much.
+        static let emojiOverlap: CGFloat = 4
+        /// Before the "+N" that follows a day's two emoji.
+        static let dayMoreGap: CGFloat = 5
+        /// Inside a day cell, above its number and below its total.
+        static let cellTop: CGFloat = 4
+        static let cellBottom: CGFloat = 6
+        /// Between the header row and the calendar's month title.
+        static let titleTop: CGFloat = 8
+        /// Between the title block and the weekday row.
+        static let titleBottom: CGFloat = 12
     }
 
     enum Size {
@@ -220,6 +249,14 @@ enum Tokens {
         /// a wheel's natural width is unbounded, so equal thirds truncated "12 payments".
         static let wheelInterval: CGFloat = 64
         static let wheelUnit: CGFloat = 96
+        /// A calendar row's height; a six-week month shrinks to the second so the grid still fits.
+        /// From the prototype.
+        static let calendarRow: CGFloat = 80
+        static let calendarRowSixWeeks: CGFloat = 68
+        /// Today's circle round its day number.
+        static let todayCircle: CGFloat = 22
+        /// How far a sideways drag must go before it pages the month.
+        static let pageSwipe: CGFloat = 60
     }
 
     enum Motion {

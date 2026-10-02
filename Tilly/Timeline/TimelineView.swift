@@ -39,6 +39,11 @@ struct TimelineView: View {
     @AppStorage("viewMode") private var mode: ViewMode = .firstRun
     /// The month the category view shows. Set properly once the window is.
     @State private var categoryMonth = MonthKey(containing: Date(), calendar: .current)
+    /// How far the Calendar is zoomed, and the month its grid shows (a `MonthKey.id`; negative until
+    /// one has been chosen). Both are kept across launches. `.year` isn't reachable yet, and reads
+    /// as the month.
+    @AppStorage("calendarLevel") private var level: CalendarLevel = .month
+    @AppStorage("calendarMonthID") private var calendarMonthID = -1
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "TimelineView")
     private static let scrollSpace = "timelineScroll"
@@ -141,15 +146,23 @@ struct TimelineView: View {
     /// for laying itself out again. With no expenses both views are the empty state.
     private func content(topInset: CGFloat, bottomInset: CGFloat) -> some View {
         let showsCategories = mode == .categories && !expenses.isEmpty && window != nil
+        let showsCalendarMonth = mode == .timeline && level != .day && !expenses.isEmpty && window != nil
+        let coversTimeline = showsCategories || showsCalendarMonth
         return ZStack {
             timeline(topInset: topInset)
-                .opacity(showsCategories ? 0 : 1)
-                .allowsHitTesting(!showsCategories)
-                .accessibilityHidden(showsCategories)
+                .opacity(coversTimeline ? 0 : 1)
+                .allowsHitTesting(!coversTimeline)
+                .accessibilityHidden(coversTimeline)
             if showsCategories, let window {
                 CategoryView(
                     month: $categoryMonth, window: window, expenses: expenses, today: today,
                     bottomClearance: bottomClearance, onOpen: openEntry
+                )
+            }
+            if showsCalendarMonth, let window {
+                CalendarMonthView(
+                    month: calendarMonthBinding(in: window), window: window,
+                    calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay
                 )
             }
         }
@@ -164,6 +177,14 @@ struct TimelineView: View {
                         canGoBack: categoryMonth > window.floor,
                         canGoForward: categoryMonth < window.ceiling,
                         step: { categoryMonth = categoryMonth.advanced(by: $0) }
+                    )
+                }
+                if showsCalendarMonth, let window {
+                    let shown = shownCalendarMonth(in: window)
+                    MonthArrows(
+                        canGoBack: shown > window.floor,
+                        canGoForward: shown < window.ceiling,
+                        step: { calendarMonthID = shown.advanced(by: $0).id }
                     )
                 }
                 HeaderControls(mode: $mode) { isEditorPresented = true }
@@ -278,6 +299,46 @@ struct TimelineView: View {
         }
     }
 
+    // MARK: The calendar's month
+
+    private static func monthKey(id: Int) -> MonthKey {
+        MonthKey(year: id / 12, month: id % 12 + 1)
+    }
+
+    /// The month the grid shows, held inside the window.
+    private func shownCalendarMonth(in window: TimelineWindow) -> MonthKey {
+        guard calendarMonthID >= 0 else { return window.current }
+        return min(max(Self.monthKey(id: calendarMonthID), window.floor), window.ceiling)
+    }
+
+    private func calendarMonthBinding(in window: TimelineWindow) -> Binding<MonthKey> {
+        Binding(
+            get: { shownCalendarMonth(in: window) },
+            set: { calendarMonthID = $0.id }
+        )
+    }
+
+    /// Built on every change rather than cached, as the lanes are: a saved edit changes the
+    /// instances this view holds, which `.onChange(of:)` can't see.
+    private func calendarMonthModel(in window: TimelineWindow) -> CalendarMonth {
+        let month = shownCalendarMonth(in: window)
+        let built = TimelineBuilder.month(
+            month, expenses: Expense.timelineExpenses(expenses), today: today, calendar: calendar, extrasOnly: false
+        )
+        let section = MonthSection(
+            month: built.month, entries: built.entries, total: built.total, remaining: built.remaining,
+            isCurrent: month == window.current, showsExtrasOnly: built.showsExtrasOnly
+        )
+        return CalendarMonthBuilder.month(section, today: today, calendar: calendar)
+    }
+
+    /// A day with charges opens the days: the timeline, at that day's month. The timeline stays
+    /// mounted beneath the grid, so its proxy is there to scroll.
+    private func openDay(_ date: Date) {
+        level = .day
+        scrollProxy?.scrollTo(MonthKey(containing: date, calendar: calendar).id, anchor: .top)
+    }
+
     /// A row tap builds the session fresh from the store, keyed on what the entry itself
     /// carries — never from `sections`, which is a snapshot rebuilt on every change. See
     /// "Opening a charge edits it" in `docs/DESIGN.md`.
@@ -300,8 +361,11 @@ struct TimelineView: View {
             MonthButton(month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today) {
                 if mode == .categories, let window {
                     categoryMonth = window.current
-                } else {
-                    returnToResting()
+                } else if level == .day {
+                    // Until the year exists, the way back from the days is the month.
+                    level = .month
+                } else if let window {
+                    calendarMonthID = window.current.id
                 }
             }
             Spacer()
@@ -335,6 +399,15 @@ struct TimelineView: View {
             // a bill's change moves its floor or ceiling past the month it shows.
             let month = window == nil ? newWindow.current : categoryMonth
             categoryMonth = min(max(month, newWindow.floor), newWindow.ceiling)
+            // The calendar's month is kept across launches: a stored one outside the window, or
+            // none, starts on the current month; after that it's clamped in as the lanes' is.
+            if window == nil {
+                let stored = Self.monthKey(id: calendarMonthID)
+                let inside = calendarMonthID >= 0 && stored >= newWindow.floor && stored <= newWindow.ceiling
+                calendarMonthID = (inside ? stored : newWindow.current).id
+            } else {
+                calendarMonthID = min(max(shownCalendarMonth(in: window ?? newWindow), newWindow.floor), newWindow.ceiling).id
+            }
         }
         window = newWindow
         isLastPayment = newWindow.map {
