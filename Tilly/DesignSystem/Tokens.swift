@@ -46,6 +46,8 @@ enum Tokens {
         /// The "+N" after a day's two emoji.
         static let dayMore: Font = .caption2.weight(.bold)
         static let dayTotal: Font = .caption2.weight(.semibold)
+        /// The level's name in a back button, as Calendar's top left reads.
+        static let backButton: Font = .body
     }
 
     enum Stroke {
@@ -181,6 +183,10 @@ enum Tokens {
         static let titleTop: CGFloat = 8
         /// Between the title block and the weekday row.
         static let titleBottom: CGFloat = 12
+        /// Inside a back button: chevron to name, and its ends; from the prototype.
+        static let backButtonGap: CGFloat = 4
+        static let backButtonLeading: CGFloat = 10
+        static let backButtonTrailing: CGFloat = 14
     }
 
     enum Size {
@@ -257,6 +263,8 @@ enum Tokens {
         static let todayCircle: CGFloat = 22
         /// How far a sideways drag must go before it pages the month.
         static let pageSwipe: CGFloat = 60
+        /// A scroll target with no height of its own, so landing it needs no target height.
+        static let scrollMarker: CGFloat = 0
     }
 
     enum Motion {
@@ -270,6 +278,8 @@ enum Tokens {
         static let returnDurationMax: TimeInterval = 0.9
         /// The dots settling onto and off the dragging line; from the prototype.
         static let scrub: TimeInterval = 0.12
+        /// A tapped day's rows fading from marked, once the timeline has landed on them.
+        static let dayMark: TimeInterval = 1.2
         /// The header and its controls fading aside while dragging across the lanes,
         /// and back. Out is quick so nothing lies under the readout as it lands; back is a touch
         /// slower. Guesses: 0.2s both ways felt slow in the Simulator.

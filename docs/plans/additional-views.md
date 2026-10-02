@@ -533,6 +533,17 @@ and "The timeline is one list…" where it names the timeline as the view.
   construction site a compile error: `TimelineView` (3), `CategoryMonthBuilder` (3), tests.
 - A failing `xcodebuild test` can outrun a 600s tool timeout (`simctl diagnose`, `simulator.md`);
   read the failures from the log rather than waiting on the summary.
+- Blocks sharing one `LazyVGrid` need distinct id spaces: `0..<n` for neighbouring days collided
+  with the days' own `1...31` and the trailing cells drew 29, 30 where 1, 2 belonged.
+- **A lazy list resolves only ids it has laid out.** `scrollTo` a row in a month it hadn't built
+  didn't move. Scroll to the month, then to the row a turn later; both unanimated, the second
+  landed (59.86 under a 60pt header). A zero-high marker as the target needs no row height.
+- **A header the list stops drawing keeps its last offset,** which then lies: after a jump the
+  month under the middle read June from a stale entry. Clear it in the header's `onDisappear`.
+- `ScrollGeometry.containerSize.height` already excludes the bottom `contentMargins` (660 =
+  718 − 58). The list's height is the viewport less the top row, derived, not measured.
+- The Simulator tool's screenshots lag about a second behind a tap; `simctl io booted
+  screenshot` doesn't.
 
 ## If a step is wrong
 
