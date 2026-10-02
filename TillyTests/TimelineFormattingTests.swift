@@ -15,8 +15,8 @@ import Testing
         calendar.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
-    @Test func anAmountCarriesAMinusAndNoDecimals() {
-        #expect(TimelineFormatting.amount(950, locale: Self.locale) == "\u{2212}\u{20AC}950")
+    @Test func anAmountIsTheMagnitudeWithNoDecimals() {
+        #expect(TimelineFormatting.amount(950, locale: Self.locale) == "\u{20AC}950")
     }
 
     @Test func aZeroTotalCarriesNoSign() {
@@ -141,17 +141,17 @@ import Testing
         let section = MonthSection(
             month: MonthKey(year: 2027, month: 9), entries: [], total: 1521, remaining: 162, isCurrent: true
         )
-        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{2212}\u{20AC}162 left")
+        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}162 left")
     }
 
     @Test func aPastMonthsFigureIsAPlainTotal() {
         let section = MonthSection(month: MonthKey(year: 2027, month: 8), entries: [], total: 1539, remaining: 0, isCurrent: false)
-        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{2212}\u{20AC}1,539")
+        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}1,539")
     }
 
     @Test func aFutureMonthsFigureIsAPlainTotal() {
         let section = MonthSection(month: MonthKey(year: 2027, month: 10), entries: [], total: 1400, remaining: 1400, isCurrent: false)
-        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{2212}\u{20AC}1,400")
+        #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}1,400")
     }
 
     @Test func aSpentOutCurrentMonthReadsZeroLeft() {
