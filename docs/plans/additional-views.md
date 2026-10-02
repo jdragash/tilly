@@ -552,6 +552,8 @@ and "The timeline is one list…" where it names the timeline as the view.
   can't scroll a month back up, and it settles lower: that is the content, not the anchoring.
 - A stock segmented `Picker` inside `glassEffect` is 37pt, taller than a `calendarTitle` line, and
   reads as a pill in a pill; alone it is 32pt.
+- At accessibility sizes a card header's trailing total squeezed the name to a letter a line; the
+  header stacks there, as `OccurrenceRow` does.
 
 ## If a step is wrong
 

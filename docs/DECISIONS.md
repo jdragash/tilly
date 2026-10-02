@@ -61,9 +61,9 @@ reaches a view through `Tokens`, dimensions included, so the design pass is a on
 
 ## The timeline is one list, future above and past below, and the future runs five years on
 **Decided:** 2026-09-19
-Months ahead run continuously above the current one, like Calendar, for as long as any bill does,
-out to five years. History runs continuously below to the oldest charge. A month button returns you
-to this month.
+The calendar's closest level. Months ahead run continuously above the current one, like Calendar,
+for as long as any bill does, out to five years. History runs continuously below to the oldest
+charge. A month button returns you to this month.
 - **Rejected — a century ahead, so no reader could reach the end:** the reader sits at the bottom of
   one long list, and the scroll back to this month on launch lays out every month above it first.
   Measured: 34s of work at launch, and still ~380ms with each month built only when drawn.
@@ -91,16 +91,31 @@ not the process survived. The current month decides where you land only on first
 - **Revisit when:** the list's two scroll coordinate spaces are calibrated (`.claude/rules/swiftui-scrolling.md`).
 
 ## Views switch in place from a menu beside +, and everything else is a sheet
-**Decided:** 2026-09-19, views added 2026-09-24
-Laid out like iOS Calendar: a view button and + as one glass pair in the pinned header's row, the
-month button bottom left, settings bottom right. The view button's menu lists the views, as
-Calendar's does, so more can join it. The editor and settings open as sheets. Categories live in Settings.
+**Decided:** 2026-09-19, views added 2026-09-24, All bills and the top row 2026-10-02
+Laid out like iOS Calendar: a view button and + as one glass pair at the top row's right end, the
+month button bottom left, and All bills and settings in one capsule bottom right. The view button's
+menu lists Calendar and Categories, so more can join it. The editor, All bills and settings open as
+sheets; categories live in Settings. Over the days the top row holds the back button, and month
+headers pin beneath it.
 - **Rejected — a toggle that flips between two views:** a tap fewer, but the icon must show where you'd go, and a third view has nowhere to live.
-- **Rejected — a list of every expense:** the timeline is that list, and grouped by category it became half an insights screen.
+- **Rejected — All bills as a view in the menu:** tried on the prototype's switches; the sheet won, opened from beside settings.
 - **Rejected — a categories button:** categories are set up rarely, which is what Settings is for.
-- **Rejected — the buttons in their own strip above the pinned header:** gives up a row of the screen for good.
 - **Rejected — a return pill that appears 240pt away:** a control that comes and goes; the month button is always there.
 - **Rejected — pushed pages:** they replace the timeline instead of sitting over it.
+
+## Calendar is three zoom levels: the year, a month, and the days
+**Decided:** 2026-10-01
+Looking ahead reads at three distances of one place, as in Calendar: the next twelve months as small
+calendars, one month as a grid, and the timeline as the days. Extras are bills that don't charge in
+every calendar month, and one All / Extras toggle holds at every level, so the levels always show the
+same charges. A month is heavy when its extras reach a fifth of the usual month, the median of its
+twelve months' monthly bills.
+- **Rejected — a view per question (heavy months, due soon, what's changing):** looking months ahead is occasional, and three views of one calendar crowd the menu.
+- **Rejected — the year showing only what comes on top:** the levels stopped reading as one set of data.
+- **Rejected — lanes beneath the calendar:** overload; the lanes stay a view of their own.
+- **Rejected — "heavy" against a budget or this month:** a budget is a target the user must set (tenet 4); the usual month is their own.
+- **Rejected — what's about to change as its own picture:** three directions, all confusing; rings on the year carry the plain cases.
+- **Revisit when:** planned one-offs arrive; they are extras by this definition.
 
 ## Every expense has a category, and a category is an emoji, a name and a colour
 **Decided:** 2026-09-19, colour and order added 2026-09-24

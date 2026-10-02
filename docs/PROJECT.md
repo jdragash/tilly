@@ -80,7 +80,7 @@ ship.
 
 ## In scope for v1
 
-Recurring expenses and the timeline that shows them. Creating and editing recurrence
+Recurring expenses and the calendar that shows them. Creating and editing recurrence
 rules, handling occurrences that deviate from their rule, user-created categories, and
 enough insight to see where the money goes.
 

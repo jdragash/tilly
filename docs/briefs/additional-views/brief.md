@@ -181,3 +181,12 @@ Then, for the build: Calendar replaces Timeline in the view menu, and the timeli
 closest zoom. Amounts drop the minus sign everywhere. The lanes stay as they are. Tapping a bill
 in All bills opens its next charge in the editor. Planned one-offs wait for their own brief, so
 the version has none. Plan: `docs/plans/additional-views.md`.
+
+### 2026-10-02: built
+
+Calendar replaces Timeline in the view menu: the year, a month, and the timeline as the days, with
+one All / Extras toggle held at every level, and All bills as a sheet from beside settings. The
+toggle is the stock segmented control, not on glass: on glass it read as a pill in a pill. Two
+developer scenarios, only monthly bills and one giant bill, show the year at both ends. Left open:
+on an iPhone a flick in progress may still beat the toggle, as it beats the month button; and in a
+year where every bill ends, a month past the last payment opens the last month with charges.
