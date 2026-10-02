@@ -76,10 +76,35 @@ project, what was deliberately left out, and the `Brief:` / `Plan:` trailers.
 
 Before asking, have ready:
 - What changed and why, and which brief it implements
+- The version it moves to, if any (below)
 - Screenshots for any UI work — before and after where there's a before
 - Anything deliberately left out, and why
 
 Ask before merging and before pushing. Both, every time.
+
+### Versions
+
+Tilly is `0.x.y` until v1's "Done when" in `ROADMAP.md` holds. A landing moves at most one number:
+
+| The merge | Version |
+|---|---|
+| Something new the app can do | the middle: 0.5.0 → 0.6.0 |
+| Polish or a fix someone using it would notice | the last: 0.6.0 → 0.6.1 |
+| Docs, workflow, exploration, or a redo of something days old | none |
+
+The middle number has no ceiling: 0.12.0 follows 0.11.0. Once every v1 row in `ROADMAP.md` is
+done, tags are `v1.0.0-beta.N` while Jake lives with it, and `v1.0.0` is his call.
+
+To version a landing, the branch's last commit sets `MARKETING_VERSION` in the project (digits
+only, so a beta stays `1.0.0`). After the merge, tag the merge commit, opening the note with what
+someone can now do, and push the tag with the branch:
+
+```
+git tag -a v0.6.0 -m "You can now …"
+git push --follow-tags
+```
+
+`CURRENT_PROJECT_VERSION` stays 1 until TestFlight, then rises with every upload.
 
 ## After merging
 
@@ -93,7 +118,7 @@ Ask before merging and before pushing. Both, every time.
    - Scope that shifted → `docs/ROADMAP.md`, silently
    - A workflow change → the skill or `CLAUDE.md` line itself, with the why in a `meta:` commit
    - Anything else → nowhere. It's in git.
-2. Delete the merged branch, local and remote.
+2. Delete the merged branch, local and remote. Check the tag is on `origin` if one was due.
 3. Run `scripts/doc-budget.sh`. If a feature landed rather than a fix, or the budget fails,
    suggest `tilly-prune` in one line.
 

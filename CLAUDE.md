@@ -119,10 +119,10 @@ and at an accessibility text size.
 
 Present tense, lowercase, scoped: `engine:`, `app:`, `design:`, `docs:`, `meta:` (the workflow). `engine: clamp month-end without sticking`.
 
-**Branch for work with a brief or plan behind it**, or exploration that may be thrown away. Commit
-small certain things (a docs fix, a typo) straight to `main`. Land a branch with
-`git merge --no-ff` and delete it. **No pull requests** until there's CI or an outside
-contribution. **No staging branch** until the first TestFlight build.
+**Branch for work with a brief or plan behind it**, or exploration that may be thrown away; commit
+small certain things straight to `main`. Land a branch with `git merge --no-ff`, delete it, and tag
+a version if what the app can do changed (`tilly-ship`). **No pull requests** until there's CI or an
+outside contribution. **No staging branch** until the first TestFlight build.
 
 **The body is plain English, and opens with what is now true about the project.** "Tilly is an app
 you can launch now", not "creates the Xcode project". Describe a bug as the person using the app
