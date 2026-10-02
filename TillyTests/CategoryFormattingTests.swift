@@ -26,7 +26,7 @@ import Testing
             LaneDot(
                 entry: TimelineEntry(
                     id: "\(index)", expenseID: UUID(), scheduledDate: today, name: "Bill", emoji: category?.emoji,
-                    date: today, amount: amount, state: .charged, endDate: nil, endHasPassed: false
+                    date: today, amount: amount, state: .charged, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
                 ),
                 day: 15
             )

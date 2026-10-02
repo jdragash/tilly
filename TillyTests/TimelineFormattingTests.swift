@@ -36,7 +36,7 @@ import Testing
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Loan", emoji: nil,
             date: Self.date(2026, 9, 18), amount: 120, state: .upcoming,
-            endDate: Self.date(2027, 5, 18), endHasPassed: false
+            endDate: Self.date(2027, 5, 18), endHasPassed: false, isExtra: false, startsRecord: false
         )
         let line = TimelineFormatting.dateLine(for: entry, calendar: Self.calendar, locale: Self.locale)
         #expect(line == "Fri 18 \u{00B7} ends 05/27")
@@ -46,7 +46,7 @@ import Testing
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Gym", emoji: nil,
             date: Self.date(2026, 9, 18), amount: 45, state: .charged,
-            endDate: Self.date(2026, 8, 26), endHasPassed: true
+            endDate: Self.date(2026, 8, 26), endHasPassed: true, isExtra: false, startsRecord: false
         )
         let line = TimelineFormatting.dateLine(for: entry, calendar: Self.calendar, locale: Self.locale)
         #expect(line == "Fri 18 \u{00B7} ended 08/26")
@@ -55,7 +55,7 @@ import Testing
     @Test func aDateLineWithNoEndIsJustTheDay() {
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Rent", emoji: nil,
-            date: Self.date(2026, 9, 18), amount: 950, state: .upcoming, endDate: nil, endHasPassed: false
+            date: Self.date(2026, 9, 18), amount: 950, state: .upcoming, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let line = TimelineFormatting.dateLine(for: entry, calendar: Self.calendar, locale: Self.locale)
         #expect(line == "Fri 18")
@@ -65,7 +65,7 @@ import Testing
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Loan", emoji: nil,
             date: Self.date(2026, 9, 18), amount: 120, state: .upcoming,
-            endDate: Self.date(2027, 5, 18), endHasPassed: false
+            endDate: Self.date(2027, 5, 18), endHasPassed: false, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(for: entry, calendar: Self.calendar, locale: Self.locale)
         #expect(label.contains(", ends May 2027, upcoming"))
@@ -75,7 +75,7 @@ import Testing
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Gym", emoji: nil,
             date: Self.date(2026, 9, 18), amount: 45, state: .charged,
-            endDate: Self.date(2026, 8, 26), endHasPassed: true
+            endDate: Self.date(2026, 8, 26), endHasPassed: true, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(for: entry, calendar: Self.calendar, locale: Self.locale)
         #expect(label.contains(", ended August 2026, charged"))
@@ -84,7 +84,7 @@ import Testing
     @Test func anAccessibilityLabelNamesTheState() {
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 30), name: "Water", emoji: nil,
-            date: Self.date(2027, 1, 30), amount: 38, state: .upcoming, endDate: nil, endHasPassed: false
+            date: Self.date(2027, 1, 30), amount: 38, state: .upcoming, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(for: entry, calendar: Self.calendar, locale: Self.locale)
         #expect(label.contains("Water"))
@@ -96,7 +96,7 @@ import Testing
     @Test func aSpokenAmountNamesTheDevicesOwnCurrency() {
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 30), name: "Rent", emoji: nil,
-            date: Self.date(2027, 1, 30), amount: 950, state: .charged, endDate: nil, endHasPassed: false
+            date: Self.date(2027, 1, 30), amount: 950, state: .charged, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(
             for: entry, calendar: Self.calendar, locale: Locale(identifier: "en_US")
@@ -108,7 +108,7 @@ import Testing
     @Test func aSkippedRowsLabelSaysSkipped() {
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 1), name: "Streaming video", emoji: nil,
-            date: Self.date(2027, 1, 1), amount: 18, state: .skipped, endDate: nil, endHasPassed: false
+            date: Self.date(2027, 1, 1), amount: 18, state: .skipped, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(for: entry, calendar: Self.calendar, locale: Self.locale)
         #expect(label.contains("skipped"))
@@ -116,7 +116,7 @@ import Testing
 
     @Test func aSectionLabelCarriesTheMonthAndItsTotal() {
         let month = MonthKey(year: 2027, month: 9)
-        let section = MonthSection(month: month, entries: [], total: 1521, remaining: 0, isCurrent: false)
+        let section = MonthSection(month: month, entries: [], total: 1521, remaining: 0, isCurrent: false, showsExtrasOnly: false)
         let label = TimelineFormatting.accessibilityLabel(
             for: section, calendar: Self.calendar, today: Self.date(2027, 9, 15), locale: Self.locale
         )
@@ -128,7 +128,7 @@ import Testing
     /// the plain total, and that includes its accessibility label.
     @Test func theCurrentMonthsLabelSaysWhatIsLeft() {
         let month = MonthKey(year: 2027, month: 9)
-        let section = MonthSection(month: month, entries: [], total: 1521, remaining: 162, isCurrent: true)
+        let section = MonthSection(month: month, entries: [], total: 1521, remaining: 162, isCurrent: true, showsExtrasOnly: false)
         let label = TimelineFormatting.accessibilityLabel(
             for: section, calendar: Self.calendar, today: Self.date(2027, 9, 15), locale: Self.locale
         )
@@ -139,24 +139,24 @@ import Testing
 
     @Test func theCurrentMonthsFigureCarriesTheWord() {
         let section = MonthSection(
-            month: MonthKey(year: 2027, month: 9), entries: [], total: 1521, remaining: 162, isCurrent: true
+            month: MonthKey(year: 2027, month: 9), entries: [], total: 1521, remaining: 162, isCurrent: true, showsExtrasOnly: false
         )
         #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}162 left")
     }
 
     @Test func aPastMonthsFigureIsAPlainTotal() {
-        let section = MonthSection(month: MonthKey(year: 2027, month: 8), entries: [], total: 1539, remaining: 0, isCurrent: false)
+        let section = MonthSection(month: MonthKey(year: 2027, month: 8), entries: [], total: 1539, remaining: 0, isCurrent: false, showsExtrasOnly: false)
         #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}1,539")
     }
 
     @Test func aFutureMonthsFigureIsAPlainTotal() {
-        let section = MonthSection(month: MonthKey(year: 2027, month: 10), entries: [], total: 1400, remaining: 1400, isCurrent: false)
+        let section = MonthSection(month: MonthKey(year: 2027, month: 10), entries: [], total: 1400, remaining: 1400, isCurrent: false, showsExtrasOnly: false)
         #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}1,400")
     }
 
     @Test func aSpentOutCurrentMonthReadsZeroLeft() {
         let section = MonthSection(
-            month: MonthKey(year: 2027, month: 9), entries: [], total: 1521, remaining: 0, isCurrent: true
+            month: MonthKey(year: 2027, month: 9), entries: [], total: 1521, remaining: 0, isCurrent: true, showsExtrasOnly: false
         )
         #expect(TimelineFormatting.headerFigure(for: section, locale: Self.locale) == "\u{20AC}0 left")
     }

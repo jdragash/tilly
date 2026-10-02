@@ -56,10 +56,11 @@ import Testing
         let (expenses, _) = try Self.seeded(.nothingChargedYet)
         #expect(expenses.count == 2)
         let built = TimelineBuilder.month(
-            Self.currentMonth, expenses: expenses.map(\.timelineExpense), today: Self.today, calendar: Self.calendar
+            Self.currentMonth, expenses: expenses.map(\.timelineExpense), today: Self.today, calendar: Self.calendar,
+            extrasOnly: false
         )
         let section = MonthSection(
-            month: built.month, entries: built.entries, total: built.total, remaining: built.remaining, isCurrent: true
+            month: built.month, entries: built.entries, total: built.total, remaining: built.remaining, isCurrent: true, showsExtrasOnly: false
         )
         #expect(!section.entries.isEmpty)
         #expect(!section.hasChargedEntry)

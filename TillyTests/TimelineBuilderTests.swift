@@ -17,19 +17,21 @@ import TillyCore
         calendar.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
-    /// A monthly-recurring expense anchored exactly on `date`, so within a one-month query
-    /// window it produces at most one occurrence, on that date.
+    /// A monthly-recurring expense (or every `interval` `unit`s) anchored exactly on `date`, so
+    /// within a one-month query window it produces at most one occurrence, on that date.
     static func expense(
         name: String = "Test",
         amount: Decimal? = 10,
         anchoredOn anchor: Date,
+        interval: Int = 1,
+        unit: RecurrenceUnit = .month,
         emoji: String? = nil,
         endDate: Date? = nil,
         seriesEndDate: Date? = nil,
         isArchived: Bool = false,
         overrides: [OccurrenceOverride] = []
     ) -> TimelineExpense {
-        let rule = RecurrenceRule(interval: 1, unit: .month, anchorDate: anchor, endDate: endDate)
+        let rule = RecurrenceRule(interval: interval, unit: unit, anchorDate: anchor, endDate: endDate)
         let snapshot = ExpenseSnapshot(id: UUID(), amount: amount, isEstimate: false, rule: rule, isArchived: isArchived)
         return TimelineExpense(
             name: name, emoji: emoji, snapshot: snapshot, overrides: overrides,
@@ -40,9 +42,10 @@ import TillyCore
     static func month(
         _ expenses: [TimelineExpense],
         key: MonthKey = thisMonth,
-        today: Date = today
+        today: Date = today,
+        extrasOnly: Bool = false
     ) -> MonthSection {
-        TimelineBuilder.month(key, expenses: expenses, today: today, calendar: calendar)
+        TimelineBuilder.month(key, expenses: expenses, today: today, calendar: calendar, extrasOnly: extrasOnly)
     }
 
     // MARK: Shape and ordering
@@ -304,5 +307,46 @@ import TillyCore
     @Test func aMonthInAnotherYearIsSpokenWithItsYearInFull() {
         let name = MonthKey(year: 2025, month: 9).spokenName(in: Self.calendar, relativeTo: Self.today, locale: Locale(identifier: "en_IE"))
         #expect(name == "September 2025")
+    }
+
+    // MARK: Extras and records
+
+    @Test func monthlyEntryIsNotExtra() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10))])
+        #expect(section.entries.map(\.isExtra) == [false])
+    }
+
+    @Test func quarterlyEntryIsExtra() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), interval: 3, unit: .month)])
+        #expect(section.entries.map(\.isExtra) == [true])
+    }
+
+    @Test func firstChargeStartsRecord() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10))])
+        #expect(section.entries.map(\.startsRecord) == [true])
+    }
+
+    @Test func laterChargeDoesNotStartRecord() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2026, 12, 10))])
+        #expect(section.entries.count == 1)
+        #expect(section.entries.map(\.startsRecord) == [false])
+    }
+
+    @Test func extrasOnlyDropsUsualEntries() {
+        let usual = Self.expense(name: "Rent", anchoredOn: Self.date(2027, 1, 3))
+        let extra = Self.expense(name: "Insurance", anchoredOn: Self.date(2027, 1, 10), interval: 3, unit: .month)
+        let section = Self.month([usual, extra], extrasOnly: true)
+        #expect(section.entries.map(\.name) == ["Insurance"])
+        #expect(section.showsExtrasOnly)
+        #expect(!Self.month([usual, extra]).showsExtrasOnly)
+    }
+
+    @Test func extrasOnlyTotalsCountExtrasAlone() {
+        let usual = Self.expense(name: "Rent", amount: 100, anchoredOn: Self.date(2027, 1, 3))
+        let charged = Self.expense(name: "Tax", amount: 30, anchoredOn: Self.date(2027, 1, 10), interval: 12, unit: .month)
+        let upcoming = Self.expense(name: "Insurance", amount: 45, anchoredOn: Self.date(2027, 1, 20), interval: 3, unit: .month)
+        let section = Self.month([usual, charged, upcoming], extrasOnly: true)
+        #expect(section.total == 75)
+        #expect(section.remaining == 45)
     }
 }

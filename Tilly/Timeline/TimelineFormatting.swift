@@ -72,8 +72,12 @@ enum TimelineFormatting {
 
     /// "€162 left" for the current month; "€1,539" for every other month. A current month
     /// with nothing left reads "€0 left". A collapsed bar does not call this; it always shows
-    /// `amount(section.total)`.
+    /// `amount(section.total)`. A section built with only extras reads "+€351 on top" for every
+    /// month, the current one included, or "Nothing on top" when it has no entries.
     static func headerFigure(for section: MonthSection, locale: Locale = .current) -> String {
+        if section.showsExtrasOnly {
+            return section.isEmpty ? "Nothing on top" : "+\(amount(section.total, locale: locale)) on top"
+        }
         guard section.isCurrent else { return amount(section.total, locale: locale) }
         return "\(amount(section.remaining, locale: locale)) left"
     }
