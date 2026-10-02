@@ -2,16 +2,7 @@
 
 The visual and interaction rules as they stand. Present tense, rules only. The tenets they serve
 are in `PROJECT.md`, the principles behind them in `TASTE.md`, and the evidence in
-`INSPIRATION.md`.
-
----
-
-## Tokens
-
-Every view refers to `Tokens`, never to a raw value, dimensions included; the seam check is in
-`.claude/rules/views-and-tokens.md`. In v1 tokens alias system values: system components supply Liquid Glass,
-Dynamic Type, dark mode and VoiceOver, and the indirection makes the design pass a one-file change.
-Screens add the tokens they need. The design pass layers on system materials rather than replacing them.
+`INSPIRATION.md`. Every value reaches a view through `Tokens` (`DECISIONS.md`).
 
 ---
 
@@ -42,8 +33,9 @@ Settings keeps the categories in your order: drag to reorder, tap a colour to ch
 
 ### Amounts
 
-No amount carries a sign: `€950`, and a zero is `€0`. Amounts round to whole units before anything
-is totalled, so a total always equals the figures above it.
+No amount carries a sign: `€950`, and a zero is `€0`. Amounts show in whole units: enter 74.10,
+see 74. Cents may be entered, and amounts round before anything is totalled, so a total always
+equals the figures above it.
 
 ---
 
@@ -56,7 +48,8 @@ Tapping a month in the year opens it. Tapping a day with charges opens the timel
 first charge just under its month's header, the day's rows marked and fading. A back button top left
 goes out a level: `‹ Year` over a month, and over the days the month under the middle of the list,
 `‹ October`. A level grows out of what was tapped, a month from its place in the year, and shrinks
-back into it, or crossfades under Reduce Motion. The app reopens on the level and month left on.
+back into it, or crossfades under Reduce Motion. The app reopens on the level and month you left,
+at the month's top, however long you were gone; the current month decides only on first run.
 
 ### The year
 
@@ -64,17 +57,17 @@ The next twelve months from this one, not paged: `Oct – Sep` over the year's t
 month, the median of the twelve months' monthly bills. Each month is labelled with its total, bold
 when its extras reach a fifth of the usual month, measured against your own months, never a budget.
 A day of monthly bills is a grey dot; an extra is a dot in its category's colour, larger when the
-day's extras reach that fifth; a ring marks a monthly bill that starts, changes price or ends, dashed
-at €0. Today is red. A key under the months says what each mark means. Someone whose bills never vary
-sees a year of grey dots and `Every month is €1,390. A yearly renewal would show in colour.`
+day's extras reach that fifth; a ring marks a monthly bill that starts, changes price or ends,
+dashed at €0. Today is red. A key under the months says what each mark means. Someone whose bills
+never vary sees a year of grey dots and `Every month is €1,390. A yearly renewal would show in
+colour.`
 
 ### The month
 
 A grid from the week's first day, capped at `xxxLarge` as Calendar's is. A day shows its costliest
-charge's emoji, two overlapped and `+N` beyond, and its total; an upcoming day sits back as an upcoming
-row does; neighbouring months' days show only their number. Arrows and a swipe page it, from the
-oldest charge to the timeline's last month. Under its name, the header's figure, or `Nothing this
-month`.
+charge's emoji, two overlapped and `+N` beyond, and its total; an upcoming day sits back as an
+upcoming row does; neighbouring months' days show only their number. Arrows and a swipe page it,
+across the timeline's span. Under its name, the header's figure, or `Nothing this month`.
 
 ### All or Extras
 
@@ -84,6 +77,15 @@ one, sits under the top row's right end at every level and holds across levels a
 Extras, the year marks only extras (rings stay), the month and the timeline hold only extras, and
 figures read `+€351 on top` or `Nothing on top`. Switching holds the month being read where it is.
 
+### Getting back
+
+The month button names the current month, `September`, and stays in its level. Over the days it
+scrolls back, with a duration that scales with distance, even mid-flick; over a month it pages back
+to this one; over the year, which already starts now, it isn't there. It stays as it is while you're
+already there, like Calendar's Today. VoiceOver reads "Back to September". It is a system glass
+button at Calendar's size, weight and place, 28pt in from the screen's edges, and the last line of
+history clears it.
+
 ---
 
 ## The timeline
@@ -92,10 +94,8 @@ The calendar's closest level. Icon well, then name with the date beneath it, the
 well holds the category's emoji. A bill that ends adds its last month to the date, `Fri 18 · ends
 05/27`, or `ended 08/26` once that payment is today or past. Nothing else joins that line. Every
 charge is its own row, carrying its own date: no day heading or day total. Rows descend by date, a
-day's charges by amount, ties by name.
-
-No separator between rows, and no `TODAY` badge: space and the change of weight do that work. A
-hairline appears only under a pinned month header, because a rule means something is being closed.
+day's charges by amount, ties by name. No separator between rows, and no `TODAY` badge: space and
+the change of weight do that work.
 
 ### The month header
 
@@ -106,40 +106,30 @@ second home above the content. A month name carries its year only when that year
 one, and in two digits, `September ’27`; VoiceOver hears it in full.
 
 The header pins while its rows scroll under it, beneath the top row of back button and glass pair,
-and hands off when the next arrives; the All / Extras control floats over its right end. Its ground
-is opaque, the page's own paper, so content passing beneath is hidden rather than tinted; glass is
-for things that float over content. It keeps its full size when pinned: condensing would make the
-month you're *in* the same shape as one you could *open*. The hairline appears only while pinned.
+and hands off when the next arrives. Its ground is opaque, the page's own paper, so content passing
+beneath is hidden rather than tinted; glass is for things that float over content. It keeps its full
+size when pinned: condensing would make the month you're *in* the same shape as one you could
+*open*. A hairline appears under it only while pinned, because a rule means something is being
+closed. Behind the status bar the page's own background runs opaque and full width, so a header
+handing off beneath it is hidden: a scrim or a blur won't do.
 
 ### One list, from your oldest charge to five years on
 
-Months ahead run on above the current one, like Calendar, and history runs on below. Nothing to tap
-open, nothing that closes itself. At rest the list sits flush on the current month, however short.
-When it holds nothing charged, it ends with `This fills in as bills go out.` While any bill runs on,
-the list runs five years ahead; once every bill ends it stops at the last payment: `Nothing after May
-2027.` Below, it stops at the oldest occurrence: `Nothing before March.` An empty month isn't listed,
-except this one and next, so no month ever shows €0 for a month the app knows nothing about.
-Expenses are entered for their next occurrence; a deliberately backdated bill is shown.
-
-### Getting back
-
-The month button sits bottom left and names the current month: `September`. It stays in its level.
-Over the days it scrolls back, with a duration that scales with distance, even mid-flick; over a
-month it pages back to this one; over the year, which already starts now, it isn't there. It stays
-as it is while you're already there, like Calendar's Today. VoiceOver reads "Back to September". It
-is a system glass button at Calendar's size, weight and place, 28pt in from the screen's edges, and
-the last line of history clears it.
+Months ahead run on above the current one, like Calendar, all there from the start, and history runs
+on below. Nothing to tap open, nothing that closes itself. At rest the list sits flush on the
+current month, however short. When it holds nothing charged, it ends with `This fills in as bills go
+out.` While any bill runs on, the list runs five years ahead; once every bill ends it stops at the
+last payment: `Nothing after May 2027.` Below, it stops at the oldest occurrence: `Nothing before
+March.` An empty month isn't listed, except this one and next, so no month ever shows €0 for a month
+the app knows nothing about. Expenses are entered for their next occurrence; a deliberately
+backdated bill is shown.
 
 ### Nothing under the reader's eyes moves
 
-The months ahead are all there from the start, so scrolling never inserts anything. When a change
-to a bill, or All / Extras, adds or drops months, the month being read holds where it is, to the
-point. Crossing midnight into a new month moves the header figure and reclassifies passed rows, and
-nothing else. Saving or deleting leaves the list where it was. After a relaunch you return to the
-month you left, at its top; the current month decides only on first run.
-
-Behind the status bar the page's own background runs opaque and full width, so a header handing
-off beneath it is hidden: a scrim or a blur won't do.
+Scrolling never inserts anything. When a change to a bill, or All / Extras, adds or drops months,
+the month being read holds where it is, to the point. Crossing midnight into a new month moves the
+header figure and reclassifies passed rows, and nothing else. Saving or deleting leaves the list
+where it was.
 
 ---
 
@@ -152,8 +142,8 @@ line marks today. Each lane starts with the category's emoji and ends with its m
 shrink to fit, 60pt down to 30pt, then the page scrolls. A category with nothing this month gets a
 line under the lanes, `Nothing in September: 📗 next Nov 3`; on the current month, `Next` lists the
 three soonest charges, at most one per category. The header is the timeline's, with a glass pair of
-arrows left of the view button and +, paging a month at a time and stopping, dimmed, at the oldest
-charge and the timeline's last month.
+arrows left of the view button and +, paging a month at a time across the timeline's span and
+stopping, dimmed, at either end.
 
 Dragging across the lanes starts on touch and moves charge to charge, never stopping on an empty
 day, with a tick at each. A readout names that day's charges and nothing else, in the header's row,
@@ -168,12 +158,12 @@ colour, one of eight, shows here and on the year; the timeline's wells stay grey
 
 A sheet from the list button: every bill once, however many charges it has. Monthly / Yearly at the
 top, kept across launches; Monthly is a bill's year over twelve, so a yearly bill reads as its share
-of a month. The title, `All bills` or the picked category, sits over `€1,563 a month`; chips pick out
-one category. Each category is a card with its total, costliest first, and its bills costliest
+of a month. The title, `All bills` or the picked category, sits over `€1,563 a month`; chips pick
+out one category. Each category is a card with its total, costliest first, and its bills costliest
 first: the name, a line saying what's actually charged when the figure isn't (`€640 yearly`) and
-what's ahead (`€25 until Nov 10`, `from Oct 18`, `ends 12/26`), and the figure. No bill counts. Ended
-bills wait behind `2 ended bills` under the cards, each with what it cost in all. Tapping a bill
-opens its next charge in the editor, an ended one its last.
+what's ahead (`€25 until Nov 10`, `from Oct 18`, `ends 12/26`), and the figure. No bill counts.
+Ended bills wait behind `2 ended bills` under the cards, each with what it cost in all. Tapping a
+bill opens its next charge in the editor, an ended one its last.
 
 ---
 
@@ -190,18 +180,24 @@ it scrolls.
 ### Three buttons: date, category, repeat
 
 Equal thirds under the name, stacking full width at accessibility sizes. The icon says what kind of
-thing, the label its value: a calendar and `Oct 31`, with a clock for a date still to come and never
-a year; the category's emoji alone, or a tag until one is chosen; a loop and `Monthly` or `3 months`,
-or a one-way arrow and `09/27` once the bill ends. When orderly and fitting every word conflict, the
-words get shorter.
+thing, the label its value, and when orderly and fitting every word conflict, the words get shorter:
 
-Each opens its picker in place of the keypad, at its height, so the amount and name never move, and
-nothing stacks a second sheet over the editor. **Date:** a calendar and nothing else. **Repeat:** one
-wheel, `Every 1 month`, with an end column resting on `no end` and rolling into payment counts, the
-only way to set an end; then `Last payment Sep 30, 2027` shows under it. **Category:** emoji and name
-in the Settings order, `New category` last. That opens the system emoji keyboard, then asks for the
-name, with eight colours set to the next one unused; the emoji sits on the chosen colour. Emoji and
-name are required: without the emoji, the button couldn't tell a category from none.
+- **Date:** a calendar and `Oct 31`, with a clock for a date still to come, and never a year.
+- **Category:** the category's emoji alone, or a tag until one is chosen.
+- **Repeat:** a loop and `Monthly` or `3 months`, or a one-way arrow and `09/27` once the bill ends.
+
+### Pickers open where the keypad was
+
+Each button opens its picker in place of the keypad, at its height, so the amount and name never
+move, and nothing stacks a second sheet over the editor.
+
+- **Date:** a calendar and nothing else.
+- **Repeat:** one wheel, `Every 1 month`, with an end column resting on `no end` and rolling into
+  payment counts, the only way to set an end; then `Last payment Sep 30, 2027` shows under it.
+- **Category:** emoji and name in the Settings order, `New category` last. That opens the system
+  emoji keyboard, then asks for the name, with eight colours set to the next one unused; the emoji
+  sits on the chosen colour. Emoji and name are required: without the emoji, the button couldn't
+  tell a category from none.
 
 ### Opening a charge edits it
 
@@ -214,10 +210,13 @@ waits for a change, and a red trash button sits left of it.
 Edit first, then choose, as Calendar. On ✓, when the amount or date changed and a charge follows,
 a menu from ✓ asks `Save for this charge only` or `Save for future charges`. Future means this
 charge and every one after, except a later charge changed on its own, which keeps its change while
-its date still exists; nothing before the open charge changes. Name, category and the payment count
-belong to the whole bill and change without asking; the count counts the whole bill and offers none
-ending before the open charge. A new repeat applies from this charge on. One charge can be €0, for a
-free month, saved for that charge alone without asking; a new bill, or a whole bill, needs more.
+its date still exists. Nothing before the open charge changes; from a bill's first charge, future
+is all of it.
+
+Name, category and the payment count belong to the whole bill and change without asking; the count
+counts the whole bill and offers none ending before the open charge. A new repeat applies from this
+charge on. One charge can be €0, for a free month, saved for that charge alone without asking; a
+new bill, or a whole bill, needs more.
 
 ### Deleting asks which
 
@@ -229,22 +228,19 @@ which is how a subscription ends, and the bill then reads `ends 08/26` like any 
 
 ## Copy and interaction
 
-**No label that restates its control** (tenet 3). **The test cuts both ways:** a word stays when
-removing it leaves a slot meaning two things. `€162 left` keeps "left", and drops "this month"
-because the month name sits above it. The month button says only `September`.
+**No label restates its control** (tenet 3), and a word stays when removing it would leave a slot
+meaning two things (TASTE 6). The month button says only `September`. **The app never says a bill
+was paid.** It says *charged*: Tilly knows a date passed, not what left an account.
 
-**The app never says a bill was paid.** It says *charged*. Tilly knows a date passed, not what left
-an account. **Amounts display in whole units:** enter 74.10, see 74; cents may be entered.
-
-**Nothing to confirm.** No control anywhere marks a charge as paid. A design that needs one is wrong.
-**A setting takes effect when it's set,** with no "restart the app to apply"; one too expensive to
-apply live doesn't ship yet.
+**Nothing to confirm, nothing to restart** (tenet 1). No control marks a charge as paid; a design
+that needs one is wrong. A setting takes effect when it's set, and one too expensive to apply live
+doesn't ship yet.
 
 ---
 
 ## Empty states
 
-First run has no expenses and no categories, so it is doing the teaching. The calendar says `Add a
-bill or a subscription and it shows up here before it goes out.`, and the first expense makes the
-first category. The empty state is the first screen of the product, not a placeholder: clean rather
-than unfinished, with the next action obvious.
+First run has no expenses and no categories, so it is doing the teaching. The calendar says
+`Nothing recurring yet` over `Add a bill or a subscription and it shows up here before it goes
+out.`, and the first expense makes the first category. The empty state is the first screen of the
+product, not a placeholder: clean rather than unfinished, with the next action obvious.

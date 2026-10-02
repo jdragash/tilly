@@ -54,7 +54,8 @@ When an occurrence's date passes, it is charged. Setting a real amount is always
 ## Stock SwiftUI in v1, behind a token layer
 **Decided:** 2026-09-04
 System components supply Liquid Glass, Dynamic Type, dark mode and VoiceOver. Every value
-reaches a view through `Tokens`, dimensions included, so the design pass is a one-file change.
+reaches a view through `Tokens`, dimensions included, so the design pass is a one-file change,
+and it layers on system materials rather than replacing them.
 - **Rejected — build a design system in v1:** functionality first.
 - **Rejected — raw values now, extract tokens later:** the extraction is the expensive part.
 - **Revisit when:** the v2 design pass, which is Jake's.

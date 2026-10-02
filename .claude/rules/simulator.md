@@ -22,6 +22,8 @@ Tooling that cost time, on the iPhone 17 simulator, iOS 27.
 - **`simctl launch --console-pty` has hung with no output** from the agent's shell, with and
   without `script`, and `--stdout=` wrote nothing. A temporary `NSLog` read back with
   `simctl spawn booted log show --last 1m --predicate 'eventMessage CONTAINS "…"'` worked.
+- **A flick in progress behaves differently on a device:** test it there, reading logs with
+  `devicectl --console`.
 
 ## Settings and state
 
@@ -41,9 +43,10 @@ Tooling that cost time, on the iPhone 17 simulator, iOS 27.
 
 ## Gestures and screenshots
 
+- Fling with `touch_path` at 8ms between points; `swipe` carries no momentum.
 - Hold a drag for a screenshot: a background `sleep 4; xcrun simctl io booted screenshot …`
   alongside a `touch_path` whose last points hold 1000ms each.
 - **The Simulator tool's own screenshot lags about a second behind a tap**, and its taps land
-  about a second late; `simctl io booted screenshot` doesn't lag. `swipe` carries no momentum.
+  about a second late; `simctl io booted screenshot` doesn't lag.
 - To see an animation, slow its token (0.38s → 3s) and capture with `simctl` in a background loop
   started just before the tap.

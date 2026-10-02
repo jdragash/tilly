@@ -26,6 +26,10 @@ History stops at the oldest charge with a line saying so. The future runs on for
 **4. Nothing appears, changes or resets for a reason the reader can't see.**
 Position isn't reset "on next launch", because nobody can tell a relaunch from a switch.
 
+**13. Design for the plainest data first: a view must say something to someone whose bills never vary.**
+The year draws a steady month as grey dots and `Every month is €1,390. A yearly renewal would show
+in colour.`, never a blank year.
+
 ## Hierarchy and marks
 
 **5. A mark that looks the same everywhere says nothing. Spend a distinction only where it
@@ -33,13 +37,17 @@ distinguishes.**
 No separator under every row. A hairline appears only under a pinned month header.
 
 **6. A word stays only if it does work no other channel does, and then it stays.**
-`−€162 left` keeps "left", and drops "this month" because the month name sits above it.
+`€162 left` keeps "left", and drops "this month" because the month name sits above it.
 
 **7. The content is the screen. A figure goes on the thing it describes, not in a box above it.**
 What's left this month lives in the pinned month header, not in a headline card.
 
 **8. Different kinds of thing never share a look.**
 The pinned header is paper and the buttons floating over it are glass, because only they are controls.
+
+**14. Show the shape, and put the explanation in the picture rather than a caption.**
+Lanes beat ranked rows because they show where and when together; the year's coloured dots beat a
+headline answer, "January".
 
 ## Shipping
 

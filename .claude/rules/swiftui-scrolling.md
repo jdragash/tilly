@@ -36,7 +36,7 @@ measurement, so Opus builds it.
 - **A scroll issued while the list glides is dropped.** Rebuilding the months mid-glide lost the
   anchor, and once the list had shrunk under the glide it ran off the end, blank. Halting scrolling
   for a turn (`scrollDisabled`) stops it in the Simulator; on an iOS 27 iPhone even that hasn't
-  stopped the glide. Unsolved: see the month button. Test on device, logs via `devicectl --console`.
+  stopped the glide. Unsolved: see the month button. Test it on a device (`simulator.md`).
 - **An animated `scrollTo` has no reliable completion.** Work that must follow it waits out its
   own duration. An anchoring scroll lands a turn after new content: a few frames at raw offset.
 - **`scrollTo(y:)` after an id-based scroll blanked the list.** Avoid point-based scrolling.
@@ -55,6 +55,6 @@ measurement, so Opus builds it.
   the `LazyVStack`, which scrolling doesn't move.
 - Suppress saving a place during the app's own scroll, then save once it settles.
 
-**Measuring:** `NSLog`s of frames (`simulator.md`) beat pixels; fling with `touch_path` at 8ms.
+**Measuring:** `NSLog`s of frames beat pixels; how to fling and read logs is in `simulator.md`.
 **Diagnosing:** a correcting second pass that converges is how a missing term hides, and a constant
 ratio error means two heights are confused. Find the term before adding machinery.

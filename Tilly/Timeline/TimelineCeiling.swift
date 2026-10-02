@@ -1,7 +1,7 @@
 import Foundation
 import TillyCore
 
-/// Where the months ahead stop. See "The future runs five years ahead, or to your last payment" in
+/// Where the months ahead stop. See "One list, from your oldest charge to five years on" in
 /// `docs/DESIGN.md`.
 enum TimelineCeiling {
     /// The month of the last payment when every expense has an end, never before

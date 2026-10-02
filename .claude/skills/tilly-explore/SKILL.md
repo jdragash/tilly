@@ -34,7 +34,7 @@ and run `tilly-brief` — don't improvise one inline.
 - `docs/PROJECT.md` — the tenets are the evaluation criteria
 - `docs/TASTE.md` — name the principle each direction leans on, and the one it strains
 - `docs/INSPIRATION.md` — the specific evidence about what works on this kind of surface
-- `docs/DESIGN.md` — existing tokens, state grammar, copy rules
+- `docs/DESIGN.md` — state grammar, each surface, copy rules; tokens live in `Tilly/DesignSystem/Tokens.swift`
 - `docs/DECISIONS.md` — what is already settled on this surface, so a "direction" isn't a
   re-run of something already rejected
 

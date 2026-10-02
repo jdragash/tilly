@@ -32,10 +32,10 @@ The smallest thing that does the job.
 
 | Item | Why not v1 |
 |---|---|
-| Viewing a charge before editing it | Prototyped and set aside on 2026-09-22 (the "view first" switch in `docs/prototypes/expense-editor-entry.html`): the editor-first version read better. Worth reopening with variable bills, where the page could show an actual amount beside the estimate. |
+| Viewing a charge before editing it | Prototyped and set aside: the editor-first version read better (`DECISIONS.md`). Reopens with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
 | Planned one-off expenses | A known cost ahead, like a purchase in March, is a bill with one payment. Dated in the future when it's made, so it can never become a log of past spending. Needs a brief: where it's entered (the repeat wheel's smallest count is 2 today) and how it reads in the calendar, where it is an extra, and in All bills. |
-| Look-ahead nudges ("next month has a large annual bill") | Arguably the core promise, but the rules need real usage to design well. The engine already computes any future range. No space is reserved for it. |
+| Look-ahead nudges ("next month has a large annual bill") | The year already shows a heavy month to anyone who looks; a nudge tells you unasked, and its rules need real use to design well. No space is reserved for it. |
 | Custom and pay-period months | Plenty of people read money from one payday to the next. Cheaper than it looks: "the month starts on the Nth" redefines one interval, and the engine windows on any `DateInterval`. |
 | Header figure as a setting (remaining or total) | Remaining is the right default. A switch can wait for a settings screen. |
 | Shake to undo a save or delete | Not core to knowing what's coming. SwiftData's own undo can't do it (a revived bill vanishes on the next save, or crashes), so it needs its own snapshot-based undo in `BillEditor`. |
@@ -49,7 +49,7 @@ The smallest thing that does the job.
 | Item | Why not sooner |
 |---|---|
 | **Design system pass**: typography, colour, spacing | Jake's pass. Stock SwiftUI and the token layer make it a one-file change, with the gallery as the workbench. |
-| Savings buckets, and the "pre-paid" bridge | A bucket funding an upcoming expense shows it as pre-paid. Only makes sense once the timeline is trusted. |
+| Savings buckets, and the "pre-paid" bridge | A bucket funding an upcoming expense shows it as pre-paid. Only makes sense once the calendar is trusted. |
 | Richer insight visualisations | Needs months of real data before it says anything. |
 | Quality-of-life settings | Display cents (default off), appearance, week start. |
 
@@ -61,7 +61,7 @@ The smallest thing that does the job.
 |---|---|
 | Goals and wishlist | A goal without a price drags in rough estimates and a list that clutters fast. Needs its own design pass. |
 | History-based amount prediction | Predict a variable bill from its past amounts. Needs a year of data. |
-| Widgets and Shortcuts | Obvious fit for "what's next", once the timeline has settled. |
+| Widgets and Shortcuts | Obvious fit for "what's next", once the calendar has settled. Views stay in the app until then. |
 
 ---
 

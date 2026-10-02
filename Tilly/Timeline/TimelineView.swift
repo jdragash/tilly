@@ -83,9 +83,8 @@ struct TimelineView: View {
     }
 
     /// Months from the ceiling down to the floor, with an empty month dropped unless it's the
-    /// current month or the one after, which always render, empty or not. See "The future runs
-    /// five years ahead, or to your last payment" and "History stops where your oldest charge does" in
-    /// `docs/DESIGN.md`.
+    /// current month or the one after, which always render, empty or not. See "One list, from
+    /// your oldest charge to five years on" in `docs/DESIGN.md`.
     private var visibleMonths: [MonthKey] {
         guard let window else { return [] }
         let nextMonth = window.current.advanced(by: 1)
@@ -299,8 +298,7 @@ struct TimelineView: View {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
                     // the `GeometryReader` wrapping the whole screen in `body`, and passed
-                    // down instead. See "The app fills the top
-                    // inset" in `docs/DESIGN.md`.
+                    // down instead. See "The month header" in `docs/DESIGN.md`.
                     Tokens.Surface.base
                         .frame(height: topInset)
                         .frame(maxWidth: .infinity)
