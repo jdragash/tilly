@@ -526,6 +526,14 @@ and "The timeline is one list…" where it names the timeline as the view.
 
 ## Lessons
 
+- The minus sign also sat as a literal `−` in doc comments, which a grep for `u{2212}` misses.
+- `#expect(decimal == 950 * 12)` failed while the value printed 11400. State Decimal expectations
+  as `Decimal(11400)`.
+- Adding fields with no default to `TimelineEntry` and `MonthSection` makes every missed
+  construction site a compile error: `TimelineView` (3), `CategoryMonthBuilder` (3), tests.
+- A failing `xcodebuild test` can outrun a 600s tool timeout (`simctl diagnose`, `simulator.md`);
+  read the failures from the log rather than waiting on the summary.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be ambiguous,

@@ -86,4 +86,79 @@ import Testing
         let day = Self.day([], total: 0)
         #expect(CalendarFormatting.dayLabel(day, calendar: Self.calendar, locale: Self.euro) == "Mon 4, no charges")
     }
+
+    // MARK: - Year
+
+    static func yearMonth(_ month: Int, total: Decimal = 0, extras: Decimal = 0) -> YearMonth {
+        YearMonth(
+            month: MonthKey(year: 2027, month: month), total: total, extrasTotal: extras,
+            isHeavy: false, leadingDays: 0, marks: []
+        )
+    }
+
+    /// Twelve months from September 2026 to August 2027.
+    static func overview(total: Decimal, extras: Decimal, usualMonth: Decimal, hasExtras: Bool) -> YearOverview {
+        let months = (0..<12).map { offset -> YearMonth in
+            let key = MonthKey(year: 2026, month: 9).advanced(by: offset)
+            return YearMonth(month: key, total: 0, extrasTotal: 0, isHeavy: false, leadingDays: 0, marks: [])
+        }
+        return YearOverview(
+            months: months, total: total, extrasTotal: extras, usualMonth: usualMonth, hasExtras: hasExtras
+        )
+    }
+
+    @Test func yearRangeNamesTheFirstAndLastMonths() {
+        let overview = Self.overview(total: 0, extras: 0, usualMonth: 0, hasExtras: false)
+        #expect(CalendarFormatting.yearRange(overview, calendar: Self.calendar, locale: Self.us) == "Sep \u{2013} Aug")
+    }
+
+    @Test func yearFigureReadsTotalAndUsualMonth() {
+        let overview = Self.overview(total: 19610, extras: 2775, usualMonth: 1402, hasExtras: true)
+        #expect(
+            CalendarFormatting.yearFigure(overview, extrasOnly: false, locale: Self.euro)
+                == "\u{20AC}19,610 \u{00B7} usual month \u{20AC}1,402"
+        )
+    }
+
+    @Test func yearFigureWithExtrasReadsOnTop() {
+        let overview = Self.overview(total: 19610, extras: 2775, usualMonth: 1402, hasExtras: true)
+        #expect(
+            CalendarFormatting.yearFigure(overview, extrasOnly: true, locale: Self.euro)
+                == "+\u{20AC}2,775 on top \u{00B7} usual month \u{20AC}1,402"
+        )
+    }
+
+    @Test func yearFigureWithExtrasAndNoneSaysNothingOnTop() {
+        let overview = Self.overview(total: 16680, extras: 0, usualMonth: 1390, hasExtras: false)
+        #expect(
+            CalendarFormatting.yearFigure(overview, extrasOnly: true, locale: Self.euro)
+                == "Nothing on top \u{00B7} usual month \u{20AC}1,390"
+        )
+    }
+
+    @Test func yearFigureInDollars() {
+        let overview = Self.overview(total: 19610, extras: 2775, usualMonth: 1402, hasExtras: true)
+        #expect(
+            CalendarFormatting.yearFigure(overview, extrasOnly: true, locale: Self.us)
+                == "+$2,775 on top \u{00B7} usual month $1,402"
+        )
+    }
+
+    @Test func monthLabelReadsTheTotal() {
+        let month = Self.yearMonth(3, total: 1753, extras: 351)
+        #expect(CalendarFormatting.monthLabel(month, extrasOnly: false, locale: Self.euro) == "\u{20AC}1,753")
+        #expect(CalendarFormatting.monthLabel(month, extrasOnly: false, locale: Self.us) == "$1,753")
+    }
+
+    @Test func monthLabelWithExtrasHasAPlus() {
+        let month = Self.yearMonth(3, total: 1753, extras: 351)
+        #expect(CalendarFormatting.monthLabel(month, extrasOnly: true, locale: Self.euro) == "+\u{20AC}351")
+    }
+
+    @Test func monthLabelIsEmptyWhenNothingIsCharged() {
+        let empty = Self.yearMonth(4)
+        let usualOnly = Self.yearMonth(4, total: 950)
+        #expect(CalendarFormatting.monthLabel(empty, extrasOnly: false, locale: Self.euro) == "")
+        #expect(CalendarFormatting.monthLabel(usualOnly, extrasOnly: true, locale: Self.euro) == "")
+    }
 }

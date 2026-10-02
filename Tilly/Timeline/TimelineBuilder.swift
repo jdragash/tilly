@@ -89,7 +89,7 @@ enum TimelineBuilder {
         }
     }
 
-    private static func roundedToWholeUnits(_ value: Decimal) -> Decimal {
+    static func roundedToWholeUnits(_ value: Decimal) -> Decimal {
         var result = Decimal()
         var input = value
         NSDecimalRound(&result, &input, 0, .plain)
