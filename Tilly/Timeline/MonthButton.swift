@@ -5,8 +5,8 @@ import SwiftUI
 /// Calendar's Today. See "Getting back" in `docs/DESIGN.md`.
 ///
 /// Liquid Glass, because a control floating over moving content is what the material is for.
-/// Applied with `glassEffect` for the same reason as `GlassCircleButton`, so the two share one
-/// height across the bottom row.
+/// Applied with `glassEffect` for the same reason as `BottomTrailingControls`, so the two share
+/// one height across the bottom row.
 ///
 /// A nil `action` hides it, as the year does, where there is no month to return to. It keeps its
 /// place in the row, hidden rather than removed, so the row's height, which the list's bottom

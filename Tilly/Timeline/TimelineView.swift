@@ -34,6 +34,7 @@ struct TimelineView: View {
     @State private var floorSpacer: CGFloat = 0
     @State private var isEditorPresented = false
     @State private var isSettingsPresented = false
+    @State private var isBillsPresented = false
     @State private var editing: EditSession?
     /// The day a calendar tap opened, its rows marked until the mark fades.
     @State private var markedDay: Date?
@@ -254,6 +255,7 @@ struct TimelineView: View {
         .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
         .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
+        .sheet(isPresented: $isBillsPresented) { AllBillsSheet(today: today) }
         // `onDismiss` refreshes explicitly: a save writes an `OverrideRecord` or edits fields
         // on the same `Expense` instances this view already holds, so the in-memory objects
         // are correct the moment the sheet closes, but `@Query`'s own change notification
@@ -554,7 +556,7 @@ struct TimelineView: View {
         }
     }
 
-    /// The month button bottom left and settings bottom right, always visible, placed as
+    /// The month button bottom left and All bills and settings bottom right, always visible, placed as
     /// Calendar's bottom row is. How far it reaches above the home indicator's safe area, which
     /// grows with Dynamic Type, sets the list's bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
     private func bottomRow(bottomInset: CGFloat) -> some View {
@@ -573,9 +575,7 @@ struct TimelineView: View {
                 }
             )
             Spacer()
-            GlassCircleButton(systemImage: "gearshape", label: "Settings", diameter: Tokens.Size.bottomButton) {
-                isSettingsPresented = true
-            }
+            BottomTrailingControls(onBills: { isBillsPresented = true }, onSettings: { isSettingsPresented = true })
         }
         .padding(.horizontal, Tokens.Space.bottomRowInset)
         .padding(.bottom, Tokens.Space.bottomRowInset)

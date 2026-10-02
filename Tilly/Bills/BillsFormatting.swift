@@ -3,6 +3,9 @@ import TillyCore
 
 /// All bills' text rendering, kept apart from any view so it can be tested without a simulator.
 enum BillsFormatting {
+    /// What the card of bills with no category is called, as the lanes call theirs.
+    static let uncategorisedName = "No category"
+
     /// "€640 yearly", "€41 every 2 months", "€15 every 2 weeks", or "Monthly" when the figure *is*
     /// the charge (a monthly bill in Monthly, a yearly one in Yearly), joined to the state with
     /// " · ": "€25 until Nov 10", "from Oct 18", "ends 12/26". A plain "Monthly" or "Yearly" gives
