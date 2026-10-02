@@ -69,7 +69,7 @@ import Testing
     @Test func titlesAreInOrder() {
         #expect(DeveloperScenario.allCases.map(\.title) == [
             "Your data", "Empty", "One expense", "Typical year", "Long history", "Nothing charged yet",
-            "Many categories",
+            "Many categories", "Only monthly bills", "One giant bill",
         ])
     }
 

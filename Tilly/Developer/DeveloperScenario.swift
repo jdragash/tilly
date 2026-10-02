@@ -7,7 +7,8 @@ import TillyCore
 /// Settings. Every sample scenario seeds its own in-memory store; `yourData` is the person's
 /// own store and is never seeded. Debug builds only.
 enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
-    case yourData, empty, oneExpense, typicalYear, longHistory, nothingChargedYet, manyCategories
+    case yourData, empty, oneExpense, typicalYear, longHistory, nothingChargedYet, manyCategories,
+        monthlyOnly, oneGiantBill
 
     var id: String { rawValue }
 
@@ -20,6 +21,8 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         case .longHistory: "Long history"
         case .nothingChargedYet: "Nothing charged yet"
         case .manyCategories: "Many categories"
+        case .monthlyOnly: "Only monthly bills"
+        case .oneGiantBill: "One giant bill"
         }
     }
 
@@ -48,8 +51,48 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
             context.insert(Expense(name: "Water", amount: 45, anchorDate: water, category: home))
         case .manyCategories:
             try Self.insertManyCategories(into: context, today: today, calendar: calendar)
+        case .monthlyOnly:
+            Self.insertMonthlyBills(into: context, today: today, calendar: calendar)
+        case .oneGiantBill:
+            Self.insertMonthlyBills(into: context, today: today, calendar: calendar)
+            Self.insertGiantBill(into: context, today: today, calendar: calendar)
         }
         try context.save()
+    }
+
+    /// A steady user: six monthly bills in four categories, anchored eight months back so the
+    /// timeline has some history and no month differs from another. Invented names and amounts.
+    private static func insertMonthlyBills(into context: ModelContext, today: Date, calendar: Calendar) {
+        let components = calendar.dateComponents([.year, .month], from: today)
+        func anchor(day: Int) -> Date {
+            calendar.date(from: DateComponents(year: components.year, month: (components.month ?? 1) - 8, day: day))!
+        }
+        let plan: [(String, String, CategoryColour, [(String, Decimal, Int)])] = [
+            ("🏠", "Home", .blue, [("Rent", 1150, 1), ("Electricity", 68, 12)]),
+            ("📱", "Phone & internet", .orange, [("Broadband", 38, 15), ("Phone", 22, 20)]),
+            ("📺", "Subscriptions", .magenta, [("Streaming", 13, 8)]),
+            ("💪", "Health", .green, [("Gym", 25, 10)]),
+        ]
+        for (order, (emoji, name, colour, bills)) in plan.enumerated() {
+            let category = ExpenseCategory(name: name, emoji: emoji, colour: colour, sortOrder: order)
+            context.insert(category)
+            for (bill, amount, day) in bills {
+                context.insert(Expense(name: bill, amount: amount, anchorDate: anchor(day: day), category: category))
+            }
+        }
+    }
+
+    /// One yearly bill, several times a usual month, whose next charge falls four months from
+    /// today: the year's one coloured day, and its heaviest month.
+    private static func insertGiantBill(into context: ModelContext, today: Date, calendar: Calendar) {
+        let components = calendar.dateComponents([.year, .month], from: today)
+        let category = ExpenseCategory(name: "Education", emoji: "🎓", colour: .violet, sortOrder: 4)
+        context.insert(category)
+        let anchor = calendar.date(from: DateComponents(year: components.year, month: (components.month ?? 1) - 8, day: 14))!
+        context.insert(Expense(
+            name: "Annual tuition", amount: 6000, recurrenceInterval: 1, recurrenceUnit: .year,
+            anchorDate: anchor, category: category
+        ))
     }
 
     /// Fourteen categories, more than the lanes fit at their largest, and more than there are

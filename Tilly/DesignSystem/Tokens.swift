@@ -48,6 +48,11 @@ enum Tokens {
         static let dayTotal: Font = .caption2.weight(.semibold)
         /// The level's name in a back button, as Calendar's top left reads.
         static let backButton: Font = .body
+        /// The year's month cells: the month's short name, its total beside it, and the key.
+        static let yearMonthName: Font = .footnote.weight(.semibold)
+        static let yearMonthLabel: Font = .caption
+        static let yearMonthLabelHeavy: Font = .caption.weight(.semibold)
+        static let yearKey: Font = .footnote
     }
 
     enum Stroke {
@@ -59,6 +64,8 @@ enum Tokens {
         static let zeroDot = StrokeStyle(lineWidth: 1.5, dash: [2, 2])
         /// A still-to-come dot's ring.
         static let upcomingDot: CGFloat = 2
+        /// The year's ring for a bill that starts, changes or ends; a €0 one reuses `zeroDot`.
+        static let yearRing: CGFloat = 1.5
     }
 
     /// How far text may shrink to fit a line before it truncates.
@@ -73,6 +80,10 @@ enum Tokens {
         static let dayTotalMin: CGFloat = 0.6
         /// The dots on the day under a dragging finger; from the prototype.
         static let dotOnLine: CGFloat = 1.18
+        /// A level arriving from further out grows to full size from this; from further in,
+        /// it shrinks to full size from `zoomOut`. From the prototype.
+        static let zoomIn: CGFloat = 0.93
+        static let zoomOut: CGFloat = 1.07
     }
 
     enum Opacity {
@@ -187,6 +198,15 @@ enum Tokens {
         static let backButtonGap: CGFloat = 4
         static let backButtonLeading: CGFloat = 10
         static let backButtonTrailing: CGFloat = 14
+        /// The year's month cells: across and down, and from a month's name to its days; from the
+        /// prototype.
+        static let yearColumnGap: CGFloat = 17.5
+        static let yearRowGap: CGFloat = 16
+        static let yearMiniGap: CGFloat = 5
+        /// Between the year's months and the key under them, and the key's lines and their dots.
+        static let yearKeyTop: CGFloat = 24
+        static let keyLineGap: CGFloat = 6
+        static let keyDotGap: CGFloat = 8
     }
 
     enum Size {
@@ -265,6 +285,18 @@ enum Tokens {
         static let pageSwipe: CGFloat = 60
         /// A scroll target with no height of its own, so landing it needs no target height.
         static let scrollMarker: CGFloat = 0
+        /// A day in the year's mini month: a column and a row. From the prototype, where seven
+        /// columns make 105pt.
+        static let yearDayWidth: CGFloat = 15
+        static let yearDayHeight: CGFloat = 13
+        /// What a day shows in the year: nothing charged, only monthly bills, and a bill that
+        /// isn't monthly (larger when that day's extras reach a fifth of a usual month), and the
+        /// ring for a bill that starts, changes or ends. Today is the extra's size.
+        static let yearDotQuiet: CGFloat = 2.6
+        static let yearDotUsual: CGFloat = 5
+        static let yearDotExtra: CGFloat = 7
+        static let yearDotExtraLarge: CGFloat = 11
+        static let yearDotRing: CGFloat = 7
     }
 
     enum Motion {
@@ -280,6 +312,10 @@ enum Tokens {
         static let scrub: TimeInterval = 0.12
         /// A tapped day's rows fading from marked, once the timeline has landed on them.
         static let dayMark: TimeInterval = 1.2
+        /// Moving between the year, a month and the days: the closer level grows in, the further
+        /// one grows out. From the prototype.
+        static let zoomDuration: TimeInterval = 0.28
+        static let zoom: Animation = .timingCurve(0.2, 0.8, 0.2, 1, duration: zoomDuration)
         /// The header and its controls fading aside while dragging across the lanes,
         /// and back. Out is quick so nothing lies under the readout as it lands; back is a touch
         /// slower. Guesses: 0.2s both ways felt slow in the Simulator.

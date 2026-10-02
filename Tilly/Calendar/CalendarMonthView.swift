@@ -11,6 +11,8 @@ struct CalendarMonthView: View {
     let calendarMonth: CalendarMonth
     let today: Date
     let onOpenDay: (Date) -> Void
+    /// Back out to the year.
+    let onBack: () -> Void
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
@@ -18,11 +20,18 @@ struct CalendarMonthView: View {
     var body: some View {
         let section = calendarMonth.section
         VStack(alignment: .leading, spacing: 0) {
+            // The top row's leading end: the way out. The glass pair floats over its other end.
+            HStack {
+                BackButton(title: "Year", action: onBack)
+                Spacer()
+            }
+            .padding(.horizontal, Tokens.Space.gutter)
+            .frame(height: Tokens.Size.headerRow)
             title(section)
+                .padding(.top, Tokens.Space.titleTop)
             weekdays
             grid
         }
-        .padding(.top, Tokens.Size.headerRow + Tokens.Space.titleTop)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Tokens.Surface.base)
     }

@@ -52,7 +52,8 @@ enum CalendarFormatting {
         return month.total == 0 ? "" : TimelineFormatting.amount(month.total, locale: locale)
     }
 
-    private static func abbreviatedName(_ month: MonthKey, calendar: Calendar, locale: Locale) -> String {
+    /// "Sep": a month's short name, as the year labels it.
+    static func abbreviatedName(_ month: MonthKey, calendar: Calendar, locale: Locale) -> String {
         let formatter = DateFormatter()
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone

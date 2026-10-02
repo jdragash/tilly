@@ -172,9 +172,7 @@ struct CategoryView: View {
     /// instances this view holds, which `.onChange(of:)` can't see (see
     /// `.claude/rules/swiftui-controls.md`).
     private var categoryMonth: CategoryMonth {
-        let infos = categories.map {
-            CategoryInfo(id: $0.id, emoji: $0.emoji, name: $0.name, colour: $0.colour)
-        }
+        let infos = categories.map(CategoryInfo.init)
         return CategoryMonthBuilder.month(
             month, expenses: Expense.timelineExpenses(expenses), categoryOf: Expense.categoryMap(expenses),
             categories: infos, today: today, calendar: calendar, isCurrent: month == window.current

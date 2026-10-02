@@ -42,10 +42,17 @@ struct TimelineView: View {
     /// The month the category view shows. Set properly once the window is.
     @State private var categoryMonth = MonthKey(containing: Date(), calendar: .current)
     /// How far the Calendar is zoomed, and the month its grid shows (a `MonthKey.id`; negative until
-    /// one has been chosen). Both are kept across launches. `.year` isn't reachable yet, and reads
-    /// as the month.
+    /// one has been chosen). Both are kept across launches. Change the level through `setLevel`.
     @AppStorage("calendarLevel") private var level: CalendarLevel = .month
     @AppStorage("calendarMonthID") private var calendarMonthID = -1
+    /// Which way the last change of level went: closer in, or further out. A level arriving grows
+    /// from the other side of its size, as a lens does.
+    @State private var zoomingIn = true
+    /// The timeline's size while it is the level that shows or is leaving; it rests at the size an
+    /// arriving level grows from, so the next arrival has somewhere to grow from.
+    @State private var timelineScale: CGFloat = 1
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "TimelineView")
     private static let scrollSpace = "timelineScroll"
@@ -139,7 +146,11 @@ struct TimelineView: View {
         // alone isn't enough, because the row follows the bottom of what it sits in.
         .ignoresSafeArea(.keyboard)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
-        .onAppear(perform: setUpIfNeeded)
+        .onAppear {
+            // Where the timeline rests while another level shows: the size an arrival grows from.
+            if level != .day { timelineScale = Tokens.Scale.zoomIn }
+            setUpIfNeeded()
+        }
         .onChange(of: expenses) { _, _ in refreshWindow() }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
         .onChange(of: scenePhase) { _, newPhase in
@@ -155,10 +166,18 @@ struct TimelineView: View {
     /// for laying itself out again. With no expenses both views are the empty state.
     private func content(topInset: CGFloat, bottomInset: CGFloat) -> some View {
         let showsCategories = mode == .categories && !expenses.isEmpty && window != nil
-        let showsCalendarMonth = mode == .timeline && level != .day && !expenses.isEmpty && window != nil
-        let coversTimeline = showsCategories || showsCalendarMonth
+        let showsCalendarMonth = mode == .timeline && level == .month && !expenses.isEmpty && window != nil
+        let showsYear = mode == .timeline && level == .year && !expenses.isEmpty && window != nil
+        let coversTimeline = showsCategories || showsCalendarMonth || showsYear
+        let arriving: AnyTransition = reduceMotion
+            ? .opacity
+            : .asymmetric(
+                insertion: .scale(scale: zoomingIn ? Tokens.Scale.zoomIn : Tokens.Scale.zoomOut).combined(with: .opacity),
+                removal: .opacity
+            )
         return ZStack {
             timeline(topInset: topInset)
+                .scaleEffect(reduceMotion ? 1 : timelineScale)
                 .opacity(coversTimeline ? 0 : 1)
                 .allowsHitTesting(!coversTimeline)
                 .accessibilityHidden(coversTimeline)
@@ -171,8 +190,17 @@ struct TimelineView: View {
             if showsCalendarMonth, let window {
                 CalendarMonthView(
                     month: calendarMonthBinding(in: window), window: window,
-                    calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay
+                    calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay,
+                    onBack: { setLevel(.year) }
                 )
+                .transition(arriving)
+            }
+            if showsYear, let window {
+                YearView(
+                    overview: yearOverview(in: window), extrasOnly: false, today: today,
+                    onOpenMonth: { openMonth($0, in: window) }
+                )
+                .transition(arriving)
             }
         }
         // The pair never moves: it sits in the `headerRow` band where headers pin, and each
@@ -257,7 +285,7 @@ struct TimelineView: View {
         return HStack {
             BackButton(title: month.name(in: calendar, relativeTo: today, locale: locale)) {
                 calendarMonthID = min(max(month, window.floor), window.ceiling).id
-                level = .month
+                setLevel(.month)
             }
             Spacer()
         }
@@ -376,6 +404,58 @@ struct TimelineView: View {
         return CalendarMonthBuilder.month(section, today: today, calendar: calendar)
     }
 
+    /// The twelve months from this one, as the year shows them. Built on every change, as the
+    /// month is. Months past the window's ceiling are built too, and are simply empty.
+    private func yearOverview(in window: TimelineWindow) -> YearOverview {
+        let timelineExpenses = Expense.timelineExpenses(expenses)
+        let sections = (0..<12).map { offset -> MonthSection in
+            let key = window.current.advanced(by: offset)
+            let built = TimelineBuilder.month(
+                key, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: false
+            )
+            return MonthSection(
+                month: built.month, entries: built.entries, total: built.total, remaining: built.remaining,
+                isCurrent: key == window.current, showsExtrasOnly: built.showsExtrasOnly
+            )
+        }
+        return YearBuilder.overview(
+            sections: sections, categoryOf: Expense.categoryMap(expenses),
+            categories: categories.map(CategoryInfo.init), extrasOnly: false, today: today, calendar: calendar
+        )
+    }
+
+    /// A month in the year opens as the month level.
+    private func openMonth(_ month: MonthKey, in window: TimelineWindow) {
+        calendarMonthID = min(max(month, window.floor), window.ceiling).id
+        setLevel(.month)
+    }
+
+    /// Moves between the year, a month and the days, zooming: closer in grows the arriving level
+    /// up from `Scale.zoomIn`, further out grows it down from `Scale.zoomOut`, and the level
+    /// leaving fades. The timeline, which is always mounted, animates its opacity and scale; the
+    /// year and the month come and go as transitions. Nothing here touches a scroll.
+    private func setLevel(_ new: CalendarLevel) {
+        guard new != level else { return }
+        func depth(_ level: CalendarLevel) -> Int {
+            switch level {
+            case .year: 0
+            case .month: 1
+            case .day: 2
+            }
+        }
+        zoomingIn = depth(new) > depth(level)
+        withAnimation(Tokens.Motion.zoom) {
+            level = new
+            if new == .day { timelineScale = 1 }
+        }
+        // Once the timeline has faded, it goes back to the size an arrival grows from, unseen.
+        if new != .day {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Tokens.Motion.zoomDuration + 0.02) {
+                if level != .day { timelineScale = Tokens.Scale.zoomIn }
+            }
+        }
+    }
+
     /// A day with charges opens the days: the timeline, with that day's first row just under its
     /// month's pinned header, the day's rows marked and then fading. The timeline stays mounted
     /// beneath the grid, so its proxy is there to scroll.
@@ -391,7 +471,7 @@ struct TimelineView: View {
         let day = calendar.startOfDay(for: date)
         let month = MonthKey(containing: day, calendar: calendar)
         markedDay = day
-        level = .day
+        setLevel(.day)
         isProgrammaticScroll = true
         // The month first: a lazy list resolves only ids it has laid out, and a month far from
         // where the list rests hasn't been. Landing on it lays it out and measures its header.
@@ -428,15 +508,19 @@ struct TimelineView: View {
     /// grows with Dynamic Type, sets the list's bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
     private func bottomRow(bottomInset: CGFloat) -> some View {
         HStack {
-            MonthButton(month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today) {
-                if mode == .categories, let window {
-                    categoryMonth = window.current
-                } else if level == .day {
-                    returnToResting()
-                } else if let window {
-                    calendarMonthID = window.current.id
+            MonthButton(
+                month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today,
+                // The year has no month to go back to.
+                action: mode == .timeline && level == .year ? nil : {
+                    if mode == .categories, let window {
+                        categoryMonth = window.current
+                    } else if level == .day {
+                        returnToResting()
+                    } else if let window {
+                        calendarMonthID = window.current.id
+                    }
                 }
-            }
+            )
             Spacer()
             GlassCircleButton(systemImage: "gearshape", label: "Settings", diameter: Tokens.Size.bottomButton) {
                 isSettingsPresented = true
