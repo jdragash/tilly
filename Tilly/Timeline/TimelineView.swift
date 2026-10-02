@@ -45,6 +45,10 @@ struct TimelineView: View {
     /// one has been chosen). Both are kept across launches. Change the level through `setLevel`.
     @AppStorage("calendarLevel") private var level: CalendarLevel = .month
     @AppStorage("calendarMonthID") private var calendarMonthID = -1
+    /// All charges, or only the extras: one setting for every level, kept across launches.
+    @AppStorage("showsExtrasOnly") private var extrasOnly = false
+    /// The All / Extras toggle's width, which the titles beneath it keep clear.
+    @State private var extrasToggleWidth: CGFloat = 0
     /// Which way the last change of level went: closer in, or further out. A level arriving grows
     /// from the other side of its size, as a lens does.
     @State private var zoomingIn = true
@@ -152,6 +156,7 @@ struct TimelineView: View {
             setUpIfNeeded()
         }
         .onChange(of: expenses) { _, _ in refreshWindow() }
+        .onChange(of: extrasOnly) { _, _ in showExtrasChange() }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active, hasRestoredPlace { saveCurrentPlace() }
@@ -191,13 +196,14 @@ struct TimelineView: View {
                 CalendarMonthView(
                     month: calendarMonthBinding(in: window), window: window,
                     calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay,
-                    onBack: { setLevel(.year) }
+                    onBack: { setLevel(.year) }, titleTrailingClearance: toggleClearance
                 )
                 .transition(arriving)
             }
             if showsYear, let window {
                 YearView(
-                    overview: yearOverview(in: window), extrasOnly: false, today: today,
+                    overview: yearOverview(in: window), extrasOnly: extrasOnly, today: today,
+                    titleTrailingClearance: toggleClearance,
                     onOpenMonth: { openMonth($0, in: window) }
                 )
                 .transition(arriving)
@@ -231,6 +237,17 @@ struct TimelineView: View {
             .opacity(readout == nil ? 1 : 0)
             .allowsHitTesting(readout == nil)
             .animation(Tokens.Motion.aside(hiding: readout != nil), value: readout == nil)
+        }
+        // Under the top row's trailing end at every Calendar level, where the month's and the
+        // year's titles begin, and over the pinned header on the timeline. It doesn't zoom with
+        // the levels: like the glass pair, it stays put while they change beneath it.
+        .overlay(alignment: .topTrailing) {
+            if mode == .timeline && !expenses.isEmpty && window != nil {
+                ExtrasToggle(extrasOnly: $extrasOnly)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { extrasToggleWidth = $0 }
+                    .padding(.top, Tokens.Size.headerRow + Tokens.Space.titleTop)
+                    .padding(.trailing, Tokens.Space.gutter)
+            }
         }
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         // Above the glass controls, which fade while it shows: the readout takes the header row.
@@ -318,11 +335,11 @@ struct TimelineView: View {
                                 updateFloorSpacer()
                             }
                         } header: {
-                            // Pinned beneath the top row, so nothing floats over its
-                            // trailing end: only the gutter is kept clear.
+                            // Pinned beneath the top row, where only the All / Extras toggle
+                            // floats over its trailing end.
                             MonthHeader(
                                 section: monthSection, today: today, isPinned: pinnedMonth == month,
-                                trailingClearance: Tokens.Space.gutter
+                                trailingClearance: toggleClearance
                             )
                                 .onGeometryChange(for: CGRect.self) { proxy in
                                     proxy.frame(in: .named(Self.scrollSpace))
@@ -395,7 +412,8 @@ struct TimelineView: View {
     private func calendarMonthModel(in window: TimelineWindow) -> CalendarMonth {
         let month = shownCalendarMonth(in: window)
         let built = TimelineBuilder.month(
-            month, expenses: Expense.timelineExpenses(expenses), today: today, calendar: calendar, extrasOnly: false
+            month, expenses: Expense.timelineExpenses(expenses), today: today, calendar: calendar,
+            extrasOnly: extrasOnly
         )
         let section = MonthSection(
             month: built.month, entries: built.entries, total: built.total, remaining: built.remaining,
@@ -410,6 +428,7 @@ struct TimelineView: View {
         let timelineExpenses = Expense.timelineExpenses(expenses)
         let sections = (0..<12).map { offset -> MonthSection in
             let key = window.current.advanced(by: offset)
+            // Every charge: the year's marks and totals need the usual ones even with extras only.
             let built = TimelineBuilder.month(
                 key, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: false
             )
@@ -420,7 +439,7 @@ struct TimelineView: View {
         }
         return YearBuilder.overview(
             sections: sections, categoryOf: Expense.categoryMap(expenses),
-            categories: categories.map(CategoryInfo.init), extrasOnly: false, today: today, calendar: calendar
+            categories: categories.map(CategoryInfo.init), extrasOnly: extrasOnly, today: today, calendar: calendar
         )
     }
 
@@ -428,6 +447,38 @@ struct TimelineView: View {
     private func openMonth(_ month: MonthKey, in window: TimelineWindow) {
         calendarMonthID = min(max(month, window.floor), window.ceiling).id
         setLevel(.month)
+    }
+
+    /// What a title or a header beneath the All / Extras toggle keeps clear at its trailing end.
+    private var toggleClearance: CGFloat {
+        extrasToggleWidth + Tokens.Space.gap + Tokens.Space.gutter
+    }
+
+    /// All / Extras changed: the months are rebuilt, and the month under the middle of the list
+    /// is held where it is, as a window change holds it. See "Nothing under the reader's eyes
+    /// moves" in `docs/DESIGN.md`. A month left with nothing drops out as any empty month does;
+    /// if it was the one being read, the nearest month left takes its place.
+    ///
+    /// A switch made while the list still glides stops the glide first, as the month button does:
+    /// left to run, the glide carried on past the anchoring scroll, which was dropped, and once
+    /// the list had shrunk under it, it ran off the end and showed nothing at all (measured).
+    private func showExtrasChange() {
+        guard window != nil else { return }
+        isScrollHalted = true
+        let anchorMonth = monthUnderMiddle()
+        let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
+        rebuildSections()
+        let target = anchorMonth.flatMap { anchor in
+            visibleMonths.contains(anchor)
+                ? anchor
+                : visibleMonths.min { abs($0.id - anchor.id) < abs($1.id - anchor.id) }
+        }
+        isProgrammaticScroll = true
+        DispatchQueue.main.async {
+            isScrollHalted = false
+            if let target { restoreAnchor(target, to: max(0, desiredOffset)) }
+            DispatchQueue.main.async { isProgrammaticScroll = false }
+        }
     }
 
     /// Moves between the year, a month and the days, zooming: closer in grows the arriving level
@@ -907,7 +958,7 @@ struct TimelineView: View {
         var result: [MonthKey: MonthSection] = [:]
         for key in window.months {
             let built = TimelineBuilder.month(
-                key, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: false
+                key, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: extrasOnly
             )
             result[key] = MonthSection(
                 month: built.month, entries: built.entries, total: built.total,

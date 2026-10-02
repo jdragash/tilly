@@ -7,6 +7,8 @@ struct YearView: View {
     let overview: YearOverview
     let extrasOnly: Bool
     let today: Date
+    /// What the title keeps clear for the All / Extras toggle floating over its trailing end.
+    let titleTrailingClearance: CGFloat
     let onOpenMonth: (MonthKey) -> Void
 
     @Environment(\.calendar) private var calendar
@@ -37,6 +39,10 @@ struct YearView: View {
                 .font(Tokens.Text.calendarTitle)
                 .foregroundStyle(Tokens.Ink.primary)
                 .accessibilityAddTraits(.isHeader)
+                // Only the name shares a line with the toggle; the figure beneath runs the width.
+                // The clearance includes the gutter this block already keeps.
+                .padding(.trailing, max(0, titleTrailingClearance - Tokens.Space.gutter))
+                .frame(maxWidth: .infinity, alignment: .leading)
             Text(CalendarFormatting.yearFigure(overview, extrasOnly: extrasOnly, locale: locale))
                 .font(Tokens.Text.monthTotal)
                 .monospacedDigit()

@@ -13,6 +13,8 @@ struct CalendarMonthView: View {
     let onOpenDay: (Date) -> Void
     /// Back out to the year.
     let onBack: () -> Void
+    /// What the title keeps clear for the All / Extras toggle floating over its trailing end.
+    let titleTrailingClearance: CGFloat
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
@@ -44,6 +46,10 @@ struct CalendarMonthView: View {
                 .font(Tokens.Text.calendarTitle)
                 .foregroundStyle(Tokens.Ink.primary)
                 .accessibilityAddTraits(.isHeader)
+                // Only the name shares a line with the toggle; the figure beneath runs the width.
+                // The clearance includes the gutter this block already keeps.
+                .padding(.trailing, max(0, titleTrailingClearance - Tokens.Space.gutter))
+                .frame(maxWidth: .infinity, alignment: .leading)
             Text(CalendarFormatting.monthFigure(for: section, locale: locale))
                 .font(Tokens.Text.monthTotal)
                 .monospacedDigit()

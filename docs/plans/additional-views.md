@@ -544,6 +544,14 @@ and "The timeline is one list…" where it names the timeline as the view.
   718 − 58). The list's height is the viewport less the top row, derived, not measured.
 - The Simulator tool's screenshots lag about a second behind a tap; `simctl io booted
   screenshot` doesn't.
+- **Rebuilding the list while it glides loses the anchor.** All → Extras mid-fling dropped the
+  anchoring scroll; once the list had shrunk under the glide (28,858 → 4,924pt) it ran off the end
+  and showed nothing. Halting scrolling for a turn first, as the month button does, held it within
+  0.1pt in the Simulator; on device it shares the month button's open question.
+- All / Extras measured: 257.37 → 257.42 and 118.29 → 118.38. Near the floor a short extras list
+  can't scroll a month back up, and it settles lower: that is the content, not the anchoring.
+- A stock segmented `Picker` inside `glassEffect` is 37pt, taller than a `calendarTitle` line, and
+  reads as a pill in a pill; alone it is 32pt.
 
 ## If a step is wrong
 
