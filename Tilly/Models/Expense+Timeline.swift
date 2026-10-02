@@ -41,4 +41,16 @@ extension Expense {
         }
         return map
     }
+
+    /// One `BillInput` per record, for All bills. Archived records are left out. Overrides are
+    /// carried whole, as `timelineExpense` carries them.
+    static func billInputs(_ expenses: [Expense]) -> [BillInput] {
+        expenses.filter { !$0.isArchived }.map { expense in
+            BillInput(
+                seriesKey: expense.seriesKey, expenseID: expense.id, name: expense.name,
+                categoryID: expense.category?.id, snapshot: expense.snapshot,
+                overrides: expense.overrideSnapshots
+            )
+        }
+    }
 }
