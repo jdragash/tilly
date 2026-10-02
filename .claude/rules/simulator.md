@@ -14,6 +14,8 @@ Tooling that cost time, on the iPhone 17 simulator, iOS 27.
 - **A failing Swift Testing run in `xcodebuild` looks like a hang:** it then runs `simctl
   diagnose` for up to 600s. Pass `-resultBundlePath` and read it instead of waiting:
   `xcrun xcresulttool get test-results summary --path <bundle> --compact`.
+- State a `Decimal` expectation as `Decimal(11400)`: `#expect(decimal == 950 * 12)` failed while
+  the value printed 11400.
 
 ## Logs
 
@@ -41,3 +43,7 @@ Tooling that cost time, on the iPhone 17 simulator, iOS 27.
 
 - Hold a drag for a screenshot: a background `sleep 4; xcrun simctl io booted screenshot …`
   alongside a `touch_path` whose last points hold 1000ms each.
+- **The Simulator tool's own screenshot lags about a second behind a tap**, and its taps land
+  about a second late; `simctl io booted screenshot` doesn't lag. `swipe` carries no momentum.
+- To see an animation, slow its token (0.38s → 3s) and capture with `simctl` in a background loop
+  started just before the tap.
