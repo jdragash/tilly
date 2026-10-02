@@ -16,11 +16,12 @@ The smallest thing that does the job.
 |---|---|---|
 | Recurrence engine | Done | Every N days, weeks, months or years from a fixed anchor. Pure and tested. |
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
-| Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere; on an iPhone a tap mid-flick is still ignored (open). |
+| Calendar | Done | The year, a month and the days, which are the timeline: one list with a pinned header and saved place, five years ahead or to the last payment. All / Extras holds at every level. On an iPhone, the month button and the toggle may still lose to a flick in progress (open). In the year, a month past the last payment opens the last one with charges (open). |
+| All bills | Done | A sheet of category cards, Monthly or Yearly, ended bills behind a line; a bill opens its next charge. No sorting or search. |
 | Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. Making a category lifts the amount 20pt over the emoji keyboard, against "never moves" (open). |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
 | Categories | Done, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming, changing an emoji and deleting there aren't designed yet. |
-| Category view | Done | Lanes across one month, a dot per charge, beside the timeline behind a view menu; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
+| Category view | Done | Lanes across one month, a dot per charge, beside the calendar in the view menu; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
 | Token gallery | — | `DesignSystem/Gallery.swift`: every token and component in light, dark and accessibility sizes. |
 
 **Done when:** it holds a real set of recurring expenses and gets opened instead of guessed at.
@@ -33,11 +34,12 @@ The smallest thing that does the job.
 |---|---|
 | Viewing a charge before editing it | Prototyped and set aside on 2026-09-22 (the "view first" switch in `docs/prototypes/expense-editor-entry.html`): the editor-first version read better. Worth reopening with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
+| Planned one-off expenses | A known cost ahead, like a purchase in March, is a bill with one payment. Dated in the future when it's made, so it can never become a log of past spending. Needs a brief: where it's entered (the repeat wheel's smallest count is 2 today) and how it reads in the calendar, where it is an extra, and in All bills. |
 | Look-ahead nudges ("next month has a large annual bill") | Arguably the core promise, but the rules need real usage to design well. The engine already computes any future range. No space is reserved for it. |
 | Custom and pay-period months | Plenty of people read money from one payday to the next. Cheaper than it looks: "the month starts on the Nth" redefines one interval, and the engine windows on any `DateInterval`. |
 | Header figure as a setting (remaining or total) | Remaining is the right default. A switch can wait for a settings screen. |
 | Shake to undo a save or delete | Not core to knowing what's coming. SwiftData's own undo can't do it (a revived bill vanishes on the next save, or crashes), so it needs its own snapshot-based undo in `BillEditor`. |
-| Calendar view | Would duplicate the timeline. Live with the timeline first and see whether it's missed. A view switch beside + is where it would go. |
+| What's about to change, as a picture | Three directions were all confusing (`docs/briefs/additional-views/brief.md`). Rings on the year carry starts, price changes and ends meanwhile. |
 | iCloud sync | The schema is CloudKit-shaped, so this is close to a flag. But it adds container setup, merge conflicts and latency. |
 
 ---

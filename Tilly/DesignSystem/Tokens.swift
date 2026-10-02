@@ -35,6 +35,33 @@ enum Tokens {
         static let nextRow: Font = .subheadline
         static let readoutDate: Font = .footnote.weight(.semibold)
         static let readoutRow: Font = .footnote
+        /// The calendar's month title, over its figure.
+        static let calendarTitle: Font = .title.weight(.bold)
+        static let weekday: Font = .caption2.weight(.semibold)
+        static let dayNumber: Font = .footnote
+        static let dayNumberToday: Font = .footnote.weight(.semibold)
+        /// A day's one emoji; two share a smaller size so they fit side by side.
+        static let dayEmoji: Font = .title3
+        static let dayEmojiPair: Font = .callout
+        /// The "+N" after a day's two emoji.
+        static let dayMore: Font = .caption2.weight(.bold)
+        static let dayTotal: Font = .caption2.weight(.semibold)
+        /// The level's name in a back button, as Calendar's top left reads.
+        static let backButton: Font = .body
+        /// The year's month cells: the month's short name, its total beside it, and the key.
+        static let yearMonthName: Font = .footnote.weight(.semibold)
+        static let yearMonthLabel: Font = .caption
+        static let yearMonthLabelHeavy: Font = .caption.weight(.semibold)
+        static let yearKey: Font = .footnote
+        /// All bills: the chips, a card's header, and its rows.
+        static let billsChip: Font = .subheadline
+        static let billCardEmoji: Font = .title
+        static let billCardName: Font = .body.weight(.semibold)
+        static let billCardTotal: Font = .title3.weight(.semibold)
+        static let billName: Font = .subheadline
+        static let billNote: Font = .footnote
+        static let billFigure: Font = .subheadline
+        static let endedToggle: Font = .subheadline
     }
 
     enum Stroke {
@@ -46,6 +73,8 @@ enum Tokens {
         static let zeroDot = StrokeStyle(lineWidth: 1.5, dash: [2, 2])
         /// A still-to-come dot's ring.
         static let upcomingDot: CGFloat = 2
+        /// The year's ring for a bill that starts, changes or ends; a €0 one reuses `zeroDot`.
+        static let yearRing: CGFloat = 1.5
     }
 
     /// How far text may shrink to fit a line before it truncates.
@@ -56,8 +85,17 @@ enum Tokens {
         static let headerMin: CGFloat = 0.8
         /// A lane's total, before it would run out of its column.
         static let laneTotalMin: CGFloat = 0.5
+        /// A day's total, before it would run out of its column.
+        static let dayTotalMin: CGFloat = 0.6
         /// The dots on the day under a dragging finger; from the prototype.
         static let dotOnLine: CGFloat = 1.18
+        /// A zoom with nothing tapped to grow from, about the middle: the closer level grows from
+        /// this, and the further one from its inverse. From the prototype.
+        static let zoomIn: CGFloat = 0.93
+        /// A zoom about a tapped cell starts the closer level at that cell's size, but no smaller
+        /// than this, and the further level no larger than `zoomMax`. Tuning values.
+        static let zoomMin: CGFloat = 0.2
+        static let zoomMax: CGFloat = 3
     }
 
     enum Opacity {
@@ -83,6 +121,9 @@ enum Tokens {
         static let accent: Color = .accentColor
         /// The editor's trash button, and its confirmation dialog's destructive buttons.
         static let destructive: Color = .red
+        /// Today's circle on the calendar, as Calendar draws it, and the number inside it.
+        static let today: Color = Color(.systemRed)
+        static let onToday: Color = .white
     }
 
     enum Surface {
@@ -98,6 +139,11 @@ enum Tokens {
         static let editorButtonActive: Color = Color(.tertiarySystemFill)
         /// Behind a picked-out lane's emoji.
         static let pickedLane: Color = Color(.secondarySystemFill)
+        /// An All bills card: the prototype's 8% grey in light and 18% in dark, which is what the
+        /// system's quaternary fill is.
+        static let card: Color = Color(.quaternarySystemFill)
+        /// A chip that isn't picked: the prototype's 14% and 32%, which the secondary fill is.
+        static let chip: Color = Color(.secondarySystemFill)
     }
 
     enum Chart {
@@ -152,6 +198,51 @@ enum Tokens {
         static let readoutDateBottom: CGFloat = 2
         static let readoutRowVertical: CGFloat = 1
         static let readoutGap: CGFloat = 6
+        /// Between the calendar's cells and weekday columns; from the prototype.
+        static let gridGap: CGFloat = 2
+        /// A day's second emoji tucks under the first by this much.
+        static let emojiOverlap: CGFloat = 4
+        /// Before the "+N" that follows a day's two emoji.
+        static let dayMoreGap: CGFloat = 5
+        /// Inside a day cell, above its number and below its total.
+        static let cellTop: CGFloat = 4
+        static let cellBottom: CGFloat = 6
+        /// Between the header row and the calendar's month title.
+        static let titleTop: CGFloat = 8
+        /// Between the title block and the weekday row.
+        static let titleBottom: CGFloat = 12
+        /// Inside a back button: chevron to name, and its ends; from the prototype.
+        static let backButtonGap: CGFloat = 4
+        static let backButtonLeading: CGFloat = 10
+        static let backButtonTrailing: CGFloat = 14
+        /// The year's month cells: across and down, and from a month's name to its days; from the
+        /// prototype.
+        static let yearColumnGap: CGFloat = 17.5
+        static let yearRowGap: CGFloat = 16
+        static let yearMiniGap: CGFloat = 5
+        /// Between the year's months and the key under them, and the key's lines and their dots.
+        static let yearKeyTop: CGFloat = 24
+        static let keyLineGap: CGFloat = 6
+        static let keyDotGap: CGFloat = 8
+        /// All bills: a chip's inner side padding and the gap between chips; from the prototype.
+        static let chipHorizontal: CGFloat = 13
+        static let chipGap: CGFloat = 8
+        /// A card's inset from the screen, its padding, and the gap between cards; from the
+        /// prototype.
+        static let cardInset: CGFloat = 16
+        static let cardTop: CGFloat = 14
+        static let cardSides: CGFloat = 16
+        static let cardBottom: CGFloat = 8
+        static let cardGap: CGFloat = 12
+        /// Above and below a bill's row inside a card, and from a card header to its first row.
+        static let billRowVertical: CGFloat = 8
+        static let cardHeaderBottom: CGFloat = 8
+        /// Between the parts of a bill's row, and the ended bills' line above and below.
+        static let billRowGap: CGFloat = 8
+        static let endedToggleVertical: CGFloat = 14
+        /// Above the chips, and above the cards.
+        static let chipsTop: CGFloat = 12
+        static let cardsTop: CGFloat = 16
     }
 
     enum Size {
@@ -220,6 +311,30 @@ enum Tokens {
         /// a wheel's natural width is unbounded, so equal thirds truncated "12 payments".
         static let wheelInterval: CGFloat = 64
         static let wheelUnit: CGFloat = 96
+        /// A calendar row's height; a six-week month shrinks to the second so the grid still fits.
+        /// From the prototype.
+        static let calendarRow: CGFloat = 80
+        static let calendarRowSixWeeks: CGFloat = 68
+        /// Today's circle round its day number.
+        static let todayCircle: CGFloat = 22
+        /// How far a sideways drag must go before it pages the month.
+        static let pageSwipe: CGFloat = 60
+        /// A scroll target with no height of its own, so landing it needs no target height.
+        static let scrollMarker: CGFloat = 0
+        /// A day in the year's mini month: a column and a row. From the prototype, where seven
+        /// columns make 105pt.
+        static let yearDayWidth: CGFloat = 15
+        static let yearDayHeight: CGFloat = 13
+        /// What a day shows in the year: nothing charged, only monthly bills, and a bill that
+        /// isn't monthly (larger when that day's extras reach a fifth of a usual month), and the
+        /// ring for a bill that starts, changes or ends. Today is the extra's size.
+        static let yearDotQuiet: CGFloat = 2.6
+        static let yearDotUsual: CGFloat = 5
+        static let yearDotExtra: CGFloat = 7
+        static let yearDotExtraLarge: CGFloat = 11
+        static let yearDotRing: CGFloat = 7
+        /// A category chip in All bills.
+        static let chipHeight: CGFloat = 34
     }
 
     enum Motion {
@@ -233,6 +348,13 @@ enum Tokens {
         static let returnDurationMax: TimeInterval = 0.9
         /// The dots settling onto and off the dragging line; from the prototype.
         static let scrub: TimeInterval = 0.12
+        /// A tapped day's rows fading from marked, once the timeline has landed on them.
+        static let dayMark: TimeInterval = 1.2
+        /// Moving between the year, a month and the days, about what was tapped. Longer than the
+        /// prototype's 0.28s, which was for a 7% zoom; this one covers a cell growing to the screen.
+        /// A tuning value.
+        static let zoomDuration: TimeInterval = 0.38
+        static let zoom: Animation = .timingCurve(0.2, 0.8, 0.2, 1, duration: zoomDuration)
         /// The header and its controls fading aside while dragging across the lanes,
         /// and back. Out is quick so nothing lies under the readout as it lands; back is a touch
         /// slower. Guesses: 0.2s both ways felt slow in the Simulator.
@@ -248,6 +370,8 @@ enum Tokens {
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
         static let readout: CGFloat = 16
+        /// An All bills card; from the prototype.
+        static let card: CGFloat = 20
     }
 }
 

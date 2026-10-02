@@ -4,8 +4,8 @@ import Foundation
 /// simulator. `amount` and `dayLine` are the short forms rows and headings show;
 /// `accessibilityLabel` reads the same information as a sentence for VoiceOver.
 enum TimelineFormatting {
-    /// "−€950". A zero renders unsigned — there is no direction to signal when nothing
-    /// moved. A `nil` renders an em dash.
+    /// "€950": the magnitude alone, with no minus sign, and a zero as "€0". A `nil` renders an
+    /// em dash.
     static func amount(_ value: Decimal?, locale: Locale = .current) -> String {
         guard let value else { return "\u{2014}" }
 
@@ -14,9 +14,7 @@ enum TimelineFormatting {
         formatter.locale = locale
         formatter.maximumFractionDigits = 0
         formatter.minimumFractionDigits = 0
-        let magnitude = formatter.string(from: abs(value) as NSDecimalNumber) ?? "\(abs(value))"
-
-        return value == 0 ? magnitude : "\u{2212}\(magnitude)"
+        return formatter.string(from: abs(value) as NSDecimalNumber) ?? "\(abs(value))"
     }
 
     /// "Mon 28"
@@ -72,10 +70,14 @@ enum TimelineFormatting {
         return parts.joined(separator: ", ")
     }
 
-    /// "−€162 left" for the current month; "−€1,539" for every other month. A current month
-    /// with nothing left reads "€0 left" — unsigned, per the zero rule. A collapsed bar does
-    /// not call this; it always shows `amount(section.total)`.
+    /// "€162 left" for the current month; "€1,539" for every other month. A current month
+    /// with nothing left reads "€0 left". A collapsed bar does not call this; it always shows
+    /// `amount(section.total)`. A section built with only extras reads "+€351 on top" for every
+    /// month, the current one included, or "Nothing on top" when it has no entries.
     static func headerFigure(for section: MonthSection, locale: Locale = .current) -> String {
+        if section.showsExtrasOnly {
+            return section.isEmpty ? "Nothing on top" : "+\(amount(section.total, locale: locale)) on top"
+        }
         guard section.isCurrent else { return amount(section.total, locale: locale) }
         return "\(amount(section.remaining, locale: locale)) left"
     }

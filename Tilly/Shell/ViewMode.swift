@@ -13,14 +13,14 @@ enum ViewMode: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .timeline: "Timeline"
+        case .timeline: "Calendar"
         case .categories: "Categories"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .timeline: "list.bullet"
+        case .timeline: "calendar"
         case .categories: "chart.dots.scatter"
         }
     }

@@ -32,3 +32,31 @@ public struct RecurrenceRule: Equatable, Sendable, Codable {
         )
     }
 }
+
+extension RecurrenceRule {
+    /// True when every calendar month holds at least one charge while the rule runs: every 1–28
+    /// days, every 1–4 weeks, or every month. Every N months for N ≥ 2, and every year, are
+    /// extras. Ignores `endDate`: this describes the rhythm, not the span.
+    public var chargesEveryMonth: Bool {
+        switch unit {
+        case .day: interval <= 28
+        case .week: interval <= 4
+        case .month: interval == 1
+        case .year: false
+        }
+    }
+
+    /// Charges in a year at this rhythm: 12/N for months, 1/N for years, 52/N for weeks,
+    /// 365/N for days. A fixed count, not a calendar walk: All bills normalises a rhythm, it
+    /// doesn't count a particular year.
+    public var paymentsPerYear: Decimal {
+        let perYear: Int
+        switch unit {
+        case .day: perYear = 365
+        case .week: perYear = 52
+        case .month: perYear = 12
+        case .year: perYear = 1
+        }
+        return Decimal(perYear) / Decimal(interval)
+    }
+}

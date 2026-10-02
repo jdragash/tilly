@@ -8,6 +8,13 @@ import Testing
         #expect(ViewMode.categories.rawValue == "categories")
     }
 
+    /// `.timeline` is the Calendar now; only its name changed, never what is stored.
+    @Test func timelineIsTitledCalendar() {
+        #expect(ViewMode.timeline.title == "Calendar")
+        #expect(ViewMode.timeline.systemImage == "calendar")
+        #expect(ViewMode.categories.title == "Categories")
+    }
+
     @Test func defaultIsTimeline() {
         #expect(ViewMode.firstRun == .timeline)
         // A stored value no case names (a future view, rolled back) reads as nothing, and
