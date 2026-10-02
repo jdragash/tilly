@@ -113,80 +113,23 @@ every bill with what each costs a year.
 `Tilly/Models/Expense.swift`, `OverrideRecord.swift`, `ExpenseCategory.swift`,
 `Tilly/Shell/ViewMode.swift`.
 
-## Updates
+## Outcome
 
-### 2026-09-30: round 1 on the canvas
+Shipped 2026-10-02. The three questions became three zoom levels of one calendar rather than three
+views: the year answers "is a heavy month coming", the month grid "what's due soon", and the
+timeline is the days. All bills, a list of every bill, came into scope on the way. The rules are in
+`DESIGN.md` ("The calendar", "All bills"), the choice and its rejected options in `DECISIONS.md`
+("Calendar is three zoom levels"). Open question 1 settled on the usual month: the median of the
+twelve months' monthly bills, with a month heavy when its extras reach a fifth of it.
 
-Nine directions, three per question. What carried:
+Set aside on the canvas, with no other record:
 
-- **Heavy months:** the columns against a usual month, now split by category, and the extras
-  standing on the every-month bills, redrawn so "on top" is visible rather than captioned. Both
-  must work for someone whose bills never vary; neither may look empty for them. A single headline
-  answer ("January") was clean but not understandable.
-- **Due soon becomes a calendar, and a core view.** A month grid, not a two-week list. The open
-  question is how a day holds several charges. A countdown list and written sentences were not
-  useful.
-- **What's about to change:** all three directions (before and after, a stepped line, every bill as
-  a line) were confusing. The question is parked, not answered.
+- **Heavy months:** columns against a usual line, split by category (busy, mostly one fixed bill);
+  extras as blocks standing on a floor of the every-month bills (liked, overtaken by the year); a
+  single headline answer, "January" (clean, but nothing showed why).
+- **Due soon:** a countdown list and written sentences (not useful); a day drawn as named pills or
+  as a bar (the emoji and total read best); months that scroll rather than page.
+- **All bills:** a table sorted by tapping its columns, and a share bar that opens categories.
 
-### 2026-10-01: rounds 2 and 3, and the views become zoom levels
-
-- **Heavy months:** the columns split by category were set aside as busy, mostly one fixed bill.
-  "Standing on every month" (extras as blocks on a floor of the every-month bills) carries on,
-  tried on five kinds of user; next, each bar names its month.
-- **The calendar** shows a day's emoji and its total, and pages a month at a time. Named pills and
-  a bar per day were set aside; scrolling months lost to paging.
-- **The views are zoom levels of one place, as in Calendar:** months ahead, then one month as a
-  calendar, then one day. Looking months ahead is occasional, so it sits a level up rather than
-  taking an equal row in the menu. The lanes and the calendar overlap as pictures of one month;
-  whether lanes stay, or sit under the calendar, is open.
-- **A list of every bill with what it costs a year** is now in scope: active and ended bills,
-  sortable by name, amount and how often. It reopens the shell's "no list of every expense"
-  (DESIGN.md), and where it opens from is open.
-- **Planned one-off expenses** are in the product now (PROJECT.md); they stand on the floor like
-  any renewal.
-
-### 2026-10-01: the year view, All bills, and a working prototype
-
-- **Months ahead is a year of small months,** Calendar's year view: every day a faint dot, anything
-  not monthly in its category's colour. It is the top zoom level and never looks empty for someone
-  with only monthly bills. Lanes beneath the calendar were set aside as overload; lanes may go.
-- **All bills is a card per category,** costliest first, filtered by chips. A table sorted by
-  tapping columns, and a share bar that opens categories, were set aside.
-- **Amounts drop the minus sign** in this work, as a trial; DESIGN.md hasn't changed yet.
-- **`docs/prototypes/zoom-and-bills.html`** puts it together. Open after it:
-  - The year shows only what comes on top of a usual month; the month and the day show every
-    charge. The levels don't read as one set of data at different distances. Perhaps a switch to
-    show only the extras.
-  - The month button should follow the level it's in.
-  - All bills: a sheet or a view of its own; a Monthly / Yearly switch for every figure; sorted
-    highest first; no bill count under each category.
-
-### 2026-10-01: round 2 settles it, and the next version is planned
-
-Chosen on the prototype's switches, all as recommended:
-
-- **The levels show the same charges.** The year shows every charge: a grey dot for a day of
-  monthly bills, extras in their category's colour, each month labelled with its total. One
-  All / Extras toggle holds at every level, so Extras hides monthly bills in the month and the
-  timeline too. "Extras" means anything not charged every month.
-- **The month button stays in its level:** none at the year, which already starts now;
-  `September` pages the calendar back, or scrolls the timeline back.
-- **All bills is a sheet,** with Monthly / Yearly at the top. Monthly is a bill's year divided by
-  twelve; where a row's figure isn't what is charged, the line under its name says what is. No
-  bill count; categories, chips and bills highest first; ended bills behind a line under the cards.
-- **Tapping a day opens the timeline at that day.**
-
-Then, for the build: Calendar replaces Timeline in the view menu, and the timeline becomes its
-closest zoom. Amounts drop the minus sign everywhere. The lanes stay as they are. Tapping a bill
-in All bills opens its next charge in the editor. Planned one-offs wait for their own brief, so
-the version has none. Plan: `docs/plans/additional-views.md`.
-
-### 2026-10-02: built
-
-Calendar replaces Timeline in the view menu: the year, a month, and the timeline as the days, with
-one All / Extras toggle held at every level, and All bills as a sheet from beside settings. The
-toggle is the stock segmented control, not on glass: on glass it read as a pill in a pill. Two
-developer scenarios, only monthly bills and one giant bill, show the year at both ends. Left open:
-on an iPhone a flick in progress may still beat the toggle, as it beats the month button; and in a
-year where every bill ends, a month past the last payment opens the last month with charges.
+Still open, tracked in `ROADMAP.md`: what's about to change, as a picture; planned one-offs, which
+are extras by this definition; and the two Calendar bugs on its v1 row.

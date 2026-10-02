@@ -25,7 +25,7 @@ Opus pass with `tilly-explore` before I keep going?" Don't quietly redesign in S
   arranged to avoid.
 - The brief at `docs/briefs/<slug>/brief.md`
 - `CLAUDE.md` — the hard rules, especially the `Core/` boundary and the token rule
-- `docs/DESIGN.md` — tokens, state grammar, copy rules
+- `docs/DESIGN.md` — state grammar, each surface, copy rules
 - `.claude/rules/` — load by path when you touch matching files. Read them if they haven't loaded.
 
 ## Execute one step at a time

@@ -2,6 +2,7 @@
 paths:
   - "Tilly/Calendar/**"
   - "Tilly/Bills/**"
+  - "Tilly/Timeline/TimelineView.swift"
 ---
 
 # The calendar's levels and All bills
@@ -31,3 +32,8 @@ tests: each was found on screen.
   reads as a pill in a pill. Alone it is 32pt and sits beside the title.
 - At accessibility sizes a card header's trailing total squeezed the name to a letter a line:
   stack the header there, as `OccurrenceRow` stacks its row.
+
+## Checking
+
+- Look at the year in three developer scenarios: `Typical year`, `Only monthly bills` and `One
+  giant bill`. Someone whose bills never vary must still see a full year, never an empty one.
