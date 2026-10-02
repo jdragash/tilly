@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilly — zoom levels and all bills</title>
+<!--
+  Tilly · the calendar as zoom levels, and All bills · 2026-10-01
+
+  Built during tilly-explore after two canvases (Tilly Additional Views, Tilly Zoom and Bills).
+  The choices it puts together, to be judged in motion:
+
+    1. The views as distances from one place, as in Calendar: a year of small months, then a
+       paged month, then the day (the timeline scrolled to it, or a half sheet).
+    2. The year labelled with what comes on top of a usual month, so size reads at a glance,
+       and a monthly-only user still sees a year rather than nothing.
+    3. All bills as a sheet of category cards, costliest first, filtered by chips.
+    4. Amounts without the minus sign, with the euro sign.
+
+  Still open, on switches: what tapping a day does; how ended bills are reached.
+
+  Round 2 · 2026-10-01, on switches, with round 1 one switch away:
+
+    5. The levels as one set of data: the year shows every charge, with a toggle to show only
+       what comes on top, either at the year alone or held at every level.
+    6. The month button follows the level: inside it rather than jumping out of it.
+    7. All bills as a sheet or as a view in the menu; Monthly / Yearly on every figure; no bill
+       count; categories, chips and bills highest first.
+
+  Chosen (2026-10-01): the toggle held at every level; the month button staying in its level;
+  All bills as a sheet; tapping a day opens the timeline; ended bills behind a line under the
+  cards. The other options stay on their switches as the record of what lost.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees with the docs,
+  the docs win.
+-->
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#E5E5EA;color:#1C1C1E;font-family:-apple-system,"SF Pro Text",system-ui,sans-serif}
+.wrap{display:flex;gap:40px;padding:32px 24px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+span{white-space:nowrap}
+
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--ink);box-shadow:0 0 0 1px var(--frame),0 20px 60px rgba(0,0,0,.18);flex-shrink:0}
+.phone[data-theme=light]{--bg:#FFFFFF;--ink:#000000;--ink2:rgba(60,60,67,.6);--ink3:rgba(60,60,67,.3);--fill:rgba(120,120,128,.14);--well:rgba(116,116,128,.08);--glass:rgba(255,255,255,.82);--glassEdge:rgba(0,0,0,.08);--rule:rgba(60,60,67,.29);--rule2:rgba(60,60,67,.18);--sheet:#FFFFFF;--card:rgba(120,120,128,.08);--chipOn:#000;--chipOnInk:#FFF;--frame:rgba(0,0,0,.12);--dim:rgba(0,0,0,.25);
+  --red:#FF3B30;--blue:#007AFF;--orange:#FF9500;--aqua:#32ADE6;--green:#34C759;--violet:#AF52DE;--pink:#FF2D55;--hi:rgba(120,120,128,.12)}
+.phone[data-theme=dark]{--bg:#000000;--ink:#FFFFFF;--ink2:rgba(235,235,245,.6);--ink3:rgba(235,235,245,.3);--fill:rgba(120,120,128,.32);--well:rgba(118,118,128,.24);--glass:rgba(44,44,46,.86);--glassEdge:rgba(255,255,255,.12);--rule:rgba(84,84,88,.65);--rule2:rgba(84,84,88,.45);--sheet:#1C1C1E;--card:rgba(118,118,128,.18);--chipOn:#FFF;--chipOnInk:#000;--frame:#3A3A3C;--dim:rgba(0,0,0,.5);
+  --red:#FF453A;--blue:#0A84FF;--orange:#FF9F0A;--aqua:#64D2FF;--green:#30D158;--violet:#BF5AF2;--pink:#FF375F;--hi:rgba(120,120,128,.28)}
+
+.level{position:absolute;inset:0}
+.level.zin{animation:zin .28s cubic-bezier(.2,.8,.2,1)}
+.level.zout{animation:zout .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes zin{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:none}}
+@keyframes zout{from{opacity:0;transform:scale(1.07)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.level.zin,.level.zout,.sheet,.backdrop{animation:none!important}}
+
+.s2{color:var(--ink2)}
+.top{position:absolute;top:54px;left:20px;right:20px;height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:3}
+.hd{position:absolute;top:54px;left:20px;right:20px;height:60px;display:flex;align-items:center;justify-content:space-between;z-index:3}
+.gl{display:flex;height:44px;border-radius:22px;background:var(--glass);box-shadow:0 2px 8px rgba(0,0,0,.12),0 0 0 .5px var(--glassEdge);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.gb{width:52px;height:44px;border:0;background:none;display:flex;align-items:center;justify-content:center;padding:0}
+.gb.sm{width:44px}
+.gb:disabled{opacity:.3;cursor:default}
+.back{height:44px;padding:0 14px 0 10px;border-radius:22px;border:0;background:var(--glass);box-shadow:0 2px 8px rgba(0,0,0,.12),0 0 0 .5px var(--glassEdge);font-size:17px;display:flex;align-items:center;gap:4px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.mb{position:absolute;left:28px;bottom:28px;height:48px;padding:0 16px;border-radius:24px;border:0;background:var(--glass);box-shadow:0 2px 8px rgba(0,0,0,.12),0 0 0 .5px var(--glassEdge);font-size:17px;font-weight:500;z-index:5;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.br{position:absolute;right:28px;bottom:28px;display:flex;height:48px;border-radius:24px;background:var(--glass);box-shadow:0 2px 8px rgba(0,0,0,.12),0 0 0 .5px var(--glassEdge);z-index:5;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.br button{width:52px;height:48px;border:0;background:none;display:flex;align-items:center;justify-content:center;padding:0}
+.menu{position:absolute;top:104px;right:20px;width:230px;border-radius:14px;background:var(--sheet);box-shadow:0 10px 40px rgba(0,0,0,.25),0 0 0 .5px var(--glassEdge);z-index:6;overflow:hidden}
+.menu div{display:flex;justify-content:space-between;padding:11px 16px;font-size:17px;border-bottom:.5px solid var(--rule2)}
+.menu div:last-child{border:0}
+.menu .off{color:var(--ink3)}
+
+/* year */
+.yr{position:absolute;top:126px;left:20px;width:350px;display:grid;grid-template-columns:repeat(3,105px);column-gap:17.5px;row-gap:16px}
+.mini{border:0;background:none;padding:6px 0 4px;display:flex;flex-direction:column;gap:5px;border-radius:10px;text-align:left}
+.mini:hover{background:var(--hi)}
+.mini .lb{display:flex;justify-content:space-between;align-items:baseline;width:105px;padding:0 1px}
+.mini .lb b{font-size:13px;font-weight:600}
+.mini .lb b.now{color:var(--red)}
+.mini .lb i{font-style:normal;font-size:12px;color:var(--ink2)}
+.mini .lb i.big{color:var(--ink);font-weight:600}
+.mg{display:grid;grid-template-columns:repeat(7,15px);grid-auto-rows:13px}
+.mg span{display:flex;align-items:center;justify-content:center}
+.mg .d::after{content:"";width:2.6px;height:2.6px;border-radius:50%;background:var(--ink3)}
+.mg .mx::after{display:none}
+.mk{border-radius:50%;display:block;flex-shrink:0;box-sizing:border-box}
+.yfoot{position:absolute;top:640px;left:20px;width:350px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.yfoot .k{display:flex;align-items:center;gap:8px}
+.yfoot span{white-space:normal;line-height:1.35}
+
+/* month */
+.mt{position:absolute;top:106px;left:20px;display:flex;flex-direction:column;gap:2px}
+.mt b{font-size:28px;font-weight:700;letter-spacing:-.4px}
+.wk{position:absolute;top:176px;left:20px;width:350px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;font-size:11px;font-weight:600;color:var(--ink2);text-align:center}
+.g{position:absolute;top:196px;left:20px;width:350px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;font-size:13px}
+.cell{border:0;background:none;padding:4px 0 6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;border-radius:10px;min-width:0}
+.cell:hover{background:var(--hi)}
+.cell.empty{justify-content:flex-start;cursor:default}
+.cell.empty:hover{background:none}
+.cell.other{color:var(--ink3)}
+.cell .num{height:22px;display:flex;align-items:center}
+.cell .today{display:inline-flex;width:22px;height:22px;border-radius:11px;background:var(--red);color:#FFF;font-weight:600;align-items:center;justify-content:center}
+.cell .em{font-size:20px;line-height:1;display:flex;align-items:center}
+.cell .em.two{font-size:16px;letter-spacing:-4px;padding-right:4px}
+.cell .em .more{font-size:10px;font-weight:700;color:var(--ink2);letter-spacing:0;margin-left:5px}
+.cell .amt{font-size:11px;font-weight:600;letter-spacing:-.2px}
+.cell.up .em{opacity:.55}
+.cell.up .amt{color:var(--ink2)}
+
+/* timeline */
+.tl{position:absolute;top:106px;left:0;right:0;bottom:0;overflow-y:auto;padding-bottom:110px;scrollbar-width:none}
+.tl::-webkit-scrollbar{display:none}
+.mh{position:sticky;top:0;background:var(--bg);padding:8px 20px 8px;display:flex;flex-direction:column;gap:2px;z-index:2;border-bottom:.5px solid transparent}
+.mh b{font-size:20px;font-weight:600}
+.tr{display:flex;align-items:center;gap:12px;height:52px;padding:0 20px}
+.tr.up{color:var(--ink2)}
+.tr.hi{background:var(--hi)}
+.well{width:40px;height:40px;border-radius:20px;background:var(--well);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.tr.up .well span{opacity:.55}
+.nm{display:flex;flex-direction:column;gap:1px;min-width:0}
+.nm b{font-weight:400;font-size:17px}
+.nm i{font-style:normal;font-size:13px;color:var(--ink2)}
+.amtR{margin-left:auto;font-size:17px}
+.floorline{padding:18px 20px;font-size:13px;color:var(--ink2)}
+
+/* sheets */
+.backdrop{position:absolute;inset:0;background:var(--dim);z-index:8;animation:fade .25s}
+@keyframes fade{from{opacity:0}}
+.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:38px 38px 0 0;background:var(--sheet);z-index:9;animation:up .32s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}
+@keyframes up{from{transform:translateY(100%)}}
+.grab{align-self:center;width:36px;height:5px;border-radius:3px;background:var(--ink3);margin-top:6px;flex-shrink:0}
+.x{width:44px;height:44px;border-radius:22px;border:0;background:var(--fill);display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.sbody{overflow-y:auto;flex-grow:1;padding-bottom:40px;scrollbar-width:none}
+.sbody::-webkit-scrollbar{display:none}
+.chips{display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:34px;padding:0 13px;border-radius:17px;border:0;background:var(--fill);font-size:15px;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.chip.on{background:var(--chipOn);color:var(--chipOnInk)}
+.card{margin:0 16px;border-radius:20px;background:var(--card);padding:14px 16px 8px;display:flex;flex-direction:column}
+.ch{display:flex;align-items:center;gap:12px;padding-bottom:8px}
+.ch .e{font-size:30px;line-height:1}
+.ch .n{display:flex;flex-direction:column;gap:1px;flex-grow:1;min-width:0}
+.ch .n b{font-size:17px;font-weight:600}
+.ch .n i,.ch .t i{font-style:normal;font-size:13px;color:var(--ink2)}
+.ch .t{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.ch .t b{font-size:20px;font-weight:600}
+.r{display:flex;align-items:baseline;gap:8px;padding:8px 0;font-size:15px;border-top:.5px solid var(--rule2);border-left:0;border-right:0;border-bottom:0;background:none;width:100%;text-align:left}
+.r .f{font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis}
+.r .a{margin-left:auto;flex-shrink:0}
+.r.end{color:var(--ink2)}
+.tg{display:flex;align-items:center;justify-content:space-between;padding:10px 0 4px;font-size:15px;border-top:.5px solid var(--rule2)}
+.sw{width:51px;height:31px;border-radius:16px;background:var(--fill);position:relative;border:0;padding:0;flex-shrink:0;transition:background .2s}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#FFF;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:left .2s}
+.sw.on{background:var(--green)}
+.sw.on::after{left:22px}
+.endrow{margin:4px 16px 0;padding:14px 4px;display:flex;justify-content:space-between;font-size:15px;color:var(--ink2);border:0;background:none;width:calc(100% - 32px)}
+
+/* controls */
+.panel{width:340px;display:flex;flex-direction:column;gap:18px}
+.panel h1{font-size:22px;margin:0}
+.panel p{margin:0;font-size:14px;line-height:1.4;color:#3A3A3C}
+.ctl{display:flex;flex-direction:column;gap:6px}
+.ctl>span{font-size:13px;font-weight:600;color:#6C6C70;text-transform:uppercase;letter-spacing:.3px}
+.seg{display:flex;flex-direction:column;gap:2px;background:#D1D1D6;border-radius:10px;padding:2px}
+.seg button{border:0;background:none;border-radius:8px;padding:8px 10px;text-align:left;font-size:14px;white-space:normal}
+.seg button.on{background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,.14);font-weight:600}
+.lies{font-size:13px;color:#3A3A3C;line-height:1.45;margin:0;padding-left:18px}
+.ctl.dis{opacity:.4;pointer-events:none}
+.round{flex-direction:row}
+.round button{text-align:center;flex:1}
+
+/* round 2 */
+.mt2{position:absolute;top:106px;left:20px;display:flex;flex-direction:column;gap:2px}
+.mt2 b{font-size:28px;font-weight:700;letter-spacing:-.4px}
+.lens{position:absolute;top:110px;right:20px;z-index:4;display:flex;height:36px;padding:3px;border-radius:18px;background:var(--glass);box-shadow:0 2px 8px rgba(0,0,0,.12),0 0 0 .5px var(--glassEdge);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.lens button,.sg button{border:0;background:none;padding:0 13px;border-radius:15px;font-size:15px;height:30px}
+.lens button.on{background:var(--ink);color:var(--bg);font-weight:600}
+.sg{display:flex;height:32px;padding:2px;border-radius:16px;background:var(--fill)}
+.sg button{height:28px;border-radius:14px;flex:1;padding:0 14px}
+.sg button.on{background:var(--thumb);font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.phone[data-theme=light]{--thumb:#FFFFFF}
+.phone[data-theme=dark]{--thumb:#636366}
+.bv{position:absolute;top:106px;left:0;right:0;bottom:0;overflow-y:auto;padding-bottom:110px;scrollbar-width:none}
+.bv::-webkit-scrollbar{display:none}
+.ch .t.one b{font-size:17px}
+.menu div.act{cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="phone" id="phone" data-theme="light">
+    <div class="level" id="level"></div>
+    <button class="mb" id="mb" data-act="home" aria-label="Back to September">September</button>
+    <div class="br">
+      <button data-act="bills" id="billsBtn" aria-label="All bills"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 6H18M8 11H18M8 16H18"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="11" r="1" fill="currentColor"/><circle cx="4.5" cy="16" r="1" fill="currentColor"/></svg></button>
+      <button aria-label="Settings" title="Not in this prototype"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="3"/><path d="M11 2.5v2.2M11 17.3v2.2M2.5 11h2.2M17.3 11h2.2M5 5l1.6 1.6M15.4 15.4L17 17M5 17l1.6-1.6M15.4 6.6L17 5"/></svg></button>
+    </div>
+    <div id="overlay"></div>
+  </div>
+
+  <div class="panel">
+    <h1>Zoom levels and all bills</h1>
+    <p>Tap a month in the year, a day in the month. “‹” goes back out. The list button, or the view menu, opens All bills. Today is fixed at Wednesday 30 September 2026.</p>
+    <div class="ctl"><span>Version</span><div class="seg round" data-ctl="round">
+      <button data-v="2">Round 2</button><button data-v="1">Round 1, as it was</button>
+    </div></div>
+    <div class="ctl r2"><span>Year, month and day: the same charges?</span><div class="seg" data-ctl="levels">
+      <button data-v="before">As before: the year shows only what comes on top; month and day show everything</button>
+      <button data-v="year">The year shows everything, with an All / Extras toggle at the year only</button>
+      <button data-v="all">The same toggle, held at every level: Extras hides monthly bills in the month and the timeline too</button>
+    </div></div>
+    <div class="ctl r2"><span>The month button</span><div class="seg" data-ctl="btn">
+      <button data-v="before">As before: “September” everywhere, always opens this month’s calendar</button>
+      <button data-v="month">Stays in the level: none at the year; “September” pages the calendar back, or scrolls the timeline back</button>
+      <button data-v="today">Named for the level: as left, but “Today” on the timeline, scrolling to today</button>
+    </div></div>
+    <div class="ctl r2"><span>All bills is</span><div class="seg" data-ctl="billsAt">
+      <button data-v="sheet">A sheet, from the list button</button>
+      <button data-v="view">A view, in the view menu beside Calendar</button>
+    </div></div>
+    <div class="ctl"><span>Whose bills</span><div class="seg" data-ctl="ds">
+      <button data-v="sample">Sample: renewals, price changes, a planned sofa</button>
+      <button data-v="monthly">Only monthly bills</button>
+      <button data-v="busy">Something every month</button>
+      <button data-v="giant">One giant bill</button>
+    </div></div>
+    <div class="ctl"><span>Appearance</span><div class="seg" data-ctl="theme">
+      <button data-v="light">Light</button><button data-v="dark">Dark</button>
+    </div></div>
+    <div class="ctl"><span>Tapping a day</span><div class="seg" data-ctl="dayMode">
+      <button data-v="timeline">Opens the timeline at that day</button>
+      <button data-v="sheet">Opens a half sheet over the month</button>
+    </div></div>
+    <div class="ctl r1"><span>The year's labels (round 1)</span><div class="seg" data-ctl="yearLabel">
+      <button data-v="extras">What comes on top of a usual month</button>
+      <button data-v="totals">Each month's total</button>
+    </div></div>
+    <div class="ctl"><span>Ended bills in All bills</span><div class="seg" data-ctl="ended">
+      <button data-v="footer">A line under the cards that opens</button>
+      <button data-v="chip">An “Ended” chip</button>
+      <button data-v="switch">A switch in each card</button>
+    </div></div>
+    <div class="ctl r2"><span>Also new in round 2</span>
+      <ul class="lies">
+        <li>All bills has Monthly / Yearly at the top. Monthly divides a bill’s year by twelve, so a yearly bill reads as its share of a month.</li>
+        <li>Where a row’s figure isn’t what is actually charged, the line beside the name says what is: “€640 yearly” in Monthly, “€1,150 monthly” in Yearly.</li>
+        <li>No bill count under a category, and no “a year” under each total: the control says which.</li>
+        <li>The chips follow the cards, highest first; cards and the bills in them already did.</li>
+        <li>“Extras” means anything not charged every month: renewals, quarterly bills, things you plan to buy.</li>
+        <li>With everything shown, a month’s label is its total, bold when €300 or more comes on top.</li>
+      </ul>
+    </div>
+    <div class="ctl"><span>What this prototype lies about</span>
+      <ul class="lies">
+        <li>No Liquid Glass: the glass is a blur and a tint.</li>
+        <li>No Dynamic Type; sizes are fixed at the default.</li>
+        <li>Browser scrolling, not iOS momentum or rubber-banding.</li>
+        <li>No pinch to zoom out; only the buttons and taps.</li>
+        <li>Tapping a bill doesn't open the editor; + and settings do nothing.</li>
+        <li>The categories lens (lanes) isn't here.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+// ---------- dates ----------
+const TODAY = new Date(2026, 8, 30);
+const MAXD = new Date(2027, 11, 31);
+const MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MS = MON.map(m => m.slice(0, 3));
+const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const WDL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const pad = n => String(n).padStart(2, "0");
+const D = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+const addMonths = (a, n) => { const t = a.getMonth() + n, y = a.getFullYear() + Math.floor(t / 12), m = ((t % 12) + 12) % 12; return new Date(y, m, Math.min(a.getDate(), dim(y, m))); };
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const ymKey = (y, m) => y * 12 + m;
+const eur = n => "€" + Math.round(n).toLocaleString("en-US");
+const mmyy = d => `${pad(d.getMonth() + 1)}/${String(d.getFullYear()).slice(2)}`;
+const monthName = (y, m) => y === TODAY.getFullYear() ? MON[m] : `${MON[m]} ’${String(y).slice(2)}`;
+
+// ---------- categories (Settings order) ----------
+const CATS = [
+  { id: "home", e: "🏠", n: "Home", c: "blue" },
+  { id: "car", e: "🚗", n: "Car", c: "orange" },
+  { id: "phone", e: "📱", n: "Phone & internet", c: "aqua" },
+  { id: "health", e: "💪", n: "Health", c: "green" },
+  { id: "subs", e: "🎬", n: "Subscriptions", c: "violet" },
+  { id: "learn", e: "📗", n: "Learning", c: "pink" },
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
+
+// ---------- bills as rules: every = months between charges, 0 = once ----------
+const R = (name, cat, amount, every, anchor, o = {}) => ({ name, cat, amount, every, anchor, ...o });
+function sample(giant) {
+  return [
+    R("Rent", "home", 1150, 1, "2026-01-01"),
+    R("Electricity", "home", 68, 1, "2026-01-12"),
+    R("Water", "home", 41, 2, "2026-02-28"),
+    R("Home insurance", "home", giant ? 2400 : 310, 12, "2025-12-03"),
+    R("Sofa", "home", 1000, 0, "2027-03-14"),
+    R("Parking", "car", 35, 1, "2026-01-05"),
+    R("Car insurance", "car", 640, 12, "2026-01-14"),
+    R("Broadband", "phone", 38, 1, "2026-01-15"),
+    R("Phone", "phone", 22, 1, "2026-01-20"),
+    R("Old phone plan", "phone", 25, 1, "2025-03-20", { count: 18 }),
+    R("Gym", "health", 25, 1, "2026-01-10", { until: "2026-10-10", series: "gym" }),
+    R("Gym", "health", 32, 1, "2026-11-10", { series: "gym" }),
+    R("Dentist plan", "health", 16, 1, "2026-01-25"),
+    R("Music", "subs", 11, 1, "2026-01-08"),
+    R("Film club", "subs", 13, 1, "2026-01-08", { until: "2026-12-08" }),
+    R("News", "subs", 9, 1, "2026-01-27", { over: { "2026-10-27": 0 } }),
+    R("Cloud storage", "subs", 3, 1, "2026-01-02"),
+    R("Streaming TV", "subs", 18, 1, "2026-10-18"),
+    R("Sports pass", "subs", 30, 1, "2025-12-15", { count: 6 }),
+    R("Language course", "learn", 120, 3, "2026-02-03"),
+    R("Design app", "learn", 99, 12, "2026-03-09"),
+  ];
+}
+const DATASETS = {
+  sample: () => sample(false),
+  giant: () => sample(true),
+  monthly: () => [
+    R("Rent", "home", 1150, 1, "2026-01-01"), R("Electricity", "home", 68, 1, "2026-01-12"),
+    R("Parking", "car", 35, 1, "2026-01-05"), R("Broadband", "phone", 38, 1, "2026-01-15"),
+    R("Phone", "phone", 22, 1, "2026-01-20"), R("Gym", "health", 25, 1, "2026-01-10"),
+    R("Dentist plan", "health", 16, 1, "2026-01-25"), R("Music", "subs", 11, 1, "2026-01-08"),
+    R("Film club", "subs", 13, 1, "2026-01-08"), R("News", "subs", 9, 1, "2026-01-27"),
+    R("Cloud storage", "subs", 3, 1, "2026-01-02"),
+  ],
+  busy: () => sample(false).concat([
+    R("Physio pack", "health", 60, 12, "2026-10-06"),
+    R("Streaming, yearly", "subs", 89, 12, "2026-10-21"),
+    R("Car service", "car", 210, 12, "2026-11-16"),
+    R("Magazine", "subs", 15, 3, "2026-12-01"),
+    R("Road tax", "car", 120, 12, "2027-01-25"),
+    R("Dentist check", "health", 45, 6, "2027-02-11"),
+  ]),
+};
+
+function build(rules) {
+  const occ = [];
+  rules.forEach((r, ri) => {
+    r.id = ri;
+    const a = D(r.anchor), list = [];
+    if (!r.every) list.push(a);
+    else for (let k = 0; ; k++) {
+      const d = addMonths(a, k * r.every);
+      if (d > MAXD || (r.until && d > D(r.until)) || (r.count && k >= r.count)) break;
+      list.push(d);
+    }
+    const ends = !!(r.until || r.count);
+    const successor = r.series && rules.some(o => o !== r && o.series === r.series && D(o.anchor) > a);
+    const predecessor = r.series && rules.some(o => o !== r && o.series === r.series && D(o.anchor) < a);
+    list.forEach((d, k) => {
+      const amt = r.over && iso(d) in r.over ? r.over[iso(d)] : r.amount;
+      occ.push({ d, r, amt, cat: r.cat, first: k === 0, last: k === list.length - 1 && ends && !successor, rise: k === 0 && predecessor });
+    });
+    r.occ = list;
+  });
+  occ.sort((x, y) => y.d - x.d || y.amt - x.amt || x.r.name.localeCompare(y.r.name));
+  const byDay = new Map(), byMonth = new Map();
+  for (const o of occ) {
+    const dk = iso(o.d), mk = ymKey(o.d.getFullYear(), o.d.getMonth());
+    if (!byDay.has(dk)) byDay.set(dk, []); byDay.get(dk).push(o);
+    if (!byMonth.has(mk)) byMonth.set(mk, []); byMonth.get(mk).push(o);
+  }
+  const keys = [...byMonth.keys()];
+  return { rules, occ, byDay, byMonth, minM: Math.min(...keys), maxM: Math.max(...keys) };
+}
+
+// ---------- state ----------
+const S = { ds: "sample", theme: "light", dayMode: "timeline", yearLabel: "extras", ended: "footer",
+  round: "2", levels: "all", btn: "month", billsAt: "sheet", per: "month", extras: false,
+  level: "month", y: 2026, m: 8, day: null, menu: false, sheet: null, filter: "all", endedOpen: false, endedOn: {} };
+// round 1 forces every round-2 switch back to how it was
+const V = () => S.round === "1" ? { levels: "before", btn: "before", billsAt: "sheet", r1: true } : { levels: S.levels, btn: S.btn, billsAt: S.billsAt, r1: false };
+// is the Extras lens on at this level?
+const lensShown = lv => { const v = V(); return !v.r1 && (v.levels === "all" ? lv !== "bills" : v.levels === "year" && lv === "year"); };
+const extrasOnly = lv => V().levels === "before" ? lv === "year" : lensShown(lv) && S.extras;
+const lens = lv => lensShown(lv) ? `<div class="lens" role="group" aria-label="Show"><button class="${S.extras ? "" : "on"}" data-act="lens" data-v="0">All</button><button class="${S.extras ? "on" : ""}" data-act="lens" data-v="1">Extras</button></div>` : "";
+let DB = build(DATASETS.sample());
+const phone = document.getElementById("phone"), levelEl = document.getElementById("level"), overlay = document.getElementById("overlay");
+
+const ICON = {
+  cal: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4" width="14" height="13" rx="2.5"/><path d="M3 8H17M7 2.5V5M13 2.5V5"/></svg>',
+  plus: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 3V17M3 10H17"/></svg>',
+  back: '<svg width="12" height="18" viewBox="0 0 12 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2L3 9L9 16"/></svg>',
+  prev: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3L5 9L11 15"/></svg>',
+  next: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3L13 9L7 15"/></svg>',
+  x: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2L12 12M12 2L2 12"/></svg>',
+};
+ICON.list = '<svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 6H18M8 11H18M8 16H18"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="11" r="1" fill="currentColor"/><circle cx="4.5" cy="16" r="1" fill="currentColor"/></svg>';
+const glassPair = () => `<div class="gl"><button class="gb" data-act="menu" aria-label="View: ${S.level === "bills" ? "all bills" : "calendar"}">${S.level === "bills" ? ICON.list : ICON.cal}</button><button class="gb" aria-label="Add" title="Not in this prototype">${ICON.plus}</button></div>`;
+const menu = () => {
+  if (!S.menu) return "";
+  const row = (v, label, on) => `<div class="act" data-act="view" data-v="${v}"><span>${label}</span><span>${on ? "✓" : ""}</span></div>`;
+  return `<div class="menu">${row("cal", "Calendar", S.level !== "bills")}<div class="off"><span>Categories</span><span></span></div>${V().billsAt === "view" ? row("bills", "All bills", S.level === "bills") : ""}</div>`;
+};
+
+// ---------- shared figures ----------
+const monthOcc = (y, m) => DB.byMonth.get(ymKey(y, m)) || [];
+const isExtra = o => o.r.every !== 1;
+function monthFigure(y, m, lv) {
+  if (lv && extrasOnly(lv)) {
+    const ex = monthOcc(y, m).filter(isExtra);
+    return ex.length ? `+${eur(ex.reduce((s, o) => s + o.amt, 0))} on top` : "Nothing on top this month";
+  }
+  const list = monthOcc(y, m);
+  if (!list.length) return "Nothing this month";
+  if (y === TODAY.getFullYear() && m === TODAY.getMonth()) return eur(list.filter(o => o.d > TODAY).reduce((s, o) => s + o.amt, 0)) + " left";
+  return eur(list.reduce((s, o) => s + o.amt, 0));
+}
+
+// ---------- year ----------
+function renderYear() {
+  const months = [];
+  for (let i = 0; i < 12; i++) { const t = addMonths(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1), i); months.push([t.getFullYear(), t.getMonth()]); }
+  let total = 0; const usuals = [];
+  const v = V(), onTop = extrasOnly("year");
+  // round 1 kept its own labels switch; round 2's labels follow the lens
+  const labelsAs = v.r1 ? S.yearLabel : onTop ? "extras" : "totals";
+  const minis = months.map(([y, m]) => {
+    const list = monthOcc(y, m), sum = list.reduce((s, o) => s + o.amt, 0);
+    const extra = list.filter(isExtra).reduce((s, o) => s + o.amt, 0);
+    total += sum; usuals.push(sum - extra);
+    const now = y === TODAY.getFullYear() && m === TODAY.getMonth();
+    let label = "";
+    if (labelsAs === "totals") label = `<i class="${extra >= 300 ? "big" : ""}">${list.length ? eur(sum) : ""}</i>`;
+    else label = extra ? `<i class="${extra >= 300 ? "big" : ""}">+${eur(extra)}</i>` : `<i></i>`;
+    const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+    let cells = "";
+    for (let i = 0; i < lead; i++) cells += `<span class="mx"></span>`;
+    for (let d = 1; d <= dim(y, m); d++) {
+      const day = new Date(y, m, d), os = DB.byDay.get(iso(day)) || [];
+      const ex = os.filter(isExtra), ch = os.filter(o => !isExtra(o) && (o.first && o.d >= new Date(TODAY.getFullYear(), TODAY.getMonth(), 1) || o.last || o.rise || o.amt === 0));
+      let mark = "";
+      if (sameDay(day, TODAY)) mark = `<i class="mk" style="width:7px;height:7px;background:var(--red)"></i>`;
+      else if (ex.length) { const big = ex.reduce((a, b) => b.amt > a.amt ? b : a); const sz = ex.reduce((s, o) => s + o.amt, 0) >= 300 ? 11 : 7; mark = `<i class="mk" style="width:${sz}px;height:${sz}px;background:var(--${CAT[big.cat].c})"></i>`; }
+      else if (ch.length) { const o = ch[0]; mark = `<i class="mk" style="width:7px;height:7px;border:1.5px ${o.amt === 0 ? "dashed" : "solid"} var(--${CAT[o.cat].c})"></i>`; }
+      else if (os.length && !onTop) mark = `<i class="mk" style="width:5px;height:5px;background:var(--ink2)"></i>`;
+      cells += mark ? `<span class="mx">${mark}</span>` : `<span class="d"></span>`;
+    }
+    return `<button class="mini" data-act="openMonth" data-y="${y}" data-m="${m}" aria-label="${MON[m]} ${y}"><span class="lb"><b class="${now ? "now" : ""}">${MS[m]}</b>${label}</span><span class="mg">${cells}</span></button>`;
+  }).join("");
+  usuals.sort((a, b) => a - b);
+  const usual = (usuals[5] + usuals[6]) / 2;
+  const anyExtra = months.some(([y, m]) => monthOcc(y, m).some(isExtra));
+  const plain = `<div class="k"><i class="mk" style="width:5px;height:5px;background:var(--ink2);margin:0 1px"></i><span>A day with only monthly bills</span></div>`;
+  const foot = anyExtra
+    ? `<div class="k"><i class="mk" style="width:7px;height:7px;background:var(--orange)"></i><span>A bill that isn’t monthly, or one you planned, in its category’s colour</span></div>
+       <div class="k"><i class="mk" style="width:7px;height:7px;border:1.5px solid var(--green)"></i><span>A monthly bill that starts, changes price or ends</span></div>
+       ${!v.r1 && !onTop ? plain : ""}
+       <span class="s2">${labelsAs === "extras" ? "Each month shows what comes on top of a usual month." : "Each month shows its total."} Tap a month to open it.</span>`
+    : onTop || v.r1
+      ? `<span style="font-size:17px;font-weight:600;color:var(--ink)">Nothing out of the ordinary this year.</span><span class="s2" style="white-space:normal;line-height:1.35">Every month is ${eur(usual)}. A yearly renewal or something you plan to buy would show here in colour.</span>`
+      : `${plain}<span class="s2" style="white-space:normal;line-height:1.35">Every month is ${eur(usual)}. A yearly renewal or something you plan to buy would show in colour.</span>`;
+  const range = `${MS[months[0][1]]} – ${MS[months[11][1]]}`;
+  if (v.r1) return `<div class="hd"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:600">${range}</span><span class="s2" style="font-size:15px">${eur(total)} · usual month ${eur(usual)}</span></div>${glassPair()}</div>
+    ${menu()}<div class="yr">${minis}</div><div class="yfoot">${foot}</div>`;
+  // round 2: the year's header sits where the month's does, so the lens is in one place at every level
+  const extraTotal = months.reduce((s, [y, m]) => s + monthOcc(y, m).filter(isExtra).reduce((t, o) => t + o.amt, 0), 0);
+  const fig = onTop ? (extraTotal ? `+${eur(extraTotal)} on top · usual month ${eur(usual)}` : `Nothing on top · usual month ${eur(usual)}`) : `${eur(total)} · usual month ${eur(usual)}`;
+  return `<div class="top"><span></span>${glassPair()}</div>${menu()}
+    <div class="mt2"><b>${range}</b><span class="s2" style="font-size:15px">${fig}</span></div>${lens("year")}
+    <div class="yr" style="top:172px;row-gap:8px">${minis}</div><div class="yfoot" style="top:630px">${foot}</div>`;
+}
+
+// ---------- month ----------
+function renderMonth() {
+  const { y, m } = S, k = ymKey(y, m);
+  const lead = (new Date(y, m, 1).getDay() + 6) % 7, days = dim(y, m), rows = Math.ceil((lead + days) / 7);
+  let cells = "";
+  const prevDays = new Date(y, m, 0).getDate();
+  for (let i = 0; i < lead; i++) cells += `<div class="cell empty other"><span class="num">${prevDays - lead + 1 + i}</span></div>`;
+  const onTop = extrasOnly("month");
+  for (let d = 1; d <= days; d++) {
+    const day = new Date(y, m, d), os = (DB.byDay.get(iso(day)) || []).filter(o => !onTop || isExtra(o));
+    const num = sameDay(day, TODAY) ? `<span class="today">${d}</span>` : d;
+    if (!os.length) { cells += `<div class="cell empty"><span class="num">${num}</span></div>`; continue; }
+    const sorted = [...os].sort((a, b) => b.amt - a.amt), sum = os.reduce((s, o) => s + o.amt, 0);
+    let em;
+    if (sorted.length === 1) em = `<span class="em">${CAT[sorted[0].cat].e}</span>`;
+    else em = `<span class="em two">${CAT[sorted[0].cat].e}${CAT[sorted[1].cat].e}${sorted.length > 2 ? `<span class="more">+${sorted.length - 2}</span>` : ""}</span>`;
+    cells += `<button class="cell ${day > TODAY ? "up" : ""}" data-act="openDay" data-d="${iso(day)}" aria-label="${WD[day.getDay()]} ${d}, ${sorted.length} charge${sorted.length > 1 ? "s" : ""}, ${eur(sum)}"><span class="num">${num}</span>${em}<span class="amt">${eur(sum)}</span></button>`;
+  }
+  const trail = rows * 7 - lead - days;
+  for (let i = 1; i <= trail; i++) cells += `<div class="cell empty other"><span class="num">${i}</span></div>`;
+  const rowH = rows > 5 ? 68 : 80;
+  return `<div class="top"><button class="back" data-act="toYear" aria-label="Back to the year">${ICON.back}Year</button>
+      <div style="display:flex;gap:8px"><div class="gl"><button class="gb sm" data-act="prev" aria-label="Previous month" ${k <= DB.minM ? "disabled" : ""}>${ICON.prev}</button><button class="gb sm" data-act="next" aria-label="Next month" ${k >= DB.maxM ? "disabled" : ""}>${ICON.next}</button></div>${glassPair()}</div></div>
+    ${menu()}<div class="mt"><b>${monthName(y, m)}</b><span class="s2" style="font-size:15px">${monthFigure(y, m, "month")}</span></div>${lens("month")}
+    <div class="wk"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+    <div class="g" id="grid" style="grid-auto-rows:${rowH}px">${cells}</div>`;
+}
+
+// ---------- day: the timeline ----------
+function renderDay() {
+  const hiKey = S.day ? iso(S.day) : null;
+  let html = "", nowMarked = false;
+  const onTop = extrasOnly("day");
+  for (let k = DB.maxM; k >= DB.minM; k--) {
+    const y = Math.floor(k / 12), m = k % 12, list = monthOcc(y, m).filter(o => !onTop || isExtra(o));
+    const isNow = y === TODAY.getFullYear() && m === TODAY.getMonth();
+    if (!list.length) continue;
+    html += `<div class="mh" ${isNow ? 'data-now-month="1"' : ""}><b>${monthName(y, m)}</b><span class="s2" style="font-size:15px">${monthFigure(y, m, "day")}</span></div>`;
+    for (const o of list) {
+      const hi = iso(o.d) === hiKey;
+      const nowRow = !nowMarked && o.d <= TODAY && (nowMarked = true);
+      html += `<div class="tr ${o.d > TODAY ? "up" : ""} ${hi ? "hi" : ""}" ${hi ? 'data-hi="1"' : ""} ${nowRow ? 'data-today="1"' : ""}><span class="well"><span>${CAT[o.cat].e}</span></span><span class="nm"><b>${o.r.name}</b><i>${WD[o.d.getDay()]} ${o.d.getDate()}${o.last ? ` · ${o.d > TODAY ? "ends" : "ended"} ${mmyy(o.d)}` : ""}</i></span><span class="amtR">${eur(o.amt)}</span></div>`;
+    }
+  }
+  const oldest = new Date(Math.floor(DB.minM / 12), DB.minM % 12, 1);
+  html += `<div class="floorline">Nothing before ${MON[oldest.getMonth()]} ${oldest.getFullYear()}.</div>`;
+  const back = S.day ? MON[S.day.getMonth()] : "Month";
+  return `<div class="top"><button class="back" data-act="toMonth" aria-label="Back to ${back}">${ICON.back}${back}</button>${glassPair()}</div>${menu()}${lens("day")}<div class="tl" id="tl">${html}</div>`;
+}
+
+// ---------- sheets ----------
+function daySheet() {
+  const os = (DB.byDay.get(iso(S.day)) || []).filter(o => !extrasOnly("month") || isExtra(o)).sort((a, b) => b.amt - a.amt), sum = os.reduce((s, o) => s + o.amt, 0);
+  const rows = os.map(o => `<div class="tr ${o.d > TODAY ? "up" : ""}" style="padding:0"><span class="well"><span>${CAT[o.cat].e}</span></span><span class="nm"><b>${o.r.name}</b></span><span class="amtR">${eur(o.amt)}</span></div>`).join("");
+  return `<div class="backdrop" data-act="close"></div><div class="sheet" style="height:${Math.min(420, 180 + os.length * 52)}px"><span class="grab"></span>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 8px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:600">${WDL[S.day.getDay()]} ${S.day.getDate()}</span><span class="s2" style="font-size:15px">${eur(sum)}</span></div><button class="x" data-act="close" aria-label="Close">${ICON.x}</button></div>
+    <div style="padding:0 20px;display:flex;flex-direction:column">${rows}</div></div>`;
+}
+
+function bills() {
+  // group rules into bills: a series is one bill
+  const groups = new Map();
+  for (const r of DB.rules) { const key = r.series || "r" + r.id; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(r); }
+  const out = [];
+  for (const rs of groups.values()) {
+    rs.sort((a, b) => D(a.anchor) - D(b.anchor));
+    const cur = rs[rs.length - 1], allD = rs.flatMap(r => r.occ), lastD = allD[allD.length - 1];
+    const ends = !!(cur.until || cur.count), ended = ends && lastD < TODAY;
+    const freq = { 0: "Once", 1: "Monthly", 2: "Every 2 months", 3: "Every 3 months", 6: "Every 6 months", 12: "Yearly" }[cur.every];
+    let note = freq;
+    if (!cur.every) note = `Once, ${MS[D(cur.anchor).getMonth()]} ${D(cur.anchor).getDate()}`;
+    else if (rs.length > 1 && D(cur.anchor) > TODAY) note = `${eur(rs[rs.length - 2].amount)} until ${MS[D(cur.anchor).getMonth()]} ${D(cur.anchor).getDate()}`;
+    else if (D(cur.anchor) > TODAY) note = `from ${MS[D(cur.anchor).getMonth()]} ${D(cur.anchor).getDate()}`;
+    else if (ends && !ended) note = `ends ${mmyy(lastD)}`;
+    const yearly = cur.every ? cur.amount * 12 / cur.every : cur.amount;
+    const paid = DB.occ.filter(o => rs.includes(o.r)).reduce((s, o) => s + o.amt, 0);
+    // round 2: the row's figure is a month's or a year's share, so the note names what is actually charged when that differs
+    const per = S.per, fig = Math.round(per === "month" ? yearly / 12 : yearly);
+    const when = { 1: "monthly", 2: "every 2 months", 3: "every 3 months", 6: "every 6 months", 12: "yearly" }[cur.every];
+    const onceOn = `${MS[D(cur.anchor).getMonth()]} ${D(cur.anchor).getDate()}`;
+    let charge;
+    if (!cur.every) charge = per === "year" ? `Once, ${onceOn}` : `${eur(cur.amount)} once, ${onceOn}`;
+    else if ((per === "month" && cur.every === 1) || (per === "year" && cur.every === 12)) charge = when[0].toUpperCase() + when.slice(1);
+    else charge = `${eur(cur.amount)} ${when}`;
+    let state = "";
+    if (cur.every && rs.length > 1 && D(cur.anchor) > TODAY) state = `${eur(rs[rs.length - 2].amount)} until ${MS[D(cur.anchor).getMonth()]} ${D(cur.anchor).getDate()}`;
+    else if (cur.every && D(cur.anchor) > TODAY) state = `from ${MS[D(cur.anchor).getMonth()]} ${D(cur.anchor).getDate()}`;
+    else if (ends && !ended) state = `ends ${mmyy(lastD)}`;
+    const note2 = state && /^(Monthly|Yearly)$/.test(charge) ? state : [charge, state].filter(Boolean).join(" · ");
+    out.push({ name: cur.name, cat: cur.cat, yearly, note, ended, endNote: ended ? `ended ${mmyy(lastD)}` : "", paid, fig, note2 });
+  }
+  return out;
+}
+
+function billsSheet() {
+  if (!V().r1) return `<div class="backdrop" data-act="close"></div><div class="sheet" style="top:58px"><span class="grab"></span>
+    <div style="padding:12px 16px 0;display:flex;align-items:center;position:relative"><button class="x" data-act="close" aria-label="Close">${ICON.x}</button>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);width:200px">${perSeg()}</div></div>
+    <div class="sbody">${billsBody()}</div></div>`;
+  const all = bills(), active = all.filter(b => !b.ended), ended = all.filter(b => b.ended);
+  const catsWith = CATS.filter(c => active.some(b => b.cat === c.id));
+  const showEndedOnly = S.ended === "chip" && S.filter === "ended";
+  const inFilter = b => S.filter === "all" || showEndedOnly || b.cat === S.filter;
+  const cardsFor = (list, endedList) => {
+    const cats = CATS.map(c => ({ c, items: list.filter(b => b.cat === c.id).sort((a, b) => b.yearly - a.yearly), ends: endedList.filter(b => b.cat === c.id) }))
+      .filter(x => showEndedOnly ? x.ends.length : x.items.length);
+    cats.forEach(x => x.total = x.items.reduce((s, b) => s + b.yearly, 0));
+    cats.sort((a, b) => b.total - a.total);
+    return cats.map(({ c, items, ends, total }) => {
+      if (showEndedOnly) {
+        const paid = ends.reduce((s, b) => s + b.paid, 0);
+        return `<div class="card"><div class="ch"><span class="e">${c.e}</span><span class="n"><b>${c.n}</b><i>${ends.length} ended</i></span><span class="t"><b>${eur(paid)}</b><i>in all</i></span></div>${ends.map(b => `<div class="r end"><span>${b.name}</span><span class="f">${b.endNote}</span><span class="a">${eur(b.paid)}</span></div>`).join("")}</div>`;
+      }
+      const rows = items.map(b => `<button class="r"><span>${b.name}</span><span class="f">${b.note}</span><span class="a">${eur(b.yearly)}</span></button>`).join("");
+      let sw = "";
+      if (S.ended === "switch" && ends.length) {
+        const on = !!S.endedOn[c.id];
+        sw = `<div class="tg"><span>Show ended</span><button class="sw ${on ? "on" : ""}" data-act="endedSwitch" data-c="${c.id}" aria-label="Show ended ${c.n}" aria-pressed="${on}"></button></div>` +
+          (on ? ends.map(b => `<div class="r end"><span>${b.name}</span><span class="f">${b.endNote}</span><span class="a">${eur(b.paid)} in all</span></div>`).join("") : "");
+      }
+      const count = items.length === 1 ? "1 bill" : `${items.length} bills`;
+      const sub = S.filter === c.id ? `${count} · about ${eur(total / 12)} a month` : count;
+      return `<div class="card"><div class="ch"><span class="e">${c.e}</span><span class="n"><b>${c.n}</b><i>${sub}</i></span><span class="t"><b>${eur(total)}</b><i>a year</i></span></div>${rows}${sw}</div>`;
+    }).join("");
+  };
+  const list = active.filter(inFilter), endedHere = ended.filter(b => S.filter === "all" || showEndedOnly || b.cat === S.filter);
+  let title, figure;
+  if (showEndedOnly) { title = "Ended"; figure = `${eur(ended.reduce((s, b) => s + b.paid, 0))} in all`; }
+  else if (S.filter === "all") { title = "All bills"; figure = `${eur(list.reduce((s, b) => s + b.yearly, 0))} a year`; }
+  else { title = CAT[S.filter].n; figure = `${eur(list.reduce((s, b) => s + b.yearly, 0))} a year`; }
+  const chips = [`<button class="chip ${S.filter === "all" ? "on" : ""}" data-act="filter" data-f="all">All</button>`]
+    .concat(catsWith.map(c => `<button class="chip ${S.filter === c.id ? "on" : ""}" data-act="filter" data-f="${c.id}">${c.e} ${c.n.split(" ")[0]}</button>`))
+    .concat(S.ended === "chip" && ended.length ? [`<button class="chip ${showEndedOnly ? "on" : ""}" data-act="filter" data-f="ended">Ended</button>`] : []).join("");
+  let foot = "";
+  if (S.ended === "footer" && endedHere.length) {
+    foot = `<button class="endrow" data-act="endedOpen"><span>${endedHere.length} ended bill${endedHere.length > 1 ? "s" : ""}</span><span>${S.endedOpen ? "Hide" : "Show"}</span></button>`;
+    if (S.endedOpen) foot += `<div class="card"><div class="ch"><span class="n"><b>Ended</b></span><span class="t"><b>${eur(endedHere.reduce((s, b) => s + b.paid, 0))}</b><i>in all</i></span></div>${endedHere.map(b => `<div class="r end"><span>${CAT[b.cat].e} ${b.name}</span><span class="f">${b.endNote}</span><span class="a">${eur(b.paid)}</span></div>`).join("")}</div>`;
+  }
+  return `<div class="backdrop" data-act="close"></div><div class="sheet" style="top:58px"><span class="grab"></span>
+    <div style="padding:12px 16px 0;display:flex"><button class="x" data-act="close" aria-label="Close">${ICON.x}</button></div>
+    <div style="padding:6px 20px 14px;display:flex;flex-direction:column;gap:2px"><span class="s2" style="font-size:15px;font-weight:600">${title}</span><span style="font-size:34px;letter-spacing:-.6px">${figure}</span></div>
+    <div class="chips" style="padding-bottom:14px">${chips}</div>
+    <div class="sbody"><div style="display:flex;flex-direction:column;gap:14px">${cardsFor(list, endedHere)}${foot}</div></div></div>`;
+}
+
+// ---------- All bills, round 2: shared by the sheet and the view ----------
+const perSeg = () => `<div class="sg" role="group" aria-label="Figures per"><button class="${S.per === "month" ? "on" : ""}" data-act="per" data-v="month">Monthly</button><button class="${S.per === "year" ? "on" : ""}" data-act="per" data-v="year">Yearly</button></div>`;
+function billsBody() {
+  const all = bills(), active = all.filter(b => !b.ended), ended = all.filter(b => b.ended);
+  const showEndedOnly = S.ended === "chip" && S.filter === "ended";
+  const sum = list => list.reduce((s, b) => s + b.fig, 0);
+  // categories highest first, and the chips in the same order as the cards
+  const ranked = CATS.map(c => ({ c, items: active.filter(b => b.cat === c.id).sort((a, b) => b.fig - a.fig || b.yearly - a.yearly), ends: ended.filter(b => b.cat === c.id).sort((a, b) => b.paid - a.paid) }))
+    .filter(x => x.items.length || x.ends.length);
+  ranked.forEach(x => x.total = sum(x.items));
+  ranked.sort((a, b) => b.total - a.total);
+  const shown = ranked.filter(x => S.filter === "all" || showEndedOnly || x.c.id === S.filter);
+  const per = S.per === "month" ? "a month" : "a year";
+  const endedRow = b => `<div class="r end"><span>${b.name}</span><span class="f">${b.endNote}</span><span class="a">${eur(b.paid)}</span></div>`;
+  const cards = shown.filter(x => showEndedOnly ? x.ends.length : x.items.length).map(({ c, items, ends, total }) => {
+    if (showEndedOnly) return `<div class="card"><div class="ch"><span class="e">${c.e}</span><span class="n"><b>${c.n}</b></span><span class="t one"><b>${eur(ends.reduce((s, b) => s + b.paid, 0))}</b></span></div>${ends.map(endedRow).join("")}</div>`;
+    const rows = items.map(b => `<button class="r"><span>${b.name}</span><span class="f">${b.note2}</span><span class="a">${eur(b.fig)}</span></button>`).join("");
+    let sw = "";
+    if (S.ended === "switch" && ends.length) {
+      const on = !!S.endedOn[c.id];
+      sw = `<div class="tg"><span>Show ended</span><button class="sw ${on ? "on" : ""}" data-act="endedSwitch" data-c="${c.id}" aria-label="Show ended ${c.n}" aria-pressed="${on}"></button></div>` +
+        (on ? ends.map(b => `<div class="r end"><span>${b.name}</span><span class="f">${b.endNote}</span><span class="a">${eur(b.paid)} in all</span></div>`).join("") : "");
+    }
+    return `<div class="card"><div class="ch"><span class="e">${c.e}</span><span class="n"><b>${c.n}</b></span><span class="t one"><b>${eur(total)}</b></span></div>${rows}${sw}</div>`;
+  }).join("");
+  const list = shown.flatMap(x => x.items), endedHere = shown.flatMap(x => x.ends);
+  let title, figure;
+  if (showEndedOnly) { title = "Ended"; figure = `${eur(endedHere.reduce((s, b) => s + b.paid, 0))} in all`; }
+  else { title = S.filter === "all" ? "All bills" : CAT[S.filter].n; figure = `${eur(sum(list))} ${per}`; }
+  const chips = [`<button class="chip ${S.filter === "all" ? "on" : ""}" data-act="filter" data-f="all">All</button>`]
+    .concat(ranked.filter(x => x.items.length).map(({ c }) => `<button class="chip ${S.filter === c.id ? "on" : ""}" data-act="filter" data-f="${c.id}">${c.e} ${c.n.split(" ")[0]}</button>`))
+    .concat(S.ended === "chip" && ended.length ? [`<button class="chip ${showEndedOnly ? "on" : ""}" data-act="filter" data-f="ended">Ended</button>`] : []).join("");
+  let foot = "";
+  if (S.ended === "footer" && endedHere.length) {
+    foot = `<button class="endrow" data-act="endedOpen"><span>${endedHere.length} ended bill${endedHere.length > 1 ? "s" : ""}</span><span>${S.endedOpen ? "Hide" : "Show"}</span></button>`;
+    if (S.endedOpen) foot += `<div class="card"><div class="ch"><span class="n"><b>Ended</b></span><span class="t one"><b>${eur(endedHere.reduce((s, b) => s + b.paid, 0))}</b></span></div>${endedHere.map(b => `<div class="r end"><span>${CAT[b.cat].e} ${b.name}</span><span class="f">${b.endNote}</span><span class="a">${eur(b.paid)}</span></div>`).join("")}</div>`;
+  }
+  return `<div style="padding:6px 20px 14px;display:flex;flex-direction:column;gap:2px"><span class="s2" style="font-size:15px;font-weight:600">${title}</span><span style="font-size:34px;letter-spacing:-.6px">${figure}</span></div>
+    <div class="chips" style="padding-bottom:14px">${chips}</div>
+    <div style="display:flex;flex-direction:column;gap:14px">${cards}${foot}</div>`;
+}
+function renderBills() {
+  return `<div class="top"><div style="width:200px">${perSeg()}</div>${glassPair()}</div>${menu()}<div class="bv">${billsBody()}</div>`;
+}
+
+// ---------- render ----------
+let lastLevel = S.level;
+const ORDER = { year: 0, month: 1, day: 2, bills: 1 };
+const mb = document.getElementById("mb"), billsBtn = document.getElementById("billsBtn");
+// what the bottom-left button says and does at this level
+function monthButton() {
+  const v = V(), sept = MON[TODAY.getMonth()];
+  if (v.btn === "before") return { label: sept, act: "home" };
+  if (S.level === "year" || S.level === "bills") return null;
+  if (S.level === "month") return { label: sept, act: "home" };
+  return v.btn === "today" ? { label: "Today", act: "toToday" } : { label: sept, act: "toNowMonth" };
+}
+function scrollTimeline(sel, smooth) {
+  const tl = document.getElementById("tl"), el = tl && tl.querySelector(sel);
+  if (!el) return;
+  const top = sel === '[data-now-month="1"]' ? el.offsetTop : el.offsetTop - tl.clientHeight / 2 + 26;
+  tl.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
+}
+function render() {
+  phone.dataset.theme = S.theme;
+  if (S.level === "bills" && V().billsAt !== "view") S.level = "month";
+  const html = S.level === "year" ? renderYear() : S.level === "month" ? renderMonth() : S.level === "bills" ? renderBills() : renderDay();
+  const keepScroll = S.level === lastLevel && (S.level === "bills" || S.level === "day") ? (levelEl.querySelector(".bv,.tl") || {}).scrollTop : null;
+  levelEl.innerHTML = html;
+  if (S.level !== lastLevel) {
+    levelEl.classList.remove("zin", "zout"); void levelEl.offsetWidth;
+    if (S.level !== "bills" && lastLevel !== "bills") levelEl.classList.add(ORDER[S.level] > ORDER[lastLevel] ? "zin" : "zout");
+    lastLevel = S.level;
+  }
+  overlay.innerHTML = S.sheet === "day" ? daySheet() : S.sheet === "bills" ? billsSheet() : "";
+  const b = monthButton();
+  mb.hidden = !b;
+  if (b) { mb.textContent = b.label; mb.dataset.act = b.act; mb.setAttribute("aria-label", b.label === "Today" ? "Back to today" : `Back to ${b.label}`); }
+  billsBtn.hidden = V().billsAt === "view";
+  if (keepScroll != null) { const sc = levelEl.querySelector(".bv,.tl"); if (sc) sc.scrollTop = keepScroll; }
+  else if (S.level === "day") {
+    if (S.scrollTo) scrollTimeline(S.scrollTo, false);
+    else scrollTimeline('[data-hi="1"]', false);
+  }
+  S.scrollTo = null;
+  document.querySelectorAll(".seg").forEach(seg => seg.querySelectorAll("button").forEach(b => b.classList.toggle("on", S[seg.dataset.ctl] === b.dataset.v)));
+  const r1 = S.round === "1";
+  document.querySelectorAll(".ctl.r2").forEach(c => c.classList.toggle("dis", r1));
+  document.querySelectorAll(".ctl.r1").forEach(c => c.classList.toggle("dis", !r1));
+}
+
+function go(level, extra = {}) { Object.assign(S, extra, { level, menu: false }); render(); }
+
+phone.addEventListener("click", e => {
+  const t = e.target.closest("[data-act]");
+  if (!t) { if (S.menu) { S.menu = false; render(); } return; }
+  const a = t.dataset.act;
+  if (a === "menu") { S.menu = !S.menu; render(); return; }
+  S.menu = false;
+  if (a === "openMonth") go("month", { y: +t.dataset.y, m: +t.dataset.m });
+  else if (a === "toYear") go("year");
+  else if (a === "openDay") { const d = D(t.dataset.d); if (S.dayMode === "sheet") { S.day = d; S.sheet = "day"; render(); } else go("day", { day: d }); }
+  else if (a === "toMonth") go("month", S.day ? { y: S.day.getFullYear(), m: S.day.getMonth() } : {});
+  else if (a === "prev" || a === "next") { const k = ymKey(S.y, S.m) + (a === "next" ? 1 : -1); if (k >= DB.minM && k <= DB.maxM) { S.y = Math.floor(k / 12); S.m = k % 12; render(); } }
+  else if (a === "home") go("month", { y: TODAY.getFullYear(), m: TODAY.getMonth(), sheet: null, day: null });
+  else if (a === "bills") { S.sheet = "bills"; render(); }
+  else if (a === "close") { S.sheet = null; render(); }
+  else if (a === "filter") { S.filter = t.dataset.f; render(); }
+  else if (a === "endedOpen") { S.endedOpen = !S.endedOpen; render(); }
+  else if (a === "endedSwitch") { S.endedOn[t.dataset.c] = !S.endedOn[t.dataset.c]; render(); }
+  else if (a === "lens") { S.extras = t.dataset.v === "1"; render(); }
+  else if (a === "per") { S.per = t.dataset.v; render(); }
+  else if (a === "view") { if (t.dataset.v === "bills") go("bills", { sheet: null }); else if (S.level === "bills") go("month"); else render(); }
+  else if (a === "toNowMonth") scrollTimeline('[data-now-month="1"]', true);
+  else if (a === "toToday") scrollTimeline('[data-today="1"]', true);
+});
+
+// swipe between months
+let sx = null;
+phone.addEventListener("pointerdown", e => { if (S.level === "month" && !S.sheet) sx = e.clientX; });
+phone.addEventListener("pointerup", e => {
+  if (sx === null) return; const dx = e.clientX - sx; sx = null;
+  if (Math.abs(dx) < 60) return;
+  const k = ymKey(S.y, S.m) + (dx < 0 ? 1 : -1);
+  if (k >= DB.minM && k <= DB.maxM) { S.y = Math.floor(k / 12); S.m = k % 12; render(); }
+});
+
+document.querySelectorAll(".seg").forEach(seg => seg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const key = seg.dataset.ctl; S[key] = b.dataset.v;
+  if (key === "ds") { DB = build(DATASETS[S.ds]()); S.filter = "all"; S.endedOpen = false; S.endedOn = {}; }
+  if (key === "ended" && S.filter === "ended") S.filter = "all";
+  if (key === "dayMode" && S.level === "day") S.level = "month";
+  render();
+}));
+
+render();
+</script>
+</body>
+</html>

@@ -33,6 +33,7 @@ The smallest thing that does the job.
 |---|---|
 | Viewing a charge before editing it | Prototyped and set aside on 2026-09-22 (the "view first" switch in `docs/prototypes/expense-editor-entry.html`): the editor-first version read better. Worth reopening with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
+| Planned one-off expenses | A known cost ahead, like a purchase in March, is a bill with one payment. Dated in the future when it's made, so it can never become a log of past spending. Needs a brief: where it's entered (the repeat wheel's smallest count is 2 today) and how it reads on the timeline and the views. |
 | Look-ahead nudges ("next month has a large annual bill") | Arguably the core promise, but the rules need real usage to design well. The engine already computes any future range. No space is reserved for it. |
 | Custom and pay-period months | Plenty of people read money from one payday to the next. Cheaper than it looks: "the month starts on the Nth" redefines one interval, and the engine windows on any `DateInterval`. |
 | Header figure as a setting (remaining or total) | Remaining is the right default. A switch can wait for a settings screen. |
