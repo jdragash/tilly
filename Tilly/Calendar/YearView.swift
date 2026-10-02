@@ -10,6 +10,8 @@ struct YearView: View {
     /// What the title keeps clear for the All / Extras toggle floating over its trailing end.
     let titleTrailingClearance: CGFloat
     let onOpenMonth: (MonthKey) -> Void
+    /// Each month cell's frame in `CalendarZoom.space`, for a zoom to grow from or shrink into.
+    let onMonthFrame: (MonthKey, CGRect) -> Void
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
@@ -66,6 +68,9 @@ struct YearView: View {
                     month: month, extrasOnly: extrasOnly, isCurrent: month.month == current,
                     onOpen: { onOpenMonth(month.month) }
                 )
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(CalendarZoom.space)) } action: {
+                    onMonthFrame(month.month, $0)
+                }
             }
         }
         .padding(.horizontal, Tokens.Space.gutter)

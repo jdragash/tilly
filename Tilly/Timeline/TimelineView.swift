@@ -50,12 +50,16 @@ struct TimelineView: View {
     @AppStorage("showsExtrasOnly") private var extrasOnly = false
     /// The All / Extras toggle's width, which the titles beneath it keep clear.
     @State private var extrasToggleWidth: CGFloat = 0
-    /// Which way the last change of level went: closer in, or further out. A level arriving grows
-    /// from the other side of its size, as a lens does.
-    @State private var zoomingIn = true
+    /// Where the last change of level zoomed about, and whether it was between the year and a month
+    /// (the month is then the closer level) or between a month and the days (the further one).
+    @State private var levelZoom = CalendarZoom.centre
+    @State private var zoomPairsWithYear = true
+    /// The frames a zoom grows from, reported by the year's and the month's cells.
+    @State private var zoomFrames = CalendarZoomFrames()
     /// The timeline's size while it is the level that shows or is leaving; it rests at the size an
     /// arriving level grows from, so the next arrival has somewhere to grow from.
     @State private var timelineScale: CGFloat = 1
+    @State private var timelineAnchor: UnitPoint = .center
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
 
@@ -175,15 +179,20 @@ struct TimelineView: View {
         let showsCalendarMonth = mode == .timeline && level == .month && !expenses.isEmpty && window != nil
         let showsYear = mode == .timeline && level == .year && !expenses.isEmpty && window != nil
         let coversTimeline = showsCategories || showsCalendarMonth || showsYear
-        let arriving: AnyTransition = reduceMotion
+        // Each level zooms about `levelZoom` both ways, the same scale arriving and leaving: the year
+        // is always the further level, so it grows from or into its large end; the month is the
+        // closer level beside the year and the further one beside the days.
+        let yearTransition: AnyTransition = reduceMotion
             ? .opacity
-            : .asymmetric(
-                insertion: .scale(scale: zoomingIn ? Tokens.Scale.zoomIn : Tokens.Scale.zoomOut).combined(with: .opacity),
-                removal: .opacity
-            )
+            : .scale(scale: levelZoom.outerScale, anchor: levelZoom.anchor).combined(with: .opacity)
+        let monthTransition: AnyTransition = reduceMotion
+            ? .opacity
+            : .scale(
+                scale: zoomPairsWithYear ? levelZoom.scale : levelZoom.outerScale, anchor: levelZoom.anchor
+            ).combined(with: .opacity)
         return ZStack {
             timeline(topInset: topInset)
-                .scaleEffect(reduceMotion ? 1 : timelineScale)
+                .scaleEffect(reduceMotion ? 1 : timelineScale, anchor: timelineAnchor)
                 .opacity(coversTimeline ? 0 : 1)
                 .allowsHitTesting(!coversTimeline)
                 .accessibilityHidden(coversTimeline)
@@ -197,19 +206,24 @@ struct TimelineView: View {
                 CalendarMonthView(
                     month: calendarMonthBinding(in: window), window: window,
                     calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay,
-                    onBack: { setLevel(.year) }, titleTrailingClearance: toggleClearance
+                    onDayFrame: { zoomFrames.report(day: $0, frame: $1) },
+                    onBack: { setLevel(.year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window))) },
+                    titleTrailingClearance: toggleClearance
                 )
-                .transition(arriving)
+                .transition(monthTransition)
             }
             if showsYear, let window {
                 YearView(
                     overview: yearOverview(in: window), extrasOnly: extrasOnly, today: today,
                     titleTrailingClearance: toggleClearance,
-                    onOpenMonth: { openMonth($0, in: window) }
+                    onOpenMonth: { openMonth($0, in: window) },
+                    onMonthFrame: { zoomFrames.report(month: $0, frame: $1) }
                 )
-                .transition(arriving)
+                .transition(yearTransition)
             }
         }
+        .coordinateSpace(name: CalendarZoom.space)
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { zoomFrames.size = $0 }
         // The pair never moves: it sits in the `headerRow` band where headers pin, and each
         // header hands off beneath it. Over the empty state too, where + is the next step.
         // While a finger drags across the lanes the controls step aside with the month's name,
@@ -303,8 +317,11 @@ struct TimelineView: View {
         let month = monthUnderMiddle() ?? window.current
         return HStack {
             BackButton(title: month.name(in: calendar, relativeTo: today, locale: locale)) {
-                calendarMonthID = min(max(month, window.floor), window.ceiling).id
-                setLevel(.month)
+                let target = min(max(month, window.floor), window.ceiling)
+                calendarMonthID = target.id
+                // Back into the day it came from, when the list is still in that day's month.
+                let day = zoomFrames.openedDay.flatMap { MonthKey(containing: $0, calendar: calendar) == target ? $0 : nil }
+                setLevel(.month, zoom: day.map(zoomFrames.zoom(forDay:)) ?? .centre)
             }
             Spacer()
         }
@@ -448,7 +465,7 @@ struct TimelineView: View {
     /// A month in the year opens as the month level.
     private func openMonth(_ month: MonthKey, in window: TimelineWindow) {
         calendarMonthID = min(max(month, window.floor), window.ceiling).id
-        setLevel(.month)
+        setLevel(.month, zoom: zoomFrames.zoom(forMonth: month))
     }
 
     /// What a title or a header beneath the All / Extras toggle keeps clear at its trailing end.
@@ -483,28 +500,33 @@ struct TimelineView: View {
         }
     }
 
-    /// Moves between the year, a month and the days, zooming: closer in grows the arriving level
-    /// up from `Scale.zoomIn`, further out grows it down from `Scale.zoomOut`, and the level
-    /// leaving fades. The timeline, which is always mounted, animates its opacity and scale; the
-    /// year and the month come and go as transitions. Nothing here touches a scroll.
-    private func setLevel(_ new: CalendarLevel) {
+    /// Moves between the year, a month and the days, zooming about `zoom`: going in, the closer
+    /// level grows out of the cell that was tapped while the further one grows past and fades;
+    /// going out, the reverse, back into that cell. The timeline, always mounted, animates its own
+    /// scale and opacity; the year and the month come and go as transitions. Nothing here touches
+    /// a scroll.
+    ///
+    /// Where to zoom is set a turn before the level changes: a view leaving takes the transition
+    /// it last drew with, so set in the same update, the level leaving zoomed about the old place.
+    private func setLevel(_ new: CalendarLevel, zoom: CalendarZoom) {
         guard new != level else { return }
-        func depth(_ level: CalendarLevel) -> Int {
-            switch level {
-            case .year: 0
-            case .month: 1
-            case .day: 2
+        let old = level
+        levelZoom = zoom
+        zoomPairsWithYear = new == .year || old == .year
+        zoomFrames.isZooming = true
+        if new == .day || old == .day {
+            // Unseen: the timeline is hidden going in, and at full size, where its anchor changes
+            // nothing, going out.
+            timelineAnchor = zoom.anchor
+            if new == .day { timelineScale = zoom.scale }
+        }
+        DispatchQueue.main.async {
+            withAnimation(Tokens.Motion.zoom) {
+                level = new
+                if new == .day { timelineScale = 1 } else if old == .day { timelineScale = zoom.scale }
             }
-        }
-        zoomingIn = depth(new) > depth(level)
-        withAnimation(Tokens.Motion.zoom) {
-            level = new
-            if new == .day { timelineScale = 1 }
-        }
-        // Once the timeline has faded, it goes back to the size an arrival grows from, unseen.
-        if new != .day {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Tokens.Motion.zoomDuration + 0.02) {
-                if level != .day { timelineScale = Tokens.Scale.zoomIn }
+            DispatchQueue.main.asyncAfter(deadline: .now() + Tokens.Motion.zoomDuration) {
+                zoomFrames.isZooming = false
             }
         }
     }
@@ -524,7 +546,8 @@ struct TimelineView: View {
         let day = calendar.startOfDay(for: date)
         let month = MonthKey(containing: day, calendar: calendar)
         markedDay = day
-        setLevel(.day)
+        zoomFrames.openedDay = day
+        setLevel(.day, zoom: zoomFrames.zoom(forDay: day))
         isProgrammaticScroll = true
         // The month first: a lazy list resolves only ids it has laid out, and a month far from
         // where the list rests hasn't been. Landing on it lays it out and measures its header.

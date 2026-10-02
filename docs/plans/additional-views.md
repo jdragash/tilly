@@ -554,6 +554,10 @@ and "The timeline is one list…" where it names the timeline as the view.
   reads as a pill in a pill; alone it is 32pt.
 - At accessibility sizes a card header's trailing total squeezed the name to a letter a line; the
   header stacks there, as `OccurrenceRow` does.
+- **A view leaving takes the transition it last drew with.** Set the zoom's anchor and scale a
+  turn before the level changes, or the leaving level zooms about the old place.
+- A scale in flight reports scaled frames through `onGeometryChange`: cells' frames are kept only
+  while no zoom runs. To watch a 0.38s zoom, set it to 3s and capture with `simctl` in a loop.
 
 ## If a step is wrong
 

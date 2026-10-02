@@ -89,10 +89,13 @@ enum Tokens {
         static let dayTotalMin: CGFloat = 0.6
         /// The dots on the day under a dragging finger; from the prototype.
         static let dotOnLine: CGFloat = 1.18
-        /// A level arriving from further out grows to full size from this; from further in,
-        /// it shrinks to full size from `zoomOut`. From the prototype.
+        /// A zoom with nothing tapped to grow from, about the middle: the closer level grows from
+        /// this, and the further one from its inverse. From the prototype.
         static let zoomIn: CGFloat = 0.93
-        static let zoomOut: CGFloat = 1.07
+        /// A zoom about a tapped cell starts the closer level at that cell's size, but no smaller
+        /// than this, and the further level no larger than `zoomMax`. Tuning values.
+        static let zoomMin: CGFloat = 0.2
+        static let zoomMax: CGFloat = 3
     }
 
     enum Opacity {
@@ -347,9 +350,10 @@ enum Tokens {
         static let scrub: TimeInterval = 0.12
         /// A tapped day's rows fading from marked, once the timeline has landed on them.
         static let dayMark: TimeInterval = 1.2
-        /// Moving between the year, a month and the days: the closer level grows in, the further
-        /// one grows out. From the prototype.
-        static let zoomDuration: TimeInterval = 0.28
+        /// Moving between the year, a month and the days, about what was tapped. Longer than the
+        /// prototype's 0.28s, which was for a 7% zoom; this one covers a cell growing to the screen.
+        /// A tuning value.
+        static let zoomDuration: TimeInterval = 0.38
         static let zoom: Animation = .timingCurve(0.2, 0.8, 0.2, 1, duration: zoomDuration)
         /// The header and its controls fading aside while dragging across the lanes,
         /// and back. Out is quick so nothing lies under the readout as it lands; back is a touch

@@ -11,6 +11,8 @@ struct CalendarMonthView: View {
     let calendarMonth: CalendarMonth
     let today: Date
     let onOpenDay: (Date) -> Void
+    /// Each day cell's frame in `CalendarZoom.space`, for a zoom to grow from or shrink into.
+    let onDayFrame: (Date, CGRect) -> Void
     /// Back out to the year.
     let onBack: () -> Void
     /// What the title keeps clear for the All / Extras toggle floating over its trailing end.
@@ -105,6 +107,9 @@ struct CalendarMonthView: View {
                     // From the top, so a cell whose content runs a little long at the largest
                     // size hangs below its row rather than lifting its number off the line.
                     .frame(height: rowHeight, alignment: .top)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(CalendarZoom.space)) } action: {
+                        onDayFrame(day.date, $0)
+                    }
             }
             ForEach(neighbours(count: calendarMonth.trailingDays, prefix: "trail") { $0 + 1 }) { cell in
                 neighbour(cell.day, height: rowHeight)

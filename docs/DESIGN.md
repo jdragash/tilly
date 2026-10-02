@@ -55,8 +55,8 @@ Calendar zooms, as iOS Calendar does: the year, a month, and the days, which are
 Tapping a month in the year opens it. Tapping a day with charges opens the timeline with that day's
 first charge just under its month's header, the day's rows marked and fading. A back button top left
 goes out a level: `‹ Year` over a month, and over the days the month under the middle of the list,
-`‹ October`. Levels zoom in and out of each other; under Reduce Motion they crossfade. The app
-reopens on the level and the month it was left on.
+`‹ October`. A level grows out of what was tapped, a month from its place in the year, and shrinks
+back into it, or crossfades under Reduce Motion. The app reopens on the level and month left on.
 
 ### The year
 
