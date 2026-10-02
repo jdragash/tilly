@@ -24,6 +24,7 @@ struct YearMonthCell: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spokenLabel)
+        .accessibilityHint("Opens the month")
     }
 
     private var figure: String {

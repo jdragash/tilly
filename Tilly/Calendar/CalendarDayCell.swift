@@ -21,6 +21,7 @@ struct CalendarDayCell: View {
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(CalendarFormatting.dayLabel(day, calendar: calendar, locale: locale))
+            .accessibilityHint("Opens the day's charges")
         }
     }
 
