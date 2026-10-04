@@ -148,3 +148,33 @@ These gate exploration.
 - Code: `Tilly/Editor/ExpenseEditor.swift`, `ExpenseDraft.swift` (defaults today and monthly),
   `CategoryPicker.swift`, `NewCategoryRow.swift`, `EditorButtonRow.swift`.
 - `git log` on `Tilly/Editor/` from `60da59a` to `4b5af86`: no reverts.
+
+## Updates
+
+### 2026-10-04 · From a form to a card you complete
+
+Two canvas rounds (https://claude.ai/artifact/A8CUNvsPrYMjek5S2a64Rm) and a working prototype
+(`docs/prototypes/edit-revisit.html`) tried to make the form lead better: one screen that leads,
+one step at a time, name first, the bill as a sentence, and one button that never moves. What
+held up: a single primary action that stays in one place, a real date rather than "today", and
+guessing the category from the name. What didn't: every version still reads as filling out a
+form. Steppers feel constricted, and a next action that moves leaves no clear thing to press.
+
+The exploration now turns to **the card as input**. Adding a bill greets you with a card. The
+amount starts at 0, and the other fields are drawn as incomplete (dotted outlines, say), so the
+card itself shows what's left and invites you to finish it. Its information hierarchy comes
+first. Its look comes later, with the design pass.
+
+Two follow-ons, each explored after the card settles:
+
+- **Filing as a gesture.** Instead of picking a category from a list, the finished card is
+  dragged into one of a set of folders or pockets, where filed cards stack visibly.
+- **Landing in the list.** Adding plays an animation of the bill arriving in the timeline: a
+  slam like iMessage's, or a slide that ripples the rows around it. It never holds up the next
+  tap (TASTE 12).
+
+New open questions:
+
+1. What does the card show empty, half done and complete, and what leads?
+2. Does the category stay a field on the card, or become only the act of filing it?
+3. How does the folder gesture work for a first bill, with no folders yet?
