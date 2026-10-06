@@ -178,3 +178,23 @@ New open questions:
 1. What does the card show empty, half done and complete, and what leads?
 2. Does the category stay a field on the card, or become only the act of filing it?
 3. How does the folder gesture work for a first bill, with no folders yet?
+
+### 2026-10-06 · The ending, and what you see is what you get
+
+Canvas rounds 3 to 7 and a working prototype (`docs/prototypes/edit-revisit-card.html`) took the card
+wide: playful cards, physical behaviours, a hand of category cards, and filing the card into category
+pockets. What held up:
+
+- The card is the input. Dashed means a part still needs you. A small pencil means it's filled in and
+  yours to change.
+- Choosing the category is the most important act, because it decides where the bill goes, so it can't
+  look like one more field. When filing into a pocket was also the save, nothing said it was final.
+- What you see is what you get wins. The card shows its category, colour included, before ✓ saves, and
+  filing into the pocket afterwards is feedback rather than input. Of the three endings tried, the one
+  where you play a category onto the card and ✓ files it (P2) is the strongest. Picking a pocket to
+  preview it (P3) is close behind. Filing as the save itself (P1) is still on the table.
+- Pockets that hold the bills already filed in them are a strong concept.
+
+The next revision mixes and matches rather than adding fixed variants: the card's layout and the size of
+each part, ways to show the date and repeat, how the card is presented, how pockets show what they
+hold, how categories are offered for picking, and how all of that holds with 1 category or 20.
