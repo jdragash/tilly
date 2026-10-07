@@ -198,3 +198,23 @@ pockets. What held up:
 The next revision mixes and matches rather than adding fixed variants: the card's layout and the size of
 each part, ways to show the date and repeat, how the card is presented, how pockets show what they
 hold, how categories are offered for picking, and how all of that holds with 1 category or 20.
+
+### 2026-10-07 · What the controls narrowed to
+
+The prototype now builds the card, the pockets and the category picker from controls that combine, with a
+category count from none to 24. Trying them narrowed the field:
+
+- **Ending:** P2 (play a category onto the card, then ✓) and P3 (pick a pocket, then ✓) both stay open.
+  P1 is out.
+- **Card:** the amount starts top left and the category reads last, bottom right. Sizes stay adjustable.
+  The category shows as its emoji; the name beside it stays available. The Wallet card is the look.
+- **Date and repeat:** every way of showing them stays in play.
+- **Pockets:** a pocket shows the bills peeking out of it or its monthly total. They sit in a grid, a dense
+  grid or a list.
+- **Picking in P2:** the fanned hand, the loose horizontal spread, or the pockets.
+- **Sheet:** white in one piece, or glass. A float that keeps an unfinished card gently moving waits for the
+  real visual design before it's judged.
+- **Edit marks:** the pencil.
+
+Next, the prototype takes on the look from the icons and colour exploration as a switch, so these choices
+can be judged in the app's own style before the editor is planned for iOS.
