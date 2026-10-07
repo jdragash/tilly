@@ -171,3 +171,23 @@ These gate narrowing, not exploring. The canvas should show enough to answer the
 - Licences, read 2026-09-25: Fluent Emoji `LICENSE` (MIT); khushmeen.com/icons.html (Doodle Icons,
   CC0); openmoji.org/faq (CC BY-SA 4.0); github.com/googlefonts/noto-emoji (OFL 1.1, Apache 2.0);
   Apple SF Symbols licence terms as reported on developer forums; Apple `ImageCreator` documentation.
+
+## Updates
+
+### 2026-09-25: type joins icons and colour
+
+Handwriting is now part of the question: which handwriting face, whether it covers everything or
+only words (names, the month) with figures kept in type, and whether the rest of the type is rounded
+or the system default. The faces are OFL faces from Google Fonts for now, with a font made from
+Jake's own handwriting as a possible later step. A type scale, spacing and components are still
+Jake's design system pass. Round 2 of the prototype is `docs/prototypes/icons-and-type.html`;
+round 1 is unchanged.
+
+New open questions:
+
+7. **Handwriting on everything, or words only?** Handwritten figures cost the amount its instant
+   read (tenet 2) and don't line up in a column. Words only splits what you wrote from what Tilly
+   worked out.
+8. **Round tip or pointed pen?** A round tip (marker) reads as friendlier and more playful; a pointed
+   pen reads as quicker and more grown-up. The same question applies to the system type: rounded or default.
+9. **A face of Jake's own hand?** It would make the app icon, the letters and any drawn icons one pen.
