@@ -72,13 +72,13 @@ struct CardProgress: Equatable, Sendable {
 
 Depends on step 1.
 
-**Files:** `Tilly/Editor/BillCard.swift` (new), `Tilly/DesignSystem/Tokens.swift` (modified)
+**Files:** `Tilly/Editor/EditorCard.swift` (new), `Tilly/DesignSystem/Tokens.swift` (modified)
 
 **Interface:**
 ```swift
 /// The Wallet card, live: every part is a button that reports itself, and the name is the
 /// text field itself. See "The card is the input" in `docs/DESIGN.md`.
-struct BillCard: View {
+struct EditorCard: View {
     let draft: ExpenseDraft
     @Binding var name: String
     var nameFocus: FocusState<Bool>.Binding
@@ -93,7 +93,7 @@ struct BillCard: View {
 
 New tokens, values from the prototype, each with a comment naming where it came from:
 `Size.cardAspect` 1.586, `Radius.card` 20, `Space.cardHorizontal` 18, `Space.cardVertical` 16,
-`Space.cardInset` 22 (from the sheet's sides), `Size.cardCategoryTile` 46,
+`Space.editorCardInset` 22 (from the sheet's sides), `Size.cardCategoryTile` 46,
 `Radius.cardCategoryTile` 46 × 0.28, `Text.cardAmount(size:)` with a base of 60,
 `Text.cardName` `.title2.weight(.semibold)`, `Text.cardWhen` `.footnote.weight(.semibold)`,
 `Text.cardEmoji` `.title`, `Stroke.cardDash` 2pt dashed, `Ink.onCard` white,
@@ -132,7 +132,7 @@ enum EditorPanel: Equatable { case keypad, date, `repeat`, category, newCategory
 ```
 `ExpenseEditor`'s public `init` doesn't change.
 
-The sheet is `BillCard` at the top, inset `Space.cardInset`, then the panel at
+The sheet is `EditorCard` at the top, inset `Space.editorCardInset`, then the panel at
 `Size.editorPanel`, bottom-aligned; nothing between them moves when the panel changes. `onTap`
 maps amount → `.keypad`, name → focus the field, date → `.date`, repeat → `.repeat`, category
 and background → `.category`. The category panel is still `CategoryPicker` in this step. The
@@ -267,6 +267,13 @@ screenshots held mid-flight per `.claude/rules/simulator.md`. Both suites green.
 **Out of scope:** the timeline's reaction to the new row.
 
 ## Lessons
+
+- **The prototype's `color-mix(in srgb, c 72%, white)` is 72% of the colour**, so the card's light
+  end is the colour mixed 28% toward white, and its dark end 24% toward black. `Color.mix(with:by:in:
+  .device)` does it without resolving traits by hand.
+- **A view not yet in the app can still be screenshotted in the Simulator**: a temporary file
+  that `TillyApp`'s debug branch shows instead of the timeline, with states picked by
+  `SIMCTL_CHILD_<NAME>` launch variables, deleted before committing.
 
 ## If a step is wrong
 

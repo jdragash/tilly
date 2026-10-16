@@ -62,6 +62,15 @@ enum Tokens {
         static let billNote: Font = .footnote
         static let billFigure: Font = .subheadline
         static let endedToggle: Font = .subheadline
+        /// The editor's card, at the prototype's sizes L, L, L, S. The amount scales
+        /// `Size.cardAmount` with `@ScaledMetric`, as the editor's amount does.
+        static func cardAmount(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
+        static let cardName: Font = .title2.weight(.semibold)
+        static let cardWhen: Font = .footnote.weight(.semibold)
+        static let cardEmoji: Font = .title
+        /// The pencil badge on a chosen category's tile: a fixed 10pt glyph in a fixed 16pt
+        /// circle, from the prototype.
+        static let cardBadge: Font = .system(size: 10, weight: .semibold)
     }
 
     enum Stroke {
@@ -75,6 +84,11 @@ enum Tokens {
         static let upcomingDot: CGFloat = 2
         /// The year's ring for a bill that starts, changes or ends; a €0 one reuses `zeroDot`.
         static let yearRing: CGFloat = 1.5
+        /// What the editor's card still needs: the name's field and the category's tile. 2pt from
+        /// the prototype; the dash and gap are a guess at a browser's dashed border.
+        static let cardDash = StrokeStyle(lineWidth: 2, dash: [5, 4])
+        /// Round the part of the card whose input is open; from the prototype.
+        static let cardFocus: CGFloat = 2
     }
 
     /// How far text may shrink to fit a line before it truncates.
@@ -124,6 +138,11 @@ enum Tokens {
         /// Today's circle on the calendar, as Calendar draws it, and the number inside it.
         static let today: Color = Color(.systemRed)
         static let onToday: Color = .white
+        /// Type on the editor's card, which is always a colour, or grey before it has one. From the
+        /// prototype: white, a soft white for what's still faint, and the dashes between.
+        static let onCard: Color = .white
+        static let onCardSoft: Color = .white.opacity(0.58)
+        static let onCardDash: Color = .white.opacity(0.75)
     }
 
     enum Surface {
@@ -144,6 +163,8 @@ enum Tokens {
         static let card: Color = Color(.quaternarySystemFill)
         /// A chip that isn't picked: the prototype's 14% and 32%, which the secondary fill is.
         static let chip: Color = Color(.secondarySystemFill)
+        /// The pencil badge's ground: white in light, the prototype's #2C2C2E in dark.
+        static let cardBadge: Color = Color(.tertiarySystemBackground)
     }
 
     enum Chart {
@@ -243,6 +264,18 @@ enum Tokens {
         /// Above the chips, and above the cards.
         static let chipsTop: CGFloat = 12
         static let cardsTop: CGFloat = 16
+        /// The editor's card: its padding, from the sheet's sides, and between its parts. From
+        /// the prototype. `editorCardInset` isn't `cardInset`, which is All bills' 16.
+        static let cardHorizontal: CGFloat = 18
+        static let cardVertical: CGFloat = 16
+        static let editorCardInset: CGFloat = 22
+        /// Between the date's line and the repeat's.
+        static let cardWhenGap: CGFloat = 2
+        /// Before the pencil that follows a filled-in part.
+        static let cardMarkGap: CGFloat = 4
+        /// Inside the name's dashed field.
+        static let cardFieldHorizontal: CGFloat = 10
+        static let cardFieldVertical: CGFloat = 4
     }
 
     enum Size {
@@ -335,6 +368,15 @@ enum Tokens {
         static let yearDotRing: CGFloat = 7
         /// A category chip in All bills.
         static let chipHeight: CGFloat = 34
+        /// The editor's card: a bank card's proportions (ISO/IEC 7810 ID-1), from the prototype.
+        static let cardAspect: CGFloat = 1.586
+        /// The card's amount, before Dynamic Type scales it; from the prototype's L.
+        static let cardAmount: CGFloat = 60
+        /// The category's tile on the card, and the pencil badge on its corner, which sits
+        /// `cardBadgeOverhang` outside it. From the prototype.
+        static let cardCategoryTile: CGFloat = 46
+        static let cardBadge: CGFloat = 16
+        static let cardBadgeOverhang: CGFloat = 5
     }
 
     enum Motion {
@@ -363,6 +405,22 @@ enum Tokens {
         static func aside(hiding: Bool) -> Animation {
             .easeOut(duration: hiding ? asideOut : asideBack)
         }
+        /// The part of the card still needed next: its dashes fade to `breatheOpacity` and back
+        /// over `breathe`. From the prototype.
+        static let breathe: TimeInterval = 1.8
+        static let breatheOpacity: Double = 0.55
+    }
+
+    /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is
+    /// half the CSS blur.
+    enum Shadow {
+        static let cardColour: Color = .black.opacity(0.16)
+        static let cardRadius: CGFloat = 14
+        static let cardY: CGFloat = 12
+        /// Under the pencil badge: the prototype's 0 1 2 at 14% black.
+        static let badgeColour: Color = .black.opacity(0.14)
+        static let badgeRadius: CGFloat = 1
+        static let badgeY: CGFloat = 1
     }
 
     enum Radius {
@@ -370,8 +428,13 @@ enum Tokens {
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
         static let readout: CGFloat = 16
-        /// An All bills card; from the prototype.
+        /// An All bills card, and the editor's card; both from their prototypes.
         static let card: CGFloat = 20
+        /// The category's tile on the editor's card: 0.28 of its side, from the prototype.
+        static let cardCategoryTile: CGFloat = Size.cardCategoryTile * 0.28
+        /// The name's dashed field, and the ring round an open date or repeat; from the prototype.
+        static let cardField: CGFloat = 9
+        static let cardFocus: CGFloat = 6
     }
 }
 
@@ -389,6 +452,25 @@ extension Tokens {
             let circle = UIImage(systemName: "circle.fill") ?? UIImage()
             return Image(uiImage: circle.withTintColor(uiColor(colour), renderingMode: .alwaysOriginal))
         }
+
+        /// The editor's card: the colour lit toward its top left corner and shaded toward its bottom
+        /// right, as the prototype draws it (28% white, the colour, then 24% black, at 135°). A card
+        /// without a colour is grey, mixed the same way.
+        static func cardFill(_ colour: Tilly.CategoryColour?) -> LinearGradient {
+            let base = colour.map(color) ?? Chart.uncoloured
+            return LinearGradient(
+                colors: [
+                    base.mix(with: .white, by: cardLight, in: .device),
+                    base,
+                    base.mix(with: .black, by: cardShade, in: .device),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        private static let cardLight: Double = 0.28
+        private static let cardShade: Double = 0.24
 
         private static func uiColor(_ colour: Tilly.CategoryColour) -> UIColor {
             switch colour {
