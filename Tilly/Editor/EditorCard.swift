@@ -170,12 +170,13 @@ struct EditorCard: View {
                 if nowFocused { onTap(.name) }
             }
             .accessibilityLabel("Name")
+            .accessibilityHint("Opens the keyboard")
     }
 
     private var date: some View {
         let label = draft.dateLabel(calendar: calendar, locale: locale)
         let isFuture = draft.isFuture(today: today, calendar: calendar)
-        return whenButton(.date, label: "Date", value: label) {
+        return whenButton(.date, label: "Date", value: label, hint: "Opens the calendar") {
             if isFuture {
                 Image(systemName: "calendar.badge.clock")
                     .foregroundStyle(Tokens.Ink.onCardSoft)
@@ -186,7 +187,7 @@ struct EditorCard: View {
 
     private var repeatLine: some View {
         let label = draft.repeatLabel(calendar: calendar, locale: locale)
-        return whenButton(.repeat, label: "Repeat", value: label) {
+        return whenButton(.repeat, label: "Repeat", value: label, hint: "Opens the repeat wheel") {
             if draft.paymentCount != nil {
                 Image(systemName: "arrow.right.to.line")
                     .foregroundStyle(Tokens.Ink.onCardSoft)
@@ -200,6 +201,7 @@ struct EditorCard: View {
         _ part: CardPart,
         label: String,
         value: String,
+        hint: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
         let isOpen = focused == part
@@ -223,6 +225,7 @@ struct EditorCard: View {
         .buttonStyle(.plain)
         .accessibilityLabel(label)
         .accessibilityValue(value)
+        .accessibilityHint(hint)
         .accessibilityAddTraits(isOpen ? .isSelected : [])
     }
 
@@ -259,6 +262,7 @@ struct EditorCard: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Category")
         .accessibilityValue(isMissing ? "None" : category?.name ?? "None")
+        .accessibilityHint("Opens the categories")
         .accessibilityAddTraits(isOpen ? .isSelected : [])
     }
 

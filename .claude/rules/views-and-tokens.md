@@ -20,6 +20,9 @@ paths:
 grep -REn '#[0-9A-Fa-f]{6}|Color\(red:|\.font\(\.(largeTitle|title|headline|subheadline|body|callout|footnote|caption)|\.font\(\.system|spacing: *[1-9]|\.padding\( *[0-9]|\.padding\([^)]*, *[0-9]|cornerRadius\( *[0-9]|\.frame\((width|height): *[0-9]' Tilly --include='*.swift' | grep -v 'DesignSystem/'
 ```
 
+- A prototype's `color-mix(in srgb, c 72%, white)` is 72% of the colour: mix 28% toward white.
+  `Color.mix(with:by:in: .device)` does it without resolving traits by hand.
+
 ## Amounts
 
 - Round to whole units **before** totalling (`NSDecimalRound`, `.plain`), so a total always

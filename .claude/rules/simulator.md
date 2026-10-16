@@ -50,3 +50,11 @@ Tooling that cost time, on the iPhone 17 simulator, iOS 27.
   about a second late; `simctl io booted screenshot` doesn't lag.
 - To see an animation, slow its token (0.38s → 3s) and capture with `simctl` in a background loop
   started just before the tap.
+
+## Motion and unbuilt views
+
+- **Reduce Motion:** `simctl spawn booted defaults write com.apple.Accessibility
+  ReduceMotionEnabled -bool true`, then relaunch. Time an animation from a recording (`simctl io
+  booted recordVideo`, frames tiled with `ffmpeg`); a screenshot lands after it ends.
+- **A view not yet in the app:** a temporary file that `TillyApp`'s debug branch shows instead of
+  the timeline, states picked by `SIMCTL_CHILD_<NAME>` launch variables. Delete it before committing.

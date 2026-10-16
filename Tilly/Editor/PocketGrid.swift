@@ -7,7 +7,7 @@ struct PocketGrid: View {
     let selection: UUID?
     let draftName: String          // on the card standing in the chosen pocket
     let newBreathes: Bool          // first bill, amount and name in
-    let filing: UUID?              // step 6; nil here
+    let filing: UUID?              // the category the card is filing into, nil otherwise
     let onPick: (UUID) -> Void
     let onNew: () -> Void
 
@@ -59,6 +59,7 @@ struct PocketGrid: View {
         .buttonStyle(.plain)
         .accessibilityLabel(pocket.name)
         .accessibilityValue(pocket.peeking.reversed().joined(separator: ", "))
+        .accessibilityHint("Puts the bill in this category")
         .accessibilityAddTraits(isChosen ? .isSelected : [])
     }
 
@@ -203,6 +204,7 @@ struct PocketGrid: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("New category")
+        .accessibilityHint("Opens the emoji keyboard to make one")
     }
 }
 

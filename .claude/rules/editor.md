@@ -17,6 +17,19 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
   with nothing measured. Its top edge measured the same under the keypad, the name keyboard,
   the calendar, the wheel, the category list and the emoji keyboard.
 
+- **A shape's fill eats the taps of a button in its `.background`.** The card's background button
+  is an overlay over the fill and under the parts.
+- **Three 108pt pockets and two 14pt gaps are 352pt, which fits only inside the 20pt gutter.** Any
+  side padding of the grid's own widens the whole sheet, card included.
+
+## Filing the card
+
+- **The card files as one picture, by a measured scale and offset, not `matchedGeometryEffect`.**
+  Matching frames re-lays the card out at pocket size, so its type stays full size and clips. The
+  target pocket reports where the card lands through `FilingTargetKey`.
+- **A modifier that returns different views for "flying" and "resting" doesn't animate**; it swaps
+  views. Keep one view and vary its values.
+
 ## Pickers and menus
 
 - A wheel `Picker`'s natural width is unbounded: `fixedSize` on one widens the whole layout. Give
@@ -28,6 +41,9 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
 
 ## Focus and UIKit fields
 
+- **iOS 27 draws `.next` as a chevron and `.done` as a ✓ on the Return key.** The name's label
+  reads the next part besides the name; `CardProgress.next(after:)` wraps round to the part it
+  started from.
 - SwiftUI drops a `TextField`'s focus after `onSubmit`: refocus in `Task { @MainActor in }`.
 - A `UIViewRepresentable` acts on a *change* of its focus binding, tracked as the last value it
   saw, never on its state, and its delegate writes the binding asynchronously:
