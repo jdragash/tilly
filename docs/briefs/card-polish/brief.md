@@ -119,3 +119,12 @@ calendar and category view, undo, and new category management.
 - `~/code-projects/tilly-video/cards/index.html` (`dropIn`, `pop`, the filing timeline)
 - `git log`: `d5c671f`..`c2bb596` (the card's six steps), `4030eae` (the merge)
 - `.claude/rules/editor.md`, `Tilly/Editor/EditorCard.swift`, `PocketGrid.swift`, `ExpenseEditor.swift`
+
+## Updates
+
+**2026-10-16.** Jake left the four open questions to Claude's recommendation:
+1. Currency follows the device region.
+2. The motion is tuned in a prototype first: `docs/prototypes/card-polish.html`, with the as-built and
+   video motion as presets and every spring on a control, in SwiftUI's own parameters.
+3. The card stays full size over the pockets, the first row right under it.
+4. Haptics: light on picking a pocket and on ✓, medium when the card lands.
