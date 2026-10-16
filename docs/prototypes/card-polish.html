@@ -35,12 +35,13 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .noselect,.noselect *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 
 /* ---------- stage + phone ---------- */
-#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+/* in normal flow with a real height, so a host that sizes its frame to the page still shows it */
+#stage{position:relative;height:100vh;height:100dvh;min-height:640px;display:flex;align-items:center;justify-content:center}
 #phoneBox{position:relative;flex:none}
 #phone{position:absolute;left:0;top:0;width:402px;height:874px;border-radius:55px;overflow:hidden;background:var(--ground);
   box-shadow:0 0 0 10px #111,0 30px 80px rgba(0,0,0,.3);transform-origin:0 0;
   --sat:47px;--sab:34px}
-@media (min-width:900px){ #stage{right:340px} }
+@media (min-width:900px){ #stage{margin-right:340px} }
 @media (max-width:499px){
   #stage{display:block}
   #phoneBox{width:100%!important;height:100%!important}
