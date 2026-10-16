@@ -240,3 +240,6 @@ Jake picked from the prototype's controls, and the editor is planned for iOS in 
 Next, after this build: the pockets start right under the card and grow down the sheet, and when
 there are more than fit, they scroll under the card, so the card seems to float over them. Today
 they sit in the keypad's place and scroll there.
+
+The calendar, All bills and the category view, built on main meanwhile, stay as they are. This work is
+the editor only; each of them is revisited with the card and pockets afterwards (`ROADMAP.md`).

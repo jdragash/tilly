@@ -32,6 +32,7 @@ The smallest thing that does the job.
 
 | Item | Why not v1 |
 |---|---|
+| The calendar, All bills and the category view, in the card's language | They stay as built. Once the card and pockets are in use, each is revisited with them: All bills' category cards and the pockets are close cousins already. |
 | Pockets under the card | The pockets start right under the card and grow down the sheet, scrolling under it so the card floats over them. Waits until the card and pockets are in use, because the scroll and the card's place have to be built together. |
 | Viewing a charge before editing it | Prototyped and set aside: the editor-first version read better (`DECISIONS.md`). Reopens with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
