@@ -32,8 +32,7 @@ struct EditorCard: View {
 
     /// Amount top left, date and repeat top right, name bottom left, the emoji bottom right.
     private var standard: some View {
-        cardShape
-            .fill(Tokens.CategoryColour.cardFill(category?.colour))
+        fill
             .aspectRatio(Tokens.Size.cardAspect, contentMode: .fit)
             .frame(maxWidth: .infinity)
             .overlay {
@@ -84,11 +83,22 @@ struct EditorCard: View {
         .padding(.vertical, Tokens.Space.cardVertical)
         .background {
             ZStack {
-                cardShape.fill(Tokens.CategoryColour.cardFill(category?.colour))
+                fill
                 backgroundButton
             }
         }
         .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
+    }
+
+    /// The card's colour. A new category crossfades over the old one rather than blending
+    /// through it.
+    private var fill: some View {
+        ZStack {
+            cardShape
+                .fill(Tokens.CategoryColour.cardFill(category?.colour))
+                .id(category?.id)
+                .transition(.opacity)
+        }
     }
 
     private var cardShape: RoundedRectangle {
@@ -230,6 +240,8 @@ struct EditorCard: View {
                 } else if let category {
                     Text(category.emoji)
                         .font(Tokens.Text.cardEmoji)
+                        .id(category.id)
+                        .transition(.emojiDrop)
                 }
             }
             .frame(width: tileSize, height: tileSize)
@@ -287,6 +299,18 @@ private struct AmountCaret: TextRenderer {
             height: height
         )
         context.fill(Capsule().path(in: caret), with: .color(Tokens.Ink.onCard))
+    }
+}
+
+private extension AnyTransition {
+    /// The emoji drops into its tile: from a little larger and higher, to rest.
+    static var emojiDrop: AnyTransition {
+        .asymmetric(
+            insertion: .scale(scale: Tokens.Scale.emojiDrop)
+                .combined(with: .offset(y: -Tokens.Space.emojiDrop))
+                .combined(with: .opacity),
+            removal: .opacity
+        )
     }
 }
 

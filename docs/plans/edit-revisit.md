@@ -283,6 +283,9 @@ screenshots held mid-flight per `.claude/rules/simulator.md`. Both suites green.
 - **The held offset went with the button row.** With the card at the top and a spacer above the
   panel, nothing needed measuring for the emoji keyboard.
 
+- **Three 108pt pockets and two 14pt gaps are 352pt, which fits only inside the 20pt gutter.**
+  Any side padding of the grid's own pushed the whole sheet wider, card included.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

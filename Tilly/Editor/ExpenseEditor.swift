@@ -24,6 +24,7 @@ struct ExpenseEditor: View {
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
+    @Query private var expenses: [Expense]
 
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
@@ -190,7 +191,15 @@ struct ExpenseEditor: View {
         case .repeat:
             RepeatWheel(draft: $draft)
         case .category:
-            CategoryPicker(selection: $draft.categoryID, onNew: { panel = .newCategory })
+            PocketGrid(
+                pockets: pockets,
+                selection: draft.categoryID,
+                draftName: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
+                filing: nil,
+                onPick: pick,
+                onNew: { panel = .newCategory }
+            )
         case .newCategory:
             EmptyView()
         }
@@ -242,7 +251,22 @@ struct ExpenseEditor: View {
         )
     }
 
-    /// A category made in the editor is selected at once, and the list comes back.
+    /// The pockets in the Settings order, without the bill being edited peeking out of its own.
+    private var pockets: [PocketContent] {
+        let editing = session.flatMap { session in expenses.first { $0.id == session.expenseID }?.seriesKey }
+        return PocketContents.make(
+            categories: categories, expenses: expenses, excluding: editing, today: today, calendar: calendar
+        )
+    }
+
+    /// Dresses the card in the category: its colour crossfades and its emoji drops in.
+    private func pick(_ id: UUID) {
+        withAnimation(.easeInOut(duration: Tokens.Motion.pick)) {
+            draft.categoryID = id
+        }
+    }
+
+    /// A category made in the editor dresses the card at once, and the pockets come back.
     private func create(_ category: ExpenseCategory) {
         modelContext.insert(category)
         do {
@@ -250,7 +274,7 @@ struct ExpenseEditor: View {
         } catch {
             Self.logger.error("Saving a category failed: \(error)")
         }
-        draft.categoryID = category.id
+        pick(category.id)
         panel = .category
     }
 
