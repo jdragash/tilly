@@ -275,6 +275,14 @@ screenshots held mid-flight per `.claude/rules/simulator.md`. Both suites green.
   that `TillyApp`'s debug branch shows instead of the timeline, with states picked by
   `SIMCTL_CHILD_<NAME>` launch variables, deleted before committing.
 
+- **A shape's fill eats the taps of a button in its `.background`.** The card's background button
+  sits in an overlay over the fill and under the parts.
+- **iOS 27 draws `.next` as a chevron and `.done` as a ✓ on the Return key.** The name's label
+  reads the next part besides the name itself; `CardProgress.next(after:)` wraps round to the
+  part it started from.
+- **The held offset went with the button row.** With the card at the top and a spacer above the
+  panel, nothing needed measuring for the emoji keyboard.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

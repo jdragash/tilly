@@ -3,10 +3,15 @@ import SwiftUI
 import TillyCore
 import os
 
-/// The sheet for adding an expense. The amount is the screen: the keypad is up when it opens,
-/// the name sits under it, and date, category and repeat open in the keypad's place at the
-/// keypad's height, so the amount never moves. At standard text sizes the keyboard covers the
-/// panel rather than pushing the editor up. See "The editor" in `docs/DESIGN.md`.
+/// Which input fills the area under the card, in the keypad's place.
+enum EditorPanel: Equatable {
+    case keypad, date, `repeat`, category, newCategory
+}
+
+/// The sheet for adding an expense. The card is the input: tapping a part opens its input in the
+/// keypad's place, under the card, at the keypad's height, so the card never moves. At standard
+/// text sizes the keyboard covers the panel rather than pushing the sheet up. See "The editor" in
+/// `docs/DESIGN.md`.
 struct ExpenseEditor: View {
     let today: Date
     /// Set when the editor opened from a row: editing a real charge rather than adding a new
@@ -23,15 +28,7 @@ struct ExpenseEditor: View {
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
     @FocusState private var nameFocused: Bool
-    @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.editorAmountSize
-    @ScaledMetric(relativeTo: .title3) private var nameHeight = Tokens.Size.editorNameHeight
     @State private var viewportHeight: CGFloat = 0
-    /// The amount and name's height, and the height of the space they centre in. Measured, so
-    /// making a category can hold them where they rest. See `heldOffset`.
-    @State private var amountBlockHeight: CGFloat = 0
-    @State private var amountAreaHeight: CGFloat = 0
-    /// How far below the top of its space the amount rests while a picker or the keypad shows.
-    @State private var restingAmountInset: CGFloat?
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
@@ -47,41 +44,30 @@ struct ExpenseEditor: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                // The card holds the top and the panel the bottom; the space between them gives
+                // way, so neither moves when the panel changes or a keyboard pushes the sheet up.
+                // Accessibility sizes overflow instead, and scroll.
                 VStack(spacing: Tokens.Space.section) {
-                    // The amount and name are the flexible part: they centre in whatever height the
-                    // buttons and panel leave, so those sit at the bottom. Accessibility sizes
-                    // overflow instead, and scroll. While a category is made the keyboard pushes
-                    // the editor up instead of covering it, so the two hold their resting place and
-                    // the space under the name gives way.
-                    VStack(spacing: Tokens.Space.section) {
-                        amountView
-                        nameField
-                    }
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { amountBlockHeight = $0 }
-                    // An offset, not padding: it draws the two lower without asking for more room,
-                    // so the space they're given can't depend on where they're drawn.
-                    .offset(y: heldOffset ?? 0)
-                    .frame(maxHeight: .infinity, alignment: heldOffset == nil ? .center : .top)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                        amountAreaHeight = height
-                        if heldOffset == nil { restingAmountInset = max(0, (height - amountBlockHeight) / 2) }
-                    }
-                    EditorButtonRow(draft: draft, category: selectedCategory, today: today, panel: $panel)
+                    card
+                        .padding(.horizontal, Tokens.Space.editorCardInset)
+                    Spacer(minLength: 0)
                     // A new category takes the panel's place, above its keyboard. At accessibility
-                    // sizes the keyboard pushes the editor up, so the panel goes while a name is typed.
-                    if panel == .newCategory {
-                        NewCategoryRow(existing: categories, onCreate: create, onCancel: { panel = .category })
-                    } else if keyboardCovers || !nameFocused {
-                        // Where the keyboard covers, the panel stays in the layout so nothing above
-                        // it moves, and hides so it can't show above a shorter keyboard.
-                        panelArea
-                            .frame(maxWidth: .infinity)
-                            .frame(height: Tokens.Size.editorPanel)
-                            .opacity(nameFocused ? 0 : 1)
-                            .accessibilityHidden(nameFocused)
+                    // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
+                    Group {
+                        if panel == .newCategory {
+                            NewCategoryRow(existing: categories, onCreate: create, onCancel: { panel = .category })
+                        } else if keyboardCovers || !nameFocused {
+                            // Where the keyboard covers, the panel stays in the layout so nothing
+                            // above it moves, and hides so it can't show above a shorter keyboard.
+                            panelArea
+                                .frame(maxWidth: .infinity)
+                                .frame(height: Tokens.Size.editorPanel)
+                                .opacity(nameFocused ? 0 : 1)
+                                .accessibilityHidden(nameFocused)
+                        }
                     }
+                    .padding(.horizontal, Tokens.Space.gutter)
                 }
-                .padding(.horizontal, Tokens.Space.gutter)
                 .frame(minHeight: viewportHeight)
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -145,32 +131,51 @@ struct ExpenseEditor: View {
 
     // MARK: Pieces
 
-    private var amountView: some View {
-        Button {
-            nameFocused = false
-            panel = .keypad
-        } label: {
-            Text(draft.amountText(locale: locale))
-                .font(Tokens.Text.editorAmount(size: amountSize))
-                .foregroundStyle(draft.digits.isEmpty ? Tokens.Ink.tertiary : Tokens.Ink.primary)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(Tokens.Scale.editorAmountMin)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Amount")
-        .accessibilityValue(draft.amountText(locale: locale))
-        .accessibilityHint("Opens the keypad")
+    private var card: some View {
+        EditorCard(
+            draft: draft,
+            name: $draft.name,
+            nameFocus: $nameFocused,
+            category: selectedCategory,
+            progress: progress,
+            focused: focusedPart,
+            today: today,
+            onTap: open,
+            onNameSubmit: submitName
+        )
+        .submitLabel(afterName == nil ? .done : .next)
     }
 
-    private var nameField: some View {
-        TextField("Name it", text: $draft.name)
-            .font(Tokens.Text.editorName)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: nameHeight)
-            .focused($nameFocused)
-            .submitLabel(.done)
+    /// Where Return goes from the name: the next part still missing besides the name itself. The
+    /// keyboard reads its label when the field focuses, and nothing else changes while it's up.
+    private var afterName: CardPart? {
+        progress.next(after: .name).flatMap { $0 == .name ? nil : $0 }
+    }
+
+    /// Each part opens its input; the card's background opens the category, as its tile does.
+    private func open(_ part: CardPart?) {
+        switch part {
+        case .amount:
+            nameFocused = false
+            panel = .keypad
+        case .name:
+            nameFocused = true
+        case .date:
+            panel = .date
+        case .repeat:
+            panel = .repeat
+        case .category, nil:
+            panel = .category
+        }
+    }
+
+    /// Return goes to whatever's still missing, or puts the keyboard away.
+    private func submitName() {
+        if let next = afterName {
+            open(next)
+        } else {
+            nameFocused = false
+        }
     }
 
     @ViewBuilder
@@ -193,21 +198,26 @@ struct ExpenseEditor: View {
 
     // MARK: State
 
+    private var progress: CardProgress {
+        CardProgress(draft: draft, categoryExists: selectedCategory != nil, isMakingCategory: panel == .newCategory)
+    }
+
+    /// The part whose input is open: the name while it's typed in, otherwise the panel's own part.
+    private var focusedPart: CardPart {
+        if nameFocused { return .name }
+        switch panel {
+        case .keypad: return .amount
+        case .date: return .date
+        case .repeat: return .repeat
+        case .category, .newCategory: return .category
+        }
+    }
+
     /// The keyboard covers the editor at standard sizes. It can't while a category is made, where
     /// the row has to sit directly above the emoji keyboard, or at accessibility sizes, where it
     /// would cover the name field.
     private var keyboardCovers: Bool {
         !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
-    }
-
-    /// While a category is made, at standard sizes, the amount and name are drawn from the top of
-    /// their space at the inset they rest at, rather than centred, so they don't move: the keyboard
-    /// pushes the editor up there instead of covering it. Where the space left is too short for
-    /// that, they rise by the shortfall and no more, so the row never goes under the keyboard.
-    /// nil means centre as usual. At accessibility sizes the editor scrolls, and centring is moot.
-    private var heldOffset: CGFloat? {
-        guard panel == .newCategory, !dynamicTypeSize.isAccessibilitySize, let restingAmountInset else { return nil }
-        return max(0, min(restingAmountInset, amountAreaHeight - amountBlockHeight))
     }
 
     private var selectedCategory: ExpenseCategory? {

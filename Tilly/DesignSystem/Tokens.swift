@@ -15,13 +15,7 @@ enum Tokens {
         static let body: Font = .body
         static let emptyTitle: Font = .title2.weight(.semibold)
         static let rowEmoji: Font = .title2
-        static let editorName: Font = .title3.weight(.medium)
-        static let editorButton: Font = .subheadline
         static let keypadKey: Font = .title
-        /// The editor's amount is the largest thing on the screen. The view scales
-        /// `Size.editorAmountSize` with `@ScaledMetric` and builds the font here, where a
-        /// fixed-size font belongs.
-        static func editorAmount(size: CGFloat) -> Font { .system(size: size, weight: .semibold) }
         /// A lane's emoji follows the lane's height, which already answers to the screen, so it
         /// doesn't scale with Dynamic Type too. From the prototype.
         static func laneEmoji(laneHeight: CGFloat) -> Font {
@@ -93,8 +87,8 @@ enum Tokens {
 
     /// How far text may shrink to fit a line before it truncates.
     enum Scale {
+        /// The card's amount, before it truncates.
         static let editorAmountMin: CGFloat = 0.3
-        static let editorButtonMin: CGFloat = 0.8
         /// A month header's name and a picked-out category's name, before they truncate.
         static let headerMin: CGFloat = 0.8
         /// A lane's total, before it would run out of its column.
@@ -295,14 +289,7 @@ enum Tokens {
         /// The month button and settings, at the bottom. Calendar's bottom glass buttons, Today and
         /// the pair beside it, measured the same way: 48.00pt tall, 4pt taller than the top ones.
         static let bottomButton: CGFloat = 48
-        static let editorButton: CGFloat = 40
-        static let editorButtonStroke: CGFloat = 1
-        static let editorAmountSize: CGFloat = 80 // the amount's base size, before Dynamic Type scales it
-        /// The name field's least height, before Dynamic Type scales it. A focused field grows from
-        /// 24.0 to 25.67pt (measured), which moves the amount above it by half that; a minimum
-        /// above the larger keeps its height, and the amount, still.
-        static let editorNameHeight: CGFloat = 28
-        /// Every editor panel fills exactly this height, so the amount never moves. Tuning value:
+        /// Every editor panel fills exactly this height, so the card never moves. Tuning value:
         /// the graphical calendar is the tallest panel, and a six-row month (August 2026) measures
         /// about 336pt at the default text size, so 340 clears it without clipping.
         static let editorPanel: CGFloat = 340

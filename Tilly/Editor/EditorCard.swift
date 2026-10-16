@@ -37,6 +37,11 @@ struct EditorCard: View {
             .aspectRatio(Tokens.Size.cardAspect, contentMode: .fit)
             .frame(maxWidth: .infinity)
             .overlay {
+                // The background button sits over the fill, which would otherwise take its taps,
+                // and under the parts.
+                backgroundButton
+            }
+            .overlay {
                 VStack(spacing: 0) {
                     HStack(alignment: .top, spacing: Tokens.Space.gap) {
                         amount
@@ -57,7 +62,6 @@ struct EditorCard: View {
                 .padding(.horizontal, Tokens.Space.cardHorizontal)
                 .padding(.vertical, Tokens.Space.cardVertical)
             }
-            .background { backgroundButton }
             .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
     }
 

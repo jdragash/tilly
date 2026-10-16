@@ -3,21 +3,19 @@ paths:
   - "Tilly/Editor/**"
 ---
 
-# The expense editor: keypad, pickers and fields
+# The expense editor: card, keypad, pickers and fields
 
 Learned in the Simulator, invisible to tests. General keyboard and safe-area lessons are in
 `swiftui-controls.md`.
 
-## Holding the amount still
+## Holding the card still
 
 - For the keyboard to cover content rather than push it, keep what it covers in the layout
   (hidden with `opacity`, not removed), or what's above re-centres.
-- A focused `TextField` is taller than an unfocused one (24.0 → 25.67pt): a scaled `minHeight`
-  keeps what's around it still.
-- **While a category is made, the amount and name hold their resting inset**, drawn with
-  `.offset` so their space can't depend on where they're drawn, and rise only by the shortfall:
-  0pt under the name keyboard, 20pt under the emoji keyboard, which is taller. That 20pt breaks
-  "never moves" and is open (`ROADMAP.md`).
+- **The card holds the top and the panel the bottom, with a `Spacer` between.** Where the
+  keyboard pushes the sheet up (making a category), the space gives way and the card stays put
+  with nothing measured. Its top edge measured the same under the keypad, the name keyboard,
+  the calendar, the wheel, the category list and the emoji keyboard.
 
 ## Pickers and menus
 
