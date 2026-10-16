@@ -377,6 +377,15 @@ enum Tokens {
         static let cardCategoryTile: CGFloat = 46
         static let cardBadge: CGFloat = 16
         static let cardBadgeOverhang: CGFloat = 5
+        /// The caret after the card's amount. The prototype sizes it from the font: 0.82em tall,
+        /// 0.055em wide (never under `caretMinWidth`), 0.04em from the text. Here it's drawn from
+        /// the laid-out line, about 1.2em tall in SF, so it follows the amount as it shrinks.
+        static let caretHeightOfLine: CGFloat = 0.82 / 1.2
+        static let caretWidthOfHeight: CGFloat = 0.055 / 0.82
+        static let caretGapOfHeight: CGFloat = 0.04 / 0.82
+        /// What the amount keeps clear after itself for the caret, as a fraction of its size.
+        static let caretRoomRatio: CGFloat = 0.1
+        static let caretMinWidth: CGFloat = 2
     }
 
     enum Motion {
@@ -409,6 +418,8 @@ enum Tokens {
         /// over `breathe`. From the prototype.
         static let breathe: TimeInterval = 1.8
         static let breatheOpacity: Double = 0.55
+        /// How long the amount's caret stays on, then off: half the prototype's 1.06s blink.
+        static let caretBlink: TimeInterval = 0.53
     }
 
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is

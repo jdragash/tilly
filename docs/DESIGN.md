@@ -177,10 +177,11 @@ right on two small lines, the name bottom left, the category's emoji bottom righ
 left, and Save is the system's prominent checkmark top right. The input area under the card keeps
 the keypad's height, so the card never moves.
 
-Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed emoji tile. A small
-pencil after the date, the repeat and the category means it's filled in and yours to change. Once
-the amount is in, the next part still needed breathes, a slow pulse on its dashes. At accessibility
-sizes the parts stack, full width, and the sheet scrolls.
+Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed emoji tile. A pencil
+after the date, repeat and category means it's filled in and yours to change. A caret blinks after the
+amount on the keypad. Once it's in, the next part still needed, other than the one being typed,
+breathes: a slow pulse on its dashes. At accessibility sizes the parts stack, full width, and the
+sheet scrolls.
 
 ### Amount, name and category are required
 

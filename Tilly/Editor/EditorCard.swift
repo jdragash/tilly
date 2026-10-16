@@ -106,13 +106,19 @@ struct EditorCard: View {
     private var amount: some View {
         let text = draft.amountText(locale: locale)
         return Button { onTap(.amount) } label: {
-            Text(text)
-                .font(Tokens.Text.cardAmount(size: amountSize))
-                .foregroundStyle(progress.isMissing(.amount) ? Tokens.Ink.onCardSoft : Tokens.Ink.onCard)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(Tokens.Scale.editorAmountMin)
-                .contentShape(Rectangle())
+            SwiftUI.TimelineView(.periodic(from: .now, by: Tokens.Motion.caretBlink)) { context in
+                let tick = Int(context.date.timeIntervalSinceReferenceDate / Tokens.Motion.caretBlink)
+                Text(text)
+                    .font(Tokens.Text.cardAmount(size: amountSize))
+                    .foregroundStyle(progress.isMissing(.amount) ? Tokens.Ink.onCardSoft : Tokens.Ink.onCard)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(Tokens.Scale.editorAmountMin)
+                    .textRenderer(AmountCaret(isShown: focused == .amount && tick.isMultiple(of: 2)))
+                    // Room for the caret, which is drawn past the text's own width.
+                    .padding(.trailing, focused == .amount ? amountSize * Tokens.Size.caretRoomRatio : 0)
+            }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .layoutPriority(1)
@@ -256,6 +262,27 @@ struct EditorCard: View {
             .shadow(color: Tokens.Shadow.badgeColour, radius: Tokens.Shadow.badgeRadius, y: Tokens.Shadow.badgeY)
             .offset(x: Tokens.Size.cardBadgeOverhang, y: Tokens.Size.cardBadgeOverhang)
             .accessibilityHidden(true)
+    }
+}
+
+/// Draws the amount, then the caret after it while the keypad is up. Drawn from the laid-out line,
+/// so the caret shrinks with a long amount, as the prototype's does.
+private struct AmountCaret: TextRenderer {
+    var isShown: Bool
+
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+        for line in layout { context.draw(line) }
+        guard isShown, let line = layout.last else { return }
+        let bounds = line.typographicBounds.rect
+        let height = bounds.height * Tokens.Size.caretHeightOfLine
+        let width = max(Tokens.Size.caretMinWidth, height * Tokens.Size.caretWidthOfHeight)
+        let caret = CGRect(
+            x: bounds.maxX + height * Tokens.Size.caretGapOfHeight,
+            y: bounds.midY - height / 2,
+            width: width,
+            height: height
+        )
+        context.fill(Capsule().path(in: caret), with: .color(Tokens.Ink.onCard))
     }
 }
 
