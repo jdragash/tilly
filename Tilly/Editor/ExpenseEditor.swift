@@ -3,10 +3,15 @@ import SwiftUI
 import TillyCore
 import os
 
-/// The sheet for adding an expense. The amount is the screen: the keypad is up when it opens,
-/// the name sits under it, and date, category and repeat open in the keypad's place at the
-/// keypad's height, so the amount never moves. At standard text sizes the keyboard covers the
-/// panel rather than pushing the editor up. See "The editor" in `docs/DESIGN.md`.
+/// Which input fills the area under the card, in the keypad's place.
+enum EditorPanel: Equatable {
+    case keypad, date, `repeat`, category, newCategory
+}
+
+/// The sheet for adding an expense. The card is the input: tapping a part opens its input in the
+/// keypad's place, under the card, at the keypad's height, so the card never moves. At standard
+/// text sizes the keyboard covers the panel rather than pushing the sheet up. See "The editor" in
+/// `docs/DESIGN.md`.
 struct ExpenseEditor: View {
     let today: Date
     /// Set when the editor opened from a row: editing a real charge rather than adding a new
@@ -19,19 +24,22 @@ struct ExpenseEditor: View {
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
+    @Query private var expenses: [Expense]
 
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
     @FocusState private var nameFocused: Bool
-    @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.editorAmountSize
-    @ScaledMetric(relativeTo: .title3) private var nameHeight = Tokens.Size.editorNameHeight
     @State private var viewportHeight: CGFloat = 0
-    /// The amount and name's height, and the height of the space they centre in. Measured, so
-    /// making a category can hold them where they rest. See `heldOffset`.
-    @State private var amountBlockHeight: CGFloat = 0
-    @State private var amountAreaHeight: CGFloat = 0
-    /// How far below the top of its space the amount rests while a picker or the keypad shows.
-    @State private var restingAmountInset: CGFloat?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The category being filed into, once ✓ has saved. See `file(into:)`.
+    @State private var filing: UUID?
+    /// A bill saved this time, left out of its pocket while the card stands in for it.
+    @State private var savedSeries: UUID?
+    @State private var cardFrame: CGRect = .zero
+    @State private var landing: CGRect?
+    @State private var isFlying = false
+    @State private var isCardGone = false
+    @State private var isClosing = false
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
@@ -47,41 +55,37 @@ struct ExpenseEditor: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                // The card holds the top and the panel the bottom; the space between them gives
+                // way, so neither moves when the panel changes or a keyboard pushes the sheet up.
+                // Accessibility sizes overflow instead, and scroll.
                 VStack(spacing: Tokens.Space.section) {
-                    // The amount and name are the flexible part: they centre in whatever height the
-                    // buttons and panel leave, so those sit at the bottom. Accessibility sizes
-                    // overflow instead, and scroll. While a category is made the keyboard pushes
-                    // the editor up instead of covering it, so the two hold their resting place and
-                    // the space under the name gives way.
-                    VStack(spacing: Tokens.Space.section) {
-                        amountView
-                        nameField
-                    }
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { amountBlockHeight = $0 }
-                    // An offset, not padding: it draws the two lower without asking for more room,
-                    // so the space they're given can't depend on where they're drawn.
-                    .offset(y: heldOffset ?? 0)
-                    .frame(maxHeight: .infinity, alignment: heldOffset == nil ? .center : .top)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                        amountAreaHeight = height
-                        if heldOffset == nil { restingAmountInset = max(0, (height - amountBlockHeight) / 2) }
-                    }
-                    EditorButtonRow(draft: draft, category: selectedCategory, today: today, panel: $panel)
+                    card
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+                            if !isFlying { cardFrame = frame }
+                        }
+                        .modifier(Filing(from: cardFrame, to: isFlying ? landing : nil))
+                        .padding(.horizontal, Tokens.Space.editorCardInset)
+                        .opacity(isCardGone ? 0 : 1)
+                        // Drawn over the panel, which comes after it, as it flies into a pocket.
+                        .zIndex(1)
+                    Spacer(minLength: 0)
                     // A new category takes the panel's place, above its keyboard. At accessibility
-                    // sizes the keyboard pushes the editor up, so the panel goes while a name is typed.
-                    if panel == .newCategory {
-                        NewCategoryRow(existing: categories, onCreate: create, onCancel: { panel = .category })
-                    } else if keyboardCovers || !nameFocused {
-                        // Where the keyboard covers, the panel stays in the layout so nothing above
-                        // it moves, and hides so it can't show above a shorter keyboard.
-                        panelArea
-                            .frame(maxWidth: .infinity)
-                            .frame(height: Tokens.Size.editorPanel)
-                            .opacity(nameFocused ? 0 : 1)
-                            .accessibilityHidden(nameFocused)
+                    // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
+                    Group {
+                        if panel == .newCategory {
+                            NewCategoryRow(existing: categories, onCreate: create, onCancel: { panel = .category })
+                        } else if keyboardCovers || !nameFocused {
+                            // Where the keyboard covers, the panel stays in the layout so nothing
+                            // above it moves, and hides so it can't show above a shorter keyboard.
+                            panelArea
+                                .frame(maxWidth: .infinity)
+                                .frame(height: Tokens.Size.editorPanel)
+                                .opacity(nameFocused ? 0 : 1)
+                                .accessibilityHidden(nameFocused)
+                        }
                     }
+                    .padding(.horizontal, Tokens.Space.gutter)
                 }
-                .padding(.horizontal, Tokens.Space.gutter)
                 .frame(minHeight: viewportHeight)
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -135,6 +139,16 @@ struct ExpenseEditor: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
+        .onPreferenceChange(FilingTargetKey.self) { landing = $0 }
+        .overlay {
+            // While the card files, any tap closes the sheet at once.
+            if filing != nil {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture(perform: close)
+            }
+        }
         .onChange(of: panel) { _, newPanel in
             if newPanel != .keypad { nameFocused = false }
         }
@@ -145,32 +159,52 @@ struct ExpenseEditor: View {
 
     // MARK: Pieces
 
-    private var amountView: some View {
-        Button {
-            nameFocused = false
-            panel = .keypad
-        } label: {
-            Text(draft.amountText(locale: locale))
-                .font(Tokens.Text.editorAmount(size: amountSize))
-                .foregroundStyle(draft.digits.isEmpty ? Tokens.Ink.tertiary : Tokens.Ink.primary)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(Tokens.Scale.editorAmountMin)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Amount")
-        .accessibilityValue(draft.amountText(locale: locale))
-        .accessibilityHint("Opens the keypad")
+    private var card: some View {
+        EditorCard(
+            draft: draft,
+            name: $draft.name,
+            nameFocus: $nameFocused,
+            category: selectedCategory,
+            progress: progress,
+            // Nothing on a filing card is open: the pockets show only to receive it.
+            focused: filing == nil ? focusedPart : nil,
+            today: today,
+            onTap: open,
+            onNameSubmit: submitName
+        )
+        .submitLabel(afterName == nil ? .done : .next)
     }
 
-    private var nameField: some View {
-        TextField("Name it", text: $draft.name)
-            .font(Tokens.Text.editorName)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: nameHeight)
-            .focused($nameFocused)
-            .submitLabel(.done)
+    /// Where Return goes from the name: the next part still missing besides the name itself. The
+    /// keyboard reads its label when the field focuses, and nothing else changes while it's up.
+    private var afterName: CardPart? {
+        progress.next(after: .name).flatMap { $0 == .name ? nil : $0 }
+    }
+
+    /// Each part opens its input; the card's background opens the category, as its tile does.
+    private func open(_ part: CardPart?) {
+        switch part {
+        case .amount:
+            nameFocused = false
+            panel = .keypad
+        case .name:
+            nameFocused = true
+        case .date:
+            panel = .date
+        case .repeat:
+            panel = .repeat
+        case .category, nil:
+            panel = .category
+        }
+    }
+
+    /// Return goes to whatever's still missing, or puts the keyboard away.
+    private func submitName() {
+        if let next = afterName {
+            open(next)
+        } else {
+            nameFocused = false
+        }
     }
 
     @ViewBuilder
@@ -185,7 +219,15 @@ struct ExpenseEditor: View {
         case .repeat:
             RepeatWheel(draft: $draft)
         case .category:
-            CategoryPicker(selection: $draft.categoryID, onNew: { panel = .newCategory })
+            PocketGrid(
+                pockets: pockets,
+                selection: draft.categoryID,
+                draftName: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
+                filing: filing,
+                onPick: pick,
+                onNew: { panel = .newCategory }
+            )
         case .newCategory:
             EmptyView()
         }
@@ -193,21 +235,26 @@ struct ExpenseEditor: View {
 
     // MARK: State
 
+    private var progress: CardProgress {
+        CardProgress(draft: draft, categoryExists: selectedCategory != nil, isMakingCategory: panel == .newCategory)
+    }
+
+    /// The part whose input is open: the name while it's typed in, otherwise the panel's own part.
+    private var focusedPart: CardPart {
+        if nameFocused { return .name }
+        switch panel {
+        case .keypad: return .amount
+        case .date: return .date
+        case .repeat: return .repeat
+        case .category, .newCategory: return .category
+        }
+    }
+
     /// The keyboard covers the editor at standard sizes. It can't while a category is made, where
     /// the row has to sit directly above the emoji keyboard, or at accessibility sizes, where it
     /// would cover the name field.
     private var keyboardCovers: Bool {
         !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
-    }
-
-    /// While a category is made, at standard sizes, the amount and name are drawn from the top of
-    /// their space at the inset they rest at, rather than centred, so they don't move: the keyboard
-    /// pushes the editor up there instead of covering it. Where the space left is too short for
-    /// that, they rise by the shortfall and no more, so the row never goes under the keyboard.
-    /// nil means centre as usual. At accessibility sizes the editor scrolls, and centring is moot.
-    private var heldOffset: CGFloat? {
-        guard panel == .newCategory, !dynamicTypeSize.isAccessibilitySize, let restingAmountInset else { return nil }
-        return max(0, min(restingAmountInset, amountAreaHeight - amountBlockHeight))
     }
 
     private var selectedCategory: ExpenseCategory? {
@@ -232,7 +279,23 @@ struct ExpenseEditor: View {
         )
     }
 
-    /// A category made in the editor is selected at once, and the list comes back.
+    /// The pockets in the Settings order, without the bill being edited peeking out of its own.
+    private var pockets: [PocketContent] {
+        let editing = savedSeries
+            ?? session.flatMap { session in expenses.first { $0.id == session.expenseID }?.seriesKey }
+        return PocketContents.make(
+            categories: categories, expenses: expenses, excluding: editing, today: today, calendar: calendar
+        )
+    }
+
+    /// Dresses the card in the category: its colour crossfades and its emoji drops in.
+    private func pick(_ id: UUID) {
+        withAnimation(.easeInOut(duration: Tokens.Motion.pick)) {
+            draft.categoryID = id
+        }
+    }
+
+    /// A category made in the editor dresses the card at once, and the pockets come back.
     private func create(_ category: ExpenseCategory) {
         modelContext.insert(category)
         do {
@@ -240,7 +303,7 @@ struct ExpenseEditor: View {
         } catch {
             Self.logger.error("Saving a category failed: \(error)")
         }
-        draft.categoryID = category.id
+        pick(category.id)
         panel = .category
     }
 
@@ -282,9 +345,10 @@ struct ExpenseEditor: View {
             category: category
         )
         modelContext.insert(expense)
+        savedSeries = expense.seriesKey
         do {
             try modelContext.save()
-            dismiss()
+            file(into: category.id)
         } catch {
             Self.logger.error("Saving an expense failed: \(error)")
         }
@@ -401,22 +465,70 @@ struct ExpenseEditor: View {
         return formatter.string(from: date)
     }
 
+    /// A saved edit files the card, as adding does.
     private func edit(_ session: EditSession, _ operation: (Expense, ExpenseCategory) throws -> Void) {
         guard let category = selectedCategory, let expense = fetchExpense(session.expenseID) else { return }
-        performEdit { try operation(expense, category) }
+        performEdit({ try operation(expense, category) }, then: { file(into: category.id) })
     }
 
-    private func performEdit(_ operation: () throws -> Void) {
+    /// Deleting closes the sheet directly; saving passes `then` to file the card instead.
+    private func performEdit(_ operation: () throws -> Void, then finish: (() -> Void)? = nil) {
         do {
             try operation()
-            dismiss()
+            if let finish { finish() } else { dismiss() }
         } catch {
             Self.logger.error("Editing an expense failed: \(error)")
         }
     }
 
+    // MARK: Filing
+
+    /// After a save has gone through: the pockets show with the target scrolled into view, the
+    /// card shrinks into it, the pocket bounces, and the sheet closes. Reduce Motion fades the card
+    /// instead. See "The pockets are the category picker" in `docs/DESIGN.md`.
+    private func file(into categoryID: UUID) {
+        nameFocused = false
+        panel = .category
+        filing = categoryID
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Tokens.Motion.fileSettle))
+            if reduceMotion {
+                withAnimation(.easeOut(duration: Tokens.Motion.fileFade)) { isCardGone = true }
+                try? await Task.sleep(for: .seconds(Tokens.Motion.fileFade))
+            } else {
+                withAnimation(Tokens.Motion.fileCurve) { isFlying = true }
+                try? await Task.sleep(for: .seconds(Tokens.Motion.file))
+                isCardGone = true
+                try? await Task.sleep(for: .seconds(Tokens.Motion.fileHold - Tokens.Motion.file))
+            }
+            close()
+        }
+    }
+
+    /// Closes the sheet once, whether filing finished or a tap cut it short.
+    private func close() {
+        guard !isClosing else { return }
+        isClosing = true
+        dismiss()
+    }
+
     private func fetchExpense(_ id: UUID) -> Expense? {
         (try? modelContext.fetch(FetchDescriptor<Expense>()))?.first { $0.id == id }
+    }
+}
+
+/// Shrinks the card, as one picture, from where it sits to where it lands in its pocket.
+private struct Filing: ViewModifier {
+    let from: CGRect
+    let to: CGRect?
+
+    /// One view either way, so the change animates rather than swapping views.
+    func body(content: Content) -> some View {
+        let lands = to != nil && from.width > 0
+        let target = to ?? from
+        content
+            .scaleEffect(lands ? target.width / from.width : 1)
+            .offset(x: lands ? target.midX - from.midX : 0, y: lands ? target.midY - from.midY : 0)
     }
 }
 

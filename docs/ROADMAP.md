@@ -18,7 +18,7 @@ The smallest thing that does the job.
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
 | Calendar | Done | The year, a month and the days, which are the timeline: one list with a pinned header and saved place, five years ahead or to the last payment. All / Extras holds at every level. On an iPhone, the month button and the toggle may still lose to a flick in progress (open). In the year, a month past the last payment opens the last one with charges (open). |
 | All bills | Done | A sheet of category cards, Monthly or Yearly, ended bills behind a line; a bill opens its next charge. No sorting or search. |
-| Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. Making a category lifts the amount 20pt over the emoji keyboard, against "never moves" (open). |
+| Expense editor | Done | Adding and editing a bill on a card: tapping a row, "this charge only or future charges", deleting. Done as a card you complete, with the pockets as the category picker. Shake to undo deferred. |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
 | Categories | Done, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming, changing an emoji and deleting there aren't designed yet. |
 | Category view | Done | Lanes across one month, a dot per charge, beside the calendar in the view menu; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
@@ -32,6 +32,8 @@ The smallest thing that does the job.
 
 | Item | Why not v1 |
 |---|---|
+| The calendar, All bills and the category view, in the card's language | They stay as built. Once the card and pockets are in use, each is revisited with them: All bills' category cards and the pockets are close cousins already. |
+| Pockets under the card | The pockets start right under the card and grow down the sheet, scrolling under it so the card floats over them. Waits until the card and pockets are in use, because the scroll and the card's place have to be built together. |
 | Viewing a charge before editing it | Prototyped and set aside: the editor-first version read better (`DECISIONS.md`). Reopens with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
 | Planned one-off expenses | A known cost ahead, like a purchase in March, is a bill with one payment. Dated in the future when it's made, so it can never become a log of past spending. Needs a brief: where it's entered (the repeat wheel's smallest count is 2 today) and how it reads in the calendar, where it is an extra, and in All bills. |

@@ -92,7 +92,7 @@ stated generally. Leave out the personal circumstance behind it: income and its 
 bills and amounts, living situation, employer, health, family. "Ask Jake" is fine. Facts about
 his life aren't, and an example of a banned disclosure is itself a disclosure.
 
-**Ask before every commit and push.** Say what will be committed and the message, then wait.
+**One ask per feature, before it lands;** its steps commit to the branch unasked. `main` commits ask.
 
 ## Code
 

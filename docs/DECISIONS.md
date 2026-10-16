@@ -148,6 +148,19 @@ arrows; dragging reads charges one at a time. Chosen from ten directions and a w
 Two charges on one day are two rows, each with its date. The timeline has no day groups.
 - **Rejected — grouping a day under a heading with a day total:** the list changes shape, and rows inside lose their dates.
 
+## Adding a bill is a card you complete, and the pockets pick its category
+**Decided:** 2026-10-16
+The sheet is a card whose missing parts are dashed, and the input for whichever part you tap opens
+in the keypad's place. The category is chosen by tapping one of the pockets bills are filed in, and
+✓ saves and files the card there. Chosen from canvas rounds 1 to 7 and a working prototype
+(`docs/prototypes/edit-revisit-card.html`), built first in the iOS look.
+- **Rejected — a form that leads, one step at a time, or the bill as a sentence:** each version still read as filling out a form, and a next button that moves leaves nothing clear to press.
+- **Rejected — filing into a pocket as the save itself (P1):** nothing said it was final.
+- **Rejected — playing a category onto the card from a fanned hand (P2):** close, and the stamp of applying it felt good, but it's a second set of category cards beside the pockets the bill lands in.
+- **Rejected — showing the pocket's monthly total, a dense grid, or a list of strips:** the bills peeking say what a pocket is for.
+- **Rejected — pockets in the order categories were last used:** an order that reshuffles under the thumb, where the Settings order holds still.
+- **Revisit when:** the pockets move under the card (`ROADMAP.md`), or Tilly, Drawn arrives.
+
 ## Editing a charge is Calendar's: edit first, then this charge or future ones
 **Decided:** 2026-09-22
 Tapping a row opens the editor for that charge, keypad up. When the amount or date changed, ✓ asks

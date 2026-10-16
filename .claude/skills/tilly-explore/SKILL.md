@@ -7,9 +7,8 @@ description: Use when a Tilly brief exists and layout or interaction directions 
 
 ## Model
 
-**Opus, throughout.** Every rung of this skill is a design decision — the wireframes settle
-structure, the canvas settles type, spacing, colour and hierarchy, the prototype settles
-motion. None of it is mechanical assembly. The switch to Sonnet happens when this skill
+**Opus, throughout.** Every rung of this skill is a design decision: the canvas settles
+structure, type, spacing, colour and hierarchy, and the prototype settles motion. None of it is mechanical assembly. The switch to Sonnet happens when this skill
 *ends* and `tilly-build` begins, so the model boundary sits on a skill boundary rather than
 inside one.
 
@@ -17,13 +16,9 @@ If Sonnet is active when this triggers, say so before proceeding.
 
 ## Overview
 
-Turns a brief into concrete directions, cheapest artifact first. The expensive mistake this
-prevents: drawing every direction on a canvas to settle a question a wireframe answers for
-a fraction of the cost.
-
-A wireframe can't win an argument about colour or type. It can win one about layout,
-hierarchy and ordering — which is what a *direction* is at this stage. The canvas is where
-the winner becomes a real design.
+Turns a brief into concrete directions, drawn for real from the start. Jake judges directions
+by seeing them, so they go straight onto the canvas: no ASCII wireframe round. What keeps the
+cost down is the number of directions and how far each is drawn, not a cheaper medium.
 
 **Prerequisite:** a brief must exist at `docs/briefs/<slug>/brief.md`. If it doesn't, stop
 and run `tilly-brief` — don't improvise one inline.
@@ -41,30 +36,23 @@ and run `tilly-brief` — don't improvise one inline.
 ## The gates (both mandatory)
 
 Two stops, and they ask different questions. The first asks *which direction is worth
-drawing*; the second asks *whether the drawn thing is right*. Neither substitutes for the
+deepening*; the second asks *whether the deepened thing is right*. Neither substitutes for the
 other.
 
-### Rung 1 — wireframes
+### Rung 1 — directions on the canvas
 
-**Two or three** ASCII/box-drawing wireframes, roughly 15-25 lines each, plus one short
-trade-off paragraph. **Under 500 output tokens for all of them combined.** That budget is
-the whole point; don't let it balloon into an essay per variant.
-
-For each variant, name which tenet it serves best and which it strains. A variant that
-serves none is not a real option.
-
-Wireframes are weak at colour, type scale and spacing polish — don't try to represent
-those. They settle layout, hierarchy, ordering, density and how things collapse, which is
-most of what a design argument is actually about.
+**Two to four directions**, each a real argument rather than a permutation, drawn on one
+canvas page at the key moments only. Name, in each direction's annotation, which tenet it serves
+best and which it strains. A direction that serves none is not a real option. Mark one as
+recommended, and say which `TASTE.md` principle it leans on.
 
 **Then stop and show Jake.** Wait for a choice, or an instruction to merge two directions.
-Do not proceed until this happens. This is the last point where changing course costs a
-sentence rather than a rebuild.
+This is the last point where changing course costs a sentence rather than a rebuild.
 
-### Rung 2 — design canvas
+### Rung 2 — the chosen direction, in full
 
 **Only the chosen direction** (plus at most one contender if Jake explicitly wants a
-side-by-side). Never all of them — that's the exact cost rung 1 exists to cut.
+side-by-side), on its own page of the same canvas.
 
 Use `/design` to build artboards: real type scale, real spacing, real colour, real content.
 Not lorem — actual expense names and amounts, including the awkward cases, because those
@@ -178,10 +166,11 @@ instead.
 
 - **No code.** This skill ends at an approved design. `tilly-plan` specifies it and
   `tilly-build` implements it.
-- **Never skip rung 1** because the render is already imaginable. The gate exists for
-  Jake's decision-making, not as a formality — and the canvas is the most expensive place
-  to discover that a layout was the wrong shape all along.
-- **Never draw every direction on the canvas** "to be thorough".
+- **Never skip the rung 1 stop** because the winner already seems obvious. The gate exists for
+  Jake's decision-making, not as a formality. Deepening the wrong direction is the expensive
+  mistake.
+- **Never draw every direction in full** "to be thorough". Rung 1 draws key moments; only the
+  chosen direction gets its states.
 - **Never settle a motion question with more artboards.** If the argument needs the words
   "as you scroll", build rung 3 instead of drawing a fourth frame of the sequence.
 - **Two or three directions, not five.** The constraint is what forces each one to be a real

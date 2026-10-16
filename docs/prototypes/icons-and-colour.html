@@ -1,0 +1,817 @@
+<!--
+  Tilly's hand: icon and colour directions, round 1. 2026-09-25.
+  Brief: docs/briefs/icons-and-colour/brief.md
+  Questions it puts: what draws a category's picture, how a new one is made, how colour is rendered.
+  Nothing chosen yet.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees with the docs,
+  the docs win.
+-->
+<title>Tilly’s Hand</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Gochi+Hand&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Emoji:wght@300..700&text=%F0%9F%8F%A0%F0%9F%9A%97%F0%9F%93%BA%E2%9A%A1%F0%9F%8F%8B%EF%B8%8F%F0%9F%9B%A1%EF%B8%8F%E2%98%81%EF%B8%8F%F0%9F%A6%9C%EF%B8%8F&display=block">
+<style>
+:root{
+  --bg:#e3e6e9; --surface:#f5f6f7; --text:#15181b; --muted:#59606a; --rule:#c9ced4; --accent:#2a78d6; --chip:#e9ecef;
+  --sans:"Instrument Sans",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#111315;--surface:#1a1d20;--text:#e7e9ec;--muted:#9aa2ab;--rule:#2d3237;--accent:#3987e5;--chip:#23272b;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#111315;--surface:#1a1d20;--text:#e7e9ec;--muted:#9aa2ab;--rule:#2d3237;--accent:#3987e5;--chip:#23272b;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);margin:0}
+.wrap{max-width:1560px;margin:0 auto;padding-inline:24px;padding-block:32px 80px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;margin:0;font-weight:600}
+h1{font-size:34px;letter-spacing:-.01em}
+h2{font-size:24px}
+h3{font-size:19px}
+p{margin:0;max-width:68ch}
+.muted{color:var(--muted)}
+.eyebrow{font:500 11px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+
+.intro{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:start}
+.intro .text{display:flex;flex-direction:column;gap:14px}
+.appicon{display:flex;flex-direction:column;gap:8px;align-items:center}
+.appicon img{width:112px;height:112px;border-radius:25px;box-shadow:0 1px 0 rgba(0,0,0,.08),0 6px 20px rgba(0,0,0,.12)}
+
+.controls{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--rule);display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
+.seg{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg .lab{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.seg button{font:500 13px/1 var(--sans);padding:7px 11px;border-radius:999px;border:1px solid var(--rule);background:var(--surface);color:var(--text);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.seg button:focus-visible,.icbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.jump{display:flex;gap:6px;flex-wrap:wrap}
+.jump a{font:500 12px/1 var(--mono);color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px;background:var(--chip)}
+.jump a:hover{color:var(--text)}
+
+.groups{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.group{background:var(--surface);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.group b{font-weight:600}
+
+/* line-up */
+.tablewrap{overflow-x:auto;background:var(--surface);border-radius:12px}
+table.lineup{border-collapse:collapse;width:100%;min-width:1180px}
+.lineup th,.lineup td{padding:10px 14px;border-bottom:1px solid var(--rule);vertical-align:middle;text-align:left}
+.lineup th{font:500 11px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lineup td.name{font-weight:600;white-space:nowrap}
+.lineup td.name .mono{color:var(--muted);font-weight:400;margin-right:6px}
+.lineup tr.cluster td{font:500 11px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--chip);padding-block:7px}
+.lineup .cell{border-radius:10px;overflow:hidden;width:300px}
+.lineup .cell.ax{width:360px}
+.lineup .tiny{display:flex;gap:6px;align-items:center;padding:8px;border-radius:8px}
+.lineup .howto{font-size:13px;color:var(--muted);max-width:30ch}
+
+/* direction sections */
+.dir{scroll-margin-top:84px;display:grid;grid-template-columns:360px 360px minmax(280px,1fr);gap:24px;align-items:start;padding-top:8px}
+.dirhead{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:baseline}
+.dirhead .letter{font:500 13px/1 var(--mono);color:var(--muted)}
+.badge{font:500 11px/1 var(--mono);letter-spacing:.04em;padding:5px 8px;border-radius:6px;background:var(--chip);color:var(--muted)}
+.badge.stand{background:#f3d9a8;color:#5b3a00}
+.notes{display:flex;flex-direction:column;gap:14px;font-size:14px}
+.notes dl{margin:0;display:grid;grid-template-columns:118px minmax(0,1fr);gap:9px 14px}
+.notes dt{font:500 11px/1.5 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.notes dd{margin:0}
+.notes .verdict{border-top:1px solid var(--rule);padding-top:12px;display:grid;grid-template-columns:118px minmax(0,1fr);gap:6px 14px}
+
+/* the phone panels: specimens, fixed light and dark regardless of page theme */
+.phone{--ink:#1c1b19;--sec:#8a8883;--rule2:rgba(0,0,0,.08);--well:rgba(118,118,128,.12);--field:rgba(118,118,128,.12);
+  background:var(--ground);color:var(--ink);border-radius:28px;padding:18px 16px 20px;display:flex;flex-direction:column;gap:18px;
+  font:15px/1.3 -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif;position:relative;overflow:hidden;
+  box-shadow:0 1px 0 rgba(0,0,0,.05),0 10px 30px rgba(0,0,0,.08);isolation:isolate}
+.phone.l{--ground:#ffffff}
+.phone.d{--ground:#000000;--ink:#f2f1ee;--sec:#8d8b86;--rule2:rgba(255,255,255,.1);--well:rgba(118,118,128,.24);--field:rgba(118,118,128,.24);color-scheme:dark}
+.paper .phone.l{--ground:#efeeea}
+.paper .phone.d{--ground:#1d1c1a}
+.paper .phone::before{content:"";position:absolute;inset:0;background-image:var(--grain);opacity:.55;pointer-events:none;z-index:-1;mix-blend-mode:multiply}
+.paper .phone.d::before{mix-blend-mode:screen;opacity:.35}
+.phone .sect{font:600 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--sec)}
+.mh{display:flex;flex-direction:column;gap:2px}
+.mh .m{font-size:28px;font-weight:700;letter-spacing:-.01em}
+.mh .f{font-size:15px;color:var(--sec)}
+.rows{display:flex;flex-direction:column;gap:14px}
+.row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center}
+.row .nm{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .dt{font-size:13px;color:var(--sec)}
+.row .am{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.row.up .nm,.row.up .am{color:var(--sec);font-weight:500}
+.row.up .ic{opacity:.5}
+.row.ax{grid-template-columns:44px minmax(0,1fr) auto}
+.row.ax .nm{font-size:26px}.row.ax .dt{font-size:20px}.row.ax .am{font-size:26px}
+.ic{display:block;position:relative;flex:none}
+.icbtn{all:unset;display:block;cursor:pointer;border-radius:10px}
+.lanes svg{display:block;width:100%;height:auto}
+.picker{display:flex;flex-direction:column}
+.pk{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;align-items:center;padding-block:7px;border-bottom:1px solid var(--rule2)}
+.pk:last-child{border-bottom:0}
+.pk .n{font-size:17px}
+.pk.new .n{color:#2a78d6}
+.phone.d .pk.new .n{color:#3987e5}
+.newcat{display:flex;flex-direction:column;gap:12px;background:var(--field);border-radius:14px;padding:14px}
+.newcat .top{display:flex;gap:12px;align-items:center}
+.newcat .slot{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex:none;position:relative}
+.newcat .nmf{font-size:17px;font-weight:600}
+.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw span{width:22px;height:22px;border-radius:50%;display:block;position:relative}
+.sw span.on::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--ink)}
+.newcat .how{font-size:12px;color:var(--sec);line-height:1.35}
+.sizes{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.sizes .s{display:flex;flex-direction:column;gap:6px;align-items:center;font:500 10px/1 var(--mono);color:var(--sec)}
+.appt{width:72px;height:72px;border-radius:16px;display:grid;place-items:center;background:#efeeea;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);position:relative;overflow:hidden}
+.appt.no{background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(127,127,127,.12) 6px 7px);font:500 10px/1.25 var(--mono);color:var(--sec);text-align:center;padding:6px}
+.search{display:flex;align-items:center;gap:8px;background:var(--ground);border-radius:10px;padding:8px 10px;font-size:15px}
+.search .q{flex:1}
+.results{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.results .none{font-size:12px;color:var(--sec)}
+.pad{height:132px;border-radius:12px;background:var(--ground);position:relative;display:grid;place-items:center}
+.pad .tools{position:absolute;right:10px;bottom:8px;display:flex;gap:12px;font-size:13px;color:#2a78d6}
+.cands{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cands .c{aspect-ratio:1;border-radius:10px;background:var(--ground);display:grid;place-items:center;position:relative}
+.cands .c.on{box-shadow:0 0 0 2px #2a78d6}
+.gen{font-size:12px;color:var(--sec)}
+
+/* colour section */
+.colour{display:flex;flex-direction:column;gap:18px}
+.cgrid{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr) minmax(240px,.9fr);gap:0;background:var(--surface);border-radius:12px;overflow:hidden}
+.cgrid > div{padding:14px;border-bottom:1px solid var(--rule)}
+.cgrid .hd{font:500 11px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cgrid .tn{font-weight:600}
+.cgrid .sp{padding:10px 12px}
+.cgrid .sp .phone{border-radius:14px;padding:10px 12px;gap:6px;box-shadow:none}
+.cgrid .cn{font-size:13px;color:var(--muted)}
+.cwrap{overflow-x:auto}
+.cwrap .cgrid{min-width:1100px}
+
+.lies{background:var(--surface);border-radius:12px;padding:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 32px}
+.lies ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+
+/* motion */
+@keyframes boil{0%{opacity:1}33.33%{opacity:0}100%{opacity:0}}
+.boil > g{animation:boil .375s steps(1,end) infinite;opacity:0}
+.boil > g:nth-child(1){animation-delay:0s}
+.boil > g:nth-child(2){animation-delay:-.125s}
+.boil > g:nth-child(3){animation-delay:-.25s}
+@keyframes drawon{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.draw path.stroke{stroke-dasharray:1;animation:drawon .7s cubic-bezier(.3,.1,.3,1) both}
+@keyframes wob{0%{transform:rotate(0) scale(1)}20%{transform:rotate(-9deg) scale(1.08)}45%{transform:rotate(7deg) scale(1.04)}70%{transform:rotate(-3deg) scale(1.01)}100%{transform:rotate(0) scale(1)}}
+.wobble{animation:wob .46s cubic-bezier(.3,.7,.4,1)}
+.still .boil > g{animation:none;opacity:0}
+.still .boil > g:first-child{opacity:1}
+.still .draw path.stroke{animation:none}
+@media (prefers-reduced-motion:reduce){
+  .boil > g{animation:none;opacity:0}.boil > g:first-child{opacity:1}
+  .draw path.stroke{animation:none}.wobble{animation:none}
+}
+
+@media (max-width:1180px){
+  .dir{grid-template-columns:repeat(2,minmax(0,360px))}
+  .notes{grid-column:1/-1}
+  .groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:780px){
+  .controls{position:static}
+  .dir{grid-template-columns:minmax(0,1fr)}
+  .groups{grid-template-columns:minmax(0,1fr)}
+  .intro{grid-template-columns:minmax(0,1fr)}
+  .lies{grid-template-columns:minmax(0,1fr)}
+  .notes dl,.notes .verdict{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="defs"></defs></svg>
+
+<div class="wrap paper" id="app">
+  <header class="intro">
+    <div class="text">
+      <div class="eyebrow">Tilly · icons and colour · round 1 · 25 September 2026</div>
+      <h1>Tilly’s hand</h1>
+      <p>Thirteen ways Tilly could draw a category’s picture, each on the four surfaces that lead with one: a timeline row, the lanes, the category picker and the new-category row. Every direction is drawn in light and dark, with what it takes to make a new category, how it scales, what it costs and which principles it leans on or strains. The brief is <code>docs/briefs/icons-and-colour/brief.md</code>.</p>
+      <p class="muted">All names and amounts are invented. Tap any icon to see a wobble. Panels marked <span class="badge stand">stand-in</span> show art Tilly doesn’t have: the licence or the source is real, the drawing on screen is mine, made to show the kind of thing.</p>
+    </div>
+    <div class="appicon">
+      <img src="data:image/jpeg;base64,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" alt="Tilly’s current app icon: the word tilly in black felt-tip on grey paper">
+      <span class="eyebrow">the app icon, for now</span>
+    </div>
+  </header>
+
+  <section class="groups" aria-label="How the directions group">
+    <div class="group"><span class="eyebrow">A–E</span><b>Keep the emoji, treat it</b><span class="muted">The system keyboard stays the picker and Apple still draws the picture. Tilly changes what surrounds it or how it’s printed.</span></div>
+    <div class="group"><span class="eyebrow">F–G</span><b>Keep the keyboard, redraw the emoji</b><span class="muted">You still pick 🦜 from the keyboard. Tilly draws that emoji in its own line.</span></div>
+    <div class="group"><span class="eyebrow">H–J</span><b>Replace the emoji with a set</b><span class="muted">A fixed library of icons with Tilly’s own picker. Every one of these meets tenet 4 head on.</span></div>
+    <div class="group"><span class="eyebrow">K–M</span><b>Made per category</b><span class="muted">Nothing to pick from. The picture is drawn, generated or written when the category is made.</span></div>
+  </section>
+
+  <div class="controls" role="toolbar" aria-label="Prototype controls">
+    <div class="seg" id="ctl-treat"><span class="lab">Colour</span></div>
+    <div class="seg" id="ctl-ground"><span class="lab">Ground</span></div>
+    <div class="seg" id="ctl-motion"><span class="lab">Motion</span></div>
+    <nav class="jump" id="jump" aria-label="Jump to a direction"></nav>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:16px" id="lineup-sec">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h2>Line-up</h2>
+      <p class="muted">One charged row per direction in light, dark and at the largest accessibility size, the lane’s icon at 15pt, and the app-icon test. Read down a column to compare one surface across every direction.</p>
+    </div>
+    <div class="tablewrap"><table class="lineup" id="lineup"></table></div>
+  </section>
+
+  <div id="dirs" style="display:flex;flex-direction:column;gap:64px"></div>
+
+  <section class="colour" id="colour">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h2>Colour: paper and ink</h2>
+      <p class="muted">The eight tokens as they are, then five ways of putting them on paper. The hues don’t change, only how they are laid down, so the validator’s pass on 2026-09-24 still describes the inks. It doesn’t yet describe the treated result: a wash or pencil shows paper through the colour, which lightens every ink and costs the pale ones (yellow, magenta) contrast against the ground first. Whichever treatment is chosen gets checked again as it renders. The Colour control at the top applies a treatment to every panel above.</p>
+    </div>
+    <div class="cwrap"><div class="cgrid" id="cgrid"></div></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <h2>What this prototype lies about</h2>
+    <div class="lies">
+      <ul>
+        <li>The emoji are your Mac’s, drawn by the browser. On iPhone they’re the same artwork, slightly different in rendering.</li>
+        <li>SF Symbols can’t be shown in a web page. H and I use glyphs I drew in their manner: one weight, rounded ends. The real set is more refined and has thousands more.</li>
+        <li>J shows no real Doodle Icons, K no real finger drawing, L no real Image Playground output, E no real Fluent 3D. Each is a stand-in for the kind of thing.</li>
+      </ul>
+      <ul>
+        <li>The rough lines are SVG filters and jittered paths in a browser. In the app they’d be a Metal shader or a SwiftUI <code>Canvas</code>, and they would look close to this but not the same.</li>
+        <li>There’s no Dynamic Type here: the accessibility column is drawn at roughly the largest size, not measured.</li>
+        <li>The boil runs at 8 frames a second on a screen of 13 at once. One boiling row in a real list reads very differently from a wall of them.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+/* ---------------- data ---------------- */
+const COL = {
+  blue:{l:'#2a78d6',d:'#3987e5'}, orange:{l:'#eb6834',d:'#d95926'}, aqua:{l:'#1baf7a',d:'#199e70'},
+  yellow:{l:'#eda100',d:'#c98500'}, magenta:{l:'#e87ba4',d:'#d55181'}, green:{l:'#008300',d:'#008300'},
+  violet:{l:'#4a3aa7',d:'#9085e9'}, red:{l:'#e34948',d:'#e66767'}
+};
+const COL_ORDER = ['blue','orange','aqua','yellow','magenta','green','violet','red'];
+const INK = {l:'#1c1b19', d:'#f2f1ee'};
+const CATS = {
+  home:  {name:'Home',      emoji:'🏠', col:'blue',    g:'home'},
+  car:   {name:'Car',       emoji:'🚗', col:'orange',  g:'car'},
+  tv:    {name:'Streaming', emoji:'📺', col:'violet',  g:'tv'},
+  energy:{name:'Energy',    emoji:'⚡', col:'yellow',  g:'bolt'},
+  gym:   {name:'Gym',       emoji:'🏋️', col:'green',   g:'dumbbell'},
+  ins:   {name:'Insurance', emoji:'🛡️', col:'red',     g:'shield'},
+  cloud: {name:'Cloud',     emoji:'☁️', col:'aqua',    g:'cloud'},
+  parrot:{name:'Parrot',    emoji:'🦜', col:'magenta', g:null}
+};
+const ROWS = [
+  {c:'car',   n:'Car lease',     d:'Tue 29', a:289, up:true},
+  {c:'cloud', n:'Cloud storage', d:'Sat 26', a:3,   up:true},
+  {c:'gym',   n:'Gym',           d:'Fri 25', a:35,  up:false},
+  {c:'energy',n:'Electricity',   d:'Mon 21', a:74,  up:false}
+];
+const LANES = [
+  {c:'home',  dots:[[1,950,0]]},
+  {c:'car',   dots:[[29,289,1]]},
+  {c:'tv',    dots:[[5,13,0],[17,8,0]]},
+  {c:'energy',dots:[[21,74,0]]},
+  {c:'gym',   dots:[[25,35,0]]},
+  {c:'cloud', dots:[[26,3,1]]}
+];
+const PICK = ['home','car','tv','energy','gym','ins','cloud'];
+const TODAY = 25;
+
+/* glyph outlines on a 24 grid, drawn for this prototype */
+const G = {
+  home:'M3.8 11.6 12 4.4l8.2 7.2 M6.2 9.8v9.8h11.6V9.8 M10 19.6v-5.2h4v5.2',
+  car:'M3.6 16.2v-3.6l2.3-4.8h12.2l2.3 4.8v3.6z M6.3 12.4h11.4 M5.9 16.4a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0 M14.5 16.4a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0',
+  tv:'M5 7h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z M8.6 3.4 12 6.6l3.4-3.2 M8 21.2h8',
+  bolt:'M13.4 2.8 5.2 13.6h6.2l-1.2 7.6 8.6-11h-6.2z',
+  dumbbell:'M6.6 7.6v8.8 M17.4 7.6v8.8 M3.8 10v4 M20.2 10v4 M6.6 12h10.8',
+  shield:'M12 3.2l7.2 2.6v5.6c0 4.6-3 7.8-7.2 9.4-4.2-1.6-7.2-4.8-7.2-9.4V5.8z M9 12l2.2 2.2L15.4 10',
+  cloud:'M7.2 18.4h10a4 4 0 0 0 .4-8 5.6 5.6 0 0 0-10.8 0 4 4 0 0 0 .4 8z',
+  bird:'M4.6 14.6c0-4.2 3.2-7.4 7.2-7.4 2.6 0 4.2 1.4 5.2 3.2l3.2 1-3.2 1.6c-.6 3.6-3.6 6.2-7.6 6.2H4.6z M9 18.8l-.8 2.6 M12.4 18.8l-.6 2.6 M14.6 10.6h.01',
+  plus:'M12 5v14 M5 12h14'
+};
+/* a parrot-ish scribble for the finger-drawn pad */
+const PARROT_SCRIBBLE = 'M8 19c-2-3-1.5-8 1.5-10.5 2-1.8 5-1.6 6.5.2l2.2-.4-1.2 2c.6 3.6-1.2 7-4.6 8.4 M9.5 19l-1.5 3 M12 18.6l-.4 3.2 M14.6 9.6h.01';
+
+/* ---------------- noise + rough strokes ---------------- */
+function prng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function smooth(seed,freq){const r=prng(seed);const k=[0,1,2].map(i=>({f:freq*(0.55+r()*0.9)*(i+1)*0.8,p:r()*6.283,a:1/(i+1)}));return t=>k.reduce((s,o)=>s+o.a*Math.sin(t*o.f+o.p),0)/1.83}
+const probe=document.createElementNS('http://www.w3.org/2000/svg','path');
+const probeSvg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+probeSvg.style.cssText='position:absolute;width:0;height:0';probeSvg.appendChild(probe);document.body.appendChild(probeSvg);
+const sampleCache={};
+function sample(d,step){
+  const key=d+'|'+step; if(sampleCache[key]) return sampleCache[key];
+  const subs=d.match(/M[^M]*/g)||[];
+  const out=subs.map(s=>{probe.setAttribute('d',s);const L=probe.getTotalLength();const n=Math.max(2,Math.ceil(L/step));const pts=[];
+    for(let i=0;i<=n;i++){const p=probe.getPointAtLength(L*i/n);pts.push([p.x,p.y])}
+    return {pts,closed:/z\s*$/i.test(s.trim()),L}});
+  return sampleCache[key]=out;
+}
+function rough(d,{amp=.35,freq=.9,seed=1,step=.7,over=.5}={}){
+  const subs=sample(d,step);let out='';
+  subs.forEach((s,si)=>{
+    if(s.L<.2){const p=s.pts[0];out+=`M${p[0].toFixed(2)} ${p[1].toFixed(2)}h.01`;return}
+    const nx=smooth(seed*31+si*7,freq),ny=smooth(seed*17+si*13+5,freq);
+    let pts=s.pts.map((p,i)=>{const t=i*step;return[p[0]+amp*nx(t),p[1]+amp*ny(t)]});
+    if(!s.closed&&over>0&&pts.length>2){
+      const r=prng(seed+si*3);const ex=(a,b,k)=>[a[0]+(a[0]-b[0])/Math.hypot(a[0]-b[0],a[1]-b[1]||1e-3)*k,a[1]+(a[1]-b[1])/Math.hypot(a[0]-b[0],a[1]-b[1]||1e-3)*k];
+      pts=[ex(pts[0],pts[1],over*r()),...pts,ex(pts[pts.length-1],pts[pts.length-2],over*r())];
+    }
+    if(s.closed){const r=prng(seed+si);const extra=Math.floor(pts.length*(0.04+0.06*r()));pts=pts.concat(pts.slice(1,extra+1))}
+    out+='M'+pts.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L');
+  });
+  return out;
+}
+function blob(cx,cy,r,seed,wob=.09,n=28){
+  const nz=smooth(seed,1.2);let d='';
+  for(let i=0;i<n;i++){const a=i/n*6.283;const rr=r*(1+wob*nz(a*1.3));const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;d+=(i?'L':'M')+x.toFixed(2)+' '+y.toFixed(2)}
+  return d+'z';
+}
+function hashStr(s){let h=2166136261;for(const c of s){h^=c.codePointAt(0);h=Math.imul(h,16777619)}return h>>>0}
+
+/* ---------------- defs: filters and patterns ---------------- */
+function buildDefs(){
+  let s='';
+  s+=`<filter id="washF" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".07" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="1" seed="11" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 0 0 0 1.62" result="ga"/><feComposite in="d" in2="ga" operator="in"/></filter>`;
+  s+=`<filter id="edgeF" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/></filter>`;
+  s+=`<filter id="markerF" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="1" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".02 .7" numOctaves="1" seed="2" result="st"/><feColorMatrix in="st" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.1 0 0 0 1.45" result="sa"/><feComposite in="d" in2="sa" operator="in"/></filter>`;
+  s+=`<filter id="risoF" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed="21" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -4 0 0 0 2.75" result="ga"/><feComposite in="SourceGraphic" in2="ga" operator="in"/></filter>`;
+  s+=`<filter id="chalkF" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".08" numOctaves="2" seed="13" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="4" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 0 0 0 2.3" result="ga"/><feComposite in="d" in2="ga" operator="in"/></filter>`;
+  s+=`<filter id="inkF" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".12" numOctaves="2" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.3" xChannelSelector="R" yChannelSelector="G"/></filter>`;
+  [1,2,3].forEach(k=>{s+=`<filter id="sfR${k}" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".32" numOctaves="2" seed="${k*9}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.3" xChannelSelector="R" yChannelSelector="G"/></filter>`});
+  s+=`<filter id="paperEmoji"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="1" seed="31" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.4 0 0 0 1.58" result="ga"/><feComposite in="SourceGraphic" in2="ga" operator="in"/></filter>`;
+  for(const c of COL_ORDER){for(const m of ['l','d']){
+    const h=COL[c][m];const r=parseInt(h.slice(1,3),16)/255,g=parseInt(h.slice(3,5),16)/255,b=parseInt(h.slice(5,7),16)/255;
+    s+=`<filter id="stamp-${c}-${m}" x="-15%" y="-15%" width="130%" height="130%"><feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 ${r.toFixed(3)} 0 0 0 0 ${g.toFixed(3)} 0 0 0 0 ${b.toFixed(3)} 0 0 0 1.6 -.25" result="c"/><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="c" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="2" seed="9" result="sp"/><feColorMatrix in="sp" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2 0 0 0 2.12" result="sa"/><feComposite in="d" in2="sa" operator="in"/></filter>`;
+    s+=`<pattern id="hatch-${c}-${m}" width="3.2" height="3.2" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><rect width="3.2" height="3.2" fill="${h}" fill-opacity=".16"/><rect width="1.3" height="3.2" fill="${h}" fill-opacity=".92"/></pattern>`;
+  }}
+  document.getElementById('defs').innerHTML=s;
+}
+
+/* grain texture for the paper ground, made once */
+function makeGrain(){
+  const c=document.createElement('canvas');c.width=c.height=160;const x=c.getContext('2d');const im=x.createImageData(160,160);const r=prng(77);
+  for(let i=0;i<im.data.length;i+=4){const v=200+r()*55|0;im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=r()<.5?40:0}
+  x.putImageData(im,0,0);document.documentElement.style.setProperty('--grain',`url(${c.toDataURL()})`);
+}
+
+/* ---------------- state ---------------- */
+const S={treat:'wash',ground:'paper',motion:'on'};
+const col=(c,m)=>COL[CATS[c]?CATS[c].col:c][m];
+
+/* paint a circle in the current colour treatment; returns SVG markup */
+function paint(cx,cy,r,hex,colName,m,{ring=false,seed=1,treat=S.treat}={}){
+  if(r<=0) return '';
+  const sw=Math.max(1.4,Math.min(2.2,r*.22));
+  if(treat==='flat'){
+    return ring?`<circle cx="${cx}" cy="${cy}" r="${r-sw/2}" fill="none" stroke="${hex}" stroke-width="${sw}"/>`:`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${hex}"/>`;
+  }
+  if(treat==='wash'){
+    const d=blob(cx,cy,r,seed,.07);
+    return ring?`<path d="${rough(blob(cx,cy,r-sw/2,seed,.05),{amp:.25,seed,step:.9,over:0})}" fill="none" stroke="${hex}" stroke-width="${sw}" stroke-linecap="round" stroke-opacity=".9" filter="url(#edgeF)"/>`
+      :`<path d="${d}" fill="${hex}" fill-opacity=".72" stroke="${hex}" stroke-opacity=".85" stroke-width="${Math.max(.8,r*.09)}" filter="url(#washF)"/>`;
+  }
+  if(treat==='pencil'){
+    const d=blob(cx,cy,r,seed,.05);
+    const o1=rough(blob(cx,cy,r-.3,seed+1,.04),{amp:.35,seed:seed+2,step:.8,over:0}),o2=rough(blob(cx,cy,r-.6,seed+3,.05),{amp:.4,seed:seed+5,step:.8,over:0});
+    return ring?`<path d="${o1}" fill="none" stroke="${hex}" stroke-width=".9" stroke-linecap="round"/><path d="${o2}" fill="none" stroke="${hex}" stroke-width=".7" stroke-opacity=".7" stroke-linecap="round"/>`
+      :`<path d="${d}" fill="url(#hatch-${colName}-${m})"/><path d="${o1}" fill="none" stroke="${hex}" stroke-width=".8" stroke-linecap="round"/>`;
+  }
+  if(treat==='marker'){
+    return ring?`<circle cx="${cx}" cy="${cy}" r="${r-sw/2}" fill="none" stroke="${hex}" stroke-width="${sw*1.25}" stroke-opacity=".85" filter="url(#markerF)"/>`
+      :`<g filter="url(#markerF)"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${hex}" fill-opacity=".86"/><circle cx="${cx}" cy="${cy}" r="${r-.8}" fill="none" stroke="${hex}" stroke-width="1.6" stroke-opacity=".55"/></g>`;
+  }
+  if(treat==='riso'){
+    const off=Math.min(1.2,r*.12);
+    return ring?`<circle cx="${cx}" cy="${cy}" r="${r-sw/2}" fill="none" stroke="${hex}" stroke-width="${sw*1.1}" filter="url(#risoF)"/>`
+      :`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${hex}" filter="url(#risoF)"/><circle cx="${cx+off}" cy="${cy-off}" r="${r}" fill="none" stroke="${m==='l'?'#1c1b19':'#f2f1ee'}" stroke-width=".7" stroke-opacity=".35"/>`;
+  }
+  if(treat==='chalk'){
+    return ring?`<circle cx="${cx}" cy="${cy}" r="${r-sw/2}" fill="none" stroke="${hex}" stroke-width="${sw*1.2}" filter="url(#chalkF)"/>`
+      :`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${hex}" filter="url(#chalkF)"/>`;
+  }
+}
+/* a rounded-square wash, for wells */
+function paintSquare(x,y,w,rad,hex,colName,m,{alpha=1,seed=1,treat=S.treat}={}){
+  const rect=`M${x+rad} ${y}h${w-2*rad}a${rad} ${rad} 0 0 1 ${rad} ${rad}v${w-2*rad}a${rad} ${rad} 0 0 1 -${rad} ${rad}h-${w-2*rad}a${rad} ${rad} 0 0 1 -${rad} -${rad}v-${w-2*rad}a${rad} ${rad} 0 0 1 ${rad} -${rad}z`;
+  if(treat==='flat') return `<path d="${rect}" fill="${hex}" fill-opacity="${alpha}"/>`;
+  if(treat==='wash') return `<path d="${rect}" fill="${hex}" fill-opacity="${.62*alpha}" stroke="${hex}" stroke-opacity="${.8*alpha}" stroke-width="1" filter="url(#washF)"/>`;
+  if(treat==='pencil') return `<g opacity="${alpha}"><path d="${rect}" fill="url(#hatch-${colName}-${m})"/><path d="${rough(rect,{amp:.35,seed,step:.9,over:0})}" fill="none" stroke="${hex}" stroke-width=".8"/></g>`;
+  if(treat==='marker') return `<path d="${rect}" fill="${hex}" fill-opacity="${.84*alpha}" filter="url(#markerF)"/>`;
+  if(treat==='riso') return `<path d="${rect}" fill="${hex}" fill-opacity="${alpha}" filter="url(#risoF)"/>`;
+  if(treat==='chalk') return `<path d="${rect}" fill="${hex}" fill-opacity="${alpha}" filter="url(#chalkF)"/>`;
+}
+
+/* ---------------- glyph renderers ---------------- */
+const em=(e,size,extra='')=>`<span style="font-size:${size}px;line-height:1;display:block;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;${extra}">${e}</span>`;
+const noto=(e,size,color,extra='')=>{const w=size<=18?620:size<=30?520:420;return `<span style="font-family:'Noto Emoji',sans-serif;font-variation-settings:'wght' ${w};font-weight:${w};font-size:${size}px;line-height:1;display:block;color:${color};${extra}">${e.replace(/\uFE0F/g,'')}</span>`};
+function strokeSvg(d,size,color,{w=2,layers=null,cls='',boil=false,draw=false,seed=1,amp=.35,freq=.9,step=.7,over=.5,opacity=1,filter=''}={}){
+  const sw=w;
+  const one=(sd)=>`<path class="stroke" pathLength="1" d="${rough(d,{amp,freq,seed:sd,step,over})}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${opacity}" ${filter?`filter="${filter}"`:''}/>`;
+  let body;
+  if(boil) body=[seed,seed+101,seed+202].map(sd=>`<g>${one(sd)}${layers?layers(sd):''}</g>`).join('');
+  else body=one(seed)+(layers?layers(seed):'');
+  return `<svg class="${cls} ${boil?'boil':''} ${draw?'draw':''}" viewBox="0 0 24 24" width="${size}" height="${size}" style="display:block;overflow:visible" aria-hidden="true">${body}</svg>`;
+}
+function cleanSvg(d,size,color,w=2,filter=''){
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="display:block;overflow:visible" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" ${filter?`filter="${filter}"`:''}/></svg>`;
+}
+const box=(size,inner,extra='')=>`<span class="ic" style="width:${size}px;height:${size}px;display:grid;place-items:center;${extra}">${inner}</span>`;
+function underlay(size,svgInner){return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="position:absolute;inset:0;overflow:visible" aria-hidden="true">${svgInner}</svg>`}
+const feltW=size=>+(2.1*Math.pow(24/size,.32)).toFixed(2);
+
+/* ---------------- the directions ---------------- */
+/* each: glyph(cat,size,m,ctx) where ctx = 'well'|'bare'; well(cat,m,size) -> underlay or '' */
+const DIRS=[
+{id:'A',cluster:0,name:'Emoji, as now',
+ glyph:(c,s,m)=>box(s,em(CATS[c].emoji,s*.8)),
+ well:(c,m,s)=>`<span style="position:absolute;inset:0;border-radius:${s/4}px;background:var(--well)"></span>`,
+ app:{no:'Apple’s emoji art: not allowed in an app icon'},
+ newcat:m=>({slot:em('🦜',30),slotBg:'var(--ground)',how:'Emoji keyboard, search “parrot”. Any emoji there is.'}),
+ how:'Emoji keyboard, search. Anything.',
+ notes:{
+  'New category':'The system emoji keyboard, with its search. Every emoji Apple ships, the day it ships. Seconds.',
+  'Scales':'Yes, down to 15pt; Apple draws each size. It can’t reach the app icon: Apple’s emoji artwork isn’t yours to use there.',
+  'Cost':'Built.',
+  'Light, dark, AX':'The emoji never change with the mode; the grey well does. Scales with Dynamic Type.',
+ },
+ leans:'Tenet 4, whole: the keyboard’s search beat a curated grid. TASTE 11: pure stock.',
+ strains:'The vision, entirely. Apple’s emoji are glossy, lit, three-dimensional; they read as Apple, and every app with emoji looks like this one.'},
+
+{id:'B',cluster:0,name:'Emoji, printed on paper',
+ glyph:(c,s,m)=>box(s,em(CATS[c].emoji,s*.8,m==='l'?'filter:url(#paperEmoji) saturate(.55) sepia(.18) contrast(.94);mix-blend-mode:multiply':'filter:url(#paperEmoji) saturate(.6) sepia(.1) brightness(.9)')),
+ well:(c,m,s)=>underlay(s,paintSquare(1,1,s-2,s/4,col(c,m),CATS[c].col,m,{alpha:.28,seed:hashStr(c)%97})),
+ app:{no:'Still Apple’s emoji art underneath'},
+ newcat:m=>({slot:em('🦜',30,m==='l'?'filter:url(#paperEmoji) saturate(.55) sepia(.18);mix-blend-mode:multiply':'filter:url(#paperEmoji) saturate(.6) brightness(.9)'),slotBg:'var(--ground)',how:'Emoji keyboard, unchanged. Tilly mutes and grains whatever you pick.'}),
+ how:'Emoji keyboard; Tilly mutes it.',
+ notes:{
+  'New category':'Unchanged: the keyboard. Tilly prints whatever you picked with its colour pulled down, a warm cast and paper grain, over a pale wash of the category’s colour.',
+  'Scales':'The muting holds at any size. The grain vanishes below about 20pt, so in a lane it’s just a quieter emoji.',
+  'Cost':'Small. One view: saturation and colour-multiply modifiers plus a grain shader, behind the seam.',
+  'Light, dark, AX':'Multiply only works on light paper. Dark needs its own recipe (here: dimmed, no blend), and a dark emoji like 🎱 sinks into dark paper.',
+ },
+ leans:'Tenet 4 and TASTE 11: stock emoji, treated at the seam. The wash brings colour to the timeline.',
+ strains:'The vision, only partly met: it’s a filter over a render. The lighting and gloss still say “sticker”; the treatment ages it rather than drawing it.'},
+
+{id:'C',cluster:0,name:'Emoji as a rubber stamp',
+ glyph:(c,s,m)=>box(s,em(CATS[c].emoji,s*.82,`filter:url(#stamp-${CATS[c].col}-${m})`)),
+ well:()=> '',
+ app:{no:'A silhouette of Apple’s art is still Apple’s'},
+ newcat:m=>({slot:em('🦜',32,`filter:url(#stamp-magenta-${m})`),slotBg:'var(--ground)',how:'Emoji keyboard. Tilly inks its outline in the category’s colour.'}),
+ how:'Emoji keyboard; Tilly stamps its shape.',
+ notes:{
+  'New category':'The keyboard. Tilly keeps only the emoji’s outline and inks it in the category’s colour, with the gaps and soft edges of a rubber stamp.',
+  'Scales':'Good for simple shapes (🏠 🚗 ⚡) from 15 to 60pt. Busy emoji turn to blobs: 🍿, 🧾, a family, any flag.',
+  'Cost':'Small to medium: draw the emoji into an image, use its alpha as a mask, fill, add a noise shader.',
+  'Light, dark, AX':'Both modes work, since colour carries it. The stamp’s grain is a fixed size, so it looks finer at accessibility sizes.',
+ },
+ leans:'Tenet 4. Picture and colour become one mark, so colour reaches every surface.',
+ strains:'TASTE 5, reversed: emoji that differ only by colour become the same stamp (🍎 🍏, ❤️ 💙, 🟢 🟡). The colour then does all the telling apart.'},
+
+{id:'D',cluster:0,name:'Emoji in a drawn frame',
+ glyph:(c,s,m)=>box(s,em(CATS[c].emoji,s*.72)),
+ well:(c,m,s)=>underlay(s,paint(s/2,s/2,s/2-1,col(c,m),CATS[c].col,m,{seed:hashStr(c)%97})),
+ laneWell:true,
+ app:{no:'The emoji inside is Apple’s'},
+ newcat:m=>({slot:em('🦜',28),slotBg:'transparent',slotUnder:s=>underlay(48,paint(24,24,23,COL.magenta[m],'magenta',m,{seed:12})),how:'Emoji keyboard. The frame is drawn fresh for each category, so no two match.'}),
+ how:'Emoji keyboard; Tilly draws a frame.',
+ notes:{
+  'New category':'The keyboard, untouched. Tilly draws the frame: a wash in the category’s colour, its shape seeded from the category, so no two are the same circle.',
+  'Scales':'At 15pt the frame is just a coloured dot behind the emoji, which still reads.',
+  'Cost':'Small: a shape generator and the colour treatment.',
+  'Light, dark, AX':'The wash needs a lighter mix on dark ground to keep the emoji readable on it.',
+ },
+ leans:'Tenet 4 and TASTE 11: the emoji stays stock. It’s the cheapest way to put colour on the timeline.',
+ strains:'The vision is only around the edges: the hand draws the frame and Apple still draws the picture. A glossy emoji on a watercolour blob can look like a sticker on a painting.'},
+
+{id:'E',cluster:0,name:'3D objects',stand:'Apple’s emoji standing in for Fluent Emoji 3D (MIT)',
+ glyph:(c,s,m)=>box(s,`<span style="position:relative;display:block">${em(CATS[c].emoji,s*.92,'position:relative;z-index:1')}<span style="position:absolute;left:12%;right:12%;bottom:-${s*.06}px;height:${Math.max(2,s*.12)}px;border-radius:50%;background:${m==='l'?'rgba(40,30,10,.22)':'rgba(0,0,0,.6)'};filter:blur(${Math.max(1,s*.05)}px)"></span></span>`),
+ well:()=> '',
+ app:{ok:true,note:'Fluent 3D is MIT, so yes'},
+ appGlyph:true,
+ newcat:m=>({slot:em('🦜',36),slotBg:'transparent',how:'Emoji keyboard, drawn by a 3D set (Fluent Emoji 3D covers most emoji). Airbnb commissions each object, which a user-made category can’t do.'}),
+ how:'Emoji keyboard; a 3D set draws it.',
+ notes:{
+  'New category':'The keyboard, with a 3D set drawing the result: Microsoft’s Fluent Emoji 3D is MIT and covers most of Unicode. Airbnb’s objects are commissioned one by one, so no new category could ever get one.',
+  'Scales':'Rich at 40pt and up; mush at 15pt in a lane. The contact shadow needs a ground to sit on.',
+  'Cost':'Medium: bundle about 1,500 images (tens of MB) and keep them updated with each emoji release. Apple’s own emoji are already 3D renders, for free.',
+  'Light, dark, AX':'Renders sit well on both. Raster: needs large sizes bundled for accessibility.',
+ },
+ leans:'Tenet 4 (the keyboard stays). The app icon could use it (MIT).',
+ strains:'The vision, directly: rendered, lit, glossy. It could only feel handmade as clay or papercraft, which would mean commissioning every object. Shown so the opposite pole is on the page.'},
+
+{id:'F',cluster:1,name:'Line emoji, in ink',
+ glyph:(c,s,m)=>box(s,noto(CATS[c].emoji,s*.78,INK[m],'filter:url(#inkF)')),
+ well:(c,m,s)=>underlay(s,paint(s*.58,s*.58,s*.34,col(c,m),CATS[c].col,m,{seed:hashStr(c)%97})),
+ laneWell:true,
+ app:{ok:true,note:'Noto Emoji is OFL: allowed'},
+ appGlyph:true,
+ newcat:m=>({slot:noto('🦜',30,INK[m],'filter:url(#inkF)'),slotBg:'transparent',slotUnder:()=>underlay(48,paint(28,28,16,COL.magenta[m],'magenta',m,{seed:12})),how:'Emoji keyboard. Tilly draws the same emoji from a one-colour line font that covers all of Unicode.'}),
+ how:'Emoji keyboard; drawn in a line font.',
+ notes:{
+  'New category':'The keyboard, unchanged: you pick 🦜 in colour. Tilly draws that emoji from Noto Emoji, Google’s one-colour line font, which covers the whole emoji set. Nothing is ever missing, except the newest emoji until the font updates.',
+  'Scales':'The font has a weight axis: heavier at 15pt, lighter at 60. It can reach the app icon: the font is OFL.',
+  'Cost':'Small. Bundle one font (a few MB), draw the emoji string in it, and optionally a light rough shader. Update the font when Unicode adds emoji.',
+  'Light, dark, AX':'Ink flips with the mode, like text, and scales with Dynamic Type like text.',
+ },
+ leans:'Tenet 4 and TASTE 11 at the seam: the keyboard stays the picker. Licence clean. Colour sits behind as a wash, off-register like a two-ink print.',
+ strains:'It’s Google’s line, not Tilly’s: consistent but neutral, closer to a signpost than a hand. You pick a colour emoji and see a line one, so the choice and the result look different.'},
+
+{id:'G',cluster:1,name:'Tilly’s own hand, from your emoji',
+ glyph:(c,s,m,ctx)=>{const g=CATS[c].g;if(!g) return box(s,noto(CATS[c].emoji,s*.78,INK[m],'filter:url(#inkF)'));return box(s,strokeSvg(G[g],s*.86,INK[m],{w:feltW(s*.86),seed:hashStr(c)%50+1,boil:S.motion==='on',draw:S.motion==='on',amp:.32,freq:.8}))},
+ well:(c,m,s)=>underlay(s,paint(s*.55,s*.57,s*.36,col(c,m),CATS[c].col,m,{seed:hashStr(c)%97})),
+ laneWell:true,
+ app:{ok:true,note:'Ours: the icon’s own felt-tip'},
+ appGlyph:true,
+ newcat:m=>({slot:noto('🦜',30,INK[m],'filter:url(#inkF)'),slotBg:'transparent',slotUnder:()=>underlay(48,paint(26,27,17,COL.magenta[m],'magenta',m,{seed:12})),how:'Emoji keyboard. No parrot drawn yet, so it falls back to the line emoji (F) in the same ink. Drawn: 🏠 🚗 📺 ⚡ 🏋️ 🛡️ ☁️.'}),
+ how:'Emoji keyboard; Tilly’s drawing, or F’s line if none.',
+ notes:{
+  'New category':'The keyboard, unchanged. Tilly keeps its own drawings, in the app icon’s felt-tip, for the emoji people actually file bills under: perhaps 150. Anything else falls back to F’s line emoji in the same ink weight, as the parrot does here.',
+  'Scales':'Strokes, not images: the line is thicker relative to size at 15pt and thinner at 60, so it reads as one pen. At 120pt it’s the app icon’s own hand.',
+  'Cost':'The highest. Someone draws about 150 icons (on an iPad, exported as strokes) and maps them to emoji, plus a stroke renderer for the motion. GPL, ours.',
+  'Motion':'Here: drawn on when first shown, a boil at 8 frames a second, a wobble on tap. Needs Reduce Motion to stop all of it, and likely shouldn’t boil in a list all at once.',
+  'Light, dark, AX':'Ink flips; the wash sits behind. Strokes scale cleanly.',
+ },
+ leans:'The vision, fully, and a family with the app icon. Tenet 4 kept: the keyboard’s search stays. TASTE 8: drawing belongs to content, glass controls stay stock.',
+ strains:'TASTE 11 most of all. TASTE 5 if every icon boils: motion everywhere becomes texture. And the seam between a drawn icon and a fallback one shows in a mixed row.'},
+
+{id:'H',cluster:2,name:'SF Symbols, stock',stand:'glyphs drawn in SF Symbols’ manner',
+ glyph:(c,s,m,ctx)=>{const g=CATS[c].g||'bird';return box(s,cleanSvg(G[g],s*(ctx==='well'?.62:.8),ctx==='well'?'#fff':col(c,m),2))},
+ well:(c,m,s)=>`<span style="position:absolute;inset:0;border-radius:${s/4}px;background:${col(c,m)}"></span>`,
+ laneWell:false,
+ app:{no:'Forbidden by the SF Symbols licence'},
+ newcat:m=>({search:true,glyphs:['bird','cloud','home'],none:'No symbol named “parrot”. Nearest: bird.',how:'A symbol picker Tilly would have to build: there’s no system one. Search is by Apple’s English names.'}),
+ how:'Tilly’s own symbol picker; English names.',
+ notes:{
+  'New category':'There’s no system symbol picker, so Tilly builds one: a searchable grid over about 6,900 symbols, searched by Apple’s English names. “Rent” finds nothing; “parrot” finds nothing, so a bird will do.',
+  'Scales':'Perfectly, at every weight and size, and with Dynamic Type. Not allowed in an app icon.',
+  'Cost':'Medium: the picker, a keyword list we’d write for search, and a model change (a symbol name beside or instead of the emoji) with a migration for existing categories.',
+  'Light, dark, AX':'The best of any direction: built for both modes and every size.',
+ },
+ leans:'TASTE 11, fully.',
+ strains:'The vision: the opposite of hand-drawn; it looks like Settings. Tenet 4: a set, however large, decides what your categories can look like.'},
+
+{id:'I',cluster:2,name:'SF Symbols, roughened',stand:'glyphs drawn in SF Symbols’ manner',
+ glyph:(c,s,m,ctx)=>{const g=CATS[c].g||'bird';const size=s*.72;
+   const on=S.motion==='on';
+   const layer=k=>`<g><path d="${G[g]}" fill="none" stroke="${col(c,m)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" filter="url(#sfR${k})"/></g>`;
+   const svg=`<svg class="${on?'boil':''}" viewBox="0 0 24 24" width="${size}" height="${size}" style="display:block;overflow:visible">${on?layer(1)+layer(2)+layer(3):layer(1)}</svg>`;
+   return box(s,svg)},
+ well:(c,m,s)=>underlay(s,paint(s/2,s/2,s/2-2,col(c,m),CATS[c].col,m,{seed:hashStr(c)%97,treat:'wash'}).replace('fill-opacity=".72"','fill-opacity=".18"')),
+ laneWell:false,
+ app:{no:'Still SF Symbols underneath'},
+ newcat:m=>({search:true,rough:true,glyphs:['bird','cloud','home'],none:'No symbol named “parrot”. Nearest: bird.',how:'The same picker as H. The roughness is a shader applied as it draws; nothing is exported.'}),
+ how:'H’s picker; a shader roughens it.',
+ notes:{
+  'New category':'H’s picker. The symbol is roughened as it’s drawn, by a Metal distortion shader on the view (<code>.distortionEffect</code>) with seeded noise; changing the seed a few times a second makes it boil.',
+  'Scales':'The wobble has to scale with the glyph or small symbols break apart; at 15pt it’s nearly invisible.',
+  'Cost':'Medium, plus a shader. Licence-safe, since nothing is exported or redrawn, only distorted at runtime. Still not allowed in an app icon.',
+  'Light, dark, AX':'As H.',
+ },
+ leans:'TASTE 11: stock, treated at the seam.',
+ strains:'The vision, oddly: a distorted engineering drawing reads as glitched, not drawn. The line weight stays perfectly even, and that’s the giveaway. Tenet 4, as H.'},
+
+{id:'J',cluster:2,name:'A hand-drawn set',stand:'drawn in the manner of Doodle Icons (CC0)',
+ glyph:(c,s,m,ctx)=>{const g=CATS[c].g||'bird';const sd=hashStr(c)%40+3;const size=s*.84;
+   const fill=`<path d="${blob(13.5,13.5,6.6,sd,.14)}" fill="${col(c,m)}" fill-opacity=".85"/>`;
+   return box(s,`<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="display:block;overflow:visible">${fill}<path d="${rough(G[g],{amp:.22,seed:sd,step:.6,over:.35})}" fill="none" stroke="${INK[m]}" stroke-width="${(1.3*Math.pow(24/size,.25)).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/></svg>`)},
+ well:()=> '',
+ app:{ok:true,note:'CC0: allowed, but it’s someone else’s hand'},
+ appGlyph:true,
+ newcat:m=>({search:true,doodle:true,glyphs:['bird','home','cloud'],none:'No parrot in the set. Nearest: bird.',how:'Pick from about 400 drawings in Tilly’s own picker, searched by their names. Misses are common.'}),
+ how:'Tilly’s picker over ~400 drawings.',
+ notes:{
+  'New category':'Pick from about 400 drawings in a picker Tilly builds, searched by the set’s names. Misses are common, and a new one has to be drawn by us in someone else’s hand.',
+  'Scales':'Drawn for 24–48pt. The thin pen breaks up at 15pt; the offset colour blob carries it there.',
+  'Cost':'Medium: picker, keywords, 400 bundled SVGs. CC0, so clean. Any addition means imitating another artist’s line.',
+  'Light, dark, AX':'Single ink flips; the flat colour holds.',
+ },
+ leans:'The vision, cheaply: a real hand, today.',
+ strains:'Tenet 4: this is the curated grid that lost to the keyboard, with 400 in it. And it’s another artist’s hand, not the one on the app icon.'},
+
+{id:'K',cluster:3,name:'Drawn by you',stand:'finger drawings made up for this page',
+ glyph:(c,s,m)=>{const g=CATS[c].g||'bird';const sd=hashStr(c)%60+2;return box(s,strokeSvg(G[g],s*.84,col(c,m),{w:(2.5*Math.pow(24/(s*.84),.45)).toFixed(2),seed:sd,amp:1.05,freq:.35,step:.8,over:1.1}))},
+ well:()=> '',
+ app:{ok:true,note:'Not applicable: the icon is Tilly’s, yours are yours'},
+ newcat:m=>({pad:true,how:'After the name, a square to draw in with your finger, in the category’s colour. Undo and clear; the emoji could sit faintly underneath to trace.'}),
+ how:'Draw it with your finger.',
+ notes:{
+  'New category':'After the name, a square opens where the keypad was and you draw with your finger in the category’s colour (PencilKit). Undo and clear. The emoji could sit faintly underneath to trace over.',
+  'Scales':'A drawing made at 130pt is read at 15pt: the details vanish and the line gets hair-thin. Tilly would redraw your strokes thicker at small sizes.',
+  'Cost':'Medium: the drawing view, the drawing saved as data on the category (small, sync-friendly), redrawing it at each size.',
+  'Light, dark, AX':'Drawn in the colour, it works on both grounds. Strokes scale.',
+ },
+ leans:'Tenet 4 to the end: nothing of Tilly’s in it. The only direction where the hand really is a hand.',
+ strains:'Tenet 1: making a category, the one required step with the most work, becomes a drawing task. Results vary with who’s drawing, and a list of scribbles can look childish rather than warm.'},
+
+{id:'L',cluster:3,name:'Made on the phone',stand:'pencil sketches standing in for Image Playground',
+ glyph:(c,s,m)=>{const g=CATS[c].g||'bird';const sd=hashStr(c)%60+2;const gr=m==='l'?'#4a4843':'#cfccc5';
+   const layers=sd2=>`<path d="${rough(G[g],{amp:.55,seed:sd2+7,step:.6,over:.9})}" fill="none" stroke="${gr}" stroke-width=".45" stroke-opacity=".7" stroke-linecap="round"/><path d="${rough(G[g],{amp:.4,seed:sd2+13,step:.6,over:.6})}" fill="none" stroke="${gr}" stroke-width=".35" stroke-opacity=".55"/>`;
+   return box(s,`<span style="display:grid;place-items:center;width:${s}px;height:${s}px;border-radius:${s*.22}px;background:${m==='l'?'#e7e4dc':'#2a2926'};overflow:hidden">${strokeSvg(G[g],s*.7,gr,{w:.6,seed:sd,amp:.3,step:.6,over:.6,layers})}</span>`)},
+ well:()=> '',
+ app:{ok:true,note:'Not applicable'},
+ newcat:m=>({cands:true,how:'Type the name; Image Playground makes a few sketches on the phone; you pick one. Only on phones with Apple Intelligence.'}),
+ how:'Generated from the name; pick one.',
+ notes:{
+  'New category':'Type the name, and Image Playground’s sketch style (<code>ImageCreator</code>) makes a few pictures on the phone; you pick one. Only on phones with Apple Intelligence, so everyone else needs another way.',
+  'Scales':'Raster and detailed: fine at 40pt, mush at 15pt. Each image comes out in a slightly different style, so a row of them doesn’t look like one set.',
+  'Cost':'Medium, plus a fallback for phones without it. The output is the user’s. Generation takes seconds.',
+  'Genmoji':'Genmoji made from the emoji keyboard arrive as images, not text, so today’s category can’t hold one. Allowing them is its own small direction.',
+  'Light, dark, AX':'Images don’t follow the mode; a sketch on white paper sits in a dark list as a lit square.',
+ },
+ leans:'Tenet 4 in spirit: every category gets its own picture.',
+ strains:'TASTE 1: the picture is the model’s guess at what “Home” looks like, not something you said. Tenet 1: wait, then choose from four. Tenet 5 in spirit: it works for some phones, not all.'},
+
+{id:'M',cluster:3,name:'A letter, in handwriting',
+ glyph:(c,s,m,ctx)=>{const L=CATS[c].name[0];return box(s,`<span style="font-family:'Gochi Hand',cursive;font-size:${s*1.1}px;line-height:1;color:${col(c,m)};display:block;transform:translateY(${s*.04}px) rotate(-4deg)">${L}</span>`)},
+ well:(c,m,s)=>underlay(s,paint(s/2,s/2,s/2-1.5,col(c,m),CATS[c].col,m,{seed:hashStr(c)%97}).replace(/fill-opacity="\.72"/,'fill-opacity=".2"').replace(/fill="(#[0-9a-f]{6})"(?![^>]*fill-opacity)/,'fill="$1" fill-opacity=".2"')),
+ laneWell:true,
+ app:{ok:true,note:'The same hand as the wordmark'},
+ appGlyph:true,
+ newcat:m=>({letter:true,how:'Nothing to pick: the first letter of the name, in a handwriting face. You can change it to any one or two characters, an emoji included.'}),
+ how:'Nothing: the name’s first letter.',
+ notes:{
+  'New category':'Nothing to pick. The name’s first letter, written in a handwriting face in the category’s colour. It can be changed to any one or two characters, emoji included.',
+  'Scales':'Letters scale perfectly, and they’re the closest relative of the app icon’s wordmark.',
+  'Cost':'The smallest: one OFL handwriting face (Gochi Hand here), or a face drawn from Jake’s own hand.',
+  'Light, dark, AX':'Letters behave like text in both modes and at every size.',
+ },
+ leans:'Tenet 4: nothing prescriptive, not even a picture. Tenet 1: the fastest category to make. The app icon.',
+ strains:'TASTE 5: Car and Cloud are both C, here. A letter tells less at a glance than a picture, so colour does more of the work.'}
+];
+
+const CLUSTERS=['Keep the emoji, treat it','Keep the keyboard, redraw the emoji','Replace the emoji with a set','Made per category'];
+
+/* ---------------- surfaces ---------------- */
+function iconIn(dir,c,size,m,ctx){
+  const wellSize=size;
+  if(ctx==='well'){
+    const w=dir.well(c,m,wellSize);
+    return `<button class="icbtn" type="button" aria-label="${CATS[c].name}" style="position:relative;width:${wellSize}px;height:${wellSize}px;display:grid;place-items:center">${w}<span style="position:relative">${dir.glyph(c,Math.round(wellSize*(w?0.7:1)),m,'well')}</span></button>`;
+  }
+  return `<button class="icbtn" type="button" aria-label="${CATS[c].name}" style="position:relative;width:${size}px;height:${size}px;display:grid;place-items:center">${dir.laneWell?dir.well(c,m,size):''}<span style="position:relative">${dir.glyph(c,Math.round(size*(dir.laneWell?0.78:1)),m,'bare')}</span></button>`;
+}
+const money=a=>'−€'+a.toLocaleString('en-GB');
+function row(dir,r,m,ax=false){
+  const s=ax?44:40;
+  return `<div class="row ${r.up?'up':''} ${ax?'ax':''}"><div class="ic">${iconIn(dir,r.c,s,m,'well')}</div><div style="min-width:0"><div class="nm">${r.n}</div><div class="dt">${r.d}</div></div><div class="am">${money(r.a)}</div></div>`;
+}
+function lanes(dir,m,{laneH=38,width=328,iconCol=40,totals=54,only=null}={}){
+  const list=only?LANES.filter(l=>only.includes(l.c)):LANES;
+  const axis=16,plotL=iconCol+8,plotR=width-totals,days=30;
+  const x=d=>plotL+(d-.5)/days*(plotR-plotL);
+  const H=axis+list.length*laneH;
+  let s=`<svg viewBox="0 0 ${width} ${H}" width="${width}" height="${H}" role="img" aria-label="September lanes">`;
+  const sec=m==='l'?'#8a8883':'#8d8b86';
+  [1,8,15,22,29].forEach(d=>{s+=`<text x="${x(d)}" y="11" font-size="10" fill="${sec}" text-anchor="middle" font-family="-apple-system,Helvetica,Arial">${d}</text>`});
+  s+=`<line x1="${x(TODAY)}" x2="${x(TODAY)}" y1="${axis-2}" y2="${H}" stroke="${m==='l'?'#e34948':'#e66767'}" stroke-width="1.5"/>`;
+  list.forEach((l,i)=>{
+    const y0=axis+i*laneH,cy=y0+laneH/2,c=l.c;
+    if(i) s+=`<line x1="${plotL}" x2="${width}" y1="${y0}" y2="${y0}" stroke="${m==='l'?'rgba(0,0,0,.07)':'rgba(255,255,255,.09)'}"/>`;
+    l.dots.forEach(([d,a,up],k)=>{const r=Math.max(3.5,Math.min(laneH*.78,30)/2*Math.sqrt(a/950));s+=paint(x(d),cy,r,col(c,m),CATS[c].col,m,{ring:!!up,seed:d*7+k+i*3})});
+    const tot=l.dots.reduce((t,d)=>t+d[1],0);
+    s+=`<text x="${width-2}" y="${cy+4}" font-size="13" font-weight="600" fill="${m==='l'?'#1c1b19':'#f2f1ee'}" text-anchor="end" font-family="-apple-system,Helvetica,Arial" style="font-variant-numeric:tabular-nums">${money(tot)}</text>`;
+  });
+  s+='</svg>';
+  // icons as HTML over the svg column
+  const icSize=Math.round(Math.min(laneH*.62,30));
+  let ic=`<div style="position:absolute;left:0;top:0;bottom:0;width:${(iconCol/width*100).toFixed(2)}%;display:grid;grid-template-rows:${axis}fr repeat(${list.length},${laneH}fr)"><span></span>`;
+  list.forEach(l=>{ic+=`<div style="display:grid;place-items:center;min-height:0">${iconIn(dir,l.c,icSize,m,'bare')}</div>`});
+  ic+='</div>';
+  return `<div class="lanes" style="position:relative;width:${width}px;max-width:100%">${s}${ic}</div>`;
+}
+function picker(dir,m){
+  let s='<div class="picker">';
+  PICK.forEach(c=>{s+=`<div class="pk"><div>${iconIn(dir,c,30,m,'bare')}</div><div class="n">${CATS[c].name}</div></div>`});
+  s+=`<div class="pk new"><div style="display:grid;place-items:center;width:30px;height:30px">${cleanSvg(G.plus,20,m==='l'?'#2a78d6':'#3987e5',2.2)}</div><div class="n">New category</div></div></div>`;
+  return s;
+}
+function swatches(m){return `<div class="sw" aria-label="Colours">${COL_ORDER.map(c=>`<span class="${c==='magenta'?'on':''}" style="background:${COL[c][m]}"></span>`).join('')}</div>`}
+function newcat(dir,m){
+  const n=dir.newcat(m);
+  let top='';
+  if(n.pad){
+    top=`<div class="pad" aria-label="Drawing square">${strokeSvg(PARROT_SCRIBBLE,96,COL.magenta[m],{w:1.2,seed:5,amp:.5,freq:.4,step:.6,over:.8})}<div class="tools"><span>Undo</span><span>Clear</span></div></div><div class="top"><div class="nmf">Parrot</div></div>`;
+  }else if(n.cands){
+    const cand=(g,sd,on)=>{const gr=m==='l'?'#4a4843':'#cfccc5';return `<div class="c ${on?'on':''}">${strokeSvg(G[g],44,gr,{w:.6,seed:sd,amp:.45,step:.6,over:.8,layers:s2=>`<path d="${rough(G[g],{amp:.7,seed:s2+9,step:.6,over:1})}" fill="none" stroke="${gr}" stroke-width=".4" stroke-opacity=".6"/>`})}</div>`};
+    top=`<div class="top"><div class="nmf">Parrot</div></div><div class="cands">${cand('bird',3,true)}${cand('bird',11,false)}${cand('bird',19,false)}${cand('bird',27,false)}</div><div class="gen">Made on this iPhone · pick one</div>`;
+  }else if(n.search){
+    const g=n.glyphs.map((gg,i)=>{
+      if(n.doodle){return `<span style="display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--ground)">${DIRS.find(d=>d.id==='J').glyph(i===0?'parrot':(gg==='home'?'home':'cloud'),30,m)}</span>`}
+      const inner=cleanSvg(G[gg],22,i===0?COL.magenta[m]:(m==='l'?'#1c1b19':'#f2f1ee'),2,n.rough?'url(#sfR1)':'');
+      return `<span style="display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--ground);${i===0?'box-shadow:0 0 0 2px '+(m==='l'?'#2a78d6':'#3987e5'):''}">${inner}</span>`}).join('');
+    top=`<div class="top"><div class="nmf">Parrot</div></div><div class="search">${cleanSvg('M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z M15.3 15.3 20 20',16,m==='l'?'#8a8883':'#8d8b86',2)}<span class="q">parrot</span></div><div class="results">${g}<span class="none">${n.none}</span></div>`;
+  }else if(n.letter){
+    top=`<div class="top"><div class="slot">${underlay(48,paint(24,24,22,COL.magenta[m],'magenta',m,{seed:12}).replace(/fill-opacity="\.72"/,'fill-opacity=".2"'))}<span style="position:relative;font-family:'Gochi Hand',cursive;font-size:36px;line-height:1;color:${COL.magenta[m]};transform:rotate(-4deg)">P</span></div><div class="nmf">Parrot</div></div>`;
+  }else{
+    top=`<div class="top"><div class="slot" style="background:${n.slotBg}">${n.slotUnder?n.slotUnder():''}<span style="position:relative">${n.slot}</span></div><div class="nmf">Parrot</div></div>`;
+  }
+  return `<div class="newcat">${top}${swatches(m)}<div class="how">${n.how}</div></div>`;
+}
+function appTile(dir,size=72){
+  if(dir.app.no) return `<div class="appt no" style="width:${size}px;height:${size}px">${dir.app.no}</div>`;
+  if(!dir.appGlyph) return `<div class="appt no" style="width:${size}px;height:${size}px">${dir.app.note}</div>`;
+  return `<div class="appt" style="width:${size}px;height:${size}px">${dir.laneWell?`<span style="position:absolute;inset:0;display:grid;place-items:center">${dir.well('home','l',size*.8)}</span>`:''}<span style="position:relative">${dir.glyph('home',Math.round(size*.62),'l','bare')}</span></div>`;
+}
+function sizes(dir,m){
+  const s=[15,24,40,60].map(z=>`<div class="s">${iconIn(dir,'home',z,m,z===40?'well':'bare')}<span>${z}pt</span></div>`).join('');
+  return `<div class="sizes">${s}${m==='l'?`<div class="s">${appTile(dir)}<span>app icon</span></div>`:''}</div>`;
+}
+function phone(dir,m){
+  return `<div class="phone ${m}">
+    <div class="mh"><div class="m">September</div><div class="f">−€292 left</div></div>
+    <div class="rows">${ROWS.map(r=>row(dir,r,m)).join('')}</div>
+    <div class="sect">Categories</div>
+    ${lanes(dir,m)}
+    <div class="sect">Picker</div>
+    ${picker(dir,m)}
+    ${newcat(dir,m)}
+    <div class="sect">Sizes</div>
+    ${sizes(dir,m)}
+  </div>`;
+}
+
+/* ---------------- page assembly ---------------- */
+function renderDirs(){
+  let h='';
+  DIRS.forEach(d=>{
+    const notes=Object.entries(d.notes).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('');
+    h+=`<section class="dir" id="dir-${d.id}" aria-labelledby="h-${d.id}">
+      <div class="dirhead"><span class="letter">${d.id}</span><h3 id="h-${d.id}">${d.name}</h3><span class="badge">${CLUSTERS[d.cluster]}</span>${d.stand?`<span class="badge stand">stand-in: ${d.stand}</span>`:''}</div>
+      ${phone(d,'l')}${phone(d,'d')}
+      <div class="notes"><dl>${notes}</dl><div class="verdict"><dt style="font:500 11px/1.5 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Leans on</dt><dd style="margin:0">${d.leans}</dd><dt style="font:500 11px/1.5 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Strains</dt><dd style="margin:0">${d.strains}</dd></div></div>
+    </section>`;
+  });
+  document.getElementById('dirs').innerHTML=h;
+}
+function renderLineup(){
+  const r=ROWS[3];
+  let h=`<thead><tr><th>Direction</th><th>Light</th><th>Dark</th><th>Largest text size</th><th>Lane, 15pt</th><th>App icon</th><th>New category</th></tr></thead><tbody>`;
+  DIRS.forEach((d,i)=>{
+    if(i===0||DIRS[i-1].cluster!==d.cluster) h+=`<tr class="cluster"><td colspan="7">${CLUSTERS[d.cluster]}</td></tr>`;
+    const tiny=m=>`<div class="tiny phone ${m}" style="border-radius:8px;padding:8px;gap:6px;flex-direction:row;box-shadow:none">${['home','car','tv','energy'].map(c=>iconIn(d,c,15,m,'bare')).join('')}</div>`;
+    h+=`<tr><td class="name"><a href="#dir-${d.id}" style="color:inherit;text-decoration:none"><span class="mono">${d.id}</span>${d.name}</a></td>
+      <td><div class="cell phone l" style="border-radius:10px;padding:10px 12px;box-shadow:none">${row(d,r,'l')}</div></td>
+      <td><div class="cell phone d" style="border-radius:10px;padding:10px 12px;box-shadow:none">${row(d,r,'d')}</div></td>
+      <td><div class="cell ax phone l" style="border-radius:10px;padding:10px 12px;box-shadow:none">${row(d,r,'l',true)}</div></td>
+      <td><div style="display:flex;flex-direction:column;gap:4px">${tiny('l')}${tiny('d')}</div></td>
+      <td>${appTile(d,56)}</td>
+      <td class="howto">${d.how}</td></tr>`;
+  });
+  document.getElementById('lineup').innerHTML=h+'</tbody>';
+}
+const TREATS=[
+  ['flat','Flat, as now','Solid fills; the validator checked these on 2026-09-24. Nothing about them says paper.'],
+  ['wash','Watercolour wash','Colour pools darker at the edge and paper shows through the grain. The softest, and the one that lightens pale inks most.'],
+  ['pencil','Coloured pencil','Hatching with the paper between strokes. Reads as drawn, but a small dot is mostly paper: a 7pt charge nearly disappears.'],
+  ['marker','Felt-tip marker','Flat colour with streaks and a darker rim where the ink pools. The closest to the app icon’s pen.'],
+  ['riso','Limited inks, printed','Each colour a flat ink with a print’s grain, and a hairline off-register. The most graphic; keeps colour strongest.'],
+  ['chalk','Gouache, dry-brushed','Opaque with a broken edge. Written with dark mode in mind, where a wash goes muddy on dark paper.']
+];
+function renderColour(){
+  let h=`<div class="hd">Treatment</div><div class="hd">Light</div><div class="hd">Dark</div><div class="hd">What it does</div>`;
+  const strip=(t,m)=>{
+    const W=440,H=92;let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:${W}px">`;
+    COL_ORDER.forEach((c,i)=>{const x=24+i*54;s+=paint(x,22,12,COL[c][m],c,m,{treat:t,seed:i*5+1});s+=paint(x,58,12,COL[c][m],c,m,{treat:t,ring:true,seed:i*5+3});});
+    s+=`<text x="${W-4}" y="26" font-size="10" text-anchor="end" fill="${m==='l'?'#8a8883':'#8d8b86'}" font-family="IBM Plex Mono,monospace">charged</text><text x="${W-4}" y="62" font-size="10" text-anchor="end" fill="${m==='l'?'#8a8883':'#8d8b86'}" font-family="IBM Plex Mono,monospace">to come</text>`;
+    s+=`<g transform="translate(0,78)">`;[3,8,13,35,74,289,950].forEach((a,i)=>{const r=Math.max(3.5,15*Math.sqrt(a/950));});s+='</g></svg>';
+    return `<div class="phone ${m}" style="padding:8px 10px">${s}</div>`;
+  };
+  TREATS.forEach(([t,name,note])=>{
+    h+=`<div class="tn">${name}</div><div class="sp">${strip(t,'l')}</div><div class="sp">${strip(t,'d')}</div><div class="cn">${note}</div>`;
+  });
+  document.getElementById('cgrid').innerHTML=h;
+}
+function renderJump(){
+  document.getElementById('jump').innerHTML=DIRS.map(d=>`<a href="#dir-${d.id}" title="${d.name}">${d.id}</a>`).join('')+`<a href="#colour">Colour</a>`;
+}
+function renderControls(){
+  const mk=(id,key,opts)=>{const el=document.getElementById(id);el.querySelectorAll('button').forEach(b=>b.remove());
+    opts.forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',S[key]===v);b.onclick=()=>{S[key]=v;apply()};el.appendChild(b)})};
+  mk('ctl-treat','treat',TREATS.map(t=>[t[0],t[1].split(',')[0].replace('Watercolour wash','Wash').replace('Coloured pencil','Pencil').replace('Felt-tip marker','Marker').replace('Limited inks','Inks').replace('Gouache','Gouache')]));
+  mk('ctl-ground','ground',[['paper','Paper'],['system','System white and black']]);
+  mk('ctl-motion','motion',[['on','On'],['off','Still']]);
+}
+function apply(){
+  const app=document.getElementById('app');
+  app.classList.toggle('paper',S.ground==='paper');
+  app.classList.toggle('still',S.motion==='off');
+  renderControls();renderLineup();renderDirs();
+}
+document.addEventListener('click',e=>{const b=e.target.closest('.icbtn');if(!b)return;b.classList.remove('wobble');void b.offsetWidth;b.classList.add('wobble')});
+
+buildDefs();makeGrain();renderJump();renderColour();apply();
+if(document.fonts){Promise.all(["400 20px 'Noto Emoji'","20px 'Gochi Hand'"].map(f=>document.fonts.load(f,'🏠🚗📺⚡🏋️🛡️☁️🦜P'))).then(()=>apply()).catch(()=>{})}
+document.fonts&&document.fonts.ready.then(()=>{});
+})();
+</script>

@@ -15,13 +15,7 @@ enum Tokens {
         static let body: Font = .body
         static let emptyTitle: Font = .title2.weight(.semibold)
         static let rowEmoji: Font = .title2
-        static let editorName: Font = .title3.weight(.medium)
-        static let editorButton: Font = .subheadline
         static let keypadKey: Font = .title
-        /// The editor's amount is the largest thing on the screen. The view scales
-        /// `Size.editorAmountSize` with `@ScaledMetric` and builds the font here, where a
-        /// fixed-size font belongs.
-        static func editorAmount(size: CGFloat) -> Font { .system(size: size, weight: .semibold) }
         /// A lane's emoji follows the lane's height, which already answers to the screen, so it
         /// doesn't scale with Dynamic Type too. From the prototype.
         static func laneEmoji(laneHeight: CGFloat) -> Font {
@@ -62,6 +56,19 @@ enum Tokens {
         static let billNote: Font = .footnote
         static let billFigure: Font = .subheadline
         static let endedToggle: Font = .subheadline
+        /// The editor's card, at the prototype's sizes L, L, L, S. The amount scales
+        /// `Size.cardAmount` with `@ScaledMetric`, as the editor's amount does.
+        static func cardAmount(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
+        static let cardName: Font = .title2.weight(.semibold)
+        static let cardWhen: Font = .footnote.weight(.semibold)
+        static let cardEmoji: Font = .title
+        /// The pencil badge on a chosen category's tile: a fixed 10pt glyph in a fixed 16pt
+        /// circle, from the prototype.
+        static let cardBadge: Font = .system(size: 10, weight: .semibold)
+        /// A pocket's emoji and name on its lip, and the bills peeking out of it; from the
+        /// prototype's 13pt and 11pt.
+        static let pocketName: Font = .footnote.weight(.semibold)
+        static let pocketPeek: Font = .caption2.weight(.semibold)
     }
 
     enum Stroke {
@@ -75,12 +82,20 @@ enum Tokens {
         static let upcomingDot: CGFloat = 2
         /// The year's ring for a bill that starts, changes or ends; a €0 one reuses `zeroDot`.
         static let yearRing: CGFloat = 1.5
+        /// What the editor's card still needs: the name's field and the category's tile. 2pt from
+        /// the prototype; the dash and gap are a guess at a browser's dashed border.
+        static let cardDash = StrokeStyle(lineWidth: 2, dash: [5, 4])
+        /// Round the part of the card whose input is open; from the prototype.
+        static let cardFocus: CGFloat = 2
+        /// Round the chosen pocket; the dashed outline of `New`. From the prototype.
+        static let pocketRing: CGFloat = 2.5
+        static let pocketNew = StrokeStyle(lineWidth: 2, dash: [5, 4])
     }
 
     /// How far text may shrink to fit a line before it truncates.
     enum Scale {
+        /// The card's amount, before it truncates.
         static let editorAmountMin: CGFloat = 0.3
-        static let editorButtonMin: CGFloat = 0.8
         /// A month header's name and a picked-out category's name, before they truncate.
         static let headerMin: CGFloat = 0.8
         /// A lane's total, before it would run out of its column.
@@ -96,6 +111,8 @@ enum Tokens {
         /// than this, and the further level no larger than `zoomMax`. Tuning values.
         static let zoomMin: CGFloat = 0.2
         static let zoomMax: CGFloat = 3
+        /// The card's emoji drops into its tile from this size.
+        static let emojiDrop: CGFloat = 1.35
     }
 
     enum Opacity {
@@ -111,6 +128,9 @@ enum Tokens {
         /// otherwise read as a second line. From the prototype.
         static let offLineDot: Double = 0.28
         static let todayLineWhileDragging: Double = 0.2
+        /// A pocket's back, its colour at this strength; its lip, nearly solid. From the prototype.
+        static let pocketBack: Double = 0.35
+        static let pocketLip: Double = 0.95
     }
 
     enum Ink {
@@ -124,6 +144,13 @@ enum Tokens {
         /// Today's circle on the calendar, as Calendar draws it, and the number inside it.
         static let today: Color = Color(.systemRed)
         static let onToday: Color = .white
+        /// Type on the editor's card, which is always a colour, or grey before it has one. From the
+        /// prototype: white, a soft white for what's still faint, and the dashes between.
+        static let onCard: Color = .white
+        static let onCardSoft: Color = .white.opacity(0.58)
+        static let onCardDash: Color = .white.opacity(0.75)
+        /// A peeking bill's name on its white slip, in both modes; from the prototype.
+        static let onPocketPeek: Color = Color(white: 0.23)
     }
 
     enum Surface {
@@ -144,6 +171,10 @@ enum Tokens {
         static let card: Color = Color(.quaternarySystemFill)
         /// A chip that isn't picked: the prototype's 14% and 32%, which the secondary fill is.
         static let chip: Color = Color(.secondarySystemFill)
+        /// The pencil badge's ground: white in light, the prototype's #2C2C2E in dark.
+        static let cardBadge: Color = Color(.tertiarySystemBackground)
+        /// A peeking bill's slip: white in both modes, as the prototype draws paper.
+        static let pocketPeek: Color = .white
     }
 
     enum Chart {
@@ -243,6 +274,41 @@ enum Tokens {
         /// Above the chips, and above the cards.
         static let chipsTop: CGFloat = 12
         static let cardsTop: CGFloat = 16
+        /// The editor's card: its padding, from the sheet's sides, and between its parts. From
+        /// the prototype. `editorCardInset` isn't `cardInset`, which is All bills' 16.
+        static let cardHorizontal: CGFloat = 18
+        static let cardVertical: CGFloat = 16
+        static let editorCardInset: CGFloat = 22
+        /// Between the date's line and the repeat's.
+        static let cardWhenGap: CGFloat = 2
+        /// Before the pencil that follows a filled-in part.
+        static let cardMarkGap: CGFloat = 4
+        /// Inside the name's dashed field.
+        static let cardFieldHorizontal: CGFloat = 10
+        static let cardFieldVertical: CGFloat = 4
+        /// The pockets: between rows and columns, how far apart the peeking bills sit, and above
+        /// the first row. From the prototype; the editor's gutter gives the sides.
+        static let pocketRow: CGFloat = 22
+        static let pocketColumn: CGFloat = 14
+        static let pocketPeekStep: CGFloat = 11
+        static let pocketsTop: CGFloat = 24
+        /// A peeking bill's slip: from the pocket's sides, and its text's inset.
+        static let pocketPeekInset: CGFloat = 10
+        static let pocketPeekTextHorizontal: CGFloat = 7
+        static let pocketPeekTextTop: CGFloat = 2
+        /// Inside a pocket's lip, and between its emoji and name.
+        static let pocketLipHorizontal: CGFloat = 6
+        static let pocketLipGap: CGFloat = 4
+        /// Where the front bill peeks out: this far above the lip.
+        static let pocketFront: CGFloat = 14
+        /// A chosen pocket's lip drops this far as the bill stands in it.
+        static let pocketLipDrop: CGFloat = 5
+        /// The card's emoji drops into its tile from this far up.
+        static let emojiDrop: CGFloat = 6
+        /// Where a filed card lands in its pocket: this far in from the pocket's sides, its top this
+        /// far above the lip. From the prototype.
+        static let pocketCardInset: CGFloat = 6
+        static let pocketCardAboveLip: CGFloat = 10
     }
 
     enum Size {
@@ -262,14 +328,7 @@ enum Tokens {
         /// The month button and settings, at the bottom. Calendar's bottom glass buttons, Today and
         /// the pair beside it, measured the same way: 48.00pt tall, 4pt taller than the top ones.
         static let bottomButton: CGFloat = 48
-        static let editorButton: CGFloat = 40
-        static let editorButtonStroke: CGFloat = 1
-        static let editorAmountSize: CGFloat = 80 // the amount's base size, before Dynamic Type scales it
-        /// The name field's least height, before Dynamic Type scales it. A focused field grows from
-        /// 24.0 to 25.67pt (measured), which moves the amount above it by half that; a minimum
-        /// above the larger keeps its height, and the amount, still.
-        static let editorNameHeight: CGFloat = 28
-        /// Every editor panel fills exactly this height, so the amount never moves. Tuning value:
+        /// Every editor panel fills exactly this height, so the card never moves. Tuning value:
         /// the graphical calendar is the tallest panel, and a six-row month (August 2026) measures
         /// about 336pt at the default text size, so 340 clears it without clipping.
         static let editorPanel: CGFloat = 340
@@ -335,6 +394,31 @@ enum Tokens {
         static let yearDotRing: CGFloat = 7
         /// A category chip in All bills.
         static let chipHeight: CGFloat = 34
+        /// The editor's card: a bank card's proportions (ISO/IEC 7810 ID-1), from the prototype.
+        static let cardAspect: CGFloat = 1.586
+        /// The card's amount, before Dynamic Type scales it; from the prototype's L.
+        static let cardAmount: CGFloat = 60
+        /// The category's tile on the card, and the pencil badge on its corner, which sits
+        /// `cardBadgeOverhang` outside it. From the prototype.
+        static let cardCategoryTile: CGFloat = 46
+        static let cardBadge: CGFloat = 16
+        static let cardBadgeOverhang: CGFloat = 5
+        /// A pocket, its lip and a peeking bill's slip, before Dynamic Type scales them, and how
+        /// far the chosen one lifts. From the prototype.
+        static let pocketWidth: CGFloat = 108
+        static let pocketHeight: CGFloat = 86
+        static let pocketLip: CGFloat = 46
+        static let pocketPeekHeight: CGFloat = 34
+        static let pocketLift: CGFloat = 6
+        /// The caret after the card's amount. The prototype sizes it from the font: 0.82em tall,
+        /// 0.055em wide (never under `caretMinWidth`), 0.04em from the text. Here it's drawn from
+        /// the laid-out line, about 1.2em tall in SF, so it follows the amount as it shrinks.
+        static let caretHeightOfLine: CGFloat = 0.82 / 1.2
+        static let caretWidthOfHeight: CGFloat = 0.055 / 0.82
+        static let caretGapOfHeight: CGFloat = 0.04 / 0.82
+        /// What the amount keeps clear after itself for the caret, as a fraction of its size.
+        static let caretRoomRatio: CGFloat = 0.1
+        static let caretMinWidth: CGFloat = 2
     }
 
     enum Motion {
@@ -363,6 +447,44 @@ enum Tokens {
         static func aside(hiding: Bool) -> Animation {
             .easeOut(duration: hiding ? asideOut : asideBack)
         }
+        /// The part of the card still needed next: its dashes fade to `breatheOpacity` and back
+        /// over `breathe`. From the prototype.
+        static let breathe: TimeInterval = 1.8
+        static let breatheOpacity: Double = 0.55
+        /// How long the amount's caret stays on, then off: half the prototype's 1.06s blink.
+        static let caretBlink: TimeInterval = 0.53
+        /// Picking a pocket: the card's colour crossfades and its emoji drops in.
+        static let pick: TimeInterval = 0.3
+        /// Filing on ✓: the card shrinks into its pocket, the pocket bounces, and the sheet closes
+        /// `fileHold` after ✓. Reduce Motion fades the card instead. From the prototype.
+        static let file: TimeInterval = 0.24
+        static let fileCurve: Animation = .timingCurve(0.3, 0.6, 0.35, 1, duration: file)
+        static let fileHold: TimeInterval = 0.7
+        static let fileFade: TimeInterval = 0.16
+        static let pocketBounce: TimeInterval = 0.28
+        static let pocketBounceScales: [CGFloat] = [1.06, 0.98, 1]
+        /// How long the pockets get to appear and scroll the target into view before the card
+        /// leaves. A tuning value.
+        static let fileSettle: TimeInterval = 0.05
+    }
+
+    /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is
+    /// half the CSS blur.
+    enum Shadow {
+        static let cardColour: Color = .black.opacity(0.16)
+        static let cardRadius: CGFloat = 14
+        static let cardY: CGFloat = 12
+        /// Under the pencil badge: the prototype's 0 1 2 at 14% black.
+        static let badgeColour: Color = .black.opacity(0.14)
+        static let badgeRadius: CGFloat = 1
+        static let badgeY: CGFloat = 1
+        /// Under a pocket's lip and its peeking bills: the prototype's 0 -2 6 at 14% black, 40%
+        /// in dark.
+        static let pocketColour: Color = Color(UIColor { traits in
+            UIColor(white: 0, alpha: traits.userInterfaceStyle == .dark ? 0.4 : 0.14)
+        })
+        static let pocketRadius: CGFloat = 3
+        static let pocketY: CGFloat = -2
     }
 
     enum Radius {
@@ -370,8 +492,17 @@ enum Tokens {
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
         static let readout: CGFloat = 16
-        /// An All bills card; from the prototype.
+        /// An All bills card, and the editor's card; both from their prototypes.
         static let card: CGFloat = 20
+        /// The category's tile on the editor's card: 0.28 of its side, from the prototype.
+        static let cardCategoryTile: CGFloat = Size.cardCategoryTile * 0.28
+        /// The name's dashed field, and the ring round an open date or repeat; from the prototype.
+        static let cardField: CGFloat = 9
+        static let cardFocus: CGFloat = 6
+        /// A pocket's back, its lip's top corners, and a peeking bill's slip. From the prototype.
+        static let pocket: CGFloat = 12
+        static let pocketLipTop: CGFloat = 10
+        static let pocketPeek: CGFloat = 6
     }
 }
 
@@ -389,6 +520,25 @@ extension Tokens {
             let circle = UIImage(systemName: "circle.fill") ?? UIImage()
             return Image(uiImage: circle.withTintColor(uiColor(colour), renderingMode: .alwaysOriginal))
         }
+
+        /// The editor's card: the colour lit toward its top left corner and shaded toward its bottom
+        /// right, as the prototype draws it (28% white, the colour, then 24% black, at 135°). A card
+        /// without a colour is grey, mixed the same way.
+        static func cardFill(_ colour: Tilly.CategoryColour?) -> LinearGradient {
+            let base = colour.map(color) ?? Chart.uncoloured
+            return LinearGradient(
+                colors: [
+                    base.mix(with: .white, by: cardLight, in: .device),
+                    base,
+                    base.mix(with: .black, by: cardShade, in: .device),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        private static let cardLight: Double = 0.28
+        private static let cardShade: Double = 0.24
 
         private static func uiColor(_ colour: Tilly.CategoryColour) -> UIColor {
             switch colour {
