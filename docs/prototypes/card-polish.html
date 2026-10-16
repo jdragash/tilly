@@ -10,6 +10,8 @@
   Questions: how pressing, picking a pocket, pockets arriving and filing on ✓ should move, and where
   the pockets sit (right under the card, scrolling beneath it). Built from docs/briefs/card-polish/brief.md.
   Compares the motion as built in v0.6.0 with the tilly-video's card scene. Direction: pending.
+  ✓ loops for testing: the card starts complete, and after it files and the sheet closes, the sheet
+  comes back as it was before ✓.
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
 -->
@@ -340,7 +342,7 @@ let bill, ui;
 function freshCats(){ cats = CATS0.map(c=>({name:c[0],emoji:c[1],items:c[2].slice()})); }
 function resetBill(empty){
   bill = empty ? {amount:"",name:"",date:"Oct 16",repeat:"Monthly",cat:null}
-               : {amount:"85.55",name:"Streaming",date:"Oct 16",repeat:"Monthly",cat:null};
+               : {amount:"85.55",name:"Streaming",date:"Oct 16",repeat:"Monthly",cat:Math.min(3,S.pockets-1)};
   ui = {panel:"keypad", ring:null, busy:false, closed:false, committed:false, nameFocus:false};
 }
 freshCats(); resetBill(false);
@@ -556,7 +558,7 @@ function setPanel(name){
    FILING — ✓ files the card into its pocket
    ===================================================================================================== */
 const ptx=new Tx(null);
-let handles=[], inPocket=false, filingP=null;
+let handles=[], inPocket=false, filingP=null, snap=null;
 const later=(s,fn)=>{ const h=wait(s,fn); handles.push(h); return h; };
 function sheetPos(p){ // pocket top-left in sheet coordinates, from layout (not affected by transforms)
   return { x:p.el.offsetLeft, y:pscroll.offsetTop+p.el.offsetTop-pscroll.scrollTop };
@@ -568,6 +570,8 @@ function ensureVisible(p){
 function fileCard(){
   if(ui.busy||ui.closed||!complete()) return;
   ui.busy=true; nameIn.blur();
+  // what to come back to: the card and pockets exactly as they were before ✓
+  snap={bill:Object.assign({},bill), panel:ui.panel, items:cats.map(c=>c.items.slice())};
   haptic("light");
   if(S.popOn) go(okTx,"s",{from:S.popFrom,to:1,spring:[S.popDur,S.popB]});
   const p=pks[bill.cat], switched=setPanel("pockets");
@@ -660,7 +664,19 @@ function closeSheet(){
   } else {
     go(sheetTx,"y",{to:sheetOff(),spring:[.35,0]},()=>{ ui.closed=true; });
   }
-  wait(.8,()=>{ $("again").style.display="block"; });
+  // the test loop: once the sheet is down, it comes back up as it was before ✓
+  wait(.6,comeBack);
+}
+function comeBack(){
+  restoreCard();
+  if(snap){ cats.forEach((c,i)=>{ c.items=snap.items[i]; }); bill=Object.assign({},snap.bill); }
+  else resetBill(false);
+  const panel=snap?snap.panel:"keypad"; snap=null;
+  ui={panel, ring:null, busy:false, closed:false, closing:false, committed:false, nameFocus:false};
+  paintFaces(); buildPockets(); setPanelRaw(panel); renderCard();
+  E.cancel(sheetTx);
+  if(S.reduce){ sheetTx.set("y",0); sheetTx.set("op",0); go(sheetTx,"op",{to:1,fade:true}); }
+  else { sheetTx.set("op",1); sheetTx.set("y",sheetOff()); go(sheetTx,"y",{to:0,spring:[.45,.15]}); }
 }
 $("xBtn").addEventListener("click",()=>{ if(ui.busy||ui.closing||ui.closed) return; ui.busy=true; nameIn.blur(); commitItemIfNone(); closeSheet(); });
 function commitItemIfNone(){ /* closing without ✓ files nothing */ ui.committed=true; }
@@ -686,7 +702,7 @@ function restoreCard(){
    RESET
    ===================================================================================================== */
 function fullReset(empty){
-  cancelFiling(); E.cancel(sheetTx); wait(0,()=>{});
+  cancelFiling(); snap=null; E.cancel(sheetTx); wait(0,()=>{});
   $("again").style.display="none";
   restoreCard(); freshCats(); resetBill(empty);
   sheetTx.set("y",0); sheetTx.set("op",1); okTx.set("s",1);
