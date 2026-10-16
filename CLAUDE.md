@@ -96,7 +96,7 @@ his life aren't, and an example of a banned disclosure is itself a disclosure.
 
 ## Code
 
-- Swift 6, SwiftUI, SwiftData. iOS 26, iPhone and portrait only. No third-party dependencies.
+- Swift 6, SwiftUI, SwiftData. iOS 27, iPhone and portrait only. No third-party dependencies.
 - **Swift Testing** (`@Test`, `#expect`), not XCTest.
 - SwiftData models stay CloudKit-compatible. More in `.claude/rules/` (views and tokens, controls, engine).
 - **Building a pinned or scroll-anchored list anywhere?** Read `.claude/rules/swiftui-scrolling.md`.
@@ -119,10 +119,10 @@ and at an accessibility text size.
 
 Present tense, lowercase, scoped: `engine:`, `app:`, `design:`, `docs:`, `meta:` (the workflow). `engine: clamp month-end without sticking`.
 
-**Branch for work with a brief or plan behind it**, or exploration that may be thrown away. Commit
-small certain things (a docs fix, a typo) straight to `main`. Land a branch with
-`git merge --no-ff` and delete it. **No pull requests** until there's CI or an outside
-contribution. **No staging branch** until the first TestFlight build.
+**Branch for work with a brief or plan behind it**, or exploration that may be thrown away; commit
+small certain things straight to `main`. Land a branch with `git merge --no-ff`, delete it, and tag
+a version if what the app can do changed (`tilly-ship`). **No pull requests** until there's CI or an
+outside contribution. **No staging branch** until the first TestFlight build.
 
 **The body is plain English, and opens with what is now true about the project.** "Tilly is an app
 you can launch now", not "creates the Xcode project". Describe a bug as the person using the app

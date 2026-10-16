@@ -80,7 +80,7 @@ ship.
 
 ## In scope for v1
 
-Recurring expenses and the timeline that shows them. Creating and editing recurrence
+Recurring expenses and the calendar that shows them. Creating and editing recurrence
 rules, handling occurrences that deviate from their rule, user-created categories, and
 enough insight to see where the money goes.
 
@@ -92,6 +92,7 @@ Each of these was considered and deferred with a reason. See `ROADMAP.md` for wh
   leave room for it; building both at once would double the model before either is proven.
 - **Bank connections and automatic import** — Tilly is about rules you declare, not
   transactions it discovers. Manual entry is a few minutes once.
-- **One-off expenses** — Tilly is about what recurs. A single purchase belongs elsewhere.
+- **Logging spending** — Tilly declares what's coming and never records what already went out. A
+  one-off belongs here only when it's planned: dated ahead, like a bill with a single payment.
 - **Income and budgets** — Dime does this well; it's a different job from the one here.
 - **Multi-currency** — one currency, taken from the device locale.

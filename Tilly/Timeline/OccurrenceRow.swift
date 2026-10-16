@@ -27,6 +27,14 @@ extension OccurrenceState {
 /// the amount. Every charge is its own row and carries its own date.
 struct OccurrenceRow: View {
     let entry: TimelineEntry
+    /// Picked out by a calendar tap on its day, then faded: `Tokens.Motion.dayMark`.
+    var isMarked = false
+
+    /// The scroll target at the top of a day's first row, for a calendar tap to land on. A
+    /// string, so it can't collide with a month's `Int` id in the same list.
+    static func dayScrollID(_ day: Date) -> String {
+        "day-\(Int(day.timeIntervalSinceReferenceDate))"
+    }
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.calendar) private var calendar
@@ -40,6 +48,7 @@ struct OccurrenceRow: View {
                 standardLayout
             }
         }
+        .background(Tokens.Surface.pickedLane.opacity(isMarked ? 1 : 0))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: entry, calendar: calendar, locale: locale))
     }

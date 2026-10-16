@@ -39,7 +39,8 @@ struct HeaderControls: View {
     private func slot(systemImage: String) -> some View {
         Image(systemName: systemImage)
             .font(Tokens.Text.floatingSymbol)
-            // The slots are a fixed size, as toolbar symbols are; see `GlassCircleButton`.
+            // The slots are a fixed size, as toolbar symbols are, so the symbols stop growing before
+            // they'd fill them.
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .foregroundStyle(Tokens.Ink.primary)
             .frame(width: Tokens.Size.groupSlot, height: Tokens.Size.floatingButton)

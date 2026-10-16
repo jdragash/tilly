@@ -38,7 +38,7 @@ enum CategoryFormatting {
         return "Nothing in \(month): \(items.joined(separator: " \u{00B7} "))"
     }
 
-    /// "🏠 Home −€1,259": the header's figure while a category is picked out.
+    /// "🏠 Home €1,259": the header's figure while a category is picked out.
     static func focusFigure(_ lane: CategoryLane, locale: Locale) -> String {
         "\(focusLabel(lane)) \(TimelineFormatting.amount(lane.total, locale: locale))"
     }

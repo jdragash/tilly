@@ -88,8 +88,8 @@ struct MonthHeader: View {
         .background(Tokens.Surface.pinned)
         .overlay(alignment: .bottom) {
             // A rule is drawn because something needs closing — at rest there is nothing to
-            // close, and pinned there is content moving underneath. See "The month you're
-            // reading stays named" in `docs/DESIGN.md`.
+            // close, and pinned there is content moving underneath. See "The month header" in
+            // `docs/DESIGN.md`.
             if isPinned {
                 Rectangle()
                     .fill(Tokens.Surface.rule)

@@ -46,4 +46,58 @@ import Foundation
         let decoded = try JSONDecoder().decode(RecurrenceRule.self, from: data)
         #expect(decoded == original)
     }
+
+    // MARK: - Rhythm
+
+    private func rule(_ interval: Int, _ unit: RecurrenceUnit) -> RecurrenceRule {
+        RecurrenceRule(interval: interval, unit: unit, anchorDate: Self.anchor)
+    }
+
+    @Test func monthlyChargesEveryMonth() {
+        #expect(rule(1, .month).chargesEveryMonth)
+    }
+
+    @Test func everyTwoMonthsIsExtra() {
+        #expect(!rule(2, .month).chargesEveryMonth)
+    }
+
+    @Test func yearlyIsExtra() {
+        #expect(!rule(1, .year).chargesEveryMonth)
+    }
+
+    @Test func everyFourWeeksChargesEveryMonth() {
+        #expect(rule(1, .week).chargesEveryMonth)
+        #expect(rule(4, .week).chargesEveryMonth)
+    }
+
+    @Test func everyFiveWeeksIsExtra() {
+        #expect(!rule(5, .week).chargesEveryMonth)
+    }
+
+    @Test func every28DaysChargesEveryMonth() {
+        #expect(rule(1, .day).chargesEveryMonth)
+        #expect(rule(28, .day).chargesEveryMonth)
+    }
+
+    @Test func every29DaysIsExtra() {
+        #expect(!rule(29, .day).chargesEveryMonth)
+    }
+
+    @Test func chargesEveryMonthIgnoresEndDate() {
+        let ended = RecurrenceRule(interval: 1, unit: .month, anchorDate: Self.anchor, endDate: Self.anchor)
+        #expect(ended.chargesEveryMonth)
+    }
+
+    @Test func paymentsPerYearByUnit() {
+        #expect(rule(1, .month).paymentsPerYear == 12)
+        #expect(rule(3, .month).paymentsPerYear == 4)
+        #expect(rule(1, .year).paymentsPerYear == 1)
+        #expect(rule(2, .year).paymentsPerYear == Decimal(string: "0.5"))
+        #expect(rule(2, .week).paymentsPerYear == 26)
+        #expect(rule(1, .day).paymentsPerYear == 365)
+    }
+
+    @Test func paymentsPerYearKeepsFractions() {
+        #expect(rule(5, .month).paymentsPerYear == Decimal(string: "2.4"))
+    }
 }

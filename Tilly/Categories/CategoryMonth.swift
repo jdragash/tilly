@@ -9,6 +9,12 @@ struct CategoryInfo: Equatable, Sendable {
     let colour: CategoryColour?
 }
 
+extension CategoryInfo {
+    init(_ category: ExpenseCategory) {
+        self.init(id: category.id, emoji: category.emoji, name: category.name, colour: category.colour)
+    }
+}
+
 /// One charge in a lane, on its day of the month.
 struct LaneDot: Identifiable, Equatable, Sendable {
     let entry: TimelineEntry

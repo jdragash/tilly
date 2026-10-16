@@ -6,17 +6,26 @@ import SwiftUI
 struct MonthSectionView: View {
     let section: MonthSection
     let showsFirstWeekLine: Bool
+    /// The day a calendar tap opened, its rows marked until the mark fades.
+    var markedDay: Date?
     let onOpen: (TimelineEntry) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(section.entries) { entry in
+            ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
+                // A day's first row carries the day's scroll target: zero high, so the
+                // target's top is the row's top and landing on it needs no row height.
+                if index == 0 || section.entries[index - 1].date != entry.date {
+                    Color.clear
+                        .frame(height: Tokens.Size.scrollMarker)
+                        .id(OccurrenceRow.dayScrollID(entry.date))
+                }
                 Button {
                     onOpen(entry)
                 } label: {
                     // On the label, not the button: a plain button hit-tests its label's
                     // shape, so outside it the gap between name and amount stays dead.
-                    OccurrenceRow(entry: entry)
+                    OccurrenceRow(entry: entry, isMarked: entry.date == markedDay)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

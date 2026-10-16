@@ -19,6 +19,8 @@ struct TimelineEntry: Identifiable, Equatable, Sendable {
     let state: OccurrenceState
     let endDate: Date? // the series' end, start of day; nil when it runs on
     let endHasPassed: Bool // endDate is today or earlier
+    let isExtra: Bool // the rule doesn't charge in every calendar month
+    let startsRecord: Bool // scheduledDate is its record's anchor: a new bill, or a price change
 }
 
 struct MonthSection: Identifiable, Equatable, Sendable {
@@ -36,12 +38,19 @@ struct MonthSection: Identifiable, Equatable, Sendable {
     /// about, so every call site is made to state it.
     let isCurrent: Bool
 
-    init(month: MonthKey, entries: [TimelineEntry], total: Decimal, remaining: Decimal, isCurrent: Bool) {
+    /// Built with only extras: `entries`, `total` and `remaining` count extras alone.
+    let showsExtrasOnly: Bool
+
+    init(
+        month: MonthKey, entries: [TimelineEntry], total: Decimal, remaining: Decimal,
+        isCurrent: Bool, showsExtrasOnly: Bool
+    ) {
         self.month = month
         self.entries = entries
         self.total = total
         self.remaining = remaining
         self.isCurrent = isCurrent
+        self.showsExtrasOnly = showsExtrasOnly
     }
 
     var id: Int { month.id }

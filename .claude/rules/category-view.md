@@ -3,8 +3,6 @@ paths:
   - "Tilly/Categories/**"
   - "Tilly/Shell/**"
   - "Tilly/Settings/**"
-  - "Tilly/Editor/NewCategoryRow.swift"
-  - "Tilly/Editor/ExpenseEditor.swift"
   - "Tilly/Timeline/MonthHeader.swift"
 ---
 
@@ -36,17 +34,13 @@ Learned in the Simulator (iPhone 17, iOS 27), invisible to tests.
   `onEnded` cleared it, and the next tap read as a hold. Set it in the first `onChanged`; clear it
   in `onEnded` and on the state reset.
 
-## Settings and the editor
+## Settings
 
 - **A `List`'s `.onMove` reorders by long-press drag outside edit mode.** No Edit button.
 - **A `Menu` draws an SF Symbol in one ink, whatever its `foregroundStyle`.** A colour swatch in a
   menu needs the colour in the image: `Tokens.CategoryColour.menuSwatch`, `.alwaysOriginal`.
 - **A 44pt minimum height on a list row's trailing control makes the row taller** (52 → 74pt).
   Give it the minimum width only; the row already clears 44pt.
-- **While a category is made, the amount and name hold their resting inset**, drawn with
-  `.offset` so their space can't depend on where they're drawn, and rise only by the shortfall:
-  0pt under the name keyboard, 20pt under the emoji keyboard, which is taller. That 20pt breaks
-  "never moves" and is open (`ROADMAP.md`).
 
 ## Formatting
 

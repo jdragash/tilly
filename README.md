@@ -9,7 +9,7 @@ no in-app purchases, no locked features. Nothing about it is for sale, now or la
 ## What it's for
 
 - Set up recurring expenses on any interval — every N days, weeks, months or years
-- See them on one timeline: what's coming above, what's already been charged below
+- See them on a calendar: the year ahead, a month at a time, and every charge day by day
 - Handle bills whose amount varies, like heating, without pretending you know the number
 - Understand where your recurring money actually goes
 
@@ -19,12 +19,13 @@ maintain.
 
 ## Status
 
-The timeline, the editor and a view by category are built, and the app is usable day to
-day.
+The calendar, the editor, a view by category and a list of every bill are built, and the
+app is usable day to day.
 
-The timeline is one list you scroll, laid out like iOS Calendar: this month open with
-what's left to come out, the months ahead running on above it, and history running on
-below as far back as your oldest charge. The month button brings you back from anywhere,
+The calendar zooms like iOS Calendar: the next twelve months, where a heavy month stands
+out; one month as a grid; and the days, one list you scroll, with the months ahead above
+and history below as far back as your oldest charge. One switch shows every charge or
+only the extras, the bills that don't come every month. The month button brings you back,
 and the app reopens where you left it.
 
 Tap + to add a bill, or tap a charge to edit it. A change can apply to that one charge
@@ -32,16 +33,17 @@ Tap + to add a bill, or tap a charge to edit it. A change can apply to that one 
 expense has a category with an emoji, name and colour you choose; none come built in.
 Settings is where you put them in order and recolour them.
 
-Beside the timeline, a menu switches to a view by category: each one a lane across the
-month, with a dot for every charge. Drag across it to read a day's charges. Bills whose
-amount you only know roughly come next.
+Beside the calendar, a menu switches to a view by category: each one a lane across the
+month, with a dot for every charge. Drag across it to read a day's charges. All bills lists
+every bill once, by category, as what it costs a month or a year. Bills whose amount you
+only know roughly come next.
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the order things are coming in, and
 [`docs/PROJECT.md`](docs/PROJECT.md) for what the app is trying to be.
 
 ## Built with
 
-SwiftUI and SwiftData, targeting iOS 26. No third-party dependencies.
+SwiftUI and SwiftData, targeting iOS 27. No third-party dependencies.
 
 The recurrence engine lives in `Core/` as a standalone Swift package with no UI and no
 database, so it can be tested in isolation:

@@ -17,9 +17,10 @@ enum CategoryMonthBuilder {
         calendar: Calendar,
         isCurrent: Bool
     ) -> CategoryMonth {
-        let built = TimelineBuilder.month(month, expenses: expenses, today: today, calendar: calendar)
+        let built = TimelineBuilder.month(month, expenses: expenses, today: today, calendar: calendar, extrasOnly: false)
         let section = MonthSection(
-            month: built.month, entries: built.entries, total: built.total, remaining: built.remaining, isCurrent: isCurrent
+            month: built.month, entries: built.entries, total: built.total, remaining: built.remaining, isCurrent: isCurrent,
+            showsExtrasOnly: built.showsExtrasOnly
         )
         let known = Set(categories.map(\.id))
         // A category id that no longer names a category reads as none.
@@ -86,7 +87,7 @@ enum CategoryMonthBuilder {
         var entries: [TimelineEntry] = []
         var key = first
         while key <= last {
-            entries += TimelineBuilder.month(key, expenses: expenses, today: today, calendar: calendar).entries
+            entries += TimelineBuilder.month(key, expenses: expenses, today: today, calendar: calendar, extrasOnly: false).entries
             key = key.advanced(by: 1)
         }
         return entries

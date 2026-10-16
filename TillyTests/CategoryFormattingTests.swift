@@ -26,7 +26,7 @@ import Testing
             LaneDot(
                 entry: TimelineEntry(
                     id: "\(index)", expenseID: UUID(), scheduledDate: today, name: "Bill", emoji: category?.emoji,
-                    date: today, amount: amount, state: .charged, endDate: nil, endHasPassed: false
+                    date: today, amount: amount, state: .charged, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
                 ),
                 day: 15
             )
@@ -83,7 +83,7 @@ import Testing
 
     @Test func focusFigureReadsEmojiNameAndTotal() {
         let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950, 241, 68])
-        #expect(CategoryFormatting.focusFigure(lane, locale: Self.euro) == "🏠 Home \u{2212}€1,259")
+        #expect(CategoryFormatting.focusFigure(lane, locale: Self.euro) == "🏠 Home €1,259")
     }
 
     @Test func laneLabelCountsCharges() {
@@ -95,13 +95,13 @@ import Testing
 
     @Test func laneTextInDollars() {
         let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950, 309])
-        #expect(CategoryFormatting.focusFigure(lane, locale: Self.us) == "🏠 Home \u{2212}$1,259")
+        #expect(CategoryFormatting.focusFigure(lane, locale: Self.us) == "🏠 Home $1,259")
         #expect(CategoryFormatting.laneLabel(lane, locale: Self.us) == "Home, 1,259 US dollars out, 2 charges")
     }
 
     @Test func anUncategorisedLaneIsNamedNoCategory() {
         let lane = Self.lane(nil, amounts: [13])
-        #expect(CategoryFormatting.focusFigure(lane, locale: Self.euro) == "No category \u{2212}€13")
+        #expect(CategoryFormatting.focusFigure(lane, locale: Self.euro) == "No category €13")
         #expect(CategoryFormatting.laneLabel(lane, locale: Self.euro) == "No category, 13 euros out, 1 charge")
     }
 
