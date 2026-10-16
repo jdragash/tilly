@@ -305,6 +305,10 @@ enum Tokens {
         static let pocketLipDrop: CGFloat = 5
         /// The card's emoji drops into its tile from this far up.
         static let emojiDrop: CGFloat = 6
+        /// Where a filed card lands in its pocket: this far in from the pocket's sides, its top this
+        /// far above the lip. From the prototype.
+        static let pocketCardInset: CGFloat = 6
+        static let pocketCardAboveLip: CGFloat = 10
     }
 
     enum Size {
@@ -451,6 +455,17 @@ enum Tokens {
         static let caretBlink: TimeInterval = 0.53
         /// Picking a pocket: the card's colour crossfades and its emoji drops in.
         static let pick: TimeInterval = 0.3
+        /// Filing on ✓: the card shrinks into its pocket, the pocket bounces, and the sheet closes
+        /// `fileHold` after ✓. Reduce Motion fades the card instead. From the prototype.
+        static let file: TimeInterval = 0.24
+        static let fileCurve: Animation = .timingCurve(0.3, 0.6, 0.35, 1, duration: file)
+        static let fileHold: TimeInterval = 0.7
+        static let fileFade: TimeInterval = 0.16
+        static let pocketBounce: TimeInterval = 0.28
+        static let pocketBounceScales: [CGFloat] = [1.06, 0.98, 1]
+        /// How long the pockets get to appear and scroll the target into view before the card
+        /// leaves. A tuning value.
+        static let fileSettle: TimeInterval = 0.05
     }
 
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is

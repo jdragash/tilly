@@ -30,6 +30,16 @@ struct ExpenseEditor: View {
     @State private var panel: EditorPanel
     @FocusState private var nameFocused: Bool
     @State private var viewportHeight: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The category being filed into, once ✓ has saved. See `file(into:)`.
+    @State private var filing: UUID?
+    /// A bill saved this time, left out of its pocket while the card stands in for it.
+    @State private var savedSeries: UUID?
+    @State private var cardFrame: CGRect = .zero
+    @State private var landing: CGRect?
+    @State private var isFlying = false
+    @State private var isCardGone = false
+    @State private var isClosing = false
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
@@ -50,7 +60,14 @@ struct ExpenseEditor: View {
                 // Accessibility sizes overflow instead, and scroll.
                 VStack(spacing: Tokens.Space.section) {
                     card
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+                            if !isFlying { cardFrame = frame }
+                        }
+                        .modifier(Filing(from: cardFrame, to: isFlying ? landing : nil))
                         .padding(.horizontal, Tokens.Space.editorCardInset)
+                        .opacity(isCardGone ? 0 : 1)
+                        // Drawn over the panel, which comes after it, as it flies into a pocket.
+                        .zIndex(1)
                     Spacer(minLength: 0)
                     // A new category takes the panel's place, above its keyboard. At accessibility
                     // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
@@ -122,6 +139,16 @@ struct ExpenseEditor: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
+        .onPreferenceChange(FilingTargetKey.self) { landing = $0 }
+        .overlay {
+            // While the card files, any tap closes the sheet at once.
+            if filing != nil {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture(perform: close)
+            }
+        }
         .onChange(of: panel) { _, newPanel in
             if newPanel != .keypad { nameFocused = false }
         }
@@ -139,7 +166,8 @@ struct ExpenseEditor: View {
             nameFocus: $nameFocused,
             category: selectedCategory,
             progress: progress,
-            focused: focusedPart,
+            // Nothing on a filing card is open: the pockets show only to receive it.
+            focused: filing == nil ? focusedPart : nil,
             today: today,
             onTap: open,
             onNameSubmit: submitName
@@ -196,7 +224,7 @@ struct ExpenseEditor: View {
                 selection: draft.categoryID,
                 draftName: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
-                filing: nil,
+                filing: filing,
                 onPick: pick,
                 onNew: { panel = .newCategory }
             )
@@ -253,7 +281,8 @@ struct ExpenseEditor: View {
 
     /// The pockets in the Settings order, without the bill being edited peeking out of its own.
     private var pockets: [PocketContent] {
-        let editing = session.flatMap { session in expenses.first { $0.id == session.expenseID }?.seriesKey }
+        let editing = savedSeries
+            ?? session.flatMap { session in expenses.first { $0.id == session.expenseID }?.seriesKey }
         return PocketContents.make(
             categories: categories, expenses: expenses, excluding: editing, today: today, calendar: calendar
         )
@@ -316,9 +345,10 @@ struct ExpenseEditor: View {
             category: category
         )
         modelContext.insert(expense)
+        savedSeries = expense.seriesKey
         do {
             try modelContext.save()
-            dismiss()
+            file(into: category.id)
         } catch {
             Self.logger.error("Saving an expense failed: \(error)")
         }
@@ -435,22 +465,70 @@ struct ExpenseEditor: View {
         return formatter.string(from: date)
     }
 
+    /// A saved edit files the card, as adding does.
     private func edit(_ session: EditSession, _ operation: (Expense, ExpenseCategory) throws -> Void) {
         guard let category = selectedCategory, let expense = fetchExpense(session.expenseID) else { return }
-        performEdit { try operation(expense, category) }
+        performEdit({ try operation(expense, category) }, then: { file(into: category.id) })
     }
 
-    private func performEdit(_ operation: () throws -> Void) {
+    /// Deleting closes the sheet directly; saving passes `then` to file the card instead.
+    private func performEdit(_ operation: () throws -> Void, then finish: (() -> Void)? = nil) {
         do {
             try operation()
-            dismiss()
+            if let finish { finish() } else { dismiss() }
         } catch {
             Self.logger.error("Editing an expense failed: \(error)")
         }
     }
 
+    // MARK: Filing
+
+    /// After a save has gone through: the pockets show with the target scrolled into view, the
+    /// card shrinks into it, the pocket bounces, and the sheet closes. Reduce Motion fades the card
+    /// instead. See "The pockets are the category picker" in `docs/DESIGN.md`.
+    private func file(into categoryID: UUID) {
+        nameFocused = false
+        panel = .category
+        filing = categoryID
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Tokens.Motion.fileSettle))
+            if reduceMotion {
+                withAnimation(.easeOut(duration: Tokens.Motion.fileFade)) { isCardGone = true }
+                try? await Task.sleep(for: .seconds(Tokens.Motion.fileFade))
+            } else {
+                withAnimation(Tokens.Motion.fileCurve) { isFlying = true }
+                try? await Task.sleep(for: .seconds(Tokens.Motion.file))
+                isCardGone = true
+                try? await Task.sleep(for: .seconds(Tokens.Motion.fileHold - Tokens.Motion.file))
+            }
+            close()
+        }
+    }
+
+    /// Closes the sheet once, whether filing finished or a tap cut it short.
+    private func close() {
+        guard !isClosing else { return }
+        isClosing = true
+        dismiss()
+    }
+
     private func fetchExpense(_ id: UUID) -> Expense? {
         (try? modelContext.fetch(FetchDescriptor<Expense>()))?.first { $0.id == id }
+    }
+}
+
+/// Shrinks the card, as one picture, from where it sits to where it lands in its pocket.
+private struct Filing: ViewModifier {
+    let from: CGRect
+    let to: CGRect?
+
+    /// One view either way, so the change animates rather than swapping views.
+    func body(content: Content) -> some View {
+        let lands = to != nil && from.width > 0
+        let target = to ?? from
+        content
+            .scaleEffect(lands ? target.width / from.width : 1)
+            .offset(x: lands ? target.midX - from.midX : 0, y: lands ? target.midY - from.midY : 0)
     }
 }
 

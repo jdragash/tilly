@@ -20,17 +20,25 @@ struct PocketGrid: View {
     @ScaledMetric(relativeTo: .footnote) private var front = Tokens.Space.pocketFront
 
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: Tokens.Space.pocketRow) {
-                ForEach(pockets) { pocket in
-                    pocketButton(pocket)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: Tokens.Space.pocketRow) {
+                    ForEach(pockets) { pocket in
+                        pocketButton(pocket)
+                            .id(pocket.id)
+                    }
+                    newPocket
                 }
-                newPocket
+                .padding(.top, Tokens.Space.pocketsTop)
+                .padding(.bottom, Tokens.Space.section)
             }
-            .padding(.top, Tokens.Space.pocketsTop)
-            .padding(.bottom, Tokens.Space.section)
+            .scrollBounceBehavior(.basedOnSize)
+            .onChange(of: filing, initial: true) { _, target in
+                if let target { proxy.scrollTo(target, anchor: .center) }
+            }
         }
-        .scrollBounceBehavior(.basedOnSize)
+        // While a card files, the sheet takes taps to close at once, not the pockets.
+        .allowsHitTesting(filing == nil)
     }
 
     /// Three fixed columns, or two filling the width at accessibility sizes.
@@ -80,6 +88,36 @@ struct PocketGrid: View {
         .frame(height: height, alignment: .top)
         .offset(y: isChosen ? -Tokens.Size.pocketLift : 0)
         .contentShape(back)
+        .background {
+            if pocket.id == filing {
+                GeometryReader { geometry in
+                    Color.clear.preference(key: FilingTargetKey.self, value: landing(in: geometry.frame(in: .global)))
+                }
+            }
+        }
+        .keyframeAnimator(initialValue: CGFloat(1), trigger: filing == pocket.id) { view, scale in
+            view.scaleEffect(scale)
+        } keyframes: { _ in
+            if filing == pocket.id {
+                LinearKeyframe(1, duration: Tokens.Motion.file)
+                for target in Tokens.Motion.pocketBounceScales {
+                    CubicKeyframe(target, duration: Tokens.Motion.pocketBounce / Double(Tokens.Motion.pocketBounceScales.count))
+                }
+            } else {
+                LinearKeyframe(1, duration: 0)
+            }
+        }
+    }
+
+    /// Where a filed card lands: inside the pocket, standing just above its lip.
+    private func landing(in pocket: CGRect) -> CGRect {
+        let width = pocket.width - 2 * Tokens.Space.pocketCardInset
+        return CGRect(
+            x: pocket.minX + Tokens.Space.pocketCardInset,
+            y: pocket.minY + height - lip - Tokens.Space.pocketCardAboveLip,
+            width: width,
+            height: width / Tokens.Size.cardAspect
+        )
     }
 
     private struct Slip {
@@ -165,6 +203,14 @@ struct PocketGrid: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("New category")
+    }
+}
+
+/// Where the card being filed lands, in global coordinates; nil until the target pocket is laid out.
+struct FilingTargetKey: PreferenceKey {
+    static let defaultValue: CGRect? = nil
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        value = value ?? nextValue()
     }
 }
 

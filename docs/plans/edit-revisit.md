@@ -286,6 +286,15 @@ screenshots held mid-flight per `.claude/rules/simulator.md`. Both suites green.
 - **Three 108pt pockets and two 14pt gaps are 352pt, which fits only inside the 20pt gutter.**
   Any side padding of the grid's own pushed the whole sheet wider, card included.
 
+- **The card files as one picture, by a measured scale and offset, not `matchedGeometryEffect`.**
+  Matching frames re-lays the card out at pocket size, so its type stays full size and clips. The
+  target pocket reports where the card lands through `FilingTargetKey`.
+- **A modifier that returns different views for "flying" and "resting" doesn't animate**; it swaps
+  views. Keep one view and vary its values.
+- **Reduce Motion in the Simulator:** `simctl spawn booted defaults write com.apple.Accessibility
+  ReduceMotionEnabled -bool true`, then relaunch the app. Timing an animation needs a recording
+  (`simctl io booted recordVideo`, frames tiled with `ffmpeg`): a screenshot lands after it ends.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

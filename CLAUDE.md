@@ -92,7 +92,9 @@ stated generally. Leave out the personal circumstance behind it: income and its 
 bills and amounts, living situation, employer, health, family. "Ask Jake" is fine. Facts about
 his life aren't, and an example of a banned disclosure is itself a disclosure.
 
-**Ask before every commit and push.** Say what will be committed and the message, then wait.
+**One ask per feature.** Build every step of a plan without stopping to ask, committing and pushing
+each verified step to the feature branch. Then ask once: say what the branch holds and how it
+lands, and wait. A small change straight to `main` still gets its own ask.
 
 ## Code
 
