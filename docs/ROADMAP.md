@@ -17,7 +17,7 @@ The smallest thing that does the job.
 | Recurrence engine | Done | Every N days, weeks, months or years from a fixed anchor. Pure and tested. |
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
 | Timeline | Done | One list with a pinned header and saved place, five years ahead or to the last payment. The month button returns from anywhere; on an iPhone a tap mid-flick is still ignored (open). |
-| Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. Making a category lifts the amount 20pt over the emoji keyboard, against "never moves" (open). |
+| Expense editor | Done | Adding and editing a bill, in the Calendar-style shell: tapping a row, "this charge only or future charges", deleting. Shake to undo deferred. Making a category lifts the amount 20pt over the emoji keyboard, against "never moves" (open). Being rebuilt as a card you complete, with the pockets as the category picker (`docs/plans/edit-revisit.md`). |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
 | Categories | Done, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming, changing an emoji and deleting there aren't designed yet. |
 | Category view | Done | Lanes across one month, a dot per charge, beside the timeline behind a view menu; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
@@ -31,6 +31,7 @@ The smallest thing that does the job.
 
 | Item | Why not v1 |
 |---|---|
+| Pockets under the card | The pockets start right under the card and grow down the sheet, scrolling under it so the card floats over them. Waits until the card and pockets are in use, because the scroll and the card's place have to be built together. |
 | Viewing a charge before editing it | Prototyped and set aside on 2026-09-22 (the "view first" switch in `docs/prototypes/expense-editor-entry.html`): the editor-first version read better. Worth reopening with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
 | Look-ahead nudges ("next month has a large annual bill") | Arguably the core promise, but the rules need real usage to design well. The engine already computes any future range. No space is reserved for it. |

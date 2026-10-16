@@ -157,45 +157,53 @@ Every category has a colour, one of eight, shown here; the timeline's wells stay
 
 ## The editor
 
-### The amount is the screen
+### The card is the input
 
-The amount is the largest thing on it, and the keypad is up when the editor opens. The name sits
-under the amount. Close is top left, and Save is the system's prominent checkmark top right. The
-keyboard covers the editor rather than pushing it, except at accessibility sizes, where it scrolls.
+Adding a bill opens a Wallet card at the top of a white sheet, in the category's colour or grey
+until it has one, with white type. The amount is top left and largest, the date and repeat top
+right on two small lines, the name bottom left, the category's emoji bottom right. Close is top
+left, and Save is the system's prominent checkmark top right. The input area under the card keeps
+the keypad's height, so the card never moves.
+
+Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed emoji tile. A small
+pencil after the date, the repeat and the category means it's filled in and yours to change. Once
+the amount is in, the next part still needed breathes, a slow pulse on its dashes. At accessibility
+sizes the parts stack, full width, and the sheet scrolls.
 
 ### Amount, name and category are required
 
-✓ stays disabled until all three are there, and while a new category is half made. The date
-starts as today. The row leads with the emoji and the name, and insights stand on the category.
+✓ stays disabled until all three are there, and while a new category is half made. The date starts
+as today and the repeat as monthly. The row leads with the emoji and the name.
 
-### Three buttons: date, category, repeat
+### Tapping a part opens its input in the keypad's place
 
-Equal thirds under the name. The icon says what kind of thing, the label says its value:
-
-- a calendar and `Oct 31`, with a clock on the calendar for a date still to come; never a year
-- the category's emoji alone, or a tag until one is chosen
-- a loop and `Monthly` or `3 months`, or a one-way arrow and `09/27` once the bill ends
-
-When orderly and fitting every word conflict, the words get shorter. At accessibility text sizes
-the three stack, full width, in the same order.
-
-### Pickers open where the keypad was
-
-Choosing a date, a repeat or a category replaces the keypad in place, at the keypad's height, so
-the amount and name never move. Nothing stacks a second sheet over the editor.
-
-- **Date:** a calendar and nothing else.
+- **Amount:** the keypad, up when the sheet opens.
+- **Name:** the keyboard. Return says `next` and goes to what's still missing, or `done`.
+- **Date:** a calendar. `Oct 31`, never a year, with a clock for a date still to come.
 - **Repeat:** one wheel, `Every 1 month`, with an end column that rests on `no end` and rolls into
-  payment counts. Once there's an end, `Last payment Sep 30, 2027` shows under it. A count is the
-  only way to set an end.
-- **Category:** a list of emoji and name in the Settings order, with `New category` last. That opens
-  the system emoji keyboard, then asks for the name, with a row of eight colours set to the next one
-  not yet used. Emoji and name are required: without the emoji, the button couldn't tell a category
-  from none. The emoji sits on the chosen colour.
+  payment counts, the only way to set an end. Then the label is `05/27` behind a one-way arrow,
+  and `Last payment Sep 30, 2027` shows under the wheel.
+- **Category, or the card's background:** the pockets. Nothing stacks a second sheet.
+
+### The pockets are the category picker
+
+A pocket per category, three across (two at accessibility sizes), in the Settings order, with a
+dashed `New` last; more than fit scroll. Each is its category's colour, emoji and name on its front,
+with up to three of its running bills' names peeking out, the latest started in front. Tapping one
+dresses the card: the colour crossfades in and the emoji drops into its tile, and the pocket lifts
+with the bill's name standing in it.
+
+`New` opens the emoji keyboard under an emoji slot, a name field and the eight colours, the next
+unused one chosen. Return makes the category before `New` and dresses the card. With none yet,
+`New` is the only pocket, and it breathes once the amount and name are in.
+
+On ✓ the bill is saved at once, then the card shrinks into its pocket, the pocket bounces, and the
+sheet closes; a tap closes it at once, and Reduce Motion fades the card instead. A saved edit files
+the same way; deleting doesn't.
 
 ### Opening a charge edits it
 
-Tapping a row opens the editor for that charge, filled in, keypad up. The date is the charge's own,
+Tapping a row opens the card for that charge, filled in, keypad up. The date is the charge's own,
 where it landed if it was moved; a moved charge shows only there, with no trace at the old date. ✓
 waits for a change, and a red trash button sits left of it.
 

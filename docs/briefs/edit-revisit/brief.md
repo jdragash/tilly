@@ -218,3 +218,25 @@ category count from none to 24. Trying them narrowed the field:
 
 Next, the prototype takes on the look from the icons and colour exploration as a switch, so these choices
 can be judged in the app's own style before the editor is planned for iOS.
+
+### 2026-10-16 · Chosen: pick a pocket, then ✓
+
+Jake picked from the prototype's controls, and the editor is planned for iOS in today's iOS look:
+
+- **Ending:** P3. The pockets are the category picker. Tapping one dresses the card in it, and ✓
+  saves and files the card into that pocket. P2's hand is set aside.
+- **Card:** the Wallet card, laid out to start top left. The amount is top left, the name bottom
+  left, the category's emoji bottom right, and the date and repeat top right on two lines. The
+  amount, name and category are large and the date and repeat small. The category shows as its
+  emoji alone. Edit marks are the pencil.
+- **Pockets:** a grid of three across, each showing the bills already in it peeking out.
+- **Sheet:** white in one piece. No float.
+- **Look:** iOS default now. Tilly, Drawn becomes its own piece of work, since choosing how
+  categories are drawn (an icon set, redrawn emoji, or something made on the phone) needs its own
+  brief. The look sits behind `Tokens`, so it can be swapped in later.
+- **Guessing the category** stays out of the first build. Where a guess comes from is still for a
+  later discussion, as above.
+
+Next, after this build: the pockets start right under the card and grow down the sheet, and when
+there are more than fit, they scroll under the card, so the card seems to float over them. Today
+they sit in the keypad's place and scroll there.
