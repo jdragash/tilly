@@ -176,6 +176,16 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .btns button{flex:1;background:var(--ctl);border-radius:10px;padding:9px;font-weight:600}
 pre#swift{background:var(--ctl);border-radius:10px;padding:10px;font:11px/1.5 ui-monospace,Menlo,monospace;overflow-x:auto;
   white-space:pre;margin:6px 0;-webkit-user-select:text;user-select:text}
+.step{margin:6px 0 10px}
+.step .sl{font-size:13px;font-weight:600;margin-bottom:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--ctl);border-radius:99px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--panelfg);min-height:32px}
+.chip.on{background:var(--accent);color:#fff}
+.slots{display:flex;gap:10px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.slot .load{width:52px}
+.slot .load.empty{opacity:.4}
+.slot .save{font-size:11px;color:var(--accent);font-weight:600;padding:2px 6px}
 .desc{font-size:11.5px;line-height:1.35;color:var(--sec);margin:-2px 0 8px;max-width:280px}
 .lies{font-size:12px;color:var(--sec);padding-left:16px;margin:6px 0}
 .lies li{margin-bottom:4px}
@@ -227,15 +237,16 @@ pre#swift{background:var(--ctl);border-radius:10px;padding:10px;font:11px/1.5 ui
 const PRESET_KEYS = ["pressOn","pressDip","pressDur","pressB","popOn","popFrom","popDur","popB","xfadeDur","xfadeCurve",
   "emojiEased","emojiDur","emojiB","liftEased","liftDur","liftB","slipB","arriveOn","arriveOff","arriveStagger","arriveDur",
   "arriveB","fileStyle","fileDelay","fileDur","fileTurn","sqY","sqDur","sqB","slipPop","slipDur","slipSB","hold","haptics"];
-const BUILT = {pressOn:false,pressDip:.93,pressDur:.4,pressB:.5, popOn:false,popFrom:.88,popDur:.35,popB:.45,
-  xfadeDur:.3,xfadeCurve:"inout", emojiEased:true,emojiDur:.3,emojiB:.45, liftEased:true,liftDur:.3,liftB:.35,slipB:.4,
-  arriveOn:false,arriveOff:24,arriveStagger:30,arriveDur:.4,arriveB:.25,
-  fileStyle:"shrink",fileDelay:.05,fileDur:.24,fileTurn:0,sqY:.88,sqDur:.42,sqB:.55,slipPop:8,slipDur:.32,slipSB:.5,hold:.7,haptics:false};
-const VIDEO = Object.assign({}, BUILT, {pressOn:true,popOn:true,xfadeDur:.25,xfadeCurve:"out",emojiEased:false,emojiDur:.45,
-  liftEased:false,liftDur:.4,arriveOn:true,fileStyle:"drop",fileDelay:.25,fileDur:.375,fileTurn:-5,hold:.45,haptics:true});
+const BUILT = {pressOn:false,pressDip:.93,pressDur:.45,pressB:.3, popOn:false,popFrom:.88,popDur:.3,popB:.3,
+  xfadeDur:.3,xfadeCurve:"inout", emojiEased:true,emojiDur:.3,emojiB:.3, liftEased:true,liftDur:.3,liftB:.3,slipB:.3,
+  arriveOn:false,arriveOff:24,arriveStagger:30,arriveDur:.45,arriveB:.3,
+  fileStyle:"shrink",fileDelay:.05,fileDur:.25,fileTurn:0,sqY:.88,sqDur:.45,sqB:.5,slipPop:8,slipDur:.3,slipSB:.5,hold:.7,haptics:false};
+// the video's values, snapped to the nearest step
+const VIDEO = Object.assign({}, BUILT, {pressOn:true,pressB:.5,popOn:true,popB:.5,xfadeCurve:"out",emojiEased:false,emojiDur:.45,emojiB:.5,
+  liftEased:false,liftDur:.45,liftB:.3,slipB:.3,arriveOn:true,fileStyle:"drop",fileDelay:.25,fileDur:.375,fileTurn:-5,hold:.45,haptics:true});
 const S = Object.assign({preset:"video", reduce:false, dark:null, darkTouched:false, slow:1, taps:false, pockets:6}, VIDEO);
-try { const j = JSON.parse(localStorage.getItem("tilly-card-polish")||"null"); if (j) Object.assign(S, j); } catch(e){}
-function save(){ try { localStorage.setItem("tilly-card-polish", JSON.stringify(S)); } catch(e){} }
+try { const j = JSON.parse(localStorage.getItem("tilly-card-polish-2")||"null"); if (j) Object.assign(S, j); } catch(e){}
+function save(){ try { localStorage.setItem("tilly-card-polish-2", JSON.stringify(S)); } catch(e){} }
 const mq = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
 if (!S.darkTouched) S.dark = !!(mq && mq.matches);
 
@@ -713,85 +724,129 @@ function fullReset(empty){
 /* =====================================================================================================
    CONTROLS
    ===================================================================================================== */
-const SCHEMA = [
- ["Preset"],
- ["preset","Preset","select",[["built","As built (v0.6.0)"],["video","Video"],["custom","Custom"]]],
- ["Press feedback"],
- ["pressOn","On","check"],["pressDip","Dip scale",".85,1,.01"],["pressDur","Duration",".15,.8,.01"],["pressB","Bounce","-.3,.9,.01"],
- ["✓ pop"],
- ["popOn","On","check"],["popFrom","From scale",".7,1,.01"],["popDur","Duration",".15,.8,.01"],["popB","Bounce","-.3,.9,.01"],
- ["Pick a pocket"],
- ["xfadeDur","Colour crossfade (s)",".1,.8,.01"],["xfadeCurve","Crossfade curve","select",[["inout","ease-in-out"],["out","ease-out"]]],
- ["emojiEased","Emoji: eased (not spring)","check"],["emojiDur","Emoji duration",".15,.8,.01"],["emojiB","Emoji bounce","-.3,.9,.01"],
- ["liftEased","Lift: eased (not spring)","check"],["liftDur","Lift duration",".15,.8,.01"],["liftB","Lift bounce","-.3,.9,.01"],
- ["slipB","Slip rise bounce","-.3,.9,.01"],
- ["Pockets arriving"],
- ["arriveOn","On","check"],["arriveOff","Offset (px)","0,60,1"],["arriveStagger","Stagger (ms)","0,80,1"],
- ["arriveDur","Duration",".15,.8,.01"],["arriveB","Bounce","-.3,.9,.01"],
- ["Filing on ✓"],
- ["fileStyle","Style","select",[["shrink","Shrink and fade"],["drop","Drop into pocket"]]],
- ["fileDelay","Start delay (s)","0,.8,.01"],["fileDur","Drop / shrink duration (s)",".15,.8,.005"],["fileTurn","Turn (degrees)","-30,30,1"],
- ["sqY","Squash scaleY",".7,1,.01"],["sqDur","Squash spring duration",".15,.8,.01"],["sqB","Squash spring bounce","-.3,.9,.01"],
- ["slipPop","Slip pop (px)","0,20,1"],["slipDur","Slip spring duration",".15,.8,.01"],["slipSB","Slip spring bounce","-.3,.9,.01"],
- ["hold","Hold before close (s)","0,1.5,.01"],
- ["View"],
- ["haptics","Haptic markers","check"],["reduce","Reduce Motion","check"],["dark","Dark","check"],
- ["slow","Slow motion","select",[["1","1×"],["0.5","0.5×"],["0.25","0.25×"]]],["taps","Show tap areas","check"],
- ["pockets","Pockets","select",[["1","1"],["3","3"],["6","6"],["14","14"]]],
+/* =====================================================================================================
+   STEPS — every control is a few named choices a real step apart, not a slider. Springs use Apple's own
+   named springs (bounce 0, 0.15, 0.3), plus a livelier one, so a choice ports to SwiftUI by name.
+   ===================================================================================================== */
+const FEEL=[["Smooth",0],["Snappy",.15],["Bouncy",.3],["Springy",.5]];
+const SPEED=[["Quick",.3],["Normal",.45],["Slow",.6]];
+const feel=(b,extra)=>FEEL.map(([l,v])=>[l,Object.assign({[b]:v},extra||{})]);
+const speed=d=>SPEED.map(([l,v])=>[l,{[d]:v}]);
+const glideFeel=(b,eased,also)=>[["Glide",{[eased]:true}]].concat(FEEL.map(([l,v])=>[l,Object.assign({[eased]:false,[b]:v},also?{[also]:v}:{})]));
+const onOff=k=>[["Off",{[k]:false}],["On",{[k]:true}]];
+const D_FEEL="Smooth settles without overshoot; Snappy overshoots a touch; Bouncy and Springy overshoot more.";
+const D_SPEED="How long it takes to settle.";
+const GROUPS=[
+ ["Press feedback",[
+  ["On","Whether pockets, the emoji tile, keys and ✓ shrink a little while your finger is on them.",onOff("pressOn")],
+  ["Depth","How far a pressed thing shrinks.",[["Subtle",{pressDip:.96}],["Medium",{pressDip:.93}],["Deep",{pressDip:.88}]]],
+  ["Feel","How it springs back when you let go. "+D_FEEL,feel("pressB")],
+  ["Speed",D_SPEED,speed("pressDur")]]],
+ ["✓ pop",[
+  ["On","Whether ✓ itself pops when you tap it.",onOff("popOn")],
+  ["Size","How small ✓ starts its pop from.",[["Subtle",{popFrom:.94}],["Medium",{popFrom:.88}],["Big",{popFrom:.8}]]],
+  ["Feel",D_FEEL,feel("popB")],["Speed",D_SPEED,speed("popDur")]]],
+ ["Pick a pocket",[
+  ["Colour fade","How long the card takes to fade into the picked pocket's colour.",[["Quick",{xfadeDur:.15}],["Normal",{xfadeDur:.3}],["Slow",{xfadeDur:.45}]]],
+  ["Emoji feel","How the emoji drops into its tile. Glide has no bounce at all, as the app does today. "+D_FEEL,glideFeel("emojiB","emojiEased")],
+  ["Emoji speed",D_SPEED,speed("emojiDur")],
+  ["Lift feel","How the picked pocket rises, with the bill's slip rising into it.",glideFeel("liftB","liftEased","slipB")],
+  ["Lift speed",D_SPEED,speed("liftDur")]]],
+ ["Pockets arriving",[
+  ["On","Whether the pockets slide in one after another when they appear, instead of all at once.",onOff("arriveOn")],
+  ["Distance","How far below its place each pocket starts.",[["Short",{arriveOff:12}],["Medium",{arriveOff:24}],["Long",{arriveOff:48}]]],
+  ["Stagger","The gap between one pocket starting and the next.",[["Tight",{arriveStagger:15}],["Normal",{arriveStagger:30}],["Loose",{arriveStagger:60}]]],
+  ["Feel",D_FEEL,feel("arriveB")],["Speed",D_SPEED,speed("arriveDur")]]],
+ ["Filing on ✓",[
+  ["Style","Shrink onto the pocket (the app today), or drop in behind its lip (the video).",[["Shrink",{fileStyle:"shrink"}],["Drop in",{fileStyle:"drop"}]]],
+  ["Delay","The pause between tapping ✓ and the card moving.",[["None",{fileDelay:.05}],["Short",{fileDelay:.12}],["Long",{fileDelay:.25}]]],
+  ["Travel","How long the card takes to reach the pocket.",[["Fast",{fileDur:.25}],["Normal",{fileDur:.375}],["Slow",{fileDur:.5}]]],
+  ["Turn","How far the card tilts as it drops. Drop in only.",[["None",{fileTurn:0}],["Slight",{fileTurn:-5}],["Big",{fileTurn:-12}]]],
+  ["Squash","How much the pocket flattens as the card lands. Drop in only.",[["None",{sqY:1}],["Soft",{sqY:.94}],["Medium",{sqY:.88}],["Big",{sqY:.8}]]],
+  ["Squash feel","How the pocket springs back. "+D_FEEL,feel("sqB")],["Squash speed",D_SPEED,speed("sqDur")],
+  ["Slip pop","How far the bill's slip jumps up as the card lands. Drop in only.",[["None",{slipPop:0}],["Small",{slipPop:4}],["Medium",{slipPop:8}],["Big",{slipPop:14}]]],
+  ["Slip feel","How the slip settles back down. "+D_FEEL,feel("slipSB")],["Slip speed",D_SPEED,speed("slipDur")],
+  ["Hold","How long the pocket stays in view after the card lands, before the sheet closes.",[["Short",{hold:.25}],["Normal",{hold:.45}],["Long",{hold:.7}]]]]],
+ ["View",[
+  ["Haptics","Shows a marker where the phone would give a tap you can feel.",onOff("haptics")],
+  ["Reduce Motion","Plays everything as iOS's Reduce Motion would: fades instead of movement.",onOff("reduce")],
+  ["Dark","",onOff("dark")],
+  ["Slow motion","Slows everything down, to watch a moment closely.",[["1×",{slow:1}],["½×",{slow:.5}],["¼×",{slow:.25}]]],
+  ["Tap areas","Outlines everything you can tap in magenta.",onOff("taps")],
+  ["Pockets","How many categories there are.",[["1",{pockets:1}],["3",{pockets:3}],["6",{pockets:6}],["14",{pockets:14}]]]]],
 ];
-/* one line under each control saying what it changes */
-const DESC = {"preset": "Loads a whole set of values: the app as it is today, or the motion from the video. Changing anything makes it Custom.", "pressOn": "Whether pockets, the emoji tile, keys and ✓ shrink a little while your finger is on them.", "pressDip": "How small a pressed thing gets: 0.93 is 93% of its size.", "pressDur": "How long it takes to spring back to full size when you let go.", "pressB": "How much it overshoots on the way back: 0 settles without overshoot, higher wobbles more.", "popOn": "Whether ✓ itself pops when you tap it.", "popFrom": "The size ✓ starts its pop from before it springs back to full size.", "popDur": "How long ✓ takes to spring back to full size.", "popB": "How much ✓ overshoots as it springs back.", "xfadeDur": "How long the card takes to fade from its old colour to the picked pocket's colour.", "xfadeCurve": "How that fade is paced: slow at both ends, or quick at first and gentle at the end.", "emojiEased": "Glide the emoji into its tile without any bounce, as the app does today, instead of a spring.", "emojiDur": "How long the emoji takes to drop into its tile and settle.", "emojiB": "How much the emoji bounces as it lands in the tile.", "liftEased": "Glide the picked pocket up without any bounce, as the app does today, instead of a spring.", "liftDur": "How long the picked pocket takes to rise, and the one you left to settle back.", "liftB": "How much the picked pocket overshoots as it rises.", "slipB": "How much the bill's name slip bounces as it rises into the picked pocket.", "arriveOn": "Whether the pockets slide in one after another when they appear, instead of all at once.", "arriveOff": "How far below its place each pocket starts.", "arriveStagger": "The delay between one pocket starting to move and the next.", "arriveDur": "How long each pocket takes to settle into place.", "arriveB": "How much each pocket overshoots as it settles.", "fileStyle": "How the card leaves on ✓: shrinking onto its pocket (the app today), or dropping in behind the lip (the video).", "fileDelay": "The pause between tapping ✓ and the card starting to move.", "fileDur": "How long the card takes to travel into the pocket.", "fileTurn": "How far the card tilts as it drops, in degrees; negative tilts it left. Drop into pocket only.", "sqY": "How flat the pocket squashes when the card lands: lower is flatter, and it widens to match. Drop into pocket only.", "sqDur": "How long the pocket takes to spring back from the squash. Drop into pocket only.", "sqB": "How much the pocket wobbles as it springs back. Drop into pocket only.", "slipPop": "How far the bill's slip jumps up as the card lands. Drop into pocket only.", "slipDur": "How long the slip takes to settle back down. Drop into pocket only.", "slipSB": "How much the slip bounces as it settles. Drop into pocket only.", "hold": "How long the pocket stays in view after the card lands, before the sheet closes.", "haptics": "Shows a marker where the phone would give a tap you can feel.", "reduce": "Plays everything as iOS's Reduce Motion setting would: fades instead of movement.", "dark": "Switches to dark mode.", "slow": "Slows everything down, to watch a moment closely.", "taps": "Outlines everything you can tap in magenta, to check the tap areas.", "pockets": "How many categories there are, to see a few pockets or enough to scroll under the card."};
+const VIEW_KEYS=["haptics","reduce","dark","slow","taps","pockets"];
+const same=(a,b)=>typeof a==="number"&&typeof b==="number"?Math.abs(a-b)<1e-6:a===b;
+const matches=vals=>Object.keys(vals).every(k=>same(S[k],vals[k]));
+
 const ctl=document.createElement("div"); ctl.className="ctl";
-const inputs={};
+const chipRows=[];
 function buildControls(){
-  const heads=[]; let html="";
-  SCHEMA.forEach(r=>{
-    if(r.length===1){ ctl.insertAdjacentHTML("beforeend",`<h2>${r[0]}</h2>`); return; }
-    const [k,label,type,opts]=r, row=document.createElement("div"); row.className="row";
-    let inp;
-    if(type==="check"){ inp=document.createElement("input"); inp.type="checkbox"; }
-    else if(type==="select"){ inp=document.createElement("select"); opts.forEach(o=>inp.insertAdjacentHTML("beforeend",`<option value="${o[0]}">${o[1]}</option>`)); }
-    else { const [mn,mx,st]=type.split(","); inp=document.createElement("input"); inp.type="range"; inp.min=mn; inp.max=mx; inp.step=st; }
-    const lab=document.createElement("label"); lab.textContent=label; row.appendChild(lab);
-    let val=null;
-    if(inp.type==="range"){ val=document.createElement("span"); val.className="v"; row.appendChild(val); }
-    row.appendChild(inp); ctl.appendChild(row); inputs[k]={inp,val};
-    if(DESC[k]) ctl.insertAdjacentHTML("beforeend",`<p class="desc">${DESC[k]}</p>`);
-    inp.addEventListener("input",()=>onControl(k,inp));
+  // presets and saved setups
+  ctl.insertAdjacentHTML("beforeend",`<h2>Start from</h2><div class="chips" id="presetChips"></div>
+    <p class="desc">The app as it is today, or the motion from the video. Changing any step below makes it Custom.</p>
+    <h2>Your setups</h2><div class="slots" id="slots"></div>
+    <p class="desc">Save the current steps to A, B or C, then tap a letter to flip back to it and compare.</p>`);
+  GROUPS.forEach(([title,rows])=>{
+    ctl.insertAdjacentHTML("beforeend",`<h2>${title}</h2>`);
+    rows.forEach(([label,desc,opts])=>{
+      const wrap=document.createElement("div"); wrap.className="step";
+      wrap.innerHTML=`<div class="sl">${label}</div><div class="chips"></div>`+(desc?`<p class="desc">${desc}</p>`:"");
+      const box=wrap.querySelector(".chips"), chips=[];
+      opts.forEach(([l,vals])=>{
+        const b=document.createElement("button"); b.className="chip"; b.textContent=l; box.appendChild(b);
+        b.addEventListener("click",()=>choose(vals)); chips.push({b,vals});
+      });
+      chipRows.push(chips); ctl.appendChild(wrap);
+    });
   });
   const b=document.createElement("div"); b.className="btns";
-  b.innerHTML='<button id="bReset">Reset bill</button><button id="bEmpty">Start empty</button>'; ctl.appendChild(b);
+  b.innerHTML='<button id="bReset">Reset card</button><button id="bEmpty">Start empty</button>'; ctl.appendChild(b);
   ctl.insertAdjacentHTML("beforeend",'<h2>Values for SwiftUI</h2><pre id="swift"></pre>');
-  ctl.insertAdjacentHTML("beforeend",'<h2>What it lies about</h2><ul class="lies"><li>No Liquid Glass.</li><li>No Dynamic Type.</li><li>No real haptics: the markers stand in.</li><li>No iOS keyboard: the name field uses the browser\'s.</li><li>No calendar or repeat wheel: tapping date or repeat only shows its ring.</li><li>Frame timing isn\'t ProMotion\'s.</li><li>Springs use SwiftUI\'s parameters, so the numbers port; the feel on device will still differ slightly.</li></ul>');
+  ctl.insertAdjacentHTML("beforeend",'<h2>What it lies about</h2><ul class="lies"><li>No Liquid Glass.</li><li>No Dynamic Type.</li><li>No real haptics: the markers stand in.</li><li>No iOS keyboard: the name field uses the browser\'s.</li><li>No calendar or repeat wheel: tapping date or repeat only shows its ring.</li><li>Frame timing isn\'t ProMotion\'s.</li><li>Springs use SwiftUI\'s parameters, so the steps port by name; the feel on device will still differ slightly.</li></ul>');
   ctl.querySelector("#bReset").onclick=()=>fullReset(false);
   ctl.querySelector("#bEmpty").onclick=()=>fullReset(true);
+  const pc=ctl.querySelector("#presetChips");
+  [["built","As built (v0.6.0)"],["video","Video"]].forEach(([k,l])=>{
+    const c=document.createElement("button"); c.className="chip"; c.textContent=l; c.dataset.k=k; pc.appendChild(c);
+    c.addEventListener("click",()=>{ Object.assign(S,k==="built"?BUILT:VIDEO); S.preset=k; afterChange([]); });
+  });
+  const sl=ctl.querySelector("#slots");
+  ["A","B","C"].forEach(L=>{
+    const g=document.createElement("div"); g.className="slot";
+    g.innerHTML=`<button class="chip load">${L}</button><button class="save">Save</button>`;
+    g.querySelector(".load").addEventListener("click",()=>{ const v=slots[L]; if(!v) return; Object.assign(S,v); S.preset="slot"+L; afterChange([]); });
+    g.querySelector(".save").addEventListener("click",()=>{ const v={}; PRESET_KEYS.forEach(k=>v[k]=S[k]); slots[L]=v; S.preset="slot"+L; saveSlots(); syncControls(); toast("Saved to "+L); });
+    sl.appendChild(g);
+  });
 }
-function onControl(k,inp){
-  const t=inp.type;
-  if(t==="checkbox") S[k]=inp.checked;
-  else if(t==="range") S[k]=parseFloat(inp.value);
-  else if(k==="slow") S[k]=parseFloat(inp.value);
-  else if(k==="pockets") S[k]=parseInt(inp.value,10);
-  else S[k]=inp.value;
-  if(k==="preset"){ if(S.preset==="built") Object.assign(S,BUILT); else if(S.preset==="video") Object.assign(S,VIDEO); }
-  else if(PRESET_KEYS.includes(k)) S.preset="custom";
-  if(k==="dark"){ S.darkTouched=true; applyTheme(); }
-  if(k==="taps") document.body.classList.toggle("taps",S.taps);
-  if(k==="pockets"){ if(!ui.busy) { buildPockets(); } }
-  if(k==="reduce"&&S.reduce) { /* takes effect on the next tween */ }
+let slots={}; try{ slots=JSON.parse(localStorage.getItem("tilly-card-polish-slots")||"{}")||{}; }catch(e){}
+function saveSlots(){ try{ localStorage.setItem("tilly-card-polish-slots",JSON.stringify(slots)); }catch(e){} }
+function choose(vals){
+  const keys=Object.keys(vals);
+  Object.assign(S,vals);
+  if(keys.some(k=>PRESET_KEYS.includes(k))) S.preset="custom";
+  afterChange(keys);
+}
+function afterChange(keys){
+  if(keys.includes("dark")){ S.darkTouched=true; }
+  applyTheme();
+  document.body.classList.toggle("taps",!!S.taps);
+  if((keys.length===0||keys.includes("pockets"))&&!ui.busy) buildPockets();
   syncControls(); save();
 }
 function syncControls(){
-  for(const k in inputs){
-    const {inp,val}=inputs[k], v=S[k];
-    if(inp.type==="checkbox") inp.checked=!!v; else inp.value=String(v);
-    if(val) val.textContent=(+v).toFixed(Math.abs(+v)>=10?0:2);
-  }
+  chipRows.forEach(chips=>chips.forEach(({b,vals})=>b.classList.toggle("on",matches(vals))));
+  ctl.querySelectorAll("#presetChips .chip").forEach(c=>c.classList.toggle("on",S.preset===c.dataset.k));
+  ctl.querySelectorAll("#slots .slot").forEach((g,i)=>{ const L="ABC"[i];
+    g.querySelector(".load").classList.toggle("on",S.preset==="slot"+L); g.querySelector(".load").classList.toggle("empty",!slots[L]); });
   swiftOut();
 }
 const f2=n=>(+n).toFixed(2);
 function swiftOut(){
-  const sp=(d,b)=>`Animation.spring(duration: ${f2(d)}, bounce: ${f2(b)})`;
+  const sp=(d,b)=> same(b,0)?`Animation.smooth(duration: ${f2(d)})` : same(b,.15)?`Animation.snappy(duration: ${f2(d)})`
+    : same(b,.3)?`Animation.bouncy(duration: ${f2(d)})` : same(b,.5)?`Animation.bouncy(duration: ${f2(d)}, extraBounce: 0.2)`
+    : `Animation.spring(duration: ${f2(d)}, bounce: ${f2(b)})`;
   const L=[];
   L.push(S.pressOn?`static let press = ${sp(S.pressDur,S.pressB)}  // dip ${f2(S.pressDip)}`:`// press: off`);
   L.push(S.popOn?`static let checkPop = ${sp(S.popDur,S.popB)}  // from ${f2(S.popFrom)}`:`// checkPop: off`);
