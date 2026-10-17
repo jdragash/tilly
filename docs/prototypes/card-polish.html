@@ -176,6 +176,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .btns button{flex:1;background:var(--ctl);border-radius:10px;padding:9px;font-weight:600}
 pre#swift{background:var(--ctl);border-radius:10px;padding:10px;font:11px/1.5 ui-monospace,Menlo,monospace;overflow-x:auto;
   white-space:pre;margin:6px 0;-webkit-user-select:text;user-select:text}
+.desc{font-size:11.5px;line-height:1.35;color:var(--sec);margin:-2px 0 8px;max-width:280px}
 .lies{font-size:12px;color:var(--sec);padding-left:16px;margin:6px 0}
 .lies li{margin-bottom:4px}
 </style>
@@ -738,6 +739,8 @@ const SCHEMA = [
  ["slow","Slow motion","select",[["1","1×"],["0.5","0.5×"],["0.25","0.25×"]]],["taps","Show tap areas","check"],
  ["pockets","Pockets","select",[["1","1"],["3","3"],["6","6"],["14","14"]]],
 ];
+/* one line under each control saying what it changes */
+const DESC = {"preset": "Loads a whole set of values: the app as it is today, or the motion from the video. Changing anything makes it Custom.", "pressOn": "Whether pockets, the emoji tile, keys and ✓ shrink a little while your finger is on them.", "pressDip": "How small a pressed thing gets: 0.93 is 93% of its size.", "pressDur": "How long it takes to spring back to full size when you let go.", "pressB": "How much it overshoots on the way back: 0 settles without overshoot, higher wobbles more.", "popOn": "Whether ✓ itself pops when you tap it.", "popFrom": "The size ✓ starts its pop from before it springs back to full size.", "popDur": "How long ✓ takes to spring back to full size.", "popB": "How much ✓ overshoots as it springs back.", "xfadeDur": "How long the card takes to fade from its old colour to the picked pocket's colour.", "xfadeCurve": "How that fade is paced: slow at both ends, or quick at first and gentle at the end.", "emojiEased": "Glide the emoji into its tile without any bounce, as the app does today, instead of a spring.", "emojiDur": "How long the emoji takes to drop into its tile and settle.", "emojiB": "How much the emoji bounces as it lands in the tile.", "liftEased": "Glide the picked pocket up without any bounce, as the app does today, instead of a spring.", "liftDur": "How long the picked pocket takes to rise, and the one you left to settle back.", "liftB": "How much the picked pocket overshoots as it rises.", "slipB": "How much the bill's name slip bounces as it rises into the picked pocket.", "arriveOn": "Whether the pockets slide in one after another when they appear, instead of all at once.", "arriveOff": "How far below its place each pocket starts.", "arriveStagger": "The delay between one pocket starting to move and the next.", "arriveDur": "How long each pocket takes to settle into place.", "arriveB": "How much each pocket overshoots as it settles.", "fileStyle": "How the card leaves on ✓: shrinking onto its pocket (the app today), or dropping in behind the lip (the video).", "fileDelay": "The pause between tapping ✓ and the card starting to move.", "fileDur": "How long the card takes to travel into the pocket.", "fileTurn": "How far the card tilts as it drops, in degrees; negative tilts it left. Drop into pocket only.", "sqY": "How flat the pocket squashes when the card lands: lower is flatter, and it widens to match. Drop into pocket only.", "sqDur": "How long the pocket takes to spring back from the squash. Drop into pocket only.", "sqB": "How much the pocket wobbles as it springs back. Drop into pocket only.", "slipPop": "How far the bill's slip jumps up as the card lands. Drop into pocket only.", "slipDur": "How long the slip takes to settle back down. Drop into pocket only.", "slipSB": "How much the slip bounces as it settles. Drop into pocket only.", "hold": "How long the pocket stays in view after the card lands, before the sheet closes.", "haptics": "Shows a marker where the phone would give a tap you can feel.", "reduce": "Plays everything as iOS's Reduce Motion setting would: fades instead of movement.", "dark": "Switches to dark mode.", "slow": "Slows everything down, to watch a moment closely.", "taps": "Outlines everything you can tap in magenta, to check the tap areas.", "pockets": "How many categories there are, to see a few pockets or enough to scroll under the card."};
 const ctl=document.createElement("div"); ctl.className="ctl";
 const inputs={};
 function buildControls(){
@@ -753,6 +756,7 @@ function buildControls(){
     let val=null;
     if(inp.type==="range"){ val=document.createElement("span"); val.className="v"; row.appendChild(val); }
     row.appendChild(inp); ctl.appendChild(row); inputs[k]={inp,val};
+    if(DESC[k]) ctl.insertAdjacentHTML("beforeend",`<p class="desc">${DESC[k]}</p>`);
     inp.addEventListener("input",()=>onControl(k,inp));
   });
   const b=document.createElement("div"); b.className="btns";
