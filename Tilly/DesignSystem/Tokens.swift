@@ -146,6 +146,9 @@ enum Tokens {
         static let onCard: Color = .white
         static let onCardSoft: Color = .white.opacity(0.58)
         static let onCardDash: Color = .white.opacity(0.75)
+        /// A charged card's date in the timeline's stack, a touch softer than its name; from the
+        /// prototype.
+        static let onStackSoft: Color = .white.opacity(0.82)
         /// A peeking bill's name on its white slip, in both modes; from the prototype.
         static let onPocketPeek: Color = Color(white: 0.23)
     }
@@ -306,10 +309,23 @@ enum Tokens {
         /// far above the lip. From the prototype.
         static let pocketCardInset: CGFloat = 6
         static let pocketCardAboveLip: CGFloat = 10
+        /// The timeline's Wallet stack, from the prototype: how far each card runs on under the next,
+        /// how far in from the screen's sides it sits, where its content starts inside it, and the
+        /// clear space under a month's last card. Tuning values.
+        static let stackTuck: CGFloat = 12
+        static let stackInset: CGFloat = 12
+        static let stackTop: CGFloat = 11
+        static let stackLeading: CGFloat = 14
+        static let stackMonthBottom: CGFloat = 14
     }
 
     enum Size {
         static let row: CGFloat = 52
+        /// A row in the timeline's Wallet stack: the part of its card left showing above the next.
+        /// From the prototype; the timeline's only, every other list keeps `row`.
+        static let stackRow: CGFloat = 64
+        /// A card's picture in the stack, from the prototype.
+        static let stackPicture: CGFloat = 36
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
         /// A category's picture, by where it's drawn: replaces the font each emoji was set in.
@@ -500,6 +516,11 @@ enum Tokens {
         })
         static let pocketRadius: CGFloat = 3
         static let pocketY: CGFloat = -2
+        /// Along a charged card's top in the timeline's stack, falling on the card above: the
+        /// prototype's 0 -1 2.5 at 16% black.
+        static let stackColour: Color = .black.opacity(0.16)
+        static let stackRadius: CGFloat = 1.25
+        static let stackY: CGFloat = -1
     }
 
     enum Radius {
@@ -518,6 +539,8 @@ enum Tokens {
         static let pocket: CGFloat = 12
         static let pocketLipTop: CGFloat = 10
         static let pocketPeek: CGFloat = 6
+        /// A card's top corners in the timeline's stack; a month's last card is round all round.
+        static let stackCard: CGFloat = 14
     }
 }
 

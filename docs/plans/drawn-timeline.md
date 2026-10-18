@@ -372,6 +372,19 @@ the device while flinging through a year.
 - The boil can't be seen in a screenshot; Reduce Motion is the environment's `accessibilityReduceMotion`,
   read in `CategoryPictureView`. Check both on the phone.
 
+- **The stack needed no anchoring change.** The card is the row's `.background`, stretched
+  `stackTuck` past its bottom by a negative padding, so the row's height stays its own; a later
+  sibling in a `VStack` draws over an earlier one, so the next card covers the tuck. A month's
+  last card overhangs too: the section ends with a clear `stackTuck + stackMonthBottom`.
+  `TimelineView` is untouched. A calendar tap on a two-charge day landed its marker at 300.163pt
+  under a header ending at 300.133pt (Simulator).
+- **Frames logged during the calendar's zoom are scaled:** rows read 12.8pt tall mid-zoom. Read the
+  last line, once the zoom has settled.
+- **The opaque header hides the first card's wobble above its top**, up to about 4pt: a dotted top
+  edge shows a gap under the header. The prototype's 2px above the rows wouldn't cover it either.
+- Simulator flings through a year showed no blank frame in screenshots 0.4s apart; that says
+  little about hitches. The phone's Animation Hitches run is still owed.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

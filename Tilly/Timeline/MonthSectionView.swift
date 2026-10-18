@@ -25,11 +25,20 @@ struct MonthSectionView: View {
                 } label: {
                     // On the label, not the button: a plain button hit-tests its label's
                     // shape, so outside it the gap between name and amount stays dead.
-                    OccurrenceRow(entry: entry, isMarked: entry.date == markedDay)
+                    OccurrenceRow(
+                        entry: entry, isMarked: entry.date == markedDay,
+                        isLast: index == section.entries.count - 1
+                    )
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Edits this charge")
+            }
+            if !section.entries.isEmpty {
+                // The last card runs on `stackTuck` past its row, as every card does; this keeps
+                // that clear of the month below, with `stackMonthBottom` under it.
+                Color.clear
+                    .frame(height: Tokens.Space.stackTuck + Tokens.Space.stackMonthBottom)
             }
             if showsFirstWeekLine {
                 Text("This fills in as bills go out.")
