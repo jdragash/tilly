@@ -94,10 +94,16 @@ struct EditorCard: View {
     /// through it.
     private var fill: some View {
         ZStack {
-            cardShape
-                .fill(Tokens.CategoryColour.cardFill(category?.colour))
-                .id(category?.id)
-                .transition(.opacity)
+            Wash(
+                colour: category?.colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured,
+                cornerRadii: RectangleCornerRadii(
+                    topLeading: Tokens.Radius.card, bottomLeading: Tokens.Radius.card,
+                    bottomTrailing: Tokens.Radius.card, topTrailing: Tokens.Radius.card
+                ),
+                seed: stableSeed(category?.id.uuidString ?? "")
+            )
+            .id(category?.id)
+            .transition(.opacity)
         }
     }
 
@@ -243,7 +249,7 @@ struct EditorCard: View {
                 } else if let category {
                     CategoryPictureView(
                         picture: CategoryPicture(category), colour: category.colour, size: tileSize,
-                        onCard: true
+                        onCard: true, boils: true
                     )
                         .id(category.id)
                         .transition(.emojiDrop)

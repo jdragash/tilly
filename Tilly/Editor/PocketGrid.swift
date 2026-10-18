@@ -156,7 +156,7 @@ struct PocketGrid: View {
         .frame(maxWidth: .infinity)
         .frame(height: lip)
         .background(
-            Tokens.CategoryColour.cardFill(pocket.colour).opacity(Tokens.Opacity.pocketLip),
+            Tokens.CategoryColour.lipFill(pocket.colour).opacity(Tokens.Opacity.pocketLip),
             in: lipShape
         )
         .shadow(color: Tokens.Shadow.pocketColour, radius: Tokens.Shadow.pocketRadius, y: Tokens.Shadow.pocketY)

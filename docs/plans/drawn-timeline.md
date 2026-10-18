@@ -366,6 +366,12 @@ the device while flinging through a year.
   keyboard replaces them while a name is typed (`nameFocused`), so there's no second keyboard on screen.
   VoiceOver was not driven in the Simulator; labels and values are set but unheard.
 
+- **`Tokens.CategoryColour.cardFill` is gone, but the pockets' lips still wear its gradient**, now
+  `lipFill`: the pockets' look is out of this plan's scope. The card's wash reaches 3.5pt past its
+  bounds at its roughest, which the sheet doesn't clip.
+- The boil can't be seen in a screenshot; Reduce Motion is the environment's `accessibilityReduceMotion`,
+  read in `CategoryPictureView`. Check both on the phone.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

@@ -536,24 +536,24 @@ extension Tokens {
             return Image(uiImage: circle.withTintColor(uiColor(colour), renderingMode: .alwaysOriginal))
         }
 
-        /// The editor's card: the colour lit toward its top left corner and shaded toward its bottom
-        /// right, as the prototype draws it (28% white, the colour, then 24% black, at 135°). A card
+        /// A pocket's lip: the colour lit toward its top left corner and shaded toward its bottom
+        /// right, as the prototype draws it (28% white, the colour, then 24% black, at 135°). A lip
         /// without a colour is grey, mixed the same way.
-        static func cardFill(_ colour: Tilly.CategoryColour?) -> LinearGradient {
+        static func lipFill(_ colour: Tilly.CategoryColour?) -> LinearGradient {
             let base = colour.map(color) ?? Chart.uncoloured
             return LinearGradient(
                 colors: [
-                    base.mix(with: .white, by: cardLight, in: .device),
+                    base.mix(with: .white, by: lipLight, in: .device),
                     base,
-                    base.mix(with: .black, by: cardShade, in: .device),
+                    base.mix(with: .black, by: lipShade, in: .device),
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         }
 
-        private static let cardLight: Double = 0.28
-        private static let cardShade: Double = 0.24
+        private static let lipLight: Double = 0.28
+        private static let lipShade: Double = 0.24
 
         private static func uiColor(_ colour: Tilly.CategoryColour) -> UIColor {
             switch colour {
