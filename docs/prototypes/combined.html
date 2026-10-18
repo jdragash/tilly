@@ -1,0 +1,2288 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tilly, combined</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap">
+<!--
+  Tilly, the combined prototype. 2026-10-17 to 2026-10-18.
+  Questions it settled, one sidebar topic each, settled by Jake on 2026-10-18:
+  Look: Drawn (symbols, I), the timeline as a Wallet stack, colour cards, a white sheet.
+  Entry: the hand picks the category. Landing: Card leads, the card flips to its outline and, after a
+  beat, drops into its row. Opening a bill: Flip back, and a charged card never flips.
+  All bills: folders two across, neutral, cream cards, every bill shown, and a folder still opens.
+  All bills runs in flow-bills.html beside it, which needs the folder served (python3 -m http.server).
+  Briefs: docs/briefs/drawn-timeline/brief.md, and the motion and All bills briefs that follow.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
+-->
+<style>
+:root{
+  --page:#E5E5EA; --sheet:#FFFFFF; --ground:#F2F2F7; --fg:#000000; --sec:#6C6C70; --hair:rgba(0,0,0,.14);
+  --btn:#F2F2F7; --btnfg:#000; --off:#E5E5EA; --offfg:#AEAEB2; --accent:#2A78D6; --keyflash:#EEEEEE;
+  --cardsh:0 12px 28px rgba(0,0,0,.16); --panel:#FFFFFF; --panelfg:#000; --ctl:#F2F2F7; --rowbar:#E3E3E8;
+  --newdash:#AEAEB2; --newfg:#8E8E93;
+}
+html.dark{
+  --page:#111113; --sheet:#1C1C1E; --ground:#000000; --fg:#FFFFFF; --sec:#98989F; --hair:rgba(255,255,255,.2);
+  --btn:#2C2C2E; --btnfg:#fff; --off:#3A3A3C; --offfg:#6C6C70; --accent:#0A84FF; --keyflash:#3A3A3C;
+  --cardsh:0 12px 28px rgba(0,0,0,.4); --panel:#1C1C1E; --panelfg:#fff; --ctl:#2C2C2E; --rowbar:#1C1C1E;
+  --newdash:#636366; --newfg:#98989F; color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--page);color:var(--fg);
+  font:14px/1.3 -apple-system,system-ui,"SF Pro Text",Helvetica,Arial,sans-serif;touch-action:manipulation;
+  -webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none}
+.noselect,.noselect *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* ---------- stage + phone ---------- */
+/* in normal flow with a real height, so a host that sizes its frame to the page still shows it */
+#stage{position:relative;height:100vh;height:100dvh;min-height:640px;display:flex;align-items:center;justify-content:center}
+#phoneBox{position:relative;flex:none}
+#phone{position:absolute;left:0;top:0;width:402px;height:874px;border-radius:55px;overflow:hidden;background:var(--ground);
+  box-shadow:0 0 0 10px #111,0 30px 80px rgba(0,0,0,.3);transform-origin:0 0;
+  --sat:47px;--sab:34px}
+@media (min-width:900px){ #stage{margin-right:340px} }
+@media (max-width:499px){
+  #stage{display:block}
+  #phoneBox{width:100%!important;height:100%!important}
+  #phone{width:100%;height:100%;border-radius:0;box-shadow:none;transform:none!important;
+    --sat:env(safe-area-inset-top,0px);--sab:calc(env(safe-area-inset-bottom,0px) + 8px)}
+}
+#ground{position:absolute;inset:0;padding:calc(var(--sat) + 8px) 16px 0}
+#ground h1{font-size:34px;margin:8px 0 18px;font-weight:700;color:var(--sec);opacity:.5}
+.grow{height:62px;border-radius:14px;background:var(--rowbar);margin-bottom:10px;opacity:.7}
+
+/* ---------- sheet ---------- */
+#sheet{position:absolute;left:0;right:0;bottom:0;top:calc(var(--sat) + 10px);background:var(--sheet);
+  border-radius:38px 38px 0 0;box-shadow:0 -4px 30px rgba(0,0,0,.12);will-change:transform}
+.hbtn{position:absolute;top:16px;width:44px;height:44px;border-radius:50%;background:var(--btn);
+  box-shadow:inset 0 0 0 .5px var(--hair);display:flex;align-items:center;justify-content:center;font-size:18px;
+  color:var(--btnfg);z-index:6}
+#xBtn{left:16px} #okBtn{right:16px;background:var(--off);color:var(--offfg)}
+#okBtn.ok{background:var(--accent);color:#fff}
+#okBtn svg{width:20px;height:20px}
+
+/* ---------- card ---------- */
+.card{position:absolute;left:22px;right:22px;top:76px;aspect-ratio:1.586;border-radius:20px;box-shadow:var(--cardsh);
+  z-index:5;color:#fff;touch-action:manipulation;will-change:transform}
+.face{position:absolute;inset:0;border-radius:20px}
+#faceB{opacity:0}
+.cin{position:absolute;inset:0;padding:16px 18px;border-radius:20px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.amt{flex:1;min-width:0;height:64px;display:flex;align-items:center;white-space:nowrap;cursor:pointer;text-align:left}
+.amt #amtT{font-size:60px;font-weight:700;letter-spacing:-.026em;font-variant-numeric:tabular-nums;line-height:64px;
+  font-family:-apple-system,system-ui,"SF Pro Display",Helvetica,Arial,sans-serif;display:inline-block}
+.amt.faint #amtT{color:rgba(255,255,255,.58)}
+.caret{display:none;width:2px;height:.82em;background:#fff;margin-left:2px;animation:blink 1.06s steps(1) infinite;
+  flex:none}
+.caret.on{display:inline-block}
+@keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+.dd{display:flex;flex-direction:column;gap:2px;align-items:flex-end;padding-top:2px}
+.dl{display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:13px;font-weight:600;line-height:16px;
+  padding:14px 0;margin:-14px 0;color:#fff;position:relative}
+.dl .t{position:relative;padding:3px;margin:-3px;display:inline-flex;align-items:center;gap:5px}
+.dl .t::after,.tile::after{content:"";position:absolute;inset:0;border:2px solid #fff;border-radius:6px;opacity:0;transition:opacity .15s}
+.dl.open .t::after{opacity:1}
+.dl svg{width:10px;height:10px;color:rgba(255,255,255,.58);flex:none}
+.nm{position:absolute;left:6px;bottom:10px;display:grid;padding:6px 12px;border-radius:9px;max-width:calc(100% - 66px);
+  font-size:22px;line-height:26px;font-weight:600;cursor:text}
+.nm .ghost{grid-area:1/1;visibility:hidden;white-space:pre;overflow:hidden}
+.nm input{grid-area:1/1;width:0;min-width:100%;background:transparent;border:0;outline:0;padding:0;color:#fff;font:inherit;
+  caret-color:#fff;-webkit-user-select:text;user-select:text}
+.nm input::placeholder{color:rgba(255,255,255,.58);opacity:1}
+.dash{position:absolute;inset:0;border:2px dashed rgba(255,255,255,.75);border-radius:9px;transition:opacity .15s;pointer-events:none}
+.nm.has .dash{opacity:0}
+.tile{position:absolute;right:18px;bottom:16px;width:46px;height:46px;border-radius:12.88px;display:flex;align-items:center;
+  justify-content:center;color:#fff}
+.tile .dash{border-radius:12.88px}
+.tile.has .dash{opacity:0}
+.tile::after{inset:-4px;border-radius:16px}
+.tile.open::after{opacity:1}
+.emo{font-size:28px;line-height:1;display:block}
+.badge{position:absolute;right:-5px;bottom:-5px;width:16px;height:16px;border-radius:50%;background:#fff;color:#555;
+  display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tile.has .badge{display:flex}
+.badge svg{width:9px;height:9px}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.55}}
+.breathe .dash{animation:breathe 1.8s ease-in-out infinite}
+.taps .dl,.taps .tile,.taps .nm,.taps .amt,.taps .key,.taps .hbtn{outline:1px solid magenta;outline-offset:-1px}
+
+/* ---------- keypad ---------- */
+#keypad{position:absolute;left:22px;right:22px;bottom:var(--sab);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;z-index:2}
+#keypad.off{visibility:hidden;pointer-events:none}
+.key{height:64px;border-radius:14px;font-size:26px;display:flex;align-items:center;justify-content:center;color:var(--fg);
+  font-family:-apple-system,system-ui,sans-serif;position:relative}
+.key.flash{background:var(--keyflash)}
+
+/* ---------- pockets ---------- */
+#pscroll{position:absolute;left:0;right:0;top:60px;bottom:0;overflow-y:auto;overflow-x:hidden;z-index:2;scrollbar-width:none;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#pscroll::-webkit-scrollbar{display:none}
+#pscroll.off{visibility:hidden;pointer-events:none}
+#grid{display:grid;grid-template-columns:repeat(3,108px);justify-content:center;column-gap:14px;row-gap:22px;
+  padding-bottom:calc(50px + var(--sab))}
+.pk{position:relative;width:108px;height:86px;transform-origin:50% 100%;touch-action:pan-y}
+.pback{position:absolute;inset:0;border-radius:12px}
+.pslip{position:absolute;left:10px;right:10px;height:34px;border-radius:6px;background:#fff;color:#3A3A3C;
+  font-size:11px;font-weight:600;padding:2px 7px;box-shadow:0 -1px 3px rgba(0,0,0,.14);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;line-height:15px}
+.pslot{position:absolute;left:0;top:0;width:108px;height:86px;z-index:5;pointer-events:none}
+.plip{position:absolute;left:0;right:0;bottom:0;height:46px;border-radius:10px 10px 12px 12px;z-index:6;color:#fff;
+  font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;
+  box-shadow:0 -2px 6px rgba(0,0,0,.14);padding:0 6px;white-space:nowrap;overflow:hidden}
+.plip span:last-child{overflow:hidden;text-overflow:ellipsis}
+.pring{position:absolute;inset:-2.5px;border-radius:14px;border:2.5px solid var(--accent);z-index:7;opacity:0;
+  transition:opacity .15s;pointer-events:none}
+.pk.chosen .pring{opacity:1}
+.pk.newpk{border:2px dashed var(--newdash);border-radius:12px}
+.pk.newpk .nl{position:absolute;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;justify-content:center;
+  color:var(--newfg);font-size:13px;font-weight:600}
+
+/* ---------- overlays inside phone ---------- */
+.pill{position:absolute;left:50%;transform:translateX(-50%);z-index:30;padding:9px 16px;border-radius:99px;font-size:13px;
+  font-weight:600;white-space:nowrap}
+#again{top:46%;background:var(--accent);color:#fff;display:none;font-size:15px;padding:12px 22px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+#haptic{bottom:calc(var(--sab) + 70px);background:rgba(30,30,30,.82);color:#fff;opacity:0;pointer-events:none}
+#toast{bottom:calc(var(--sab) + 28px);background:rgba(30,30,30,.88);color:#fff;opacity:0;pointer-events:none;
+  transition:opacity .2s}
+
+/* ---------- controls ---------- */
+#panel{display:none}
+@media (min-width:900px){
+  #panel{display:block;position:fixed;right:0;top:0;bottom:0;width:340px;overflow-y:auto;background:var(--panel);color:var(--panelfg);
+    padding:16px 18px 40px;border-left:1px solid var(--hair);z-index:50}
+  #tuneBtn,#drawer{display:none!important}
+}
+/* in the sheet header's empty middle, clear of the keypad */
+#tuneBtn{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 32px);width:72px;height:32px;border-radius:16px;
+  background:#111;color:#fff;font-weight:600;font-size:13px;z-index:90;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+#drawer{position:fixed;left:0;right:0;bottom:0;max-height:70%;background:var(--panel);color:var(--panelfg);z-index:100;
+  border-radius:22px 22px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);overflow-y:auto;transform:translateY(105%);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1);padding:0 16px calc(24px + env(safe-area-inset-bottom,0px))}
+#drawer.open{transform:none}
+#drawer .dh{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;
+  padding:14px 0 8px;font-size:17px;font-weight:700;z-index:2}
+#dclose{width:34px;height:34px;border-radius:50%;background:var(--ctl);font-size:15px}
+.ctl h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);margin:18px 0 6px;font-weight:700}
+.row{display:flex;align-items:center;gap:10px;min-height:32px;font-size:13px}
+.row label{flex:1;min-width:0}
+.row .v{width:46px;text-align:right;font-variant-numeric:tabular-nums;color:var(--sec);font-size:12px}
+.row input[type=range]{width:120px;flex:none;accent-color:var(--accent)}
+.row select{font:inherit;font-size:13px;background:var(--ctl);color:inherit;border:0;border-radius:8px;padding:5px 8px}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin:10px 0}
+.btns button{flex:1;background:var(--ctl);border-radius:10px;padding:9px;font-weight:600}
+pre#swift{background:var(--ctl);border-radius:10px;padding:10px;font:11px/1.5 ui-monospace,Menlo,monospace;overflow-x:auto;
+  white-space:pre;margin:6px 0;-webkit-user-select:text;user-select:text}
+.step{margin:6px 0 10px}
+.step .sl{font-size:13px;font-weight:600;margin-bottom:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--ctl);border-radius:99px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--panelfg);min-height:32px}
+.chip.on{background:var(--accent);color:#fff}
+.slots{display:flex;gap:10px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.slot .load{width:52px}
+.slot .load.empty{opacity:.4}
+.slot .save{font-size:11px;color:var(--accent);font-weight:600;padding:2px 6px}
+.desc{font-size:11.5px;line-height:1.35;color:var(--sec);margin:-2px 0 8px;max-width:280px}
+.lies{font-size:12px;color:var(--sec);padding-left:16px;margin:6px 0}
+.lies li{margin-bottom:4px}
+
+/* ---------- the timeline behind the sheet ---------- */
+:root{ --well:#E5E5EA; --glass:rgba(255,255,255,.72); --glassedge:rgba(0,0,0,.08); --raise:#FFFFFF; }
+html.dark{ --well:#2C2C2E; --glass:rgba(58,58,60,.72); --glassedge:rgba(255,255,255,.12); --raise:#1C1C1E; }
+#ground{display:none}
+#sheet{z-index:10}
+#topbar{position:absolute;left:0;right:0;top:0;height:calc(var(--sat) + 52px);padding:var(--sat) 16px 0;background:var(--ground);z-index:3;
+  display:flex;align-items:center;justify-content:space-between}
+.glass{height:40px;border-radius:20px;background:var(--glass);box-shadow:inset 0 0 0 .5px var(--glassedge),0 2px 10px rgba(0,0,0,.06);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:flex;align-items:center;font-size:17px;color:var(--fg)}
+#backB{padding:0 14px 0 10px;gap:2px;font-weight:500}
+#backB b{font-size:22px;font-weight:500;line-height:1;margin-top:-2px}
+.gpair{display:flex}
+.gpair button{width:44px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.gpair svg{width:20px;height:20px}
+#list{position:absolute;left:0;right:0;top:calc(var(--sat) + 52px);bottom:0;overflow-y:auto;overflow-x:hidden;z-index:1;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#list::-webkit-scrollbar{display:none}
+.mh{position:sticky;top:0;background:var(--ground);padding:6px 20px 10px;z-index:2}
+.mn{font-size:28px;font-weight:700;letter-spacing:-.01em;line-height:34px}
+.mf{font-size:15px;color:var(--sec);height:20px;line-height:20px;position:relative;overflow:hidden}
+.mf span{position:absolute;left:0;top:0;white-space:nowrap}
+.r{position:relative;height:64px;overflow:visible}
+.rin{position:absolute;inset:0;display:flex;align-items:center;gap:12px;padding:0 20px;border-radius:14px;transform-origin:50% 50%}
+.wash{position:absolute;top:2px;bottom:2px;left:10px;right:10px;border-radius:14px;opacity:0;pointer-events:none}
+.well{width:40px;height:40px;border-radius:10px;background:var(--well);display:flex;align-items:center;justify-content:center;font-size:21px;flex:none}
+.rt{flex:1;min-width:0}
+.rn{font-size:17px;line-height:22px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd{font-size:13px;line-height:17px;color:var(--sec)}
+.ra{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.past .rn,.past .ra{font-weight:400}
+.past .ra{color:var(--sec)}
+.endline{padding:18px 20px 120px;color:var(--sec);font-size:13px}
+.slamming{background:var(--raise);box-shadow:0 14px 34px rgba(0,0,0,.22)}
+
+/* ---------- things that fly, and pills ---------- */
+#fly{position:absolute;z-index:25;pointer-events:none;display:none}
+#fly .fs{position:absolute;inset:0;border-radius:6px;background:#fff;color:#3A3A3C;font-size:11px;font-weight:600;padding:2px 7px;
+  line-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 16px rgba(0,0,0,.22)}
+#fly .fr{position:absolute;inset:0;border-radius:14px;background:var(--raise);box-shadow:0 10px 26px rgba(0,0,0,.2);overflow:hidden}
+#fly .frin,.zrow{position:absolute;left:0;top:0;transform-origin:0 0}
+.zrow{opacity:0;pointer-events:none}
+#offpill{top:calc(var(--sat) + 120px);left:0;right:0;margin:0 auto;width:max-content;transform:none;background:var(--glass);color:var(--fg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:inset 0 0 0 .5px var(--glassedge),0 6px 20px rgba(0,0,0,.14);display:none;font-size:15px;padding:11px 18px;cursor:pointer;
+  transform-origin:50% 50%}
+#offpill i{font-style:normal;margin-left:6px}
+#again{top:auto;bottom:calc(var(--sab) + 26px)}
+
+/* ---------- controls additions ---------- */
+.opts{display:flex;flex-direction:column;gap:6px;margin:4px 0 6px}
+.opt{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:var(--ctl);border-radius:12px;padding:9px 12px}
+.opt b{font-size:14px}
+.opt span{font-size:11.5px;line-height:1.35;color:var(--sec);margin-top:2px}
+.opt.on{background:var(--accent);color:#fff}
+.opt.on span{color:rgba(255,255,255,.85)}
+.ios{background:var(--ctl);border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.45;margin:4px 0}
+.ios p{margin:0 0 6px} .ios p:last-child{margin:0}
+.ios code{font:11px ui-monospace,Menlo,monospace}
+.feas{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:6px;padding:2px 6px;margin-bottom:6px;color:#fff}
+#replayB{width:100%;background:var(--accent);color:#fff;border-radius:10px;padding:10px;font-weight:600;margin:12px 0 2px}
+.rin{transition:background-color .25s,box-shadow .25s}
+.ohead{font-size:11px;font-weight:700;color:var(--sec);margin:6px 0 0 2px}
+.view{position:absolute;left:0;right:0;top:calc(var(--sat) + 52px);bottom:0;overflow:hidden;z-index:1;background:var(--ground)}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);padding:0 10px;font-size:12px;color:var(--sec);text-align:center;margin-bottom:4px}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 10px;row-gap:6px}
+.mc{height:74px;display:flex;flex-direction:column;align-items:center;gap:3px;border-top:.5px solid var(--hair);padding-top:4px}
+.mc:not([data-d]){border-top-color:transparent}
+.md{font-size:14px;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%}
+.md.today{background:#FF3B30;color:#fff;font-weight:600}
+.me{height:22px;font-size:17px;line-height:22px;display:flex;align-items:center}
+.me span{display:inline-block;margin-left:-5px} .me span:first-child{margin-left:0}
+.me small{font-size:10px;color:var(--sec);margin-left:1px}
+.mt{font-size:11px;color:var(--sec);height:14px;line-height:14px;position:relative;overflow:hidden;min-width:44px;text-align:center}
+.mt span{position:absolute;left:0;right:0;top:0}
+.ygrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 12px;padding:4px 16px 0}
+.ymn{font-size:15px;font-weight:600;color:#FF3B30;margin-bottom:4px}
+.ym+.ym .ymn{color:var(--fg)}
+.ydots{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px}
+.ydots i{position:relative;height:12px;display:flex;align-items:center;justify-content:center}
+.ydots b{width:6px;height:6px;border-radius:50%;background:#AEAEB2;display:block}
+.ydots b.ring{background:transparent;box-shadow:inset 0 0 0 1.5px #8E8E93;width:7px;height:7px}
+.ydots i.td::after{content:"";position:absolute;width:3px;height:3px;border-radius:50%;background:#FF3B30;bottom:-1px}
+.ydots em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.ymt{font-size:12px;color:var(--sec);margin-top:4px;height:16px;line-height:16px;position:relative;overflow:hidden}
+.ymt span{position:absolute;left:0;top:0;white-space:nowrap}
+/* the hand */
+:root{--hcard:#FFFFFF} html.dark{--hcard:#2C2C2E}
+#hand{position:absolute;left:0;right:0;top:330px;bottom:0;z-index:2;touch-action:none;overflow:visible}
+#hand.off{visibility:hidden;pointer-events:none}
+.hc{position:absolute;left:50%;top:60px;width:84px;height:120px;margin-left:-42px;border-radius:10px;background:var(--hcard);color:var(--fg);
+  box-shadow:0 0 0 .5px rgba(0,0,0,.14),0 6px 14px rgba(0,0,0,.16);transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .2s;overflow:hidden;cursor:pointer}
+.hc::after{content:'';position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--c)}
+.hc.played{opacity:0;pointer-events:none}
+.hpip{position:absolute;left:6px;top:5px;font-size:13px;line-height:1}
+.hbig{position:absolute;left:0;right:0;top:33px;text-align:center;font-size:38px;line-height:1}
+.hname{position:absolute;left:4px;right:4px;bottom:11px;text-align:center;font-size:11px;font-weight:600;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc.hnew{background:transparent;box-shadow:inset 0 0 0 2px var(--newdash);color:var(--newfg)}
+.hc.hnew::after{display:none}
+.hc.hnew .hbig{font-size:30px;top:38px;font-weight:300}
+.hc.hflyer{position:absolute;margin:0;transition:none;z-index:40;pointer-events:none}
+/* ---------- timeline looks: how far the card carries into the list ---------- */
+.r{--g:var(--gl);--c:var(--cl)} html.dark .r{--g:var(--gd);--c:var(--cd)}
+:root{--dash:rgba(60,60,67,.32)} html.dark{--dash:rgba(235,235,245,.3)}
+/* A · Card chip: the well is the bill's card, shrunk */
+.lk-chip .well{width:46px;height:29px;border-radius:6px;background:var(--g);font-size:16px;
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.12)}
+/* B · Dashed and solid: rows are cards; to come is dashed like the editor's missing parts, charged is solid */
+.lk-paper .rin{top:3px;bottom:3px;left:12px;right:12px;padding:0 14px 0 16px;border-radius:14px;overflow:hidden}
+.lk-paper .r:not(.past) .rin{box-shadow:none;background:transparent}
+.lk-paper .r:not(.past) .rin::before{content:"";position:absolute;inset:0;border-radius:14px;border:1.5px dashed var(--dash);pointer-events:none}
+.lk-paper .r.past .rin{background:var(--raise);box-shadow:0 0 0 .5px rgba(0,0,0,.07),0 2px 8px rgba(0,0,0,.08)}
+html.dark .lk-paper .r.past .rin{box-shadow:0 0 0 .5px rgba(255,255,255,.1)}
+.lk-paper .rin::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.lk-paper .r:not(.past) .rin::after{left:4px;top:12px;bottom:12px;width:3px;border-radius:2px;opacity:.7}
+.lk-paper .wash{left:12px;right:12px;top:3px;bottom:3px}
+/* C · Wallet stack: rows are the cards themselves, in their colour, each overlapping the one above */
+.lk-stack .rows{padding:2px 0 14px}
+.lk-stack .rin{left:12px;right:12px;top:0;bottom:-12px;align-items:flex-start;padding:11px 14px 0;border-radius:14px;
+  background:var(--g);color:#fff;box-shadow:0 -1px 0 rgba(255,255,255,.18) inset,0 -3px 10px rgba(0,0,0,.14)}
+.lk-stack .well{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.24);font-size:19px}
+.lk-stack .rd{color:rgba(255,255,255,.82)}
+.lk-stack .past .ra{color:#fff}
+/* still to come: no fill, a dotted edge in the category colour, words set back */
+.lk-stack .r:not(.past) .rin{background:var(--ground);color:var(--fg);box-shadow:none}
+.lk-stack .r:not(.past) .rin::before{content:"";position:absolute;inset:0;border-radius:inherit;border:2px dotted var(--c);opacity:.85;pointer-events:none}
+.lk-stack .r:not(.past) .well{background:transparent;opacity:.75}
+.lk-stack .r:not(.past) .rn{font-weight:500;color:var(--sec)}
+.lk-stack .r:not(.past) .rd{color:var(--sec);opacity:.8}
+.lk-stack .r:not(.past) .ra{font-weight:500;color:var(--sec)}
+/* a card tucked under the next shows only its top corners rounded; the last in a month is whole */
+.lk-stack .rin{border-radius:14px 14px 0 0}
+.lk-stack .r:last-child .rin{border-radius:14px}
+.lk-stack .wash{left:12px;right:12px;top:0;bottom:-12px}
+.lk-paper #fly .fr,.lk-stack #fly .fr{background:transparent;box-shadow:none;overflow:visible}
+.lookbox{background:var(--ctl);border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.45;margin:4px 0}
+.lookbox p{margin:0 0 5px} .lookbox p:last-child{margin:0} .lookbox b{font-weight:700}
+.lk-paper .rin,.lk-stack .rin{isolation:isolate}
+.lk-paper .rin::before,.lk-stack .rin::before{z-index:-1}
+
+/* the list sits back under the sheet, the way iOS dims what a sheet covers, and comes forward as it goes */
+#scrim{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9}
+
+/* ---------- card tone: cream cards carry their colour only in the emoji tile ---------- */
+:root{--cream:#F8F2E6;--creamInk:#4A4337;--creamSoft:rgba(74,67,55,.55);--creamEdge:#E6DCC8}
+html.dark{--cream:#3D382F;--creamInk:#EDE5D6;--creamSoft:rgba(237,229,214,.55);--creamEdge:#2F2B24}
+.tone-cream:not(.sk-drawn) .face{background:var(--cream)!important;box-shadow:inset 0 0 0 .5px var(--creamEdge)}
+.tone-cream .card{color:var(--creamInk)}
+.tone-cream .amt.faint #amtT,.tone-cream .dl svg,.tone-cream .nm input::placeholder{color:var(--creamSoft)}
+.tone-cream .caret{background:var(--creamInk)}
+.tone-cream .dl{color:var(--creamInk)}
+.tone-cream .nm input{color:var(--creamInk);caret-color:var(--creamInk)}
+.tone-cream .dash{border-color:var(--creamSoft)}
+.tone-cream .dl .t::after,.tone-cream .tile::after{border-color:var(--creamInk)}
+.tone-cream .tile.has{background:var(--tilebg)}
+.tone-cream .lk-stack .past .rin,.tone-cream.lk-stack .past .rin{background:var(--cream);color:var(--creamInk);
+  box-shadow:inset 0 0 0 .5px var(--creamEdge),0 -3px 10px rgba(0,0,0,.1)}
+.tone-cream.lk-stack .past .rd{color:var(--creamSoft)}
+.tone-cream.lk-stack .past .ra{color:var(--creamInk)}
+.tone-cream.lk-stack .past .well{background:var(--g)}
+
+/* ---------- the sidebar, by topic ---------- */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.tab{background:var(--ctl);border-radius:10px;padding:8px 11px;font-size:13px;font-weight:600;color:var(--panelfg);display:flex;align-items:center;gap:6px}
+.tab.on{background:var(--panelfg);color:var(--panel)}
+.tab i{width:7px;height:7px;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px currentColor;opacity:.5}
+.tab.settled i{background:#30D158;box-shadow:none;opacity:1}
+.tab.drift i{background:#FF9F0A;box-shadow:none;opacity:1}
+.tbar{background:var(--ctl);border-radius:12px;padding:10px 12px;margin:8px 0 4px;display:flex;flex-direction:column;gap:8px}
+.tbar .row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.tbar .st{font-size:12px;line-height:1.35;color:var(--sec)}
+.tbar .st b{color:var(--panelfg)}
+.settleB{background:#30D158;color:#fff;border-radius:9px;padding:7px 12px;font-size:13px;font-weight:700;flex:none}
+.settleB.un{background:transparent;color:var(--sec);box-shadow:inset 0 0 0 1px var(--hair)}
+.topic[hidden]{display:none}
+.sync{font-size:11px;color:var(--sec);margin:4px 0 0}
+
+#billsF{position:absolute;left:0;top:0;width:100%;height:100%;border:0;z-index:20;background:transparent;visibility:hidden;transform:translateY(110%)}
+
+/* ---------- Tilly, Drawn: paper with grain, colour laid down as a wash, rounded type, the category drawn.
+   Drawn as entry-ux/all-bills-folders.html and docs/prototypes/edit-revisit-card.html draw it. The glass controls stay stock. ---------- */
+:root{--paper:#EFEEEA;--paperCard:#F7F6F2;--ink:#1C1B19;--ink2:#8A8883;
+  --drawnFont:ui-rounded,"SF Pro Rounded","Nunito",-apple-system,"Helvetica Neue",sans-serif}
+html.dark{--paper:#1D1C1A;--paperCard:#2B2A27;--ink:#F2F1EE;--ink2:#8D8B86}
+#phone.sk-drawn{background:var(--grain),var(--paper);font-family:var(--drawnFont);--ground:var(--paper);--fg:var(--ink);--sec:var(--ink2)}
+.sk-drawn #topbar,.sk-drawn .mh,.sk-drawn .view{background:var(--grain),var(--paper)}
+.sk-drawn #sheet{background:var(--grain),var(--paper);color:var(--ink)}
+.sk-drawn .amt #amtT{font-family:var(--drawnFont)}
+.sk-drawn .wsh{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);height:calc(100% + 12px);max-width:none;pointer-events:none;z-index:-1}
+.sk-drawn.lk-stack .rin{background:transparent!important;box-shadow:none!important}
+.sk-drawn.lk-stack .r:not(.past) .rin::before{display:none}
+.sk-drawn.lk-stack .r.past .rin .wsh{filter:drop-shadow(0 -1px 2.5px rgba(0,0,0,.16))}
+.sk-drawn .well{background:transparent!important}
+.sk-drawn.lk-stack .r:not(.past) .well{opacity:1}
+.sk-drawn .card{box-shadow:none;filter:drop-shadow(0 8px 16px rgba(0,0,0,.14))}
+.sk-drawn .face{box-shadow:none!important}
+.sk-drawn .tile.has{background:none!important}
+.sk-drawn .emo{width:34px;height:34px}
+.sk-drawn .hc{background:var(--grain),var(--paperCard);color:var(--ink)}
+.sk-drawn .hc .hpic{left:20px;right:20px;top:30px;height:44px;display:block}
+.ic{position:relative;display:block;width:100%;height:100%}
+.ic>img.u{position:absolute;left:-6.5%;top:-6.5%;width:113%;height:113%;max-width:none}
+.ic>.boil{position:absolute;inset:var(--gi,14%)}
+.boil>img{position:absolute;left:-8.33%;top:-8.33%;width:116.7%;height:116.7%;max-width:none;opacity:0;animation:boil .375s steps(1,end) infinite}
+.boil>img:nth-child(2){animation-delay:-.125s} .boil>img:nth-child(3){animation-delay:-.25s}
+@keyframes boil{0%{opacity:1}33.33%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.boil>img{animation:none;opacity:0}.boil>img:first-child{opacity:1}}
+
+/* ---------- a bill still to come, opened again: the editor's card is its outline ---------- */
+.card.outlined{box-shadow:none;color:var(--fg)}
+.sk-drawn .card.outlined{filter:none}
+.card.outlined .amt.faint #amtT,.card.outlined .dl svg,.card.outlined .nm input::placeholder{color:var(--sec)}
+.card.outlined .caret{background:var(--fg)}
+.card.outlined .dl{color:var(--fg)}
+.card.outlined .nm input{color:var(--fg);caret-color:var(--fg)}
+.card.outlined .dash{border-color:var(--sec)}
+.card.outlined .dl .t::after,.card.outlined .tile::after{border-color:var(--fg)}
+.card.outlined .tile.has{background:none}
+
+/* ---------- the sheet as glass: the timeline shows blurred beneath it, the keys sit on it as frosted tiles ---------- */
+:root{--sheetglass:rgba(255,255,255,.32);--glasskey:rgba(255,255,255,.62)}
+html.dark{--sheetglass:rgba(28,28,30,.32);--glasskey:rgba(107,107,112,.62)}
+.sk-drawn{--sheetglass:rgba(239,238,234,.32);--glasskey:rgba(247,246,242,.7)}
+html.dark .sk-drawn{--sheetglass:rgba(29,28,26,.32);--glasskey:rgba(43,42,39,.7)}
+#phone.sh-glass #sheet{background:var(--sheetglass);-webkit-backdrop-filter:blur(8px) saturate(170%);backdrop-filter:blur(8px) saturate(170%);box-shadow:inset 0 .5px 0 rgba(255,255,255,.5),0 -4px 30px rgba(0,0,0,.1)}
+#phone.sk-drawn.sh-glass #sheet{background:var(--grain),var(--sheetglass)}
+.sh-glass .key{background:var(--glasskey)}
+.sh-glass .key.flash{background:var(--keyflash)}
+
+</style>
+
+<div id="stage"><div id="phoneBox"><div id="phone">
+  <div id="topbar">
+    <button class="glass" id="backB"><b>‹</b> Year</button>
+    <div class="glass gpair"><button id="listB" aria-label="All bills"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg></button><button id="plusB" aria-label="Add">+</button></div>
+  </div>
+  <div id="list"></div>
+  <div id="monthV" class="view"></div>
+  <div id="yearV" class="view"></div>
+  <div id="scrim"></div>
+  <div id="sheet">
+    <button class="hbtn" id="xBtn" aria-label="Close">✕</button>
+    <button class="hbtn" id="okBtn" aria-label="Save"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></button>
+
+    <div id="pscroll" class="off"><div id="grid"></div></div>
+    <div id="hand" class="off"></div>
+
+    <div class="card" id="card">
+      <div class="face" id="faceA"></div><div class="face" id="faceB"></div>
+      <div class="cin">
+        <div class="top">
+          <div class="amt noselect" id="amt"><span id="amtT">€0</span><i class="caret" id="caret"></i></div>
+          <div class="dd">
+            <button class="dl" id="dateB"><span class="t"><span id="dateT">Oct 18</span><svg viewBox="0 0 12 12"><path fill="currentColor" d="M8.2 1.3l2.5 2.5-6.4 6.4-3 .5.5-3z"/></svg></span></button>
+            <button class="dl" id="repB"><span class="t"><span id="repT">Monthly</span><svg viewBox="0 0 12 12"><path fill="currentColor" d="M8.2 1.3l2.5 2.5-6.4 6.4-3 .5.5-3z"/></svg></span></button>
+          </div>
+        </div>
+        <label class="nm" id="nm"><span class="dash"></span><span class="ghost" id="nmGhost">Name</span>
+          <input id="nameIn" type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="30"></label>
+        <button class="tile" id="tile" aria-label="Category"><span class="dash"></span><span class="emo" id="emo"></span>
+          <span class="badge"><svg viewBox="0 0 12 12"><path fill="currentColor" d="M8.2 1.3l2.5 2.5-6.4 6.4-3 .5.5-3z"/></svg></span></button>
+      </div>
+    </div>
+
+    <div id="keypad"></div>
+  </div>
+  <iframe id="billsF" src="flow-bills.html" title="All bills"></iframe>
+  <div id="fly"><div class="fr"><div class="frin"></div></div><div class="fs"></div></div>
+  <div class="pill" id="offpill"></div>
+  <div class="pill" id="again">Add another</div>
+  <div class="pill" id="haptic"></div>
+  <div class="pill" id="toast"></div>
+</div></div></div>
+
+<aside id="panel"></aside>
+<button id="tuneBtn">Tune</button>
+<div id="drawer"><div class="dh"><span>Tune</span><button id="dclose" aria-label="Close">✕</button></div><div id="drawerBody"></div></div>
+
+<script>
+"use strict";
+document.body.classList.add("noselect");
+const PRESET_KEYS = ["pressOn","pressDip","pressDur","pressB","popOn","popFrom","popDur","popB","xfadeDur","xfadeCurve",
+  "emojiEased","emojiDur","emojiB","liftEased","liftDur","liftB","slipB","arriveOn","arriveOff","arriveStagger","arriveDur",
+  "arriveB","fileStyle","fileDelay","fileDur","fileTurn","sqY","sqDur","sqB","slipPop","slipDur","slipSB","hold","haptics"];
+const BUILT = {pressOn:false,pressDip:.93,pressDur:.45,pressB:.3, popOn:false,popFrom:.88,popDur:.3,popB:.3,
+  xfadeDur:.3,xfadeCurve:"inout", emojiEased:true,emojiDur:.3,emojiB:.3, liftEased:true,liftDur:.3,liftB:.3,slipB:.3,
+  arriveOn:false,arriveOff:24,arriveStagger:30,arriveDur:.45,arriveB:.3,
+  fileStyle:"shrink",fileDelay:.05,fileDur:.25,fileTurn:0,sqY:.88,sqDur:.45,sqB:.5,slipPop:8,slipDur:.3,slipSB:.5,hold:.7,haptics:false};
+// the video's values, snapped to the nearest step
+const VIDEO = Object.assign({}, BUILT, {pressOn:true,pressB:.5,popOn:true,popB:.5,xfadeCurve:"out",emojiEased:false,emojiDur:.45,emojiB:.5,
+  liftEased:false,liftDur:.45,liftB:.3,slipB:.3,arriveOn:true,fileStyle:"drop",fileDelay:.25,fileDur:.375,fileTurn:-5,hold:.45,haptics:true});
+/* Landing settings. The filing motion above is fixed at the card polish prototype's Video setup. */
+const LKEYS=["opt","hlTint","hlFade","hlPulse","slamFrom","ripple","reach","strength","shake","slideFrom","slideGap","slideB","slideDur",
+  "flyPath","flyGap","flyB","flyDur","zoomB","zoomDur","overlap","glow","lands","offMode","figure","fallFrom","fallB","fallDur","cardB","cardDur","sheetDur","view","picker","look","cardFlip","flipDur","sheetExit","flipHold","flipSheet","tone","openStyle","openDur","openB","skin","drawDir","sheetLook"];
+const VKEYS=["reduce","dark","darkTouched","slow","haptics"];
+const LDEF={look:"stack",cardFlip:true,flipDur:.55,sheetExit:"soft",flipHold:.3,flipSheet:"with",tone:"colour",openStyle:"outline",skin:"ios",sheetLook:"white",drawDir:"I",openDur:.5,openB:.15,picker:"hand",opt:"card",fallFrom:48,fallB:.3,fallDur:.45,cardB:.15,cardDur:.6,sheetDur:.35,view:"days",hlTint:"cat",hlFade:1.5,hlPulse:false,slamFrom:1.5,ripple:"push",reach:4,strength:6,shake:false,
+  slideFrom:"right",slideGap:"before",slideB:.15,slideDur:.45,flyPath:"arc",flyGap:"arrival",flyB:.15,flyDur:.6,zoomB:0,zoomDur:.45,
+  overlap:"with",glow:false,lands:"week",offMode:"pill",figure:"roll"};
+const S=Object.assign({reduce:false,dark:null,darkTouched:false,slow:1,taps:false,pockets:6},VIDEO,LDEF);
+try{ const j=JSON.parse(localStorage.getItem("tilly-card-landing")||"null"); if(j){ LKEYS.concat(VKEYS).forEach(k=>{ if(k in j) S[k]=j[k]; }); if(!("picker" in j)){ S.picker="hand"; S.opt="card"; } } }catch(e){}
+function save(){ try{ const o={}; LKEYS.concat(VKEYS).forEach(k=>o[k]=S[k]); localStorage.setItem("tilly-card-landing",JSON.stringify(o)); }catch(e){} }
+const mq = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+if (!S.darkTouched) S.dark = !!(mq && mq.matches);
+const LANDS={week:{date:"Oct 18",rep:"Monthly",y:2026,m:9,d:18,monthly:true},
+  month:{date:"Oct 30",rep:"Monthly",y:2026,m:9,d:30,monthly:true},
+  march:{date:"Mar 3",rep:"Yearly",y:2027,m:2,d:3,monthly:false}};
+
+/* =====================================================================================================
+   ANIMATION ENGINE — springs use SwiftUI's Animation.spring(duration:bounce:) mapping, mass 1:
+   k = (2π/duration)², c = 4π(1−bounce)/duration (bounce ≥ 0) or 4π/(duration(1+bounce)) (bounce < 0).
+   Integrated with a fixed 1/240 s step. Everything runs on one clock scaled by Slow motion.
+   ===================================================================================================== */
+function bez(a,b,c,d){
+  const cx=3*a,bx=3*(c-a)-cx,ax=1-cx-bx,cy=3*b,by=3*(d-b)-cy,ay=1-cy-by;
+  const X=t=>((ax*t+bx)*t+cx)*t, Y=t=>((ay*t+by)*t+cy)*t, dX=t=>(3*ax*t+2*bx)*t+cx;
+  return x=>{
+    if (x<=0) return 0; if (x>=1) return 1;
+    let t=x;
+    for (let i=0;i<8;i++){ const e=X(t)-x; if (Math.abs(e)<1e-6) return Y(t); const d=dX(t); if (Math.abs(d)<1e-6) break; t-=e/d; }
+    let lo=0,hi=1; t=x;
+    for (let i=0;i<40;i++){ const e=X(t)-x; if (Math.abs(e)<1e-6) break; if (e>0) hi=t; else lo=t; t=(lo+hi)/2; }
+    return Y(t);
+  };
+}
+const CURVES = { linear:x=>x, inout:bez(.42,0,.58,1), out:bez(0,0,.58,1), shrink:bez(.3,.6,.35,1),
+  dropX:bez(.55,.085,.68,.53), dropY:bez(.55,.055,.675,.19) };
+
+const E = (() => {
+  let clock=0, last=0, running=false, nid=0;
+  const tw = new Map(); let timers = [];
+  function kick(){ if(!running){ running=true; last=performance.now(); requestAnimationFrame(frame); } }
+  function frame(now){
+    let dt = Math.min((now-last)/1000, .05) * S.slow; last = now; clock += dt;
+    for (const t of [...tw.values()]) {
+      if (tw.get(t.key)!==t) continue;
+      let fin=false;
+      if (t.kind==="spring"){
+        const n=Math.max(1,Math.ceil(dt*240)), h=dt/n;
+        for(let i=0;i<n;i++){ const a=-t.k*(t.x-t.to)-t.c*t.v; t.v+=a*h; t.x+=t.v*h; }
+        const range=Math.abs(t.to-t.from)||1;
+        if (Math.abs(t.x-t.to)<.001*range && Math.abs(t.v)<.01*range){ t.x=t.to; fin=true; }
+        t.tx.set(t.prop, t.x); t.tx.vel[t.prop]=t.v;
+      } else {
+        t.t+=dt; const p=Math.min(1,t.t/t.dur);
+        t.tx.set(t.prop, t.from+(t.to-t.from)*t.curve(p)); t.tx.vel[t.prop]=0;
+        if (p>=1) fin=true;
+      }
+      if (fin){ tw.delete(t.key); t.tx.set(t.prop,t.to); t.tx.vel[t.prop]=0; if(t.done) t.done(); }
+    }
+    if (timers.length){
+      const due=timers.filter(x=>x.t<=clock); timers=timers.filter(x=>x.t>clock);
+      due.sort((a,b)=>a.t-b.t).forEach(x=>{ if(!x.dead) x.fn(); });
+    }
+    if (tw.size||timers.length) requestAnimationFrame(frame); else running=false;
+  }
+  /* go(tx, prop, spec): spec = {to, from?, spring:[dur,bounce] | ease:[dur,curveName], fade?}. Restarting a
+     property cancels the old tween and continues from the current value (and velocity, for springs). */
+  function go(tx,prop,o,done){
+    const key=tx.id+":"+prop, old=tw.get(key); if(old) tw.delete(key);
+    let spec=o;
+    if (S.reduce){
+      if (o.fade) spec={to:o.to,from:o.from,ease:[.16,"linear"]};
+      else { if(o.from!==undefined) tx.set(prop,o.from); tx.set(prop,o.to); tx.vel[prop]=0; if(done) wait(0,done); return null; }
+    }
+    let from, vel=0;
+    if (spec.from!==undefined){ from=spec.from; tx.set(prop,from); } else { from=tx[prop]; vel=tx.vel[prop]||0; }
+    const t={key,tx,prop,from,to:spec.to,done,x:from,v:vel,t:0};
+    if (spec.spring){
+      const d=Math.max(.05,spec.spring[0]), b=spec.spring[1];
+      t.kind="spring"; t.k=Math.pow(2*Math.PI/d,2); t.c = b>=0 ? 4*Math.PI*(1-b)/d : 4*Math.PI/(d*(1+b));
+    } else {
+      t.kind="ease"; t.dur=Math.max(.001,spec.ease[0]); t.curve=typeof spec.ease[1]==="function"?spec.ease[1]:CURVES[spec.ease[1]];
+    }
+    tw.set(key,t); kick();
+    return {cancel(){ if(tw.get(key)===t) tw.delete(key); }};
+  }
+  function wait(sec,fn){ const x={t:clock+sec*1,fn,dead:false,cancel(){x.dead=true;}}; timers.push(x); kick(); return x; }
+  function cancel(tx,prop){ if(prop) tw.delete(tx.id+":"+prop); else for(const k of [...tw.keys()]) if(k.startsWith(tx.id+":")) tw.delete(k); }
+  function id(){ return "t"+(++nid); }
+  return { go, wait, cancel, id };
+})();
+
+/* A Tx owns one element's transform + opacity. Only transform and opacity are ever animated. */
+class Tx {
+  constructor(el,init,on){ this.el=el; this.id=E.id(); this.x=0;this.y=0;this.ly=0;this.s=1;this.sx=1;this.sy=1;this.r=0;this.op=1;
+    this.p=0; this.vel={}; this.on=on||null; Object.assign(this,init||{}); this.render(); }
+  set(p,v){ this[p]=v; this.render(); if(this.on) this.on(p,v); }
+  render(){
+    if(!this.el) return;
+    this.el.style.transform=`translate(${this.x}px,${this.y+this.ly}px) rotate(${this.r}deg) scale(${this.s*this.sx},${this.s*this.sy})`;
+    this.el.style.opacity=Math.max(0,Math.min(1,this.op));
+  }
+}
+const go=E.go, wait=E.wait;
+/* =====================================================================================================
+   TILLY, DRAWN — paper with grain, colour laid down as a wash, rounded type, the category drawn.
+   The wash, grain and glyph code is copied from entry-ux/all-bills-folders.html, which copied it from
+   docs/prototypes/edit-revisit-card.html, so all three draw alike.
+   ===================================================================================================== */
+const drawn=()=>S.skin==="drawn";
+const md=()=>S.dark?"d":"l";
+const DT={edgeFreq:.012,edgeWobble:5,bloomFreq:.006,bloom:.22,cardFill:.9,cardEdge:1,edgeW:3,washFill:.72,washEdge:.85,washWell:.24,grain:9,
+  pencil:{l:"#4a4843",d:"#cfccc5"},ink:{l:"#1c1b19",d:"#f2f1ee"},paper:{l:"#efeeea",d:"#1d1c1a"},paperCard:{l:"#f7f6f2",d:"#2b2a27"},paperDeep:{l:"#e4e2dc",d:"#161513"}};
+function prng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function smooth(seed,freq){ const r=prng(seed), k=[0,1,2].map(i=>({f:freq*(.55+r()*.9)*(i+1)*.8,p:r()*6.283,a:1/(i+1)})); return t=>k.reduce((s,o)=>s+o.a*Math.sin(t*o.f+o.p),0)/1.83; }
+const probeSvg=document.createElementNS("http://www.w3.org/2000/svg","svg"), probe=document.createElementNS("http://www.w3.org/2000/svg","path");
+probeSvg.style.cssText="position:absolute;width:0;height:0"; probeSvg.setAttribute("aria-hidden","true"); probeSvg.appendChild(probe); document.body.appendChild(probeSvg);
+const sampleCache={};
+function sampleD(d,step){ const key=d+"|"+step; if(sampleCache[key]) return sampleCache[key];
+  return sampleCache[key]=(d.match(/M[^M]*/g)||[]).map(sg=>{ probe.setAttribute("d",sg); const L=probe.getTotalLength(), n=Math.max(2,Math.ceil(L/step)), pts=[];
+    for(let i=0;i<=n;i++){ const q=probe.getPointAtLength(L*i/n); pts.push([q.x,q.y]); } return {pts,closed:/z\s*$/i.test(sg.trim()),L}; }); }
+function rough(d,o){ o=o||{}; const amp=o.amp??.35, freq=o.freq??.9, seed=o.seed??1, step=o.step??.7, over=o.over??.5; let out="";
+  sampleD(d,step).forEach((sg,si)=>{
+    if(sg.L<.2){ const p0=sg.pts[0]; out+="M"+p0[0].toFixed(2)+" "+p0[1].toFixed(2)+"h.01"; return; }
+    const nx=smooth(seed*31+si*7,freq), ny=smooth(seed*17+si*13+5,freq);
+    let pts=sg.pts.map((q,i)=>{ const t=i*step; return [q[0]+amp*nx(t),q[1]+amp*ny(t)]; });
+    if(!sg.closed&&over>0&&pts.length>2){ const r=prng(seed+si*3), ex=(a,b,k)=>{ const L=Math.hypot(a[0]-b[0],a[1]-b[1])||1e-3; return [a[0]+(a[0]-b[0])/L*k,a[1]+(a[1]-b[1])/L*k]; };
+      pts=[ex(pts[0],pts[1],over*r())].concat(pts,[ex(pts[pts.length-1],pts[pts.length-2],over*r())]); }
+    if(sg.closed){ const r2=prng(seed+si), extra=Math.floor(pts.length*(.04+.06*r2())); pts=pts.concat(pts.slice(1,extra+1)); }
+    out+="M"+pts.map(q=>q[0].toFixed(2)+" "+q[1].toFixed(2)).join("L"); });
+  return out; }
+function blob(cx,cy,r,seed,wob,n){ wob=wob??.07; n=n||28; const nz=smooth(seed,1.2); let d="";
+  for(let i=0;i<n;i++){ const a=i/n*6.283, rr=r*(1+wob*nz(a*1.3)); d+=(i?"L":"M")+(cx+Math.cos(a)*rr).toFixed(2)+" "+(cy+Math.sin(a)*rr).toFixed(2); } return d+"z"; }
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+const FILT={
+  washF:'<filter id="washF" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".07" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="1" seed="11" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 0 0 0 1.62" result="ga"/><feComposite in="d" in2="ga" operator="in"/></filter>',
+  washBigF:`<filter id="washBigF" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="${DT.edgeFreq}" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="${DT.edgeWobble}" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency="${DT.bloomFreq}" numOctaves="2" seed="13" result="b"/><feColorMatrix in="b" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ${DT.bloom} 0 0 0 ${1-DT.bloom/2}" result="ba"/><feComposite in="d" in2="ba" operator="in"/></filter>`,
+  /* the same edge as washBigF without the blooms: the paper the wash is laid on, so a card hides the one behind it */
+  paperBigF:`<filter id="paperBigF" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="${DT.edgeFreq}" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="${DT.edgeWobble}" xChannelSelector="R" yChannelSelector="G"/></filter>`,
+  sfR1:'',sfR2:'',sfR3:''};
+[1,2,3].forEach(k=>FILT["sfR"+k]=`<filter id="sfR${k}" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".32" numOctaves="2" seed="${k*9}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.3" xChannelSelector="R" yChannelSelector="G"/></filter>`);
+const imgCache=new Map();
+function svgUrl(w,h,vb,body,ids){
+  const sv=`<svg xmlns="http://www.w3.org/2000/svg" width="${(+w).toFixed(1)}" height="${(+h).toFixed(1)}" viewBox="${vb}">`+(ids&&ids.length?"<defs>"+ids.map(id=>FILT[id]).join("")+"</defs>":"")+body+"</svg>";
+  const hit=imgCache.get(sv); if(hit) return hit.src;
+  const im=new Image(); im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(sv); if(im.decode) im.decode().catch(()=>{});
+  imgCache.set(sv,im); return im.src;
+}
+function rrPath(w,h,tl,tr,br,bl){ const a=(r,x,y)=>r>0?`A${r} ${r} 0 0 1 ${x} ${y}`:`L${x} ${y}`;
+  return `M${tl} 0 H${w-tr} ${a(tr,w,tr)} V${h-br} ${a(br,w-br,h)} H${bl} ${a(bl,0,h-bl)} V${tl} ${a(tl,tl,0)} Z`; }
+/* a solid card, washed: paper laid first so it hides what's behind, then the colour with a rough, blooming edge */
+function washSrc(kind,w,h,col,R){
+  const sw=DT.edgeW, i=sw/2, ww=w-sw, hh=h-sw, mm=r=>Math.max(0,r-i);
+  R=R||[1,1,1,1].map(()=>Math.min(20,Math.max(8,w*.056)));
+  const d=rrPath(ww,hh,mm(R[0]),mm(R[1]),mm(R[2]),mm(R[3])), seed=(hashStr(kind+"|"+w+"|"+h)%80)+1, P=6, W=w+2*P, H=h+2*P;
+  const rp=rough(d,{amp:.6,over:0,step:3,seed}), tr=`transform="translate(${i+P} ${i+P})"`;
+  const body=`<path ${tr} d="${rp}" fill="${DT.paper[md()]}" stroke="${DT.paper[md()]}" stroke-width="${sw}" stroke-linejoin="round" filter="url(#paperBigF)"/>`+
+    `<path ${tr} d="${rp}" fill="${col}" stroke="${col}" fill-opacity="${DT.cardFill}" stroke-opacity="${DT.cardEdge}" stroke-width="${sw}" stroke-linejoin="round" filter="url(#washBigF)"/>`;
+  return svgUrl(W,H,`0 0 ${W} ${H}`,body,["paperBigF","washBigF"]);
+}
+function makeGrain(){
+  try{ const c=document.createElement("canvas"); c.width=c.height=160; const x=c.getContext("2d"), im=x.createImageData(160,160), r=prng(77);
+    for(let i=0;i<im.data.length;i+=4){ const v=r()<.5?0:255; im.data[i]=im.data[i+1]=im.data[i+2]=v; im.data[i+3]=r()<.5?DT.grain:0; }
+    x.putImageData(im,0,0); document.documentElement.style.setProperty("--grain",`url(${c.toDataURL()})`); }catch(e){}
+}
+const G={
+  home:'M3.8 11.6 12 4.4l8.2 7.2 M6.2 9.8v9.8h11.6V9.8 M10 19.6v-5.2h4v5.2',
+  car:'M3.6 16.2v-3.6l2.3-4.8h12.2l2.3 4.8v3.6z M6.3 12.4h11.4 M5.9 16.4a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0 M14.5 16.4a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0',
+  tv:'M5 7h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z M8.6 3.4 12 6.6l3.4-3.2 M8 21.2h8',
+  dumbbell:'M6.6 7.6v8.8 M17.4 7.6v8.8 M3.8 10v4 M20.2 10v4 M6.6 12h10.8',
+  phone:'M8.2 2.8h7.6a1.6 1.6 0 0 1 1.6 1.6v15.2a1.6 1.6 0 0 1-1.6 1.6H8.2a1.6 1.6 0 0 1-1.6-1.6V4.4a1.6 1.6 0 0 1 1.6-1.6z M11 18h2',
+  wifi:'M3.5 9.6a12 12 0 0 1 17 0 M6.4 12.8a7.6 7.6 0 0 1 11.2 0 M9.4 16a3.4 3.4 0 0 1 5.2 0 M12 19.2h.01',
+  book:'M3.8 5.6c2.8-1 5.6-.8 8.2 1 2.6-1.8 5.4-2 8.2-1v13.6c-2.8-1-5.6-.8-8.2 1-2.6-1.8-5.4-2-8.2-1z M12 6.6v13.6',
+  paw:'M12 12.6c-2.8 0-5 2.6-5 4.8 0 1.6 1.4 2.2 2.6 2 1-.2 1.6-.6 2.4-.6s1.4.4 2.4.6c1.2.2 2.6-.4 2.6-2 0-2.2-2.2-4.8-5-4.8z M5 10a1.5 1.8 0 1 0 3 0a1.5 1.8 0 1 0 -3 0 M8.4 6a1.5 1.8 0 1 0 3 0a1.5 1.8 0 1 0 -3 0 M12.6 6a1.5 1.8 0 1 0 3 0a1.5 1.8 0 1 0 -3 0 M16 10a1.5 1.8 0 1 0 3 0a1.5 1.8 0 1 0 -3 0'
+};
+
+const GLYPH_OF={"Home":"home","Car":"car","Phone & internet":"wifi","Subscriptions":"tv","Health":"dumbbell","Learning":"book","Pet":"paw","Software":"phone"};
+const CREAM={l:"#F8F2E6",d:"#3D382F"};
+/* the category's picture: its emoji in the iOS look; drawn, I is a roughened symbol in its colour on a faint wash,
+   G is Tilly's felt-tip line in ink on a wash. Three drawings, swapped: the boil */
+function catPic(ci,size,on){
+  const c=ci==null?null:cats[ci];
+  if(!c) return "";
+  const g=G[GLYPH_OF[c.name]];
+  if(!drawn()||!g) return c.emoji;
+  const m=md(), hex=on?"#ffffff":catHex(ci), seed=(hashStr(c.name)%80)+1, W=size+Math.round(size*.13), pad=(W-size)/2;
+  if(S.drawDir==="G"){
+    const ink=on?DT.ink.l:DT.ink[m], gs=size*.8, w=+(2.1*Math.pow(24/gs,.32)).toFixed(2);
+    const wash=`<path d="${blob(size*.55,size*.57,size*.36,seed,.07)}" fill="${hex}" fill-opacity="${on?.5:DT.washFill}" stroke="${hex}" stroke-opacity="${DT.washEdge}" stroke-width="${Math.max(.8,size*.36*.09).toFixed(2)}" filter="url(#washF)"/>`;
+    const u=svgUrl(W,W,`${-pad} ${-pad} ${W} ${W}`,wash,["washF"]);
+    const imgs=[seed,seed+101,seed+202].map(sd=>`<img src="${svgUrl(28,28,"-2 -2 28 28",`<path d="${rough(g,{amp:.32,freq:.8,seed:sd})}" fill="none" stroke="${ink}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`)}" alt="">`).join("");
+    return `<span class="ic" style="--gi:10%"><img class="u" src="${u}" alt=""><span class="boil">${imgs}</span></span>`;
+  }
+  const wash=`<g opacity="${on?.35:DT.washWell}"><path d="${blob(size/2,size/2,size/2-size*.08,seed,.07)}" fill="${hex}" fill-opacity="${DT.washFill}" stroke="${hex}" stroke-opacity="${DT.washEdge}" stroke-width="${Math.max(.8,size*.42*.09).toFixed(2)}" filter="url(#washF)"/></g>`;
+  const u=svgUrl(W,W,`${-pad} ${-pad} ${W} ${W}`,wash,["washF"]);
+  const imgs=[1,2,3].map(k=>`<img src="${svgUrl(28,28,"-2 -2 28 28",FILT["sfR"+k].replace(/^/,"<defs>")+"</defs>"+`<path d="${g}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" filter="url(#sfR${k})"/>`)}" alt="">`).join("");
+  return `<span class="ic"><img class="u" src="${u}" alt=""><span class="boil">${imgs}</span></span>`;
+}
+/* a wash that fits inside w×h, its rough edge included, for things that clip (the editor card's faces) */
+function washFit(w,h,col){ return washSrc("card",Math.max(20,w-12),Math.max(20,h-12),col); }
+/* an outline still to come, drawn: a rough dotted line in its colour round a paper card */
+function outlineSrc(w,h,col,rt,rb){
+  const sw=2, P=6, i=sw/2, W=w+2*P, H=h+2*P, mm=r=>Math.max(0,r-i);
+  const d=rrPath(w-sw,h-sw,mm(rt),mm(rt),mm(rb),mm(rb)), seed=(hashStr("o|"+w+"|"+h)%80)+1;
+  const rp=rough(d,{amp:.5,over:0,step:3,seed}), tr=`transform="translate(${i+P} ${i+P})"`;
+  const body=`<path ${tr} d="${rp}" fill="${DT.paper[md()]}" stroke="none"/>`+
+    `<path ${tr} d="${rp}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-dasharray="0.1 5" stroke-linecap="round" stroke-opacity=".9"/>`;
+  return svgUrl(W,H,`0 0 ${W} ${H}`,body,[]);
+}
+const creamHex=()=>CREAM[md()];
+/* the editor card's face: the gradient in iOS, a wash drawn */
+function faceBg(hex){
+  const w=card.offsetWidth||358, h=card.offsetHeight||226;
+  // a bill still to come, opened again: the card is its outline, as the row is
+  if(card.classList.contains("outlined")){
+    if(drawn()) return `url("${outlineSrc(w,h,hex,20,20)}") -6px -6px/calc(100% + 12px) calc(100% + 12px) no-repeat`;
+    const fill=S.dark?"#1C1C1E":"#FFFFFF";
+    return `url("${svgUrl(w,h,`0 0 ${w} ${h}`,`<rect x="1" y="1" width="${w-2}" height="${h-2}" rx="19" fill="${fill}" stroke="${hex}" stroke-width="2" stroke-dasharray="0.1 5" stroke-linecap="round" stroke-opacity=".85"/>`)}") center/100% 100% no-repeat`;
+  }
+  if(!drawn()) return grad(hex);
+  const col=S.tone==="cream"?creamHex():hex;
+  return `url("${washFit(w,h,col)}") center/100% 100% no-repeat`;
+}
+function setEmo(ci){ const ol=card.classList.contains("outlined"), k=[ci,S.skin,S.drawDir,S.dark,S.tone,ol].join("|"); if(emo._k===k) return; emo._k=k;
+  if(ci==null){ emo.innerHTML=""; return; }
+  if(drawn()) emo.innerHTML=catPic(ci,30,S.tone!=="cream"&&!ol); else emo.textContent=cats[ci].emoji; }
+/* each row's wash, baked at its size: a solid card where it's charged, a dotted outline where it's still to come */
+function dressRow(r){
+  const rin=r.querySelector(".rin"); let im=rin.querySelector(":scope > .wsh");
+  const it=r._it, ci=it?(it.cat==null?catOfEmoji(it.emoji):it.cat):null;
+  if(!drawn()||S.look!=="stack"){ if(im) im.remove(); const w=r.querySelector(".well"); if(w&&it&&w._d){ w.textContent=it.emoji; w._d=0; } return; }
+  const w=r.querySelector(".well"); if(w&&ci!=null){ w.innerHTML=catPic(ci,30,r.classList.contains("past")&&S.tone!=="cream"); w._d=1; }
+  const W=(r.offsetWidth||402)-24, H=76, past=r.classList.contains("past"), hex=ci==null?"#8E8E93":catHex(ci);
+  if(!im){ im=document.createElement("img"); im.className="wsh"; im.alt=""; rin.insertBefore(im,rin.firstChild); }
+  const last=!r.nextElementSibling||!r.nextElementSibling.classList.contains("r"), rb=last?14:0;
+  im.src=past?washSrc("row",W,H,S.tone==="cream"?creamHex():hex,[14,14,rb,rb]):outlineSrc(W,H,hex,14,rb);
+}
+function applySkin(){
+  phone.classList.toggle("sk-drawn",drawn());
+  if(typeof list!=="undefined") list.querySelectorAll(".r").forEach(dressRow);
+  emo._k=null;
+}
+
+/* =====================================================================================================
+   DATA
+   ===================================================================================================== */
+const PAL = [["#2a78d6","#3987e5"],["#eb6834","#d95926"],["#1baf7a","#199e70"],["#eda100","#c98500"],
+  ["#e87ba4","#d55181"],["#008300","#008300"],["#4a3aa7","#9085e9"],["#e34948","#e66767"]];
+const CATS0 = [["Home","🏠",["Rent","Electricity","Water"]],["Car","🚗",["Parking","Car insurance"]],
+  ["Phone & internet","📱",["Broadband","Phone"]],["Subscriptions","🎬",["Film club","Music","Cloud storage"]],
+  ["Health","💪",["Gym","Dentist plan"]],["Learning","📗",["Language course"]],["Pet","🐶",["Pet insurance","Vet plan"]],
+  ["Kids","🧒",["Swimming","School trip fund"]],["Software","💻",["Design app"]],["Garden","🌱",["Seed box"]],
+  ["Giving","🎁",["Charity"]],["Hobbies","🎨",["Pottery class"]],["Coffee","☕️",["Coffee beans"]],["Games","🎮",["Game pass"]]];
+let cats = [];
+const NAMES = ["Streaming","Gym","Water","Phone","Comics","Parking","Charity"];
+let bill, ui;
+function freshCats(){ cats = CATS0.map(c=>({name:c[0],emoji:c[1],items:c[2].slice()})); }
+function resetBill(empty){
+  bill = empty ? {amount:"",name:"",date:"Oct 16",repeat:"Monthly",cat:null}
+               : {amount:"85.55",name:"Streaming",date:LANDS[S.lands].date,repeat:LANDS[S.lands].rep,cat:S.picker==="hand"?null:Math.min(3,S.pockets-1)};
+  document.querySelector(".card")?.classList.remove("outlined");
+  ui = {panel:"keypad", ring:null, busy:false, closed:false, committed:false, nameFocus:false};
+}
+freshCats(); resetBill(false);
+
+/* ---------- colour helpers ---------- */
+const hex2rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const mixc=(c,w,t)=>c.map(v=>Math.round(v*w+t*(1-w)));
+function catHex(i){ return i==null ? (S.dark?"#98989D":"#8E8E93") : PAL[i%8][S.dark?1:0]; }
+function grad(hex,a){
+  const c=hex2rgb(hex), l=mixc(c,.72,255), d=mixc(c,.76,0), al=a==null?1:a;
+  return `linear-gradient(135deg, rgba(${l},${al}) 0%, rgba(${c},${al}) 50%, rgba(${d},${al}) 100%)`;
+}
+const $=id=>document.getElementById(id);
+const phone=$("phone"), sheet=$("sheet"), card=$("card"), grid=$("grid"), pscroll=$("pscroll"), keypad=$("keypad");
+
+/* =====================================================================================================
+   HAPTIC MARKERS + TOAST
+   ===================================================================================================== */
+let hapTimer=0;
+function haptic(kind){
+  if(!S.haptics) return;
+  const p=$("haptic"); p.textContent="◉ "+kind; p.style.opacity=1; clearTimeout(hapTimer);
+  hapTimer=setTimeout(()=>{p.style.opacity=0;},600);
+  try{ if(navigator.vibrate) navigator.vibrate(kind==="medium"?18:8); }catch(e){}
+}
+let toastTimer=0;
+function toast(t){ const p=$("toast"); p.textContent=t; p.style.opacity=1; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{p.style.opacity=0;},1800); }
+
+/* =====================================================================================================
+   PRESS FEEDBACK — scale to dip on pointerdown, spring back on release (only when "Press" is on)
+   ===================================================================================================== */
+function pressable(el,tx,enabled){
+  let down=false;
+  el.addEventListener("pointerdown",()=>{ if(!S.pressOn||(enabled&&!enabled())) return; down=true; go(tx,"s",{to:S.pressDip,ease:[.08,"out"]}); });
+  const up=()=>{ if(!down) return; down=false; go(tx,"s",{to:1,spring:[S.pressDur,S.pressB]}); };
+  ["pointerup","pointercancel","pointerleave"].forEach(n=>el.addEventListener(n,up));
+}
+
+/* =====================================================================================================
+   CARD
+   ===================================================================================================== */
+const amtEl=$("amt"), amtT=$("amtT"), caret=$("caret"), nameIn=$("nameIn"), nm=$("nm"), tile=$("tile"), emo=$("emo");
+const cardTx=new Tx(card), tileTx=new Tx(tile), emoTx=new Tx(emo,{op:1}), okTx=new Tx($("okBtn")), sheetTx=new Tx(sheet);
+const faceA=$("faceA"), faceB=$("faceB"), faceBTx=new Tx(faceB,{op:0});
+pressable(tile,tileTx); pressable($("okBtn"),okTx,()=>complete());
+let shownHex=null;
+
+function fitAmount(){
+  amtT.style.fontSize="60px";
+  const avail=amtEl.clientWidth-(caret.classList.contains("on")?6:0), w=amtT.scrollWidth;
+  const size=w>avail?Math.max(18,60*avail/w):60;
+  amtT.style.fontSize=size+"px";
+  // the caret follows the amount's size, as the built one does: 0.82em tall, 0.055em wide
+  caret.style.height=(size*0.82)+"px"; caret.style.width=Math.max(2,size*0.055)+"px";
+}
+function complete(){ return parseFloat(bill.amount)>0 && bill.name.trim().length>0 && bill.cat!=null; }
+function renderCard(){
+  const v=parseFloat(bill.amount)||0;
+  amtT.textContent="€"+(bill.amount===""?"0":bill.amount);
+  amtEl.classList.toggle("faint",v===0);
+  $("dateT").textContent=bill.date; $("repT").textContent=bill.repeat;
+  nameIn.value!==bill.name&&(nameIn.value=bill.name);
+  $("nmGhost").textContent=bill.name||"Name";
+  nm.classList.toggle("has",bill.name.length>0);
+  tile.classList.toggle("has",bill.cat!=null);
+  tile.style.setProperty("--tilebg",bill.cat!=null?grad(catHex(bill.cat)):"none");
+  caret.classList.toggle("on",ui.panel==="keypad"&&!ui.nameFocus);
+  $("dateB").classList.toggle("open",ui.ring==="date"); $("repB").classList.toggle("open",ui.ring==="repeat");
+  tile.classList.toggle("open",(ui.panel==="pockets"||ui.panel==="hand")&&!ui.ring);
+  // next part breathes: once the amount is in, whichever of name / category is still missing
+  nm.classList.toggle("breathe",v>0&&bill.name.length===0&&!ui.nameFocus);
+  tile.classList.toggle("breathe",v>0&&bill.cat==null);
+  $("okBtn").classList.toggle("ok",complete());
+  fitAmount();
+}
+function paintFaces(){ // instant colour set (no crossfade)
+  E.cancel(faceBTx); faceBTx.set("op",0);
+  shownHex=catHex(bill.cat); faceA.style.background=faceBg(shownHex);
+  setEmo(bill.cat);
+}
+
+/* ---------- amount keypad ---------- */
+(function buildKeypad(){
+  ["1","2","3","4","5","6","7","8","9",".","0","⌫"].forEach(k=>{
+    const b=document.createElement("button"); b.className="key"; b.textContent=k; keypad.appendChild(b);
+    const tx=new Tx(b); pressable(b,tx);
+    b.addEventListener("pointerdown",()=>b.classList.add("flash"));
+    ["pointerup","pointercancel","pointerleave"].forEach(n=>b.addEventListener(n,()=>b.classList.remove("flash")));
+    b.addEventListener("click",()=>typeKey(k));
+  });
+})();
+function typeKey(k){
+  let a=bill.amount;
+  if(k==="⌫") a=a.slice(0,-1);
+  else if(k==="."){ if(!a.includes(".")) a=(a===""?"0":a)+"."; }
+  else if(a.includes(".")){ if(a.split(".")[1].length<2) a+=k; }
+  else if(a==="0") a=k; else if(a.length<7) a+=k;
+  bill.amount=a; renderCard();
+}
+
+/* ---------- name + date/repeat + amount taps ---------- */
+nameIn.addEventListener("input",()=>{ bill.name=nameIn.value; renderCard(); const p=pks[bill.cat]; if(p&&p.preview) p.preview.el.textContent=bill.name||"Name"; });
+nameIn.addEventListener("focus",()=>{ ui.nameFocus=true; renderCard(); });
+nameIn.addEventListener("blur",()=>{ ui.nameFocus=false; renderCard(); });
+nameIn.addEventListener("keydown",e=>{ if(e.key==="Enter") nameIn.blur(); });
+nm.addEventListener("click",e=>{ e.stopPropagation(); nameIn.focus(); });
+amtEl.addEventListener("click",e=>{ e.stopPropagation(); nameIn.blur(); setPanel("keypad"); });
+$("dateB").addEventListener("click",e=>{ e.stopPropagation(); ui.ring=ui.ring==="date"?null:"date"; renderCard(); });
+$("repB").addEventListener("click",e=>{ e.stopPropagation(); ui.ring=ui.ring==="repeat"?null:"repeat"; renderCard(); });
+tile.addEventListener("click",e=>{ e.stopPropagation(); nameIn.blur(); setPanel("pockets"); });
+card.addEventListener("click",()=>{ nameIn.blur(); setPanel("pockets"); });
+
+/* =====================================================================================================
+   POCKETS
+   ===================================================================================================== */
+let pks=[];
+function mkSlip(text,top,z){
+  const el=document.createElement("div"); el.className="pslip"; el.textContent=text; el.style.top=top+"px"; el.style.zIndex=z;
+  return {el, tx:new Tx(el)};
+}
+function buildPockets(){
+  grid.innerHTML=""; pks=[];
+  cats.slice(0,S.pockets).forEach((c,i)=>{
+    const hex=catHex(i), el=document.createElement("div"); el.className="pk";
+    const back=document.createElement("div"); back.className="pback"; const rgb=hex2rgb(hex); back.style.background=`rgba(${rgb},.35)`;
+    el.appendChild(back);
+    const shown=c.items.slice(-3), slips=shown.map((t,k)=>{ const s=mkSlip(t,26-11*(shown.length-1-k),k+1); el.appendChild(s.el); return s; });
+    const slot=document.createElement("div"); slot.className="pslot"; el.appendChild(slot);
+    const lip=document.createElement("div"); lip.className="plip"; lip.style.background=grad(hex,.95);
+    lip.innerHTML=`<span>${c.emoji}</span><span>${c.name}</span>`; el.appendChild(lip);
+    const ring=document.createElement("div"); ring.className="pring"; el.appendChild(ring);
+    grid.appendChild(el);
+    const p={el,i,slips,slot,tx:new Tx(el),preview:null};
+    pressable(el,p.tx);
+    el.addEventListener("click",ev=>{ ev.stopPropagation(); pick(i); });
+    pks.push(p);
+  });
+  const ne=document.createElement("div"); ne.className="pk newpk"; ne.innerHTML='<div class="nl">+ New</div>';
+  grid.appendChild(ne); const np={el:ne,tx:new Tx(ne),isNew:true,slips:[]}; pressable(ne,np.tx);
+  ne.addEventListener("click",ev=>{ ev.stopPropagation(); toast("Making a category isn't in this prototype"); });
+  pks.push(np);
+  if(bill.cat!=null&&pks[bill.cat]&&!pks[bill.cat].isNew) setChosen(pks[bill.cat],true,false); else if(bill.cat!=null&&bill.cat>=S.pockets){ bill.cat=null; paintFaces(); renderCard(); }
+  layout();
+}
+function layout(){ // first pocket row starts 20px under the card
+  const pad=(card.offsetTop+card.offsetHeight)-pscroll.offsetTop+20;
+  grid.style.paddingTop=pad+"px";
+}
+const liftSpec=(to)=> S.liftEased?{to,ease:[S.liftDur,"inout"]}:{to,spring:[S.liftDur,S.liftB]};
+const riseSpec=(to,from)=>{ const o=S.liftEased?{to,ease:[S.liftDur,"inout"]}:{to,spring:[S.liftDur,S.slipB]}; if(from!==undefined)o.from=from; return o; };
+/* Chosen pocket: lifted 6px, ringed, a slip with the card's name stands in front (older slips shift up 11px). */
+function setChosen(p,on,animate){
+  if(!p||p.isNew) return;
+  p.el.classList.toggle("chosen",on);
+  if(on){
+    if(!p.preview){
+      const s=mkSlip(bill.name||"Name",26,4); p.el.insertBefore(s.el,p.slot); p.preview=s;
+      if(animate){
+        go(p.tx,"ly",liftSpec(-6));
+        s.tx.set("op",0); go(s.tx,"op",{to:1,from:0,ease:[.2,"out"],fade:true});
+        go(s.tx,"y",Object.assign(riseSpec(0,10),{fade:false}));
+        p.slips.forEach(x=>go(x.tx,"y",liftSpec(-11)));
+      } else { p.tx.set("ly",-6); p.slips.forEach(x=>x.tx.set("y",-11)); }
+    }
+  } else {
+    if(p.preview){ p.preview.el.remove(); p.preview=null; }
+    if(animate){ go(p.tx,"ly",liftSpec(0)); p.slips.forEach(x=>go(x.tx,"y",liftSpec(0))); }
+    else { p.tx.set("ly",0); p.slips.forEach(x=>x.tx.set("y",0)); }
+  }
+}
+function pick(i){
+  if(ui.busy) return;
+  haptic("light");
+  const prev=bill.cat; if(prev===i) return;
+  bill.cat=i;
+  if(prev!=null&&pks[prev]) setChosen(pks[prev],false,true);
+  setChosen(pks[i],true,true);
+  // card colour crossfade
+  const hex=catHex(i);
+  faceA.style.background=faceBg(shownHex); faceB.style.background=faceBg(hex); faceBTx.set("op",0);
+  shownHex=hex;
+  go(faceBTx,"op",{to:1,ease:[S.xfadeDur,S.xfadeCurve],fade:true},()=>{ faceA.style.background=faceBg(hex); faceBTx.set("op",0); });
+  // emoji drops into the tile
+  setEmo(i);
+  if(S.reduce){ emoTx.set("op",0); go(emoTx,"op",{to:1,fade:true}); }
+  else {
+    const mk=(to,from)=> S.emojiEased?{to,from,ease:[S.emojiDur,"inout"]}:{to,from,spring:[S.emojiDur,S.emojiB]};
+    go(emoTx,"s",mk(1,1.35)); go(emoTx,"y",mk(0,-6));
+  }
+  renderCard();
+}
+/* Pockets arriving when the panel opens */
+function playArrival(){
+  pks.forEach(p=>{ E.cancel(p.tx,"y"); E.cancel(p.tx,"s"); E.cancel(p.tx,"op"); p.tx.set("y",0); p.tx.set("s",1); p.tx.set("op",1); });
+  if(!S.arriveOn) return;
+  pks.forEach((p,j)=>{
+    if(S.reduce){ p.tx.set("op",0); wait(j*S.arriveStagger/1000,()=>go(p.tx,"op",{to:1,fade:true})); return; }
+    p.tx.set("y",S.arriveOff); p.tx.set("s",.96); p.tx.set("op",0);
+    wait(j*S.arriveStagger/1000,()=>{
+      const sp=[S.arriveDur,S.arriveB];
+      go(p.tx,"y",{to:0,spring:sp}); go(p.tx,"s",{to:1,spring:sp}); go(p.tx,"op",{to:1,spring:sp});
+    });
+  });
+}
+function setPanel(name){
+  if(name==="pockets"&&S.picker==="hand") name="hand";
+  const changed=ui.panel!==name; ui.panel=name; ui.ring=null;
+  keypad.classList.toggle("off",name!=="keypad"); pscroll.classList.toggle("off",name!=="pockets"); handEl.classList.toggle("off",name!=="hand");
+  if(changed&&name==="pockets") playArrival();
+  if(changed&&name==="hand") layoutHand(true);
+  renderCard();
+  return changed;
+}
+
+/* =====================================================================================================
+   FILING — ✓ files the card into its pocket
+   ===================================================================================================== */
+const ptx=new Tx(null);
+let handles=[], inPocket=false, filingP=null, snap=null;
+const later=(s,fn)=>{ const h=wait(s,fn); handles.push(h); return h; };
+function sheetPos(p){ // pocket top-left in sheet coordinates, from layout (not affected by transforms)
+  return { x:p.el.offsetLeft, y:pscroll.offsetTop+p.el.offsetTop-pscroll.scrollTop };
+}
+function ensureVisible(p){
+  const top=pscroll.offsetTop+p.el.offsetTop-pscroll.scrollTop, min=card.offsetTop+card.offsetHeight+20, max=sheet.offsetHeight-86-24;
+  if(top<min) pscroll.scrollTop-= (min-top); else if(top>max) pscroll.scrollTop+= (top-max);
+}
+function fileCard(){
+  if(ui.busy||ui.closed||!complete()) return;
+  ui.busy=true; nameIn.blur();
+  // what to come back to: the card and pockets exactly as they were before ✓
+  snap={bill:Object.assign({},bill), panel:ui.panel, items:cats.map(c=>c.items.slice())};
+  haptic("light");
+  if(S.popOn) go(okTx,"s",{from:S.popFrom,to:1,spring:[S.popDur,S.popB]});
+  const p=pks[bill.cat], switched=setPanel("pockets");
+  ensureVisible(p);
+  let extra=0; if(switched&&S.arriveOn) extra=(bill.cat*S.arriveStagger)/1000+.3;
+  later(S.fileDelay+extra,()=>startFiling(p));
+}
+function startFiling(p){
+  const W=card.offsetWidth, H=card.offsetHeight, bl=card.offsetLeft, bt=card.offsetTop;
+  const cx0=bl+W/2, cy0=bt+H/2, pos=sheetPos(p), py=pos.y-6, px=pos.x;
+  const lw=pks[0]?96:96, lh=lw/1.586, cxT=px+54, cyT=py+86-46-10+lh/2, sT=lw/W;
+  inPocket=false;
+  const pose=(cx,cy,s,r)=>{
+    if(!inPocket) card.style.transform=`translate(${cx-W/2-bl}px,${cy-H/2-bt}px) rotate(${r}deg) scale(${s})`;
+    else card.style.transform=`translate(${cx-px-W/2}px,${cy-py-H/2}px) rotate(${r}deg) scale(${s})`;
+  };
+  card.style.transition="none"; cardTx.el=null; card.style.pointerEvents="none";
+  if(S.reduce){
+    cardTx.el=card; cardTx.set("op",1); go(cardTx,"op",{to:0,fade:true},()=>land(p,true));
+    return;
+  }
+  if(S.fileStyle==="drop"){
+    if(p.preview) p.preview.tx.set("op",0); // the real slip arrives at landing
+    ptx.on=(prop,v)=>{
+      if(prop!=="p") return;
+      const ex=CURVES.dropX(v), ey=CURVES.dropY(v);
+      if(!inPocket&&v>=.7){ inPocket=true; p.el.style.zIndex=20; card.style.width=W+"px"; card.style.right="auto"; card.style.left="0"; card.style.top="0"; p.slot.appendChild(card); card.style.transformOrigin="50% 50%"; card.style.zIndex="auto"; }
+      if(!inPocket) p.el.style.zIndex=20;
+      pose(cx0+(cxT-cx0)*ex, cy0+(cyT-cy0)*ey, 1+(sT-1)*ex, S.fileTurn*ex);
+    };
+    ptx.set("p",0);
+    // x/y have their own curves, so the clock itself is linear
+    go(ptx,"p",{from:0,to:1,ease:[S.fileDur,"linear"]},()=>land(p,false));
+  } else {
+    ptx.on=(prop,v)=>{ if(prop==="p") pose(cx0+(cxT-cx0)*v, cy0+(cyT-cy0)*v, 1+(sT-1)*v, 0); };
+    ptx.set("p",0);
+    go(ptx,"p",{from:0,to:1,ease:[S.fileDur,"shrink"]},()=>land(p,false));
+  }
+}
+function commitItem(){
+  if(ui.committed) return; ui.committed=true;
+  if(bill.cat!=null) cats[bill.cat].items.push(bill.name.trim()||"Bill");
+}
+function land(p,reduced){
+  ptx.on=null; card.style.visibility="hidden"; // the card disappears
+  commitItem(); haptic("medium");
+  if(!reduced){
+    if(S.fileStyle==="drop"){
+      // new slip pops up, settles; the pocket squashes from its base and springs back
+      if(p.preview){
+        const s=p.preview.tx; s.set("op",1); s.set("y",0);
+        go(s,"y",{to:-S.slipPop,ease:[.14,"out"]},()=>go(s,"y",{to:0,spring:[S.slipDur,S.slipSB]}));
+      }
+      const sxT=1+(1-S.sqY)*.58;
+      go(p.tx,"sy",{to:S.sqY,ease:[.07,"out"]},()=>go(p.tx,"sy",{to:1,spring:[S.sqDur,S.sqB]}));
+      go(p.tx,"sx",{to:sxT,ease:[.07,"out"]},()=>go(p.tx,"sx",{to:1,spring:[S.sqDur,S.sqB]}));
+    } else {
+      // shrink and fade: the pocket scales 1 → 1.06 → 0.98 → 1 over 0.28s
+      const set=v=>{ p.tx.set("sx",v); p.tx.set("sy",v); };
+      const seg=(to,d,next)=>go(p.tx,"sx",{to,ease:[d,"inout"]},next), segy=(to,d)=>go(p.tx,"sy",{to,ease:[d,"inout"]});
+      seg(1.06,.09,()=>seg(.98,.1,()=>seg(1,.09)));
+      segy(1.06,.09); wait(.09,()=>segy(.98,.1)); wait(.19,()=>segy(1,.09));
+    }
+  }
+  later(reduced?0:S.hold,()=>beginDrop(false));
+}
+function cancelFiling(){
+  handles.forEach(h=>h.cancel()); handles=[];
+  E.cancel(ptx); ptx.on=null; E.cancel(cardTx); E.cancel(okTx);
+  pks.forEach(p=>{ E.cancel(p.tx); if(p.preview) E.cancel(p.preview.tx); });
+}
+function closeNow(){ // any tap during filing
+  cancelFiling();
+  const p=pks[bill.cat];
+  if(p){ p.tx.set("sx",1); p.tx.set("sy",1); if(p.preview){ p.preview.tx.set("op",1); p.preview.tx.set("y",0); } }
+  card.style.visibility="hidden";
+  commitItem(); beginDrop(true);
+}
+
+CURVES.in = bez(.42,0,1,1);
+const clamp01=v=>Math.max(0,Math.min(1,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* =====================================================================================================
+   THE TIMELINE — months ahead above, history below, at rest flush on the current month (DESIGN.md)
+   ===================================================================================================== */
+const TODAY={y:2026,m:9,d:16};
+const MNAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS=[[2027,2],[2027,1],[2027,0],[2026,11],[2026,10],[2026,9],[2026,8],[2026,7]];
+const BASE=[["Rent","🏠",950,1],["Car insurance","🚗",48.2,3],["Electricity","🏠",62.4,9],["Water","🏠",40,14],
+  ["Music","🎬",10.99,21],["Gym","💪",35,24],["Broadband","📱",30,28]];
+const ONEOFFS=[["Film club","🎬",59,2027,0,20,3],["Dentist plan","💪",120,2026,11,5,4]];
+const mkey=(y,m)=>y*12+m;
+const list=$("list"), fly=$("fly"), offpill=$("offpill"), againP=$("again");
+let months=new Map();
+function buildData(){
+  months=new Map();
+  MONTHS.forEach(([y,m])=>{
+    const items=BASE.map(b=>({name:b[0],emoji:b[1],amt:b[2],day:b[3],cat:catOfEmoji(b[1])}));
+    ONEOFFS.forEach(o=>{ if(o[3]===y&&o[4]===m) items.push({name:o[0],emoji:o[1],amt:o[2],day:o[5],extra:true,cat:o[6]}); });
+    months.set(mkey(y,m),{y,m,items});
+  });
+}
+function catOfEmoji(e){ const i=CATS0.findIndex(c=>c[1]===e); return i<0?null:i; }
+const isCur=mo=>mo.y===TODAY.y&&mo.m===TODAY.m;
+const isPast=(mo,d)=>mkey(mo.y,mo.m)<mkey(TODAY.y,TODAY.m)||(isCur(mo)&&d<TODAY.d);
+const money=v=>"€"+v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const mname=mo=>MNAMES[mo.m]+(mo.y!==TODAY.y?` ’${String(mo.y).slice(2)}`:"");
+function figOf(mo){
+  if(isCur(mo)) return money(mo.items.filter(i=>i.day>=TODAY.d).reduce((s,i)=>s+i.amt,0))+" left";
+  return money(mo.items.reduce((s,i)=>s+i.amt,0));
+}
+const cmp=(a,b)=>b.day-a.day||b.amt-a.amt||a.name.localeCompare(b.name);
+const rowInner=(e,n,d,a)=>`<div class="well">${e}</div><div class="rt"><div class="rn">${n}</div><div class="rd">${d}</div></div><div class="ra">${a}</div>`;
+const dayLabel=(mo,d)=>new Date(mo.y,mo.m,d).toLocaleDateString("en-US",{weekday:"short"})+" "+d;
+function rowEl(mo,it){
+  const r=document.createElement("div"); r.className="r"+(isPast(mo,it.day)?" past":"");
+  const ci=it.cat==null?catOfEmoji(it.emoji):it.cat, pl=ci==null?["#8E8E93","#98989D"]:PAL[ci%8];
+  r.style.cssText=`--gl:${grad(pl[0])};--gd:${grad(pl[1])};--cl:${pl[0]};--cd:${pl[1]}`;
+  r._it=it; r._mo=mo;
+  r.innerHTML=`<div class="wash"></div><div class="rin">${rowInner(it.emoji,it.name,dayLabel(mo,it.day),money(it.amt))}</div>`;
+  return r;
+}
+function renderList(){
+  list.innerHTML="";
+  months.forEach(mo=>{
+    const sec=document.createElement("section"); sec.className="month";
+    sec.innerHTML=`<div class="mh"><div class="mn">${mname(mo)}</div><div class="mf"><span>${figOf(mo)}</span></div></div><div class="rows"></div>`;
+    mo.el=sec; mo.rowsEl=sec.querySelector(".rows"); mo.figEl=sec.querySelector(".mf");
+    mo.items.sort(cmp).forEach(it=>{ it.el=rowEl(mo,it); mo.rowsEl.appendChild(it.el); dressRow(it.el); });
+    list.appendChild(sec);
+  });
+  list.insertAdjacentHTML("beforeend",`<div class="endline">Nothing before August.</div>`);
+}
+function restScroll(){ list.scrollTop=months.get(mkey(TODAY.y,TODAY.m)).el.offsetTop; }
+function insertItem(mo,it){
+  mo.items.push(it); mo.items.sort(cmp);
+  const next=mo.items[mo.items.indexOf(it)+1];
+  it.el=rowEl(mo,it); mo.rowsEl.insertBefore(it.el,next?next.el:null); dressRow(it.el);
+  return it.el;
+}
+/* Anything added above the reader moves nothing under their eyes: hold the first month in view to the point. */
+function anchored(fn){
+  const st=list.scrollTop; let a=null;
+  for(const mo of months.values()){ if(mo.el.offsetTop+mo.el.offsetHeight>st){ a=mo.el; break; } }
+  const before=a?a.offsetTop:0; fn(); if(a) list.scrollTop=st+(a.offsetTop-before);
+}
+function setFig(mo){ mo.figEl.innerHTML=`<span>${figOf(mo)}</span>`; }
+const HEAD=70; // the pinned month header's height
+function rowTop(el){ return el.offsetTop-list.scrollTop; }
+function inView(el){ const t=rowTop(el); return t>=HEAD-4 && t+64<=list.clientHeight; }
+function targetFor(el){ return Math.max(0,Math.min(list.scrollHeight-list.clientHeight, el.offsetTop-HEAD-120)); }
+function phoneScale(){ const r=phone.getBoundingClientRect(); return r.width/phone.offsetWidth; }
+function relRect(el){
+  const pr=phone.getBoundingClientRect(), sc=pr.width/phone.offsetWidth, r=el.getBoundingClientRect();
+  return {x:(r.left-pr.left)/sc, y:(r.top-pr.top)/sc, w:r.width/sc, h:r.height/sc};
+}
+// where a row sits (or will sit, at full height) in phone coordinates
+function rowRect(el){ return {x:list.offsetLeft+el.offsetLeft, y:list.offsetTop+rowTop(el), w:el.offsetWidth, h:64}; }
+
+/* =====================================================================================================
+   LANDING — what happens after the card is in its folder
+   ===================================================================================================== */
+let phase="edit"; // edit → filing → landing → (pill) → done
+let L=null;
+const lh=[]; const lat=(s,fn)=>{ const h=wait(s,fn); lh.push(h); return h; };
+const nbTx=new WeakMap(); const txOf=el=>{ let t=nbTx.get(el); if(!t){ t=new Tx(el); nbTx.set(el,t); } return t; };
+const scTx=new Tx(null,{v:0}); scTx.on=(p,v)=>{ if(p==="v") list.scrollTop=v; };
+const listTx=new Tx(list), pillTx=new Tx(offpill), flyTx=new Tx(null,{p:0}), zTx=new Tx(null,{p:0}), hTx=new Tx(null,{h:64});
+hTx.on=(p,v)=>{ if(p==="h"&&L) L.el.style.height=Math.max(0,v)+"px"; };
+
+function sheetOff(){ return sheet.offsetHeight+30; }
+function closeSheet(){
+  if(ui.closing||ui.closed) return;
+  ui.closing=true;
+  if(S.reduce) go(sheetTx,"op",{to:0,fade:true},()=>{ sheetTx.set("y",sheetOff()); sheetTx.set("op",1); ui.closed=true; });
+  else if(S.sheetExit==="soft"){
+    // its contents go first, so what drops is a plain sheet, and it drops a little slower
+    [...sheet.children].forEach(c=>{ if(c!==card){ c.style.transition="opacity .14s ease-out"; c.style.opacity=0; } });
+    go(sheetTx,"y",{to:sheetOff(),spring:[S.sheetDur+.2,0]},()=>{ ui.closed=true; });
+  }
+  else go(sheetTx,"y",{to:sheetOff(),spring:[S.sheetDur,0]},()=>{ ui.closed=true; });
+}
+const scrimEl=$("scrim");
+(function dim(){ const off=sheetOff(), k=off>0?clamp01(1-sheetTx.y/off):0;
+  const kk=Math.max(S.sheetExit==="soft"?k*sheetTx.op:0,window.__billsK||0);
+  scrimEl.style.opacity=(.16*kk).toFixed(3); requestAnimationFrame(dim); })();
+function resetSheetGeom(){
+  ["left","top","width","height","right","bottom","borderRadius","boxShadow"].forEach(k=>sheet.style[k]="");
+  [...sheet.children].forEach(c=>{ c.style.transition=""; c.style.opacity=""; });
+  sheet.querySelectorAll(".zrow").forEach(z=>z.remove());
+}
+
+function beginDrop(fast){
+  if(phase!=="filing") return;
+  phase="landing";
+  const ld=LANDS[S.lands], primKey=mkey(ld.y,ld.m), prim=months.get(primKey);
+  const it={name:bill.name.trim()||"Bill",emoji:cats[bill.cat].emoji,amt:parseFloat(bill.amount)||0,day:ld.d,
+    isNew:true,extra:!ld.monthly,cat:bill.cat,start:ld.monthly};
+  const o=S.reduce?"fade":S.opt;
+  snap0=takeSnap();
+  anchored(()=>{
+    // the bill's later charges, all off screen above, go in at once
+    if(ld.monthly) months.forEach((mo,k)=>{ if(k>primKey){ insertItem(mo,Object.assign({},it,{start:false})); setFig(mo); } });
+    insertItem(prim,it);
+  });
+  added={ld,it};
+  const el=it.el, rin=el.querySelector(".rin"), wash=el.querySelector(".wash");
+  L={mo:prim,it,el,rin,wash,rinTx:new Tx(rin),washTx:new Tx(wash,{op:0}),off:false,viaPill:false};
+  const h0 = (o==="slide") || (o==="fall") || (o==="card") || (o==="slip"&&S.flyGap==="arrival");
+  if(h0) el.style.height="0px";
+  if(o!=="highlight") L.rinTx.set("op",0);
+  L.off=!inView(el);
+  if(L.off&&(S.offMode==="jump"||o==="zoom"||o==="carry"||o==="card")){ list.scrollTop=targetFor(el); L.off=false; } // behind the sheet
+  if(fast){ closeSheet(); finishLanding(); return; }
+  if(S.view!=="days"){
+    if(S.view==="month") renderMonth({hideNew:true,fig:snap0.month}); else renderYear({hideNew:true,totals:snap0.totals,sum:snap0.sum});
+    closeSheet(); lat(.12,S.view==="month"?playMonth:playYear); return;
+  }
+  if(o==="zoom") zoomSheet();
+  else if(o==="carry") startCarry();
+  else if(o==="card") startCard();
+  else if(o==="slip") startFly();
+  else { closeSheet(); lat(S.overlap==="with"?.12:.38,arrive); }
+}
+function arrive(){
+  if(!L.off) return play();
+  if(S.offMode==="scroll") scrollToRow(play); else showPill();
+}
+function scrollToRow(done){
+  const to=targetFor(L.el);
+  if(S.reduce){ list.scrollTop=to; done&&done(); return; }
+  scTx.set("v",list.scrollTop);
+  go(scTx,"v",{to,spring:[.6,0]},()=>{ L.off=false; done&&done(); });
+}
+function endSoon(t){ lat(t,()=>{ phase="done"; showAgain(); }); }
+function showAgain(){ againP.style.display="block"; }
+
+function play(){
+  L.off=false; rollFig(L.mo);
+  const o=S.reduce?"fade":(L.viaPill&&["slip","zoom","carry","card"].includes(S.opt))?"reveal":S.opt;
+  if(o==="fade"||o==="reveal"){ L.el.style.height=""; go(L.rinTx,"op",{to:1,ease:[.2,"out"],fade:true}); washOn(.2); endSoon(1.2); return; }
+  if(o==="highlight") return playHL();
+  if(o==="slam") return playSlam();
+  if(o==="slide") return playSlide();
+  if(o==="fall") return playFall();
+}
+function washOn(delay){
+  const c=S.hlTint==="cat"?hex2rgb(catHex(L.it.cat!=null?L.it.cat:bill.cat)):null;
+  L.wash.style.background=c?`rgba(${c},${S.dark?.32:.22})`:"var(--well)";
+  const fade=S.reduce?.6:S.hlFade;
+  L.washTx.set("op",0);
+  go(L.washTx,"op",{to:1,ease:[.15,"out"],fade:true},()=>lat((delay||0)+.25,()=>go(L.washTx,"op",{to:0,ease:[fade,"inout"],fade:true})));
+}
+
+/* ---------- 1 · Highlight: it's there when the sheet uncovers it, washed in the folder's colour ---------- */
+function playHL(){
+  washOn(0);
+  if(S.hlPulse) go(L.rinTx,"s",{to:1.035,ease:[.12,"out"]},()=>go(L.rinTx,"s",{to:1,spring:[.4,.5]}));
+  endSoon(S.hlFade+.4);
+}
+
+/* ---------- 2 · Slam: it drops from above the page into its gap, and the rows around it ripple ---------- */
+function playSlam(){
+  const r=L.rinTx; L.it.cat=bill.cat;
+  L.rin.classList.add("slamming");
+  r.set("s",S.slamFrom); r.set("op",0);
+  go(r,"op",{to:1,ease:[.08,"out"]});
+  go(r,"s",{to:1,ease:[.17,"in"]},()=>{
+    haptic("heavy");
+    L.rin.classList.remove("slamming");
+    go(r,"sy",{to:.93,ease:[.05,"out"]},()=>go(r,"sy",{to:1,spring:[.35,.5]}));
+    go(r,"sx",{to:1.025,ease:[.05,"out"]},()=>go(r,"sx",{to:1,spring:[.35,.5]}));
+    ripple(); if(S.shake) shake(); if(S.glow) washOn(0);
+    endSoon(S.glow?S.hlFade+.4:.9);
+  });
+}
+function ripple(){
+  if(S.ripple==="off") return;
+  const rows=[...list.querySelectorAll(".r")], i0=rows.indexOf(L.el);
+  rows.forEach((row,i)=>{
+    const d=Math.abs(i-i0); if(!d||d>S.reach) return;
+    const k=Math.pow(.72,d-1), dir=i<i0?-1:1, tx=txOf(row);
+    lat((d-1)*.035,()=>{
+      if(S.ripple==="push") go(tx,"y",{to:dir*S.strength*k,ease:[.07,"out"]},()=>go(tx,"y",{to:0,spring:[.45,.5]}));
+      else go(tx,"s",{to:1+S.strength*.006*k,ease:[.08,"out"]},()=>go(tx,"s",{to:1,spring:[.4,.4]}));
+    });
+  });
+}
+function shake(){
+  const seq=[5,-4,2.5,-1,0]; let i=0;
+  const step=()=>{ if(i>=seq.length) return; go(listTx,"x",{to:seq[i++],ease:[.045,"inout"]},step); };
+  step();
+}
+
+/* ---------- 3 · Slide in: the gap opens and the row slides into it ---------- */
+function playSlide(){
+  const r=L.rinTx, W=L.el.offsetWidth, sp={spring:[S.slideDur,S.slideB]};
+  L.it.cat=bill.cat;
+  const slide=()=>{
+    if(S.slideFrom==="below"){ r.set("y",24); r.set("op",0); go(r,"y",Object.assign({to:0},sp),()=>haptic("light")); go(r,"op",{to:1,ease:[.2,"out"]}); }
+    else { r.set("x",S.slideFrom==="right"?W:-W); r.set("op",1); go(r,"x",Object.assign({to:0},sp),()=>haptic("light")); }
+    if(S.glow) lat(S.slideDur*.6,()=>washOn(0));
+    endSoon(S.slideDur+(S.glow?S.hlFade+.2:.5));
+  };
+  hTx.set("h",0);
+  go(hTx,"h",{to:64,spring:[.4,0]},()=>{ L.el.style.height=""; });
+  if(S.slideGap==="before") lat(.2,slide); else slide();
+}
+
+/* ---------- 4 · Slip flies: the bill's slip comes out of the folder and becomes the row ---------- */
+function setFlyRect(b,rad){ fly.style.left=b.x+"px"; fly.style.top=b.y+"px"; fly.style.width=b.w+"px"; fly.style.height=b.h+"px";
+  fly.querySelector(".fr").style.borderRadius=rad+"px"; }
+function startFly(){
+  L.it.cat=bill.cat;
+  const p=pks[bill.cat], slip=p&&p.preview?p.preview.el:null;
+  const A=slip?relRect(slip):{x:157,y:520,w:88,h:34};
+  if(slip) slip.style.visibility="hidden";
+  const fs=fly.querySelector(".fs"), fr=fly.querySelector(".fr"), frin=fly.querySelector(".frin");
+  fs.textContent=L.it.name;
+  frin.innerHTML=`<div class="rin" style="position:absolute;inset:0">${rowInner(L.it.emoji,L.it.name,dayLabel(L.mo,L.it.day),money(L.it.amt))}</div>`;
+  fs.style.opacity=1; fr.style.opacity=0; fly.style.opacity=1; fly.style.display="block";
+  // lift it clear of the folder as the sheet starts down
+  const A2={x:A.x-6,y:A.y-16,w:A.w+12,h:A.h+4};
+  flyTx.on=(pr,v)=>{ if(pr==="p") setFlyRect({x:lerp(A.x,A2.x,v),y:lerp(A.y,A2.y,v),w:lerp(A.w,A2.w,v),h:lerp(A.h,A2.h,v)},6); };
+  flyTx.set("p",0); go(flyTx,"p",{to:1,ease:[.16,"out"]});
+  closeSheet();
+  lat(.2,()=>{
+    if(!L.off) return flyTo(A2,()=>rowRect(L.el),true);
+    if(S.offMode==="scroll") return scrollToRow(()=>flyTo(A2,()=>rowRect(L.el),true));
+    // off screen with a pill: the slip becomes the pill
+    offpill.style.visibility="hidden"; showPill(true);
+    flyTo(A2,()=>relRect(offpill),false);
+  });
+}
+function flyTo(A,targetFn,toRow){
+  const B=targetFn(), fs=fly.querySelector(".fs"), fr=fly.querySelector(".fr"), frin=fly.querySelector(".frin");
+  frin.style.width=B.w+"px"; frin.style.height=B.h+"px";
+  if(!toRow){ frin.style.display="none"; }
+  else frin.style.display="";
+  const ax=A.x+A.w/2, ay=A.y+A.h/2, bx=B.x+B.w/2, by=B.y+B.h/2, dx=bx-ax, dy=by-ay, len=Math.hypot(dx,dy)||1;
+  const arc=S.flyPath==="arc"?Math.min(110,len*.28):0, px=-dy/len, py=dx/len;
+  let opened=false, landed=false;
+  flyTx.on=(pr,v)=>{
+    if(pr!=="p") return;
+    const t=v, bump=arc*Math.sin(Math.PI*clamp01(t));
+    const b={x:lerp(A.x,B.x,t)+px*bump, y:lerp(A.y,B.y,t)+py*bump, w:Math.max(20,lerp(A.w,B.w,t)), h:Math.max(10,lerp(A.h,B.h,t))};
+    setFlyRect(b,lerp(6,toRow?14:22,clamp01(t)));
+    fs.style.opacity=1-clamp01((t-.12)/.35);
+    fr.style.opacity=toRow?clamp01((t-.08)/.35):clamp01((t-.2)/.4);
+    if(toRow){ const s=b.w/B.w; frin.style.transform=`translate(0px,${(b.h-B.h*s)/2}px) scale(${s})`; }
+    if(toRow&&S.flyGap==="arrival"&&!opened&&t>.45){ opened=true; hTx.set("h",0); go(hTx,"h",{to:64,spring:[.35,0]},()=>{ L.el.style.height=""; }); }
+    if(!landed&&t>.97){ landed=true; haptic("light"); }
+  };
+  flyTx.set("p",0);
+  go(flyTx,"p",{to:1,spring:[S.flyDur,S.flyB]},()=>{
+    flyTx.on=null;
+    if(toRow){
+      L.el.style.height=""; L.rinTx.set("op",1); rollFig(L.mo);
+      go(new Tx(fly),"op",{from:1,to:0,ease:[.12,"out"]},()=>{ fly.style.display="none"; fly.style.opacity=1; fly.style.transform=""; });
+      if(S.glow) washOn(0);
+      endSoon(S.glow?S.hlFade+.4:.4);
+    } else {
+      fly.style.display="none"; offpill.style.visibility="";
+      go(pillTx,"s",{from:.9,to:1,spring:[.35,.5]});
+    }
+  });
+}
+
+/* ---------- 5 · Zoom in: the sheet doesn't drop, it shrinks into the new row ---------- */
+function zoomSheet(){
+  L.it.cat=bill.cat;
+  const A=relRect(sheet), B=rowRect(L.el);
+  [...sheet.children].forEach(c=>{ c.style.transition="opacity .12s"; c.style.opacity=0; });
+  const z=document.createElement("div"); z.className="zrow";
+  z.innerHTML=`<div class="rin" style="position:absolute;inset:0">${rowInner(L.it.emoji,L.it.name,dayLabel(L.mo,L.it.day),money(L.it.amt))}</div>`;
+  z.style.width=B.w+"px"; z.style.height=B.h+"px"; sheet.appendChild(z);
+  sheet.style.right="auto"; sheet.style.bottom="auto";
+  zTx.on=(pr,v)=>{
+    if(pr!=="p") return;
+    const b={x:lerp(A.x,B.x,v),y:lerp(A.y,B.y,v),w:Math.max(40,lerp(A.w,B.w,v)),h:Math.max(30,lerp(A.h,B.h,v))};
+    sheet.style.left=b.x+"px"; sheet.style.top=b.y+"px"; sheet.style.width=b.w+"px"; sheet.style.height=b.h+"px";
+    sheet.style.borderRadius=lerp(38,14,clamp01(v))+"px";
+    const s=b.w/B.w; z.style.transform=`translate(0px,${(b.h-B.h*s)/2}px) scale(${s})`; z.style.opacity=clamp01((v-.3)/.4);
+  };
+  zTx.set("p",0);
+  go(zTx,"p",{to:1,spring:[S.zoomDur,S.zoomB]},()=>{
+    zTx.on=null; haptic("light"); L.rinTx.set("op",1); rollFig(L.mo);
+    go(sheetTx,"op",{to:0,ease:[.14,"out"]},()=>{ resetSheetGeom(); sheetTx.set("y",sheetOff()); sheetTx.set("op",1); ui.closed=true; });
+    if(S.glow) washOn(0);
+    endSoon(S.glow?S.hlFade+.4:.5);
+  });
+}
+
+/* ---------- off screen: a pill that says where it went ---------- */
+function showPill(silent){
+  const up=L.el.offsetTop<list.scrollTop;
+  offpill.innerHTML=`Added to ${mname(L.mo)}<i>${up?"↑":"↓"}</i>`;
+  offpill.style.display="block"; phase="pill";
+  if(!silent) go(pillTx,"s",{from:.9,to:1,spring:[.35,.5]});
+}
+offpill.addEventListener("click",e=>{
+  e.stopPropagation(); if(phase!=="pill"||!L) return;
+  if(S.view==="month") return viewPillTap();
+  offpill.style.display="none"; phase="landing"; L.viaPill=true;
+  scrollToRow(play);
+});
+
+/* ---------- the month's figure rolls, as .contentTransition(.numericText()) does ---------- */
+function rollFig(mo){
+  const now=figOf(mo), old=mo.figEl.querySelector("span");
+  if(!old||old.textContent===now) return;
+  if(S.figure==="jump"||S.reduce){ setFig(mo); return; }
+  const down=document.createElement("span"); down.textContent=now; mo.figEl.appendChild(down);
+  const ot=new Tx(old), nt=new Tx(down,{y:18,op:0});
+  go(ot,"y",{to:-18,spring:[.35,0]}); go(ot,"op",{to:0,ease:[.15,"out"]},()=>old.remove());
+  go(nt,"y",{to:0,spring:[.35,.15]}); go(nt,"op",{to:1,ease:[.2,"out"]});
+}
+
+/* ---------- a tap during any of it ends it at once ---------- */
+function finishLanding(){
+  lh.forEach(h=>h.cancel()); lh.length=0;
+  [scTx,listTx,flyTx,zTx,hTx,pillTx].forEach(t=>E.cancel(t));
+  flyTx.on=null; zTx.on=null; sheetTx.on=null; listTx.set("x",0); pillTx.set("s",1);
+  fly.style.display="none"; fly.querySelector(".fs").style.display=""; offpill.style.visibility="";
+  E.cancel(sheetTx); resetSheetGeom(); sheetTx.set("op",1); sheetTx.set("y",sheetOff()); ui.closed=true;
+  list.querySelectorAll(".r").forEach(r=>{ const t=nbTx.get(r); if(t){ E.cancel(t); t.set("x",0); t.set("y",0); t.set("s",1); } });
+  if(L){
+    E.cancel(L.rinTx); E.cancel(L.washTx);
+    L.el.style.height=""; ["x","y"].forEach(k=>L.rinTx.set(k,0)); ["s","sx","sy","op"].forEach(k=>L.rinTx.set(k,1));
+    L.rin.classList.remove("slamming"); L.washTx.set("op",0); setFig(L.mo);
+    if(S.view!=="days"){
+      const ld=LANDS[S.lands];
+      if(S.view==="year") renderYear();
+      else if(monthShown.y===ld.y&&monthShown.m===ld.m||phase==="pill") renderMonth();
+      else { renderMonth(); offpill.innerHTML=`Added to ${mname({y:ld.y,m:ld.m})}<i>›</i>`; offpill.style.display="block"; phase="pill"; return; }
+      phase="done"; showAgain(); return;
+    }
+    if(L.off&&S.offMode==="pill"){ showPill(true); return; }
+    if(L.off) list.scrollTop=targetFor(L.el);
+    L.off=false;
+  }
+  phase="done"; showAgain();
+}
+phone.addEventListener("pointerdown",e=>{
+  if(phase==="filing"){ e.stopPropagation(); e.preventDefault(); closeNow(); }
+  else if(phase==="landing"){ e.stopPropagation(); e.preventDefault(); finishLanding(); }
+  else if(phase==="opening"){ e.stopPropagation(); e.preventDefault(); doneOpen(); }
+},true);
+
+/* ---------- ✓, ✕ and going again ---------- */
+$("okBtn").addEventListener("click",e=>{ e.stopPropagation(); if(phase!=="edit"||!complete()) return; if(billsFrom){ haptic("light"); return backToBills(); } if(O){ haptic("light"); return returnRow(true); } if(S.picker==="hand") okHand(); else if(S.opt==="card"&&!S.reduce) okCardLeads(); else { phase="filing"; fileCard(); } });
+$("xBtn").addEventListener("click",()=>{ if(phase!=="edit") return; if(billsFrom) return backToBills(); if(O) return returnRow(false); ui.busy=true; nameIn.blur(); phase="done"; closeSheet(); showAgain(); });
+function setPanelRaw(name){ ui.panel=name; ui.ring=null; keypad.classList.toggle("off",name!=="keypad"); pscroll.classList.toggle("off",name!=="pockets"); handEl.classList.toggle("off",name!=="hand"); }
+const startPanel=()=>S.picker==="hand"?"hand":"keypad";
+function restoreCard(){
+  if(card.parentNode!==sheet) sheet.insertBefore(card,$("keypad"));
+  card.style.cssText=""; cardTx.el=card; cardTx.set("op",1); cardTx.set("s",1); card.style.transform="";
+  faceA.style.cssText=""; emoTx.set("s",1); emoTx.set("y",0); emoTx.set("op",1);
+  pscroll.scrollTop=0;
+}
+function replay(){
+  lh.forEach(h=>h.cancel()); lh.length=0; cancelFiling();
+  [scTx,listTx,flyTx,zTx,hTx,pillTx].forEach(t=>E.cancel(t)); flyTx.on=null; zTx.on=null; listTx.set("x",0);
+  fly.style.display="none"; offpill.style.display="none"; offpill.style.visibility=""; againP.style.display="none";
+  L=null; O=null; billsFrom=null; added=null; if(typeof billsTx!=="undefined"){ E.cancel(billsTx); billsTx.set("y",billsH()); billsF.style.visibility="hidden"; } sheetTx.on=null; E.cancel(opTx); opTx.on=null; fly.querySelector(".fs").style.display=""; monthShown={y:TODAY.y,m:TODAY.m};
+  buildData(); renderList(); restScroll(); showView();
+  restoreCard(); freshCats(); resetBill(false);
+  paintFaces(); buildPockets(); buildHand(); setPanelRaw(startPanel()); renderCard(); if(S.picker==="hand") requestAnimationFrame(()=>layoutHand(true));
+  E.cancel(sheetTx); resetSheetGeom(); okTx.set("s",1);
+  phase="edit";
+  if(S.reduce){ sheetTx.set("y",0); sheetTx.set("op",0); go(sheetTx,"op",{to:1,fade:true}); }
+  else { sheetTx.set("op",1); sheetTx.set("y",sheetOff()); go(sheetTx,"y",{to:0,spring:[.45,.15]}); }
+}
+againP.addEventListener("click",e=>{ e.stopPropagation(); replay(); });
+$("plusB").addEventListener("click",e=>{ e.stopPropagation(); if(phase==="done"||phase==="pill") replay(); });
+$("backB").addEventListener("click",()=>toast("The year isn't in this prototype"));
+
+/* =====================================================================================================
+   THE HAND — categories as cards you play onto the bill, not folders it goes into
+   (from docs/prototypes/edit-revisit-card.html's P2: the fan, the flight to the tile, the flood and the stamp)
+   ===================================================================================================== */
+const handEl=$("hand");
+const HW=84, HH=120, DEAL=200;
+let handActive=-1;
+function fanStep(n,W){ return Math.min(48,(W-HW-64)/Math.max(1,n-1)); }
+function fanPose(i,n,W,o){
+  const step=fanStep(n,W), a=8, rad=Math.PI/180, xc=(i-(n-1)/2)*step, th=xc/step*a;
+  const R=step/Math.sin(a*rad), x=R*Math.sin(th*rad), y=R*(1-Math.cos(th*rad));
+  return `translate(${(x+(o.dx||0)).toFixed(1)}px,${(y+(o.dy||0)+(o.lift||0)).toFixed(1)}px) rotate(${(th+(o.rot||0)).toFixed(2)}deg) scale(${o.scale||1})`;
+}
+function buildHand(){
+  handEl.innerHTML="";
+  cats.slice(0,S.pockets).forEach((c,i)=>{
+    const el=document.createElement("div"); el.className="hc"; el.dataset.i=i; el.style.setProperty("--c",catHex(i));
+    el.innerHTML=drawn()?`<span class="hbig hpic">${catPic(i,44,false)}</span><span class="hname">${c.name}</span>`:`<span class="hpip">${c.emoji}</span><span class="hbig">${c.emoji}</span><span class="hname">${c.name}</span>`;
+    handEl.appendChild(el);
+  });
+  const nw=document.createElement("div"); nw.className="hc hnew"; nw.dataset.i="new";
+  nw.innerHTML=`<span class="hbig">+</span><span class="hname">New</span>`; handEl.appendChild(nw);
+}
+const handCards=()=>[...handEl.querySelectorAll(".hc")].filter(c=>!c.classList.contains("played"));
+function layoutHand(deal){
+  const cards=handCards(), n=cards.length, W=handEl.clientWidth||402;
+  handEl.querySelectorAll(".hc.played").forEach(c=>{ c.style.transition="none"; c.style.opacity=0; });
+  cards.forEach((c,i)=>{
+    const o=i===handActive?{lift:-18,scale:1.06}:(handActive>=0&&Math.abs(i-handActive)===1?{rot:i<handActive?-3:3}:{});
+    c.style.zIndex=i===handActive?60:i+1; c.style.opacity=1;
+    if(deal&&!S.reduce){ c.style.transition="none"; c.style.transform=fanPose(i,n,W,{dy:DEAL}); c._to=fanPose(i,n,W,o); c.style.transitionDelay=(i*22)+"ms"; }
+    else { c.style.transition=""; c.style.transform=fanPose(i,n,W,o); }
+  });
+  if(deal&&!S.reduce){ void handEl.offsetWidth; cards.forEach(c=>{ c.style.transition=""; c.style.transform=c._to; });
+    setTimeout(()=>cards.forEach(c=>c.style.transitionDelay=""),600); }
+}
+handEl.addEventListener("pointerdown",e=>{
+  const c=e.target.closest(".hc"); if(!c||phase!=="edit") return;
+  handActive=handCards().indexOf(c); c.style.transition="transform .14s ease-out"; layoutHand(false);
+  haptic("selection");
+});
+["pointerup","pointercancel","pointerleave"].forEach(n=>handEl.addEventListener(n,e=>{
+  if(handActive<0) return;
+  const c=handCards()[handActive]; handActive=-1;
+  if(n==="pointerup"&&c&&e.target.closest(".hc")===c) playCat(c); else layoutHand(false);
+}));
+/* playing a card: it flies onto the emoji tile and shrinks into it; the colour floods out from the tile;
+   the emoji stamps 1.3, .95, 1; the card dips 2pt; one firm haptic */
+function playCat(c){
+  if(c.dataset.i==="new"){ layoutHand(false); toast("Making a category isn't in this prototype"); return; }
+  const i=+c.dataset.i;
+  if(bill.cat===i){ layoutHand(false); return; }
+  const prev=bill.cat;
+  handEl.querySelectorAll(".hc.played").forEach(x=>x.classList.remove("played"));
+  const A=relRect(c), T=relRect(tile), m=/rotate\((-?[\d.]+)deg\)/.exec(c.style.transform), ang=m?+m[1]:0;
+  c.classList.add("played"); layoutHand(false);
+  const f=document.createElement("div"); f.className="hc hflyer"; f.innerHTML=c.innerHTML; f.style.setProperty("--c",catHex(i));
+  f.style.left=A.x+"px"; f.style.top=A.y+"px"; f.style.width=HW+"px"; f.style.height=HH+"px";
+  // A is the rotated bounding box; centre the unrotated card in it
+  f.style.left=(A.x+A.w/2-HW/2)+"px"; f.style.top=(A.y+A.h/2-HH/2)+"px";
+  phone.appendChild(f);
+  const ft=new Tx(f,{r:ang}); const dx=T.x+T.w/2-(A.x+A.w/2), dy=T.y+T.h/2-(A.y+A.h/2), sc=T.w/HH;
+  const arrive=()=>{ f.remove(); dressCard(i,prev); };
+  if(S.reduce){ go(ft,"op",{to:0,fade:true},arrive); return; }
+  go(ft,"x",{to:dx,ease:[.26,"shrink"]}); go(ft,"y",{to:dy,ease:[.26,"shrink"]}); go(ft,"r",{to:0,ease:[.26,"shrink"]});
+  go(ft,"s",{to:sc,ease:[.26,"shrink"]}); go(ft,"op",{to:.75,ease:[.26,"shrink"]},arrive);
+}
+function dressCard(i,prev){
+  bill.cat=i; renderCard();
+  const hex=catHex(i);
+  setEmo(i);
+  haptic("medium");
+  if(S.reduce){ faceA.style.background=faceBg(hex); shownHex=hex; emoTx.set("op",0); go(emoTx,"op",{to:1,fade:true}); return; }
+  // the flood: the new colour grows as a circle from the tile's centre
+  const W=card.offsetWidth, H=card.offsetHeight, cx=tile.offsetLeft+tile.offsetWidth/2, cy=tile.offsetTop+tile.offsetHeight/2;
+  const R=Math.hypot(Math.max(cx,W-cx),Math.max(cy,H-cy))+2;
+  faceA.style.background=faceBg(shownHex); faceB.style.background=faceBg(hex); faceBTx.set("op",1);
+  const fl=new Tx(null,{p:0}); fl.on=(p,v)=>{ if(p==="p") faceB.style.clipPath=`circle(${(R*v).toFixed(1)}px at ${cx}px ${cy}px)`; };
+  fl.set("p",0);
+  go(fl,"p",{to:1,ease:[.38,"shrink"]},()=>{ faceA.style.background=faceBg(hex); faceB.style.clipPath=""; faceBTx.set("op",0); });
+  shownHex=hex;
+  // the stamp
+  emoTx.set("s",1.3); go(emoTx,"s",{to:.95,ease:[.14,"out"]},()=>go(emoTx,"s",{to:1,ease:[.1,"inout"]}));
+  go(cardTx,"y",{to:2,ease:[.07,"out"]},()=>go(cardTx,"y",{to:0,ease:[.13,"out"]}));
+}
+/* ✓ with the hand: no folder to file into; the card itself goes to the list */
+function okHand(){
+  phase="filing"; ui.busy=true; nameIn.blur();
+  haptic("light");
+  if(S.popOn) go(okTx,"s",{from:S.popFrom,to:1,spring:[S.popDur,S.popB]});
+  commitItem();
+  later(.12,()=>beginDrop(false));
+}
+
+/* =====================================================================================================
+   ONE DIRECTION — the card, the sheet and the row all move the same way
+   ===================================================================================================== */
+/* ---------- 6 · Fall in: the row falls into its gap as the sheet falls away ---------- */
+function playFall(){
+  const r=L.rinTx; L.it.cat=bill.cat;
+  hTx.set("h",0); go(hTx,"h",{to:64,spring:[.4,0]},()=>{ L.el.style.height=""; });
+  r.set("y",-S.fallFrom); r.set("op",0); L.rin.classList.add("slamming"); // it falls as an object over the list
+  go(r,"op",{to:1,ease:[.15,"out"]});
+  go(r,"y",{to:0,spring:[S.fallDur,S.fallB]});
+  lat(S.fallDur*.4,()=>{ haptic("light"); L.rin.classList.remove("slamming"); });
+  if(S.glow) lat(S.fallDur*.5,()=>washOn(0));
+  endSoon(S.fallDur+(S.glow?S.hlFade+.2:.5));
+}
+
+/* ---------- 7 · Set down: the row rides down on the sheet's top edge and is left in its place ---------- */
+function startCarry(){
+  L.it.cat=bill.cat; L.el.style.height="";
+  const r=L.rinTx, slot=list.offsetTop+rowTop(L.el), gap=10;
+  L.rin.classList.add("slamming"); r.set("op",1);
+  let released=false;
+  const ride=v=>{
+    const y=sheet.offsetTop+v-64-gap;
+    if(y<slot){ r.set("y",y-slot); return; }
+    released=true; sheetTx.on=null; r.set("y",0);
+    haptic("light"); L.rin.classList.remove("slamming"); rollFig(L.mo);
+    go(r,"sy",{to:.95,ease:[.05,"out"]},()=>go(r,"sy",{to:1,spring:[.3,.4]}));
+    if(S.glow) washOn(0);
+    endSoon(S.glow?S.hlFade+.4:.6);
+  };
+  ride(sheetTx.y);
+  sheetTx.on=(p,v)=>{ if(p==="y"&&!released) ride(v); };
+  closeSheet();
+}
+
+/* ---------- 8 · Card leads: the folder keeps its slip, the card itself goes down into the list ---------- */
+function okCardLeads(){
+  phase="filing"; ui.busy=true; nameIn.blur();
+  haptic("light");
+  if(S.popOn) go(okTx,"s",{from:S.popFrom,to:1,spring:[S.popDur,S.popB]});
+  const p=pks[bill.cat];
+  if(p&&ui.panel==="pockets"){ // the folder takes the bill: its slip settles in, the folder squashes once
+    if(p.preview){ const s=p.preview.tx; go(s,"y",{to:-S.slipPop,ease:[.14,"out"]},()=>go(s,"y",{to:0,spring:[S.slipDur,S.slipSB]})); }
+    const sxT=1+(1-S.sqY)*.58;
+    go(p.tx,"sy",{to:S.sqY,ease:[.07,"out"]},()=>go(p.tx,"sy",{to:1,spring:[S.sqDur,S.sqB]}));
+    go(p.tx,"sx",{to:sxT,ease:[.07,"out"]},()=>go(p.tx,"sx",{to:1,spring:[S.sqDur,S.sqB]}));
+  }
+  commitItem();
+  later(.14,()=>beginDrop(false));
+}
+function startCard(){
+  L.it.cat=bill.cat;
+  if(L.el.classList.contains("past")) L.noFlip=true; // charged: solid card, solid row, nothing to turn over to
+  if(S.cardFlip&&!S.reduce&&!L.noFlip&&(S.look==="stack"||S.look==="paper")) return startCardFlip();
+  const A=relRect(card), B=rowRect(L.el);
+  const fs=fly.querySelector(".fs"), fr=fly.querySelector(".fr"), frin=fly.querySelector(".frin");
+  fs.style.display="none"; fr.style.opacity=0; fly.style.opacity=1; fly.style.display="block";
+  const chip=S.look==="chip", well=L.el.querySelector(".well");
+  frin.innerHTML=`<div class="${L.el.className.replace(" slamming","")}" style="${L.el.style.cssText};position:absolute;inset:0;height:64px"><div class="rin" style="opacity:1">${L.el.querySelector(".rin").innerHTML}</div></div>`;
+  frin.style.width=B.w+"px"; frin.style.height=B.h+"px"; frin.style.display=chip?"none":"";
+  // Card chip: the card shrinks straight into the well, and the row's words come up around it
+  const W={x:B.x+20,y:B.y+(64-29)/2,w:46,h:29}, T=chip?W:B;
+  if(chip){ well.style.opacity=0; }
+  card.style.cssText=`position:absolute;left:0;top:0;right:auto;width:${A.w}px;height:${A.h}px;transform-origin:0 0;z-index:1`;
+  cardTx.el=null; fly.appendChild(card);
+  setFlyRect(A,20);
+  closeSheet(); // the sheet drops away from under the card
+  let opened=false, landed=false;
+  flyTx.on=(pr,t)=>{
+    if(pr!=="p") return;
+    const b={x:lerp(A.x,T.x,t),y:lerp(A.y,T.y,t),w:Math.max(20,lerp(A.w,T.w,t)),h:Math.max(10,lerp(A.h,T.h,t))};
+    setFlyRect(b,lerp(20,chip?6:14,clamp01(t)));
+    const s=Math.min(b.w/A.w,b.h/A.h);
+    card.style.transform=`translate(${(b.w-A.w*s)/2}px,${(b.h-A.h*s)/2}px) scale(${s})`;
+    if(chip){
+      fr.style.opacity=0; card.style.opacity=1-clamp01((t-.78)/.2); well.style.opacity=clamp01((t-.72)/.22);
+      L.rinTx.set("op",clamp01((t-.45)/.35));
+    } else {
+      card.style.opacity=1-clamp01((t-.3)/.35);
+      fr.style.opacity=clamp01((t-.25)/.35);
+    }
+    const s2=b.w/B.w; frin.style.transform=`translate(0px,${(b.h-B.h*s2)/2}px) scale(${s2})`;
+    if(!opened&&t>.3&&!L.keep){ opened=true; hTx.set("h",0); go(hTx,"h",{to:64,spring:[.35,0]},()=>{ L.el.style.height=""; }); }
+    if(!landed&&t>.97){ landed=true; haptic("light"); }
+  };
+  flyTx.set("p",0);
+  lat(.06,()=>go(flyTx,"p",{to:1,spring:[S.cardDur,S.cardB]},()=>{
+    flyTx.on=null; L.el.style.height=""; L.rinTx.set("op",1); well.style.opacity=""; rollFig(L.mo);
+    go(new Tx(fly),"op",{from:1,to:0,ease:[.12,"out"]},()=>{ fly.style.display="none"; fly.style.opacity=1; fly.style.transform=""; fs.style.display=""; });
+    if(S.glow) washOn(0);
+    endSoon(S.glow?S.hlFade+.4:.4);
+  }));
+}
+
+/* Flip: the card turns over in place to its back, the bill as the list will draw it, and that back
+   is what drops: its width settles to the row's and its height folds down to one row */
+function startCardFlip(){
+  const A=relRect(card), B=rowRect(L.el);
+  const fs=fly.querySelector(".fs"), fr=fly.querySelector(".fr"), frin=fly.querySelector(".frin");
+  fs.style.display="none"; fr.style.opacity=1; fly.style.opacity=1; fly.style.display="block"; // the back lives in .fr
+  const cs=getComputedStyle(L.el.querySelector(".rin")), px=v=>parseFloat(v)||0;
+  const to={l:px(cs.left),r:px(cs.right),t:px(cs.top),b:px(cs.bottom),rt:px(cs.borderTopLeftRadius),rb:px(cs.borderBottomLeftRadius)};
+  if(L.el.nextElementSibling&&to.b<0) to.b=0;
+  frin.innerHTML=`<div class="${L.el.className.replace(" slamming","")}" style="${L.el.style.cssText};position:absolute;inset:0;height:100%"><div class="rin" style="opacity:1">${L.el.querySelector(".rin").innerHTML}</div></div>`;
+  const back=frin.querySelector(".rin");
+  if(cs.backgroundColor==="rgba(0, 0, 0, 0)"&&cs.backgroundImage==="none") back.style.background="var(--ground)"; // an outline's back still has to hide what's under it
+  const shape=t=>{ back.style.left=lerp(0,to.l,t)+"px"; back.style.right=lerp(0,to.r,t)+"px"; back.style.top=lerp(0,to.t,t)+"px";
+    back.style.bottom=lerp(0,to.b,t)+"px"; const rt=lerp(20,to.rt,t), rb=lerp(20,to.rb,t); back.style.borderRadius=`${rt}px ${rt}px ${rb}px ${rb}px`; };
+  shape(0);
+  frin.style.width=A.w+"px"; frin.style.height=A.h+"px"; frin.style.display=""; frin.style.transformOrigin="50% 50%";
+  frin.style.visibility="hidden";
+  card.style.cssText=`position:absolute;left:0;top:0;right:auto;width:${A.w}px;height:${A.h}px;transform-origin:50% 50%;z-index:1;backface-visibility:hidden`;
+  cardTx.el=null; fly.appendChild(card);
+  setFlyRect(A,20);
+  if(S.flipSheet==="with") closeSheet(); // the sheet drops away from under the card as it turns
+  const fl=new Tx(null,{p:0}); let turned=false, dropped=false;
+  fl.on=(pr,v)=>{
+    if(pr!=="p") return;
+    // with no hold the drop starts while it's still turning; otherwise the back settles face up and rests a beat
+    if(!dropped&&(S.flipHold>0?v>.97:v>.62)){ dropped=true; closeSheet(); /* a no-op if it is already going */ if(S.flipHold>0){ fl.on=null; frin.style.transform=""; lat(S.flipHold,drop); } else drop(); }
+    const a=180*v, lift=1+.06*Math.sin(Math.PI*clamp01(v));
+    if(a<90){ card.style.transform=`perspective(1100px) rotateY(${a}deg) scale(${lift})`; card.style.visibility=""; frin.style.visibility="hidden"; }
+    else { if(!turned){ turned=true; haptic("selection"); }
+      card.style.visibility="hidden"; frin.style.visibility=""; frin.style.transform=`perspective(1100px) rotateY(${a-180}deg) scale(${lift})`; }
+  };
+  fl.set("p",0);
+  let opened=false, landed=false;
+  const drop=()=>{
+    card.style.display="none";
+    flyTx.on=(pr,t)=>{
+      if(pr!=="p") return;
+      const b={x:lerp(A.x,B.x,t),y:lerp(A.y,B.y,t),w:Math.max(20,lerp(A.w,B.w,t)),h:Math.max(10,lerp(A.h,B.h,t))};
+      setFlyRect(b,14); frin.style.width=b.w+"px"; frin.style.height=b.h+"px"; shape(clamp01(t));
+      // the gap opens on the same progress as the drop, so the rows below make room exactly as it arrives
+      if(!L.keep) L.el.style.height=(64*CURVES.inout(clamp01((t-.1)/.8))).toFixed(2)+"px";
+      if(!landed&&t>.97){ landed=true; haptic("light"); }
+    };
+    flyTx.set("p",0);
+    go(flyTx,"p",{to:1,spring:[S.cardDur,S.cardB]},()=>{
+      flyTx.on=null; fl.on=null; L.el.style.height=""; L.rinTx.set("op",1); rollFig(L.mo);
+      fly.style.display="none"; fly.style.transform=""; fs.style.display=""; frin.style.visibility=""; frin.style.transform=""; frin.style.transformOrigin="0 0";
+      if(S.glow) washOn(0);
+      endSoon(S.glow?S.hlFade+.4:.4);
+    });
+  };
+  lat(.04,()=>go(fl,"p",{to:1,spring:[S.flipDur,0]}));
+}
+
+/* =====================================================================================================
+   OPENING A BILL — tap a card in the timeline and it rises into the sheet as the editor's card; ✓ or ✕ sends it back
+   ===================================================================================================== */
+const SHORTM=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let O=null; // the bill being opened: {mo,it,el}
+const opTx=new Tx(null,{p:0});
+/* the row's own look, drawn at any size between its row (t=1) and the card (t=0) */
+function rowBack(el,frin,A){
+  const rin=el.querySelector(".rin"), cs=getComputedStyle(rin), px=v=>parseFloat(v)||0;
+  const to={l:px(cs.left),r:px(cs.right),t:px(cs.top),b:px(cs.bottom),rt:px(cs.borderTopLeftRadius),rb:px(cs.borderBottomLeftRadius)};
+  if(el.nextElementSibling&&to.b<0) to.b=0;
+  frin.innerHTML=`<div class="${el.className.replace(" slamming","")}" style="${el.style.cssText};position:absolute;inset:0;height:100%"><div class="rin" style="opacity:1;visibility:visible">${rin.innerHTML}</div></div>`;
+  const back=frin.querySelector(".rin");
+  if(cs.backgroundColor==="rgba(0, 0, 0, 0)"&&cs.backgroundImage==="none") back.style.background="var(--ground)";
+  const shape=t=>{ back.style.left=lerp(0,to.l,t)+"px"; back.style.right=lerp(0,to.r,t)+"px"; back.style.top=lerp(0,to.t,t)+"px";
+    back.style.bottom=lerp(0,to.b,t)+"px"; const rt=lerp(20,to.rt,t), rb=lerp(20,to.rb,t); back.style.borderRadius=`${rt}px ${rt}px ${rb}px ${rb}px`; };
+  return shape;
+}
+list.addEventListener("click",e=>{
+  const r=e.target.closest(".r"); if(!r||!r._it||(phase!=="done"&&phase!=="pill")||S.view!=="days") return;
+  openRow(r._mo,r._it);
+});
+function openRow(mo,it){
+  againP.style.display="none"; offpill.style.display="none";
+  lh.forEach(h=>h.cancel()); lh.length=0;
+  const el=it.el, upcoming=!el.classList.contains("past");
+  O={mo,it,el};
+  // the card, filled in for this charge, keypad up
+  restoreCard(); resetBill(true);
+  bill.amount=(+it.amt).toFixed(2); bill.name=it.name; bill.cat=it.cat==null?catOfEmoji(it.emoji):it.cat;
+  bill.date=SHORTM[mo.m]+" "+it.day; bill.repeat=it.extra?"Yearly":"Monthly";
+  ui.committed=true;
+  card.classList.toggle("outlined",S.openStyle==="outline"&&upcoming);
+  paintFaces(); setPanelRaw("keypad"); renderCard();
+  E.cancel(sheetTx); resetSheetGeom(); okTx.set("s",1); ui.closed=false; ui.closing=false;
+  phase="opening";
+  const rin=el.querySelector(".rin");
+  if(S.reduce||S.openStyle==="plain"){
+    sheetTx.set("op",1);
+    if(S.reduce){ sheetTx.set("y",0); sheetTx.set("op",0); go(sheetTx,"op",{to:1,fade:true},()=>{ phase="edit"; }); }
+    else { sheetTx.set("y",sheetOff()); go(sheetTx,"y",{to:0,spring:[.45,.15]},()=>{ phase="edit"; }); }
+    return;
+  }
+  sheetTx.set("y",0); const A=relRect(card); sheetTx.set("y",sheetOff());
+  const B=rowRect(el);
+  rin.style.visibility="hidden"; // its place in the stack waits for it
+  const fs=fly.querySelector(".fs"), fr=fly.querySelector(".fr"), frin=fly.querySelector(".frin");
+  fs.style.display="none"; fr.style.opacity=1; fly.style.opacity=1; fly.style.display="block";
+  const shape=rowBack(el,frin,A);
+  frin.style.display=""; frin.style.transform=""; frin.style.visibility=""; frin.style.transformOrigin="50% 50%";
+  card.style.cssText=`position:absolute;left:0;top:0;right:auto;width:${A.w}px;height:${A.h}px;transform-origin:50% 50%;z-index:1;backface-visibility:hidden;visibility:hidden`;
+  cardTx.el=null; fly.appendChild(card);
+  const flip=S.openStyle==="flip"&&upcoming;
+  haptic("light");
+  go(sheetTx,"y",{to:0,spring:[S.openDur+.05,.1]});
+  opTx.on=(pr,t)=>{
+    if(pr!=="p") return;
+    const b={x:lerp(B.x,A.x,t),y:lerp(B.y,A.y,t),w:lerp(B.w,A.w,t),h:lerp(B.h,A.h,t)};
+    setFlyRect(b,14); frin.style.width=b.w+"px"; frin.style.height=b.h+"px"; shape(1-clamp01(t));
+    // Fill (and a charged card under Flip back): the colour comes up through the outline as it arrives
+    if(!flip){ card.style.visibility=""; const k=clamp01((t-.55)/.4); card.style.opacity=k;
+      const s=Math.min(b.w/A.w,b.h/A.h); card.style.transform=`translate(${(b.w-A.w*s)/2}px,${(b.h-A.h*s)/2}px) scale(${s})`; card.style.transformOrigin="0 0"; }
+  };
+  opTx.set("p",0);
+  let arrived=false;
+  const arrive=()=>{ if(arrived) return; arrived=true; opTx.on=null; E.cancel(opTx);
+    if(!flip) return doneOpen();
+    // Flip back: the outline turns over, and its face is the solid card
+    card.style.transform=""; card.style.transformOrigin="50% 50%";
+    const fl=new Tx(null,{p:0}); let turned=false;
+    fl.on=(p,v)=>{ if(p!=="p") return; const a=180*v;
+      if(a<90){ frin.style.transform=`perspective(1100px) rotateY(${-a}deg)`; }
+      else { if(!turned){ turned=true; haptic("selection"); frin.style.visibility="hidden"; card.style.visibility=""; card.style.opacity=1; }
+        card.style.transform=`perspective(1100px) rotateY(${180-a}deg)`; } };
+    go(fl,"p",{to:1,spring:[S.flipDur,0]},()=>{ fl.on=null; doneOpen(); });
+  };
+  // it turns over as soon as it's in place, rather than after the spring's last fraction of a point
+  const grow=opTx.on; opTx.on=(pr,t)=>{ grow(pr,t); if(flip&&pr==="p"&&t>.985) arrive(); };
+  go(opTx,"p",{to:1,spring:[S.openDur,S.openB]},arrive);
+}
+function doneOpen(){
+  if(phase!=="opening") return;
+  E.cancel(opTx); opTx.on=null; E.cancel(sheetTx); sheetTx.set("y",0);
+  fly.style.display="none"; fly.querySelector(".fs").style.display=""; const frin=fly.querySelector(".frin"); frin.style.transform=""; frin.style.visibility="";
+  restoreCard(); paintFaces(); renderCard(); phase="edit";
+}
+/* back to its row, on ✓ (with any changes) or ✕ */
+function returnRow(save){
+  const {mo,it,el}=O; O=null;
+  phase="filing"; ui.busy=true; nameIn.blur();
+  if(save){
+    it.amt=parseFloat(bill.amount)||0; it.name=bill.name.trim()||it.name;
+    if(bill.cat!=null){ it.cat=bill.cat; it.emoji=cats[bill.cat].emoji; }
+    const fresh=rowEl(mo,it); el.className=fresh.className; el.style.cssText=fresh.style.cssText;
+    el.querySelector(".rin").innerHTML=fresh.querySelector(".rin").innerHTML; dressRow(el);
+  }
+  const rin=el.querySelector(".rin"), wash=el.querySelector(".wash");
+  rin.style.visibility="";
+  phase="landing";
+  L={mo,it,el,rin,wash,rinTx:new Tx(rin),washTx:new Tx(wash,{op:0}),off:false,viaPill:false,keep:true,noFlip:S.openStyle==="outline"};
+  L.rinTx.set("op",0);
+  if(S.reduce||S.openStyle==="plain"){ L.rinTx.set("op",1); closeSheet(); endSoon(.4); return; }
+  startCard();
+}
+
+/* =====================================================================================================
+   ALL BILLS — the list button's sheet, hosted from flow-bills.html (built from entry-ux/all-bills-folders.html).
+   Its controls live in this sidebar under All bills, as ab_ keys; tapping a card there opens it here, in the editor.
+   ===================================================================================================== */
+const billsF=$("billsF");
+let AB=null, billsFrom=null; // billsFrom: the All bills card the open editor came from
+const billsTx=new Tx(null,{y:900});
+billsTx.on=(p,v)=>{ if(p==="y"){ billsF.style.transform=`translateY(${v}px)`; window.__billsK=clamp01(1-v/billsH()); } };
+const billsH=()=>phone.offsetHeight+20;
+const REPW={m:"Monthly",q:"Every 3 months",y:"Yearly"};
+const abVals=vals=>{ const o={}; Object.keys(vals).forEach(k=>o[k.slice(3)]=vals[k]); return o; };
+function pushBills(keys){
+  if(!AB) return; const o={};
+  (keys||topicKeys.bills||[]).forEach(k=>{ if(k.startsWith("ab_")) o[k.slice(3)]=S[k]; });
+  o.dark=!!S.dark; o.look=S.skin==="drawn"?"drawn":"ios"; o.drawDir=S.drawDir; o.reduce=!!S.reduce; o.slow=S.slow;
+  AB.set(o);
+}
+window.__flowBills={
+  ready(ab){
+    AB=ab;
+    const keys=ab.SKEYS.filter(k=>k!=="look"&&k!=="reduce"&&k!=="drawDir").map(k=>"ab_"+k);
+    topicKeys.bills=keys; keys.forEach(k=>{ if(!LKEYS.includes(k)) LKEYS.push(k); });
+    let saved={}; try{ saved=JSON.parse(localStorage.getItem("tilly-card-landing")||"{}")||{}; }catch(e){}
+    keys.forEach(k=>{ S[k]=k in saved?saved[k]:ab.S[k.slice(3)]; });
+    buildBillsTopic(ab);
+    const cs=getComputedStyle(phone); ab.insets(parseFloat(cs.getPropertyValue("--sat"))||47,parseFloat(cs.getPropertyValue("--sab"))||34);
+    pushBills(); syncControls();
+  },
+  open(b){ openFromBills(b); },
+  close(){ closeBills(); },
+};
+function openBills(){
+  if(!AB||(phase!=="done"&&phase!=="pill")) return;
+  againP.style.display="none"; offpill.style.display="none";
+  phase="bills"; billsF.style.visibility="visible"; pushBills();
+  if(S.reduce){ billsTx.set("y",0); billsF.style.opacity=0; go(new Tx(billsF,{op:0}),"op",{to:1,fade:true}); return; }
+  billsF.style.opacity=1; billsTx.set("y",billsH()); go(billsTx,"y",{to:0,spring:[.45,.15]});
+}
+function closeBills(then){
+  if(AB&&AB.openF) AB.closeFolder();
+  go(billsTx,"y",{to:billsH(),spring:[.4,0]},()=>{ billsF.style.visibility="hidden"; if(then) then(); });
+  if(!then){ phase="done"; showAgain(); }
+}
+$("listB").addEventListener("click",e=>{ e.stopPropagation(); if(phase==="bills") closeBills(); else openBills(); });
+
+/* a card in All bills opens in the editor: it lifts out of its folder and flies to the editor card's place while
+   All bills goes down and the editor comes up behind it */
+function openFromBills(b){
+  if(phase!=="bills") return;
+  const r=b.el.getBoundingClientRect(); // the frame isn't scaled, so its coordinates are the phone's
+  const R={x:r.left,y:r.top+billsTx.y,w:r.width,h:r.height};
+  restoreCard(); resetBill(true);
+  bill.amount=(+b.amt).toFixed(2); bill.name=b.name; bill.cat=catOfEmoji(b.f.emoji); bill.date=b.next; bill.repeat=REPW[b.rep]||"Monthly";
+  ui.committed=true; paintFaces(); setPanelRaw("keypad"); renderCard();
+  E.cancel(sheetTx); resetSheetGeom(); okTx.set("s",1); ui.closed=false; ui.closing=false;
+  billsFrom=b; O=null; phase="opening";
+  if(S.reduce){ closeBills(()=>{}); sheetTx.set("y",0); sheetTx.set("op",0); go(sheetTx,"op",{to:1,fade:true},()=>{ phase="edit"; }); return; }
+  sheetTx.set("y",0); const A=relRect(card); sheetTx.set("op",1); sheetTx.set("y",sheetOff());
+  b.el.style.visibility="hidden";
+  const fs=fly.querySelector(".fs"), fr=fly.querySelector(".fr"), frin=fly.querySelector(".frin");
+  fs.style.display="none"; fr.style.opacity=0; frin.style.display="none"; fly.style.opacity=1; fly.style.display="block";
+  card.style.cssText=`position:absolute;left:0;top:0;right:auto;width:${A.w}px;height:${A.h}px;transform-origin:0 0;z-index:1`;
+  cardTx.el=null; fly.appendChild(card);
+  haptic("light");
+  closeBills(()=>{});
+  go(sheetTx,"y",{to:0,spring:[S.openDur+.05,.1]});
+  opTx.on=(pr,t)=>{ if(pr!=="p") return;
+    const q={x:lerp(R.x,A.x,t),y:lerp(R.y,A.y,t),w:lerp(R.w,A.w,t),h:lerp(R.h,A.h,t)};
+    setFlyRect(q,lerp(12,20,clamp01(t))); const s=Math.min(q.w/A.w,q.h/A.h);
+    card.style.transform=`translate(${(q.w-A.w*s)/2}px,${(q.h-A.h*s)/2}px) scale(${s})`; };
+  opTx.set("p",0);
+  go(opTx,"p",{to:1,spring:[S.openDur,S.openB]},()=>doneOpen());
+}
+/* ✓ or ✕ on a bill opened from All bills: the editor goes down and All bills comes back, the card in its place */
+function backToBills(){
+  const b=billsFrom; billsFrom=null; ui.busy=true; nameIn.blur();
+  closeSheet();
+  phase="bills"; billsF.style.visibility="visible"; billsTx.set("y",billsH());
+  lat(.12,()=>{ if(b) b.el.style.visibility=""; go(billsTx,"y",{to:0,spring:[.45,.15]}); });
+}
+
+function buildBillsTopic(ab){
+  const sec=ctl.querySelector('.topic[data-t="bills"]'); if(!sec||sec.dataset.built) return; sec.dataset.built=1;
+  sec.insertAdjacentHTML("beforeend",`<h2>All bills as</h2><div class="opts" id="bopts"></div><div class="ios" id="bios"></div>`);
+  const ob=sec.querySelector("#bopts");
+  ab.OPTS.forEach(([k,l,d])=>{ const bt=document.createElement("button"); bt.className="opt bopt"; bt.dataset.bk=k; bt.innerHTML=`<b>${l}</b><span>${d}</span>`;
+    bt.addEventListener("click",()=>choose({ab_dir:k})); ob.appendChild(bt); });
+  ab.GROUPS.forEach(([which,title,rows])=>{
+    if(title==="Look"||title==="View"||which==="drawn") return;
+    const g=document.createElement("div"); g.dataset.bwhich=which; g.insertAdjacentHTML("beforeend",`<h2>${title}</h2>`);
+    rows.forEach(([label,desc,opts])=>{
+      const wrap=document.createElement("div"); wrap.className="step";
+      wrap.innerHTML=`<div class="sl">${label}</div><div class="chips"></div>`+(desc?`<p class="desc">${desc}</p>`:"");
+      const box=wrap.querySelector(".chips"), chips=[];
+      opts.forEach(([l,vals])=>{ const pv={}; Object.keys(vals).forEach(k=>pv["ab_"+k]=vals[k]);
+        const bt=document.createElement("button"); bt.className="chip"; bt.textContent=l; box.appendChild(bt);
+        bt.addEventListener("click",()=>choose(pv)); chips.push({b:bt,vals:pv}); });
+      chipRows.push(chips); g.appendChild(wrap);
+    });
+    groupEls.push(g); sec.appendChild(g);
+  });
+}
+
+/* =====================================================================================================
+   THE MONTH AND THE YEAR — whichever level is open, the bill lands as that level draws it
+   ===================================================================================================== */
+const monthV=$("monthV"), yearV=$("yearV");
+let added=null, monthShown={y:TODAY.y,m:TODAY.m}, snap0=null;
+const money0=v=>"€"+Math.round(v).toLocaleString("en-US");
+function itemsOf(y,m){
+  const mo=months.get(mkey(y,m));
+  if(mo) return mo.items;
+  const items=BASE.map(b=>({name:b[0],emoji:b[1],amt:b[2],day:b[3],extra:false}));
+  ONEOFFS.forEach(o=>{ if(o[3]===y&&o[4]===m) items.push({name:o[0],emoji:o[1],amt:o[2],day:o[5],extra:true,cat:o[6]}); });
+  if(added&&added.ld.monthly&&mkey(y,m)>mkey(added.ld.y,added.ld.m)) items.push(Object.assign({},added.it,{start:false}));
+  return items;
+}
+function figFor(y,m){
+  const items=itemsOf(y,m);
+  if(y===TODAY.y&&m===TODAY.m) return money(items.filter(i=>i.day>=TODAY.d).reduce((s,i)=>s+i.amt,0))+" left";
+  return money(items.reduce((s,i)=>s+i.amt,0));
+}
+const YEAR=[...Array(12)].map((_,i)=>{ const k=mkey(TODAY.y,TODAY.m)+i; return {y:Math.floor(k/12),m:k%12}; });
+const totalOf=(y,m)=>itemsOf(y,m).reduce((s,i)=>s+i.amt,0);
+const yearSum=()=>YEAR.reduce((s,x)=>s+totalOf(x.y,x.m),0);
+function takeSnap(){ return {month:figFor(monthShown.y,monthShown.m), totals:YEAR.map(x=>money0(totalOf(x.y,x.m))), sum:money0(yearSum())}; }
+const isNewIn=(it)=>it.isNew;
+
+function rollText(box,now){
+  const old=box.querySelector("span");
+  if(!old||old.textContent===now) return;
+  if(S.figure==="jump"||S.reduce){ box.innerHTML=`<span>${now}</span>`; return; }
+  const down=document.createElement("span"); down.textContent=now; box.appendChild(down);
+  const ot=new Tx(old), nt=new Tx(down,{y:18,op:0});
+  go(ot,"y",{to:-18,spring:[.35,0]}); go(ot,"op",{to:0,ease:[.15,"out"]},()=>old.remove());
+  go(nt,"y",{to:0,spring:[.35,.15]}); go(nt,"op",{to:1,ease:[.2,"out"]});
+}
+
+/* the month: a grid from Monday, each day its costliest charges' emoji and its total */
+function renderMonth(o){
+  const {y,m}=monthShown, first=(new Date(y,m,1).getDay()+6)%7, n=new Date(y,m+1,0).getDate(), items=itemsOf(y,m);
+  let cells="";
+  for(let i=0;i<first;i++) cells+=`<div class="mc"></div>`;
+  for(let d=1;d<=n;d++){
+    const day=items.filter(i=>i.day===d).sort((a,b)=>b.amt-a.amt);
+    const shown=o&&o.hideNew?day.filter(i=>!i.isNew):day;
+    const em=day.slice(0,2).map(i=>`<span class="${i.isNew?"nw":""}"${i.isNew&&o&&o.hideNew?' style="opacity:0"':""}>${i.emoji}</span>`).join("")+(day.length>2?`<small>+${day.length-2}</small>`:"");
+    const tot=shown.length?money0(shown.reduce((s,i)=>s+i.amt,0)):"";
+    const today=y===TODAY.y&&m===TODAY.m&&d===TODAY.d, up=mkey(y,m)>mkey(TODAY.y,TODAY.m)||(y===TODAY.y&&m===TODAY.m&&d>=TODAY.d);
+    cells+=`<div class="mc${up?" up":""}" data-d="${d}"><div class="md${today?" today":""}">${d}</div><div class="me">${em}</div><div class="mt"><span>${tot}</span></div></div>`;
+  }
+  monthV.innerHTML=`<div class="mh"><div class="mn">${mname({y,m})}</div><div class="mf"><span>${o&&o.fig||figFor(y,m)}</span></div></div>
+    <div class="wk">${["M","T","W","T","F","S","S"].map(x=>`<span>${x}</span>`).join("")}</div><div class="mgrid">${cells}</div>`;
+}
+/* the year: twelve months from this one, a dot per day with charges; colour for an extra, a ring where a bill starts */
+function renderYear(o){
+  let cells="";
+  YEAR.forEach(({y,m},i)=>{
+    const items=itemsOf(y,m), first=(new Date(y,m,1).getDay()+6)%7, n=new Date(y,m+1,0).getDate();
+    let dots="";
+    for(let k=0;k<first;k++) dots+=`<i></i>`;
+    for(let d=1;d<=n;d++){
+      const day=items.filter(x=>x.day===d), nw=day.find(x=>x.isNew), old=day.filter(x=>!x.isNew);
+      const today=y===TODAY.y&&m===TODAY.m&&d===TODAY.d;
+      const mark=list=>{ if(!list.length) return ""; const ex=list.find(x=>x.extra); const st=list.find(x=>x.start);
+        if(ex) return `<b style="background:${catHex(ex.cat)}"></b>`; if(st) return `<b class="ring"></b>`; return `<b></b>`; };
+      let inner=mark(old);
+      if(nw&&o&&o.hideNew){ inner+=`<em class="nd" style="opacity:0">${mark([nw])}</em>`; }
+      else if(nw&&!old.length) inner=mark(day); else if(nw) inner=mark(day);
+      dots+=`<i class="${today?"td":""}">${inner}</i>`;
+    }
+    const tot=o&&o.totals?o.totals[i]:money0(totalOf(y,m));
+    cells+=`<div class="ym" data-k="${mkey(y,m)}"><div class="ymn">${MNAMES[m].slice(0,3)}${y!==TODAY.y?` ’${String(y).slice(2)}`:""}</div><div class="ydots">${dots}</div><div class="ymt"><span>${tot}</span></div></div>`;
+  });
+  yearV.innerHTML=`<div class="mh"><div class="mn">Oct – Sep</div><div class="mf"><span>${o&&o.sum||money0(yearSum())}</span></div></div><div class="ygrid">${cells}</div>`;
+}
+function showView(){
+  list.style.display=S.view==="days"?"":"none"; monthV.style.display=S.view==="month"?"":"none"; yearV.style.display=S.view==="year"?"":"none";
+  $("backB").style.visibility=S.view==="year"?"hidden":"";
+  $("backB").innerHTML=`<b>‹</b> ${S.view==="days"?"October":"Year"}`;
+  if(S.view==="month") renderMonth(); if(S.view==="year") renderYear();
+}
+/* the mark drops into its day as the sheet drops, and the figures roll */
+function playMonth(){
+  const ld=LANDS[S.lands];
+  if(monthShown.y!==ld.y||monthShown.m!==ld.m){ // off screen: a pill says where it went
+    offpill.innerHTML=`Added to ${mname({y:ld.y,m:ld.m})}<i>›</i>`; offpill.style.display="block"; phase="pill";
+    go(pillTx,"s",{from:.9,to:1,spring:[.35,.5]}); return;
+  }
+  rollText(monthV.querySelector(".mf"),figFor(ld.y,ld.m));
+  const cell=monthV.querySelector(`.mc[data-d="${ld.d}"]`), em=cell&&cell.querySelector(".nw");
+  if(em){ em.style.opacity=""; const t=new Tx(em,{y:-28,op:0}); go(t,"y",{to:0,spring:[S.fallDur,S.fallB]}); go(t,"op",{to:1,ease:[.15,"out"]});
+    lat(S.fallDur*.4,()=>{ haptic("light"); rollText(cell.querySelector(".mt"),money0(itemsOf(ld.y,ld.m).filter(i=>i.day===ld.d).reduce((s,i)=>s+i.amt,0))); }); }
+  endSoon(S.fallDur+.5);
+}
+function playYear(){
+  const ld=LANDS[S.lands];
+  rollText(yearV.querySelector(".mf"),money0(yearSum()));
+  const nds=[...yearV.querySelectorAll(".nd")];
+  nds.forEach((nd,i)=>{
+    const t=new Tx(nd,{y:-10,s:.2,op:0}); nd.style.opacity="";
+    lat(i*.05,()=>{ if(!i) haptic("light"); go(t,"y",{to:0,spring:[.4,.3]}); go(t,"s",{to:1,spring:[.4,.3]}); go(t,"op",{to:1,ease:[.12,"out"]});
+      const ym=nd.closest(".ym"), k=+ym.dataset.k; rollText(ym.querySelector(".ymt"),money0(totalOf(Math.floor(k/12),k%12))); });
+  });
+  endSoon(nds.length*.05+.7);
+}
+function viewPillTap(){
+  const ld=LANDS[S.lands];
+  offpill.style.display="none"; phase="landing";
+  monthShown={y:ld.y,m:ld.m}; renderMonth({hideNew:true,fig:figFor(ld.y,ld.m)});
+  const t=new Tx(monthV,{x:40,op:0}); go(t,"x",{to:0,spring:[.4,0]}); go(t,"op",{to:1,ease:[.2,"out"]});
+  lat(.3,playMonth);
+}
+
+/* =====================================================================================================
+   CONTROLS — named steps you tap between, and A/B/C setups, as in the card polish prototype
+   ===================================================================================================== */
+const FEEL=[["Smooth",0],["Snappy",.15],["Bouncy",.3],["Springy",.5]];
+const SPEED=[["Quick",.3],["Normal",.45],["Slow",.6]];
+const feel=b=>FEEL.map(([l,v])=>[l,{[b]:v}]);
+const speed=(d,vals)=>(vals||SPEED).map(([l,v])=>[l,{[d]:v}]);
+const onOff=k=>[["Off",{[k]:false}],["On",{[k]:true}]];
+const D_FEEL="Smooth settles without overshoot; Snappy overshoots a touch; Bouncy and Springy overshoot more.";
+const OPTS=[
+ ["fall","Fall in","Everything falls the same way: the card into its folder, the sheet down, and the row down into its gap as the sheet goes."],
+ ["carry","Set down","The row rides down on the sheet's top edge and is left in its place as the edge passes. The sheet delivers it."],
+ ["card","Card leads","On ✓ the card itself goes: the sheet drops away from under it, and it falls into the list and becomes the row. With Folders, the folder keeps the bill's slip."],
+ ["highlight","Highlight","The row is already in place when the sheet uncovers it, washed in the folder's colour, then the wash fades. Nothing moves."],
+ ["slam","Slam","Like iMessage's Slam: the row drops from above the page into its gap with a thud, and the rows around it ripple."],
+ ["slide","Slide in","The gap opens and the row slides into it, the way Mail and Reminders insert a row."],
+ ["slip","Slip flies","The bill's slip lifts out of the folder as the sheet drops, flies to its place and becomes the row. One object all the way."],
+ ["zoom","Zoom in","The sheet doesn't drop. It shrinks into the new row, the way iOS 18's zoom transition closes into what opened it."],
+];
+const IOS={
+ fall:["Stock SwiftUI","#1baf7a",`<p>Insert the row in the same <code>withAnimation</code> as the dismissal, with <code>.transition(.offset(y: -48).combined(with: .opacity))</code> and a spring. The list opens the gap by itself, and both move down together.</p>`],
+ carry:["Needs Tilly's own sheet","#e34948",`<p>The system sheet doesn't tell the app where its edge is while it drops, so the row can't ride it frame by frame. Tilly would draw its own sheet (an overlay with its own drag to dismiss), and the row's offset reads the sheet's offset.</p><p>With the system sheet, the nearest is a fall timed to when the edge passes the row: close, but not locked to the sheet, and a drag to dismiss would break it.</p>`],
+ card:["Custom, moderate","#c98500",`<p>The card leaves the sheet: on ✓ it's lifted into an overlay above everything (a pass-through window), the sheet dismisses underneath, and the card animates to the row's frame read from the list.</p><p>If the editor were Tilly's own overlay instead of a <code>.sheet</code>, it's one <code>matchedGeometryEffect</code> from card to row. Either way it changes filing: the folder takes the slip, the card goes to the list.</p>`],
+ highlight:["Stock SwiftUI","#1baf7a",`<p>The new row gets a tinted background that eases out, keyed on the new bill's id. It's the same mechanism as the day highlight when you tap a day in the year, so it's the cheapest of the five.</p>`],
+ slam:["Custom, no private API","#c98500",`<p>iMessage's Slam isn't available to apps, so this rebuilds the feel: a <code>keyframeAnimator</code> on the row's scale, each neighbour's offset driven by a delay per row of distance, and <code>.sensoryFeedback(.impact(weight: .heavy))</code> on impact.</p><p>A watery ripple is possible with a Metal <code>.layerEffect</code> shader (Apple's WWDC24 visual effects session ships one), but it flattens the list into a picture while it runs, so it would only play for the half second of the effect.</p>`],
+ slide:["Stock SwiftUI","#1baf7a",`<p>Inserting the row inside <code>withAnimation</code> with <code>.transition(.move(edge: .trailing))</code> opens the gap by itself. Scrolling there is <code>ScrollPosition.scrollTo(id:)</code> inside <code>withAnimation</code>.</p>`],
+ slip:["Most work","#e34948",`<p>The editor is a system sheet, which is a separate presentation, so <code>matchedGeometryEffect</code> can't carry a view out of it into the list.</p><p>The route that keeps the system sheet: read the slip's frame just before dismissing, draw a stand-in slip in an overlay above everything (a pass-through window), and animate it to the row's frame read from the list. The other route draws the editor as Tilly's own overlay instead of a <code>.sheet</code>, and has to rebuild drag to dismiss.</p>`],
+ zoom:["Stock, needs a spike","#2a78d6",`<p>iOS 18's <code>.navigationTransition(.zoom(sourceID:in:))</code> works on sheets, with <code>.matchedTransitionSource</code> on the row, and a swipe down drives it interactively.</p><p>To check first: the source has to be on screen, so the list scrolls behind the sheet before it closes; the sheet presents full height rather than as a partial card; and the row it closes into only exists after ✓, so it has to be found by the new bill's id at dismissal.</p>`],
+};
+const GROUPS=[
+ ["all","Picking a category",[
+  ["Picker","Hand: categories are cards you play onto the bill, and ✓ sends the card itself to the list. Folders: the pockets, and the card files into one.",[["Hand",{picker:"hand"}],["Folders",{picker:"folders"}]]]]],
+ ["all","Timeline look",[
+  ["Rows","How far the card carries into the list. Each look is described below; the month and year views are the same in all four.",[["Today",{look:"plain"}],["Card chip",{look:"chip"}],["Dashed and solid",{look:"paper"}],["Wallet stack",{look:"stack"}]]]]],
+ ["all","Skin",[
+  ["Look","iOS: the stock look the app has now. Drawn: Tilly, Drawn as the card prototype has it: paper with a grain, colour laid down as a wash, rounded type, the category drawn. The glass controls stay stock. Everything follows it: the timeline, the editor, the hand and All bills.",[["iOS",{skin:"ios"}],["Drawn",{skin:"drawn"}]]],
+  ["Sheet","White: one opaque piece, as the editor has it now. Glass: the sheet is see-through, so the timeline shows blurred beneath it and the keys sit on it as frosted tiles. The browser's blur is a stand-in for Liquid Glass.",[["White",{sheetLook:"white"}],["Glass",{sheetLook:"glass"}]]],
+  ["The category, drawn as","Drawn only. I: a symbol, roughened as it draws. G: Tilly's own hand, a felt-tip line on a wash. Both boil, three drawings swapped eight times a second.",[["I · Symbols",{drawDir:"I"}],["G · Tilly's hand",{drawDir:"G"}]]]]],
+ ["all","Cards",[
+  ["Card colour","Colour: the card is painted in its category's colour, in the editor and in the list. Cream: every card is cream and only its emoji tile carries the colour, the way All bills leans.",[["Colour",{tone:"colour"}],["Cream",{tone:"cream"}]]]]],
+ ["all","Opening a bill",[
+  ["Style","Tap a card in the timeline. Stays as it is: a bill to come opens as its outline and goes back without turning; only a new bill flips, once, as it lands. Flip back: it rises as its outline and turns over to the solid card, and turns again going back. Fill: no turn; the colour comes up through it as it arrives. Plain: the sheet comes up as iOS's does and the row stays put. A charged card is solid already, so it never turns.",[["Stays as it is",{openStyle:"outline"}],["Flip back",{openStyle:"flip"}],["Fill",{openStyle:"fill"}],["Plain sheet",{openStyle:"plain"}]]],
+  ["Feel",D_FEEL,feel("openB")],["Speed","How long it takes to rise.",speed("openDur",[["Quick",.4],["Normal",.5],["Slow",.7]])]]],
+ ["fall","Fall in",[
+  ["Height","How far above its place the row starts.",[["Short",{fallFrom:24}],["Medium",{fallFrom:48}],["Tall",{fallFrom:96}]]],
+  ["Feel",D_FEEL,feel("fallB")],["Speed","How long the fall takes to settle.",speed("fallDur")]]],
+ ["card","Card leads",[
+  ["Flip","Whether the card turns over to its outline back before it drops, so what lands is already the row. Wallet stack and Dashed and solid only: Today and Card chip draw no back to turn to.",onOff("cardFlip")],
+  ["Hold","How long the card rests face up as its outline before it drops. None starts the drop while it's still turning.",[["None",{flipHold:0}],["Short",{flipHold:.15}],["Beat",{flipHold:.3}],["Long",{flipHold:.5}]]],
+  ["Sheet","Whether the sheet drops as the card starts to turn, or stays under it until the turn is done.",[["With the flip",{flipSheet:"with"}],["After the flip",{flipSheet:"after"}]]],
+  ["Flip speed","How long the turn takes.",[["Quick",{flipDur:.4}],["Normal",{flipDur:.55}],["Slow",{flipDur:.8}]]],
+  ["Feel",D_FEEL,feel("cardB")],["Speed","How long the card takes to reach its row.",speed("cardDur",[["Quick",.45],["Normal",.6],["Slow",.8]])]]],
+ ["highlight","Highlight",[
+  ["Tint","The wash's colour.",[["Folder colour",{hlTint:"cat"}],["Grey",{hlTint:"grey"}]]],
+  ["Fade","How long the wash takes to fade away.",[["Quick",{hlFade:.8}],["Normal",{hlFade:1.5}],["Slow",{hlFade:2.5}]]],
+  ["Pulse","Whether the row also swells once, slightly.",onOff("hlPulse")]]],
+ ["slam","Slam",[
+  ["Height","How far above the page the row starts, as a scale.",[["Low",{slamFrom:1.25}],["Medium",{slamFrom:1.5}],["High",{slamFrom:2}]]],
+  ["Ripple","Push shoves the neighbours away and back; Wave swells them in turn.",[["Off",{ripple:"off"}],["Push",{ripple:"push"}],["Wave",{ripple:"wave"}]]],
+  ["Reach","How many rows either side feel it.",[["Near",{reach:2}],["Middle",{reach:4}],["Far",{reach:8}]]],
+  ["Strength","How hard the nearest rows move.",[["Soft",{strength:3}],["Medium",{strength:6}],["Strong",{strength:10}]]],
+  ["Shake","Whether the whole list jolts sideways on impact, as iMessage's does.",onOff("shake")]]],
+ ["slide","Slide in",[
+  ["From","Which way the row comes in.",[["Right",{slideFrom:"right"}],["Left",{slideFrom:"left"}],["Below",{slideFrom:"below"}]]],
+  ["Gap","Whether the gap opens first, or as the row comes in.",[["First",{slideGap:"before"}],["Together",{slideGap:"together"}]]],
+  ["Feel",D_FEEL,feel("slideB")],["Speed","How long the slide takes to settle.",speed("slideDur")]]],
+ ["slip","Slip flies",[
+  ["Path","Straight across, or a curve.",[["Straight",{flyPath:"straight"}],["Arc",{flyPath:"arc"}]]],
+  ["Gap","Whether the gap is waiting as the sheet drops, or opens as the slip arrives.",[["Waiting",{flyGap:"early"}],["On arrival",{flyGap:"arrival"}]]],
+  ["Feel",D_FEEL,feel("flyB")],["Speed","How long the flight takes.",speed("flyDur",[["Quick",.45],["Normal",.6],["Slow",.8]])]]],
+ ["zoom","Zoom in",[
+  ["Feel",D_FEEL,feel("zoomB")],["Speed","How long the sheet takes to close into the row.",speed("zoomDur",[["Quick",.35],["Normal",.45],["Slow",.6]])]]],
+ ["timing","After it lands",[
+  ["Starts","Whether the row's moment starts while the sheet is still dropping, or once it's gone. Fall in, Highlight, Slam and Slide in.",[["With the drop",{overlap:"with"}],["After",{overlap:"after"}]]],
+  ["Then highlight","Whether a moving row also gets the fading wash once it's in place.",onOff("glow")]]],
+ ["all","Sheet",[
+  ["Exit","Soft: the sheet's contents fade first, it drops a little slower, and the list comes up from under a light dim. Plain: the sheet drops as it is.",[["Soft",{sheetExit:"soft"}],["Plain",{sheetExit:"plain"}]]]]],
+ ["all","Where it lands",[
+  ["Open on","Which level of the calendar is behind the sheet. The month and the year use Fall in's motion whatever is picked above.",[["Days",{view:"days"}],["Month",{view:"month"}],["Year",{view:"year"}]]],
+  ["Sheet drop","How long the sheet takes to drop away. Slow makes Set down easier to watch.",[["Quick",{sheetDur:.35}],["Slow",{sheetDur:.55}],["Slower",{sheetDur:.8}]]],
+  ["Date","Which day the card is for. Next March is a yearly bill, months above the screen.",[["Oct 18",{lands:"week"}],["Oct 30",{lands:"month"}],["Next March",{lands:"march"}]]],
+  ["Off screen","When the row lands out of view. Pill says where it went and waits for a tap; Scroll goes there after the sheet drops; Jump is already there when it uncovers. Zoom in always jumps.",[["Pill",{offMode:"pill"}],["Scroll",{offMode:"scroll"}],["Jump",{offMode:"jump"}]]],
+  ["Month figure","How October's figure changes when the bill adds to it.",[["Rolls",{figure:"roll"}],["Jumps",{figure:"jump"}]]]]],
+ ["all","View",[
+  ["Haptics","Shows a marker where the phone would give a tap you can feel.",onOff("haptics")],
+  ["Reduce Motion","Plays it as iOS's Reduce Motion would: fades instead of movement.",onOff("reduce")],
+  ["Dark","",onOff("dark")],
+  ["Slow motion","Slows everything down, to watch a moment closely.",[["1×",{slow:1}],["½×",{slow:.5}],["¼×",{slow:.25}]]]]],
+];
+const same=(a,b)=>typeof a==="number"&&typeof b==="number"?Math.abs(a-b)<1e-6:a===b;
+const matches=vals=>Object.keys(vals).every(k=>same(S[k],vals[k]));
+const ctl=document.createElement("div"); ctl.className="ctl";
+const chipRows=[], groupEls=[];
+
+/* =====================================================================================================
+   TOPICS — each part of the flow is decided on its own: its own controls, its own A/B/C, and Settle
+   ===================================================================================================== */
+const TOPICS=[
+ {id:"look",name:"Look",intro:"How every card looks, in the editor and in the list. Settle this first: the other topics are judged in it."},
+ {id:"entry",name:"Entry",intro:"Making the card: how a category is picked."},
+ {id:"landing",name:"Landing",intro:"What happens after ✓: the card leaves the sheet and becomes its row."},
+ {id:"bills",name:"All bills",intro:"The list button's sheet: every bill, in its category's folder. Tap ☰ on the timeline to open it, and a card in it to open that bill. Its choices were made in its own prototype; pick them again here to settle them."},
+ {id:"open",name:"Opening",intro:"Tapping a card in the timeline: how it becomes the editor's card, and how ✓ or ✕ sends it back. Add a bill first, then tap any card."},
+];
+const TOPIC_OF_GROUP={"Tilly, Drawn":"look","Skin":"look","Opening a bill":"open","Timeline look":"look","Cards":"look","Picking a category":"entry","View":"view"};
+const topicKeys={look:["skin","sheetLook","drawDir","look","tone"],entry:["picker"],open:["openStyle","openDur","openB"]};
+topicKeys.landing=LKEYS.filter(k=>!topicKeys.look.includes(k)&&!topicKeys.entry.includes(k)&&!topicKeys.open.includes(k));
+const pickKeys=(t,src)=>{ const o={}; (topicKeys[t]||[]).forEach(k=>{ if(src&&k in src) o[k]=src[k]; }); return o; };
+
+/* the record: per topic, three slots and what was settled. Kept in this browser and, where the page can, with the
+   artifact itself, so it follows Jake between phone and desktop and Claude can read what was settled */
+const FLOWKEY="tilly-flow";
+let flow={slots:{},settled:{},tab:"landing"};
+try{ const j=JSON.parse(localStorage.getItem(FLOWKEY)||"null"); if(j) flow=Object.assign(flow,j); }catch(e){}
+// first run here: the landing prototype's A, B and C become each topic's
+if(!flow.migrated){
+  try{ const old=JSON.parse(localStorage.getItem("tilly-card-landing-slots")||"{}")||{};
+    ["A","B","C"].forEach(Lt=>{ const v=old[Lt]; if(!v) return;
+      TOPICS.forEach(t=>{ const p=pickKeys(t.id,v); if(Object.keys(p).length){ (flow.slots[t.id]=flow.slots[t.id]||{})[Lt]=p; } }); });
+  }catch(e){}
+  flow.migrated=true;
+}
+let activeSlot={};
+let dbRef=null, pushT=0;
+function current(){ const o={}; TOPICS.forEach(t=>o[t.id]=pickKeys(t.id,S)); return o; }
+function persist(){
+  try{ localStorage.setItem(FLOWKEY,JSON.stringify(flow)); }catch(e){}
+  if(!dbRef) return;
+  clearTimeout(pushT);
+  pushT=setTimeout(()=>{ dbRef.set({slots:flow.slots,settled:flow.settled,current:current(),updated:new Date().toISOString()})
+    .then(()=>syncNote("Saved with the prototype")).catch(()=>syncNote("Saved in this browser only")); },800);
+}
+function syncNote(t){ const n=ctl.querySelector("#syncNote"); if(n) n.textContent=t; }
+(async()=>{
+  try{
+    const db=window.claude&&await claude.use("db"); if(!db){ syncNote("Saved in this browser only"); return; }
+    dbRef=db.doc("flow/state");
+    const snap=await dbRef.get();
+    if(snap.exists){ const d=snap.data()||{};
+      // the shared record wins for slots and settled topics; anything only here is added to it
+      ["slots","settled"].forEach(k=>{ const local=flow[k]||{}, remote=d[k]||{};
+        flow[k]=Object.assign({},local,remote);
+        Object.keys(local).forEach(t=>{ if(k==="slots") flow[k][t]=Object.assign({},local[t],remote[t]||{}); }); });
+      syncControls();
+    }
+    persist();
+  }catch(e){ syncNote("Saved in this browser only"); }
+})();
+
+function topicState(t){
+  const s=flow.settled[t]; if(!s) return "open";
+  return Object.keys(s.values).every(k=>same(S[k],s.values[k]))?"settled":"drift";
+}
+function buildControls(){
+  ctl.insertAdjacentHTML("beforeend",`<button id="replayB">Play it again</button><div class="tabs" id="tabs"></div><div id="topics"></div>
+    <div id="viewBox"></div><p class="sync" id="syncNote"></p>`);
+  const tabs=ctl.querySelector("#tabs"), topics=ctl.querySelector("#topics");
+  TOPICS.forEach(t=>{
+    const b=document.createElement("button"); b.className="tab"; b.dataset.t=t.id; b.innerHTML=`<i></i>${t.name}`;
+    b.addEventListener("click",()=>{ flow.tab=t.id; persist(); syncControls(); }); tabs.appendChild(b);
+    const sec=document.createElement("section"); sec.className="topic"; sec.dataset.t=t.id;
+    sec.innerHTML=`<p class="desc">${t.intro}</p><div class="tbar"><div class="row"><span class="st"></span><button class="settleB"></button></div>
+      <div class="slots"></div></div>`;
+    const sl=sec.querySelector(".slots");
+    ["A","B","C"].forEach(Lt=>{
+      const g=document.createElement("div"); g.className="slot";
+      g.innerHTML=`<button class="chip load">${Lt}</button><button class="save">Save</button>`;
+      g.querySelector(".load").addEventListener("click",()=>{ const v=(flow.slots[t.id]||{})[Lt]; if(!v) return; Object.assign(S,v); activeSlot[t.id]=Lt; afterChange(Object.keys(v)); });
+      g.querySelector(".save").addEventListener("click",()=>{ (flow.slots[t.id]=flow.slots[t.id]||{})[Lt]=pickKeys(t.id,S); activeSlot[t.id]=Lt; persist(); syncControls(); toast(t.name+" saved to "+Lt); });
+      sl.appendChild(g);
+    });
+    sec.querySelector(".settleB").addEventListener("click",()=>{
+      if(topicState(t.id)==="settled") delete flow.settled[t.id];
+      else { flow.settled[t.id]={values:pickKeys(t.id,S),at:new Date().toISOString()}; toast(t.name+" settled"); }
+      persist(); syncControls();
+    });
+    topics.appendChild(sec);
+  });
+  const land=topics.querySelector('[data-t="landing"]');
+  land.insertAdjacentHTML("beforeend",`<h2>Landing</h2><div class="opts" id="opts"></div><div class="ios" id="ios"></div>`);
+  const ob=land.querySelector("#opts");
+  OPTS.forEach(([k,l,d])=>{ if(k==="fall"||k==="highlight") ob.insertAdjacentHTML("beforeend",`<div class="ohead">${k==="fall"?"One direction":"From before"}</div>`); const b=document.createElement("button"); b.className="opt"; b.dataset.k=k; b.innerHTML=`<b>${l}</b><span>${d}</span>`;
+    b.addEventListener("click",()=>choose({opt:k})); ob.appendChild(b); });
+  GROUPS.forEach(([which,title,rows])=>{
+    const g=document.createElement("div"); g.dataset.which=which; g.insertAdjacentHTML("beforeend",`<h2>${title}</h2>`);
+    rows.forEach(([label,desc,opts])=>{
+      const wrap=document.createElement("div"); wrap.className="step";
+      wrap.innerHTML=`<div class="sl">${label}</div><div class="chips"></div>`+(desc?`<p class="desc">${desc}</p>`:"");
+      const box=wrap.querySelector(".chips"), chips=[];
+      opts.forEach(([l,vals])=>{ const b=document.createElement("button"); b.className="chip"; b.textContent=l; box.appendChild(b);
+        b.addEventListener("click",()=>choose(vals)); chips.push({b,vals}); });
+      chipRows.push(chips); g.appendChild(wrap);
+    });
+    groupEls.push(g);
+    const tp=TOPIC_OF_GROUP[title]||"landing";
+    (tp==="view"?ctl.querySelector("#viewBox"):topics.querySelector(`[data-t="${tp}"]`)).appendChild(g);
+    if(title==="Timeline look") g.insertAdjacentHTML("beforeend",'<div class="lookbox" id="lookbox"></div>');
+  });
+  ctl.querySelector("#viewBox").insertAdjacentHTML("beforeend",'<h2>What it lies about</h2><ul class="lies"><li>The sheet is drawn here, not the system sheet, and the list doesn\'t decelerate like a real scroll view.</li><li>No real haptics: the markers stand in.</li><li>The ripple moves whole rows; a shader ripple would bend them.</li><li>No Liquid Glass, no Dynamic Type.</li><li>Frame timing isn\'t ProMotion\'s.</li><li>The filing on ✓ is the card polish prototype\'s Video setup, whatever is picked there.</li></ul>');
+  ctl.querySelector("#replayB").onclick=()=>replay();
+}
+const LOOKS={
+ plain:["Today","Grey wells and plain rows, as DESIGN.md has them now. The card stops being a card the moment it lands."],
+ chip:["Card chip","Every row's well is that bill's card, shrunk to a chip in its category colour. Card leads lands the card straight into the chip, so the thing you made is the thing you can still see."],
+ paper:["Dashed and solid","Rows become paper cards. A charge still to come is dashed, the way the editor dashes a part that isn't filled in yet; once it's charged it's a solid card."],
+ stack:["Wallet stack","The rows are the cards themselves, each tucked under the next like cards in Wallet. Charged cards are solid; ones still to come are a dotted outline in their colour, with their words set back."]};
+function setLook(){
+  phone.classList.remove("lk-plain","lk-chip","lk-paper","lk-stack"); phone.classList.add("lk-"+S.look);
+  phone.classList.toggle("tone-cream",S.tone==="cream");
+  phone.classList.toggle("sh-glass",S.sheetLook==="glass");
+  const lb=ctl.querySelector("#lookbox"); if(lb){ const l=LOOKS[S.look]; lb.innerHTML=`<p><b>${l[0]}.</b> ${l[1]}</p>`; }
+}
+function choose(vals){ Object.assign(S,vals); TOPICS.forEach(t=>{ if(Object.keys(vals).some(k=>(topicKeys[t.id]||[]).includes(k))) activeSlot[t.id]=null; }); afterChange(Object.keys(vals)); }
+function afterChange(keys){
+  if(keys.includes("dark")){ S.darkTouched=true; applyTheme(); }
+  if(keys.includes("view")&&phase==="edit") showView();
+  if(keys.includes("picker")) replay();
+  if(["look","tone","skin","drawDir","dark","sheetLook"].some(k=>keys.includes(k))){ setLook(); applySkin(); if(phase==="edit"){ paintFaces(); renderCard(); } buildHand(); if(phase==="edit"&&S.picker==="hand") layoutHand(false); }
+  if(keys.includes("lands")&&phase==="edit"){ bill.date=LANDS[S.lands].date; bill.repeat=LANDS[S.lands].rep; renderCard(); }
+  if(keys.some(k=>k.startsWith("ab_")||k==="dark"||k==="skin"||k==="reduce"||k==="slow")) pushBills(keys.filter(k=>k.startsWith("ab_")));
+  syncControls(); save(); persist();
+}
+function syncControls(){
+  chipRows.forEach(chips=>chips.forEach(({b,vals})=>b.classList.toggle("on",matches(vals))));
+  ctl.querySelectorAll(".opt[data-k]").forEach(b=>b.classList.toggle("on",S.opt===b.dataset.k));
+  groupEls.forEach(g=>{
+    if(g.dataset.bwhich){ const w=g.dataset.bwhich; g.style.display=(w==="all"||w===S.ab_dir||(w==="drawn"&&S.skin==="drawn"))?"":"none"; return; }
+    const w=g.dataset.which; g.style.display=(w==="all"||w===S.opt||(w==="timing"&&S.opt!=="highlight"))?"":"none"; });
+  ctl.querySelectorAll(".bopt").forEach(b=>b.classList.toggle("on",S.ab_dir===b.dataset.bk));
+  const bio=ctl.querySelector("#bios"); if(bio&&AB){ const io=AB.IOS[S.ab_dir]; if(io) bio.innerHTML=`<span class="feas" style="background:${io[1]}">${io[0]}</span>${io[2]}`; }
+  const io=IOS[S.opt]; const iosEl=ctl.querySelector("#ios"); if(iosEl) iosEl.innerHTML=`<span class="feas" style="background:${io[1]}">${io[0]}</span>${io[2]}`;
+  TOPICS.forEach(t=>{
+    const st=topicState(t.id), tab=ctl.querySelector(`.tab[data-t="${t.id}"]`), sec=ctl.querySelector(`.topic[data-t="${t.id}"]`);
+    tab.classList.toggle("on",flow.tab===t.id); tab.classList.toggle("settled",st==="settled"); tab.classList.toggle("drift",st==="drift");
+    sec.hidden=flow.tab!==t.id;
+    const when=flow.settled[t.id]?new Date(flow.settled[t.id].at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+    sec.querySelector(".st").innerHTML=st==="settled"?`<b>Settled</b> ${when}. This is what gets built.`
+      :st==="drift"?`<b>Changed since you settled it</b> ${when}. Settle again to keep these, or load what you had.`
+      :`<b>Open.</b> Try things, save to A, B or C, and settle when it's right.`;
+    const sb=sec.querySelector(".settleB"); sb.textContent=st==="settled"?"Unsettle":st==="drift"?"Settle again":"Settle"; sb.classList.toggle("un",st==="settled");
+    sec.querySelectorAll(".slot").forEach((g,i)=>{ const Lt="ABC"[i], has=!!(flow.slots[t.id]||{})[Lt];
+      g.querySelector(".load").classList.toggle("on",activeSlot[t.id]===Lt); g.querySelector(".load").classList.toggle("empty",!has); });
+  });
+}
+function applyTheme(){ document.documentElement.classList.toggle("dark",!!S.dark); if(ctlReady&&drawn()){ applySkin(); buildHand(); }
+  if(ctlReady&&phase==="edit"){ paintFaces(); buildPockets(); renderCard(); } }
+if(mq) mq.addEventListener&&mq.addEventListener("change",e=>{ if(!S.darkTouched){ S.dark=e.matches; syncControls(); applyTheme(); } });
+
+
+const wideMq=matchMedia("(min-width:900px)");
+function placeControls(){ if(wideMq.matches) $("panel").appendChild(ctl); else $("drawerBody").appendChild(ctl); }
+wideMq.addEventListener&&wideMq.addEventListener("change",placeControls);
+$("tuneBtn").addEventListener("click",()=>$("drawer").classList.add("open"));
+$("dclose").addEventListener("click",()=>$("drawer").classList.remove("open"));
+function fit(){
+  const box=$("phoneBox");
+  if(innerWidth<500){ box.style.width=box.style.height=""; phone.style.transform=""; return; }
+  const avail=innerHeight-30, s=Math.min(1,avail/874);
+  box.style.width=(402*s)+"px"; box.style.height=(874*s)+"px"; phone.style.transform=`scale(${s})`;
+}
+addEventListener("resize",()=>{ fit(); layout(); fitAmount(); });
+
+/* =====================================================================================================
+   BOOT
+   ===================================================================================================== */
+let ctlReady=false;
+buildControls(); placeControls(); ctlReady=true; setLook();
+document.documentElement.classList.toggle("dark",!!S.dark);
+syncControls(); fit();
+makeGrain(); buildData(); renderList(); applySkin(); restScroll(); showView();
+resetBill(false); paintFaces(); buildPockets(); buildHand(); setPanelRaw(startPanel()); renderCard();
+requestAnimationFrame(()=>{ if(S.picker==="hand") layoutHand(true); });
+requestAnimationFrame(()=>{ layout(); fitAmount(); restScroll(); });
+window.__cl={S,get phase(){return phase;},get L(){return L;},replay,months};
+
+</script>
+</body></html>
