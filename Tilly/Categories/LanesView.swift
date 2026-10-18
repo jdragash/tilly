@@ -220,7 +220,10 @@ struct LanesView: View {
         Button { onPick(lane) } label: {
             Group {
                 if let picture = lane.category?.picture, !picture.isNone {
-                    picture.inline.font(Tokens.Text.laneEmoji(laneHeight: laneHeight))
+                    CategoryPictureView(
+                        picture: picture, colour: lane.category?.colour,
+                        size: Tokens.Size.pictureLane(laneHeight: laneHeight)
+                    )
                 } else {
                     // Charges saved before categories existed carry no emoji.
                     Image(systemName: "circle.dashed")

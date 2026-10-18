@@ -351,6 +351,14 @@ the device while flinging through a year.
 - **A screen's own `.background(Surface.base)` hides the root's grain.** Screens use `.drawnPaper()`
   and a sheet's root `.drawnGround()` (which also sets `presentationBackground`); `Surface.base` is
   paper without grain, for fills that sit on something.
+- **The app has its own `TimelineView`**, which shadows SwiftUI's: write `SwiftUI.TimelineView` for the
+  boil's clock.
+- **`CategoryPictureView.size` is the square of the picture**, wash included: the symbol fills 0.58
+  of it, an emoji 0.7. An emoji gets no wash, so an emoji category's row has no well; a symbol's
+  roughening (`roughen`, frequency 0.32, amount 1.3) reads clearly from 22pt up.
+- **Pictures don't scale with Dynamic Type**; each place has a size token, and the accessibility row
+  takes `iconAccessible`. Text lines (quiet line, picked lane's label, chips) keep `picture.inline`,
+  where a symbol draws as a plain glyph.
 
 ## If a step is wrong
 

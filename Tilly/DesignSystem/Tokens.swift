@@ -18,8 +18,8 @@ enum Tokens {
         static let emptyTitle: Font = .title2.weight(.semibold)
         static let rowEmoji: Font = .title2
         static let keypadKey: Font = .title
-        /// A lane's emoji follows the lane's height, which already answers to the screen, so it
-        /// doesn't scale with Dynamic Type too. From the prototype.
+        /// The dashed circle of a lane with no category follows the lane's height, which already
+        /// answers to the screen, so it doesn't scale with Dynamic Type too. From the prototype.
         static func laneEmoji(laneHeight: CGFloat) -> Font {
             .system(size: min(26, max(15, (0.46 * laneHeight).rounded())))
         }
@@ -36,10 +36,7 @@ enum Tokens {
         static let weekday: Font = .caption2.weight(.semibold)
         static let dayNumber: Font = .footnote
         static let dayNumberToday: Font = .footnote.weight(.semibold)
-        /// A day's one emoji; two share a smaller size so they fit side by side.
-        static let dayEmoji: Font = .title3
-        static let dayEmojiPair: Font = .callout
-        /// The "+N" after a day's two emoji.
+        /// The "+N" after a day's two pictures.
         static let dayMore: Font = .caption2.weight(.bold)
         static let dayTotal: Font = .caption2.weight(.semibold)
         /// The level's name in a back button, as Calendar's top left reads.
@@ -51,7 +48,6 @@ enum Tokens {
         static let yearKey: Font = .footnote
         /// All bills: the chips, a card's header, and its rows.
         static let billsChip: Font = .subheadline
-        static let billCardEmoji: Font = .title
         static let billCardName: Font = .body.weight(.semibold)
         static let billCardTotal: Font = .title3.weight(.semibold)
         static let billName: Font = .subheadline
@@ -63,7 +59,6 @@ enum Tokens {
         static func cardAmount(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
         static let cardName: Font = .title2.weight(.semibold)
         static let cardWhen: Font = .footnote.weight(.semibold)
-        static let cardEmoji: Font = .title
         /// The pencil badge on a chosen category's tile: a fixed 10pt glyph in a fixed 16pt
         /// circle, from the prototype.
         static let cardBadge: Font = .system(size: 10, weight: .semibold)
@@ -317,6 +312,18 @@ enum Tokens {
         static let row: CGFloat = 52
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
+        /// A category's picture, by where it's drawn: replaces the font each emoji was set in.
+        static let pictureDay: CGFloat = 26
+        static let pictureDayPair: CGFloat = 22
+        static let pictureReadout: CGFloat = 24
+        static let pictureNext: CGFloat = 24
+        static let pictureBillCard: CGFloat = 34
+        static let pictureLip: CGFloat = 22
+        static let pictureSettings: CGFloat = 32
+        /// A lane's follows the lane's height, as its emoji did.
+        static func pictureLane(laneHeight: CGFloat) -> CGFloat {
+            min(34, max(22, (0.62 * laneHeight).rounded()))
+        }
         static let hairline: CGFloat = 0.5
         /// The row a month header fills and + floats in, with `headerRowInset` clear above and
         /// below +. Headers take it as a minimum height.
@@ -424,6 +431,8 @@ enum Tokens {
     }
 
     enum Motion {
+        /// How often a boiling picture swaps to its next drawing; from the prototype.
+        static let boilStep: TimeInterval = 0.125
         // The return scroll's duration scales with how far the reader actually has to
         // travel, the way a browser's native smooth scroll does. A fixed duration is the
         // thing that reads badly: measured on device, `.default` moved 2,052 points in
@@ -624,6 +633,11 @@ extension Tokens {
         static let dotWidth: CGFloat = 2
         static let dotDash: [CGFloat] = [0.1, 5]
         static let dotOpacity: Double = 0.9
+
+        /// A picture's symbol and emoji against its side, and the corner of the well behind a symbol.
+        static let symbolScale: CGFloat = 0.58
+        static let emojiScale: CGFloat = 0.7
+        static let wellRadius: CGFloat = 0.28
 
         /// A symbol roughened as it draws: the noise's frequency (per pt) and how far it moves a pixel.
         static let roughFrequency: Float = 0.32

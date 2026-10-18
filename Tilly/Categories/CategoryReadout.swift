@@ -20,7 +20,7 @@ struct CategoryReadout: View {
                 .padding(.bottom, Tokens.Space.readoutDateBottom)
             ForEach(charges) { charge in
                 HStack(spacing: Tokens.Space.readoutGap) {
-                    pictureOf(charge).inline
+                    CategoryPictureView(picture: pictureOf(charge), colour: charge.colour, size: Tokens.Size.pictureReadout)
                         .fixedSize()
                     // The name gives way, truncating; the amount never wraps or shortens.
                     Text(charge.name)

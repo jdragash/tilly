@@ -164,7 +164,10 @@ struct CategoryView: View {
 
     private func nextRow(_ next: NextCharge) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.tight) {
-            (next.category?.picture ?? next.entry.picture).inline
+            CategoryPictureView(
+                picture: next.category?.picture ?? next.entry.picture, colour: next.category?.colour ?? next.entry.colour,
+                size: Tokens.Size.pictureNext
+            )
             Text(next.entry.name)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)

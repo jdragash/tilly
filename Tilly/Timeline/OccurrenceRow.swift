@@ -55,7 +55,7 @@ struct OccurrenceRow: View {
 
     private var standardLayout: some View {
         HStack(spacing: Tokens.Space.gap) {
-            iconWell(size: Tokens.Size.icon, radius: Tokens.Radius.icon)
+            iconWell(size: Tokens.Size.icon)
             VStack(alignment: .leading, spacing: 0) {
                 nameText(wraps: false)
                 dateText
@@ -70,7 +70,7 @@ struct OccurrenceRow: View {
 
     private var accessibleLayout: some View {
         HStack(alignment: .top, spacing: Tokens.Space.gap) {
-            iconWell(size: Tokens.Size.iconAccessible, radius: Tokens.Radius.iconAccessible)
+            iconWell(size: Tokens.Size.iconAccessible)
             VStack(alignment: .leading, spacing: Tokens.Space.tight) {
                 nameText(wraps: true)
                 dateText
@@ -86,14 +86,10 @@ struct OccurrenceRow: View {
         .padding(.vertical, Tokens.Space.rowVerticalAccessible)
     }
 
-    private func iconWell(size: CGFloat, radius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: radius, style: .continuous)
-            .fill(Tokens.Surface.iconWell)
+    /// The category's picture in a square of `size`, which draws its own wash.
+    private func iconWell(size: CGFloat) -> some View {
+        CategoryPictureView(picture: entry.picture, colour: entry.colour, size: size)
             .frame(width: size, height: size)
-            .overlay {
-                entry.picture.inline
-                    .font(Tokens.Text.rowEmoji)
-            }
             // An upcoming or skipped row sits back with its icon, the way its ink does.
             .opacity(entry.state == .charged ? 1 : Tokens.Opacity.upcomingIcon)
             .accessibilityHidden(true)

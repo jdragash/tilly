@@ -85,7 +85,7 @@ struct MonthHeader: View {
         // was briefly false and the header rendered with no ground at all. Deriving it from
         // measured geometry is still right; letting the *background* depend on that
         // geometry was not.
-        .background(Tokens.Surface.pinned)
+        .drawnPaper()
         .overlay(alignment: .bottom) {
             // A rule is drawn because something needs closing — at rest there is nothing to
             // close, and pinned there is content moving underneath. See "The month header" in

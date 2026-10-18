@@ -52,8 +52,9 @@ struct SettingsSheet: View {
 
     private func row(for category: ExpenseCategory) -> some View {
         HStack(spacing: Tokens.Space.gap) {
-            CategoryPicture(category).inline
-                .accessibilityHidden(true)
+            CategoryPictureView(
+                picture: CategoryPicture(category), colour: category.colour, size: Tokens.Size.pictureSettings
+            )
             Text(category.name)
                 .foregroundStyle(Tokens.Ink.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)

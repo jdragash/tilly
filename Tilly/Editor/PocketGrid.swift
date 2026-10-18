@@ -146,7 +146,7 @@ struct PocketGrid: View {
 
     private func lipView(_ pocket: PocketContent, colour: Color) -> some View {
         HStack(spacing: Tokens.Space.pocketLipGap) {
-            pocket.picture.inline
+            CategoryPictureView(picture: pocket.picture, colour: pocket.colour, size: Tokens.Size.pictureLip, onCard: true)
             Text(pocket.name)
                 .lineLimit(1)
         }

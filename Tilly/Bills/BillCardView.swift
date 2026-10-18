@@ -52,9 +52,7 @@ struct BillCardView: View {
 
     @ViewBuilder private var emoji: some View {
         if let picture = card.category?.picture, !picture.isNone {
-            picture.inline
-                .font(Tokens.Text.billCardEmoji)
-                .accessibilityHidden(true)
+            CategoryPictureView(picture: picture, colour: card.category?.colour, size: Tokens.Size.pictureBillCard)
         }
     }
 

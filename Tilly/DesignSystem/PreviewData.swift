@@ -18,11 +18,12 @@ enum PreviewData {
             calendar.date(from: DateComponents(year: year, month: month + monthOffset, day: day))!
         }
 
-        let home = ExpenseCategory(name: "Home", emoji: "🏠", colour: .blue, sortOrder: 0)
-        let subscriptions = ExpenseCategory(name: "Subscriptions", emoji: "📺", colour: .orange, sortOrder: 1)
-        let phone = ExpenseCategory(name: "Phone", emoji: "📱", colour: .aqua, sortOrder: 2)
+        let home = ExpenseCategory(name: "Home", symbol: "house", colour: .blue, sortOrder: 0)
+        let subscriptions = ExpenseCategory(name: "Subscriptions", symbol: "tv", colour: .orange, sortOrder: 1)
+        let phone = ExpenseCategory(name: "Phone", symbol: "iphone", colour: .aqua, sortOrder: 2)
+        // Two categories keep their emoji, as one made before symbols does.
         let car = ExpenseCategory(name: "Car", emoji: "🚗", colour: .yellow, sortOrder: 3)
-        let health = ExpenseCategory(name: "Health", emoji: "🏋️", colour: .magenta, sortOrder: 4)
+        let health = ExpenseCategory(name: "Health", symbol: "dumbbell", colour: .magenta, sortOrder: 4)
         let loans = ExpenseCategory(name: "Loans", emoji: "💳", colour: .green, sortOrder: 5)
         [home, subscriptions, phone, car, health, loans].forEach(context.insert)
 
