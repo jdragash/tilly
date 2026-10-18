@@ -415,32 +415,3 @@ import TillyCore
         #expect(draft.lastPaymentDate(calendar: Self.calendar) == Self.date(2026, 11, 13))
     }
 }
-
-@Suite struct EmojiInputTests {
-    @Test func takesTheLastEmoji() {
-        #expect(EmojiInput.emoji(from: "🏠🚗") == "🚗")
-        #expect(EmojiInput.emoji(from: "ab🏠x") == "🏠")
-    }
-
-    @Test func keepsAFlagWhole() {
-        #expect(EmojiInput.emoji(from: "🇮🇪") == "🇮🇪")
-        #expect(EmojiInput.emoji(from: "x🇮🇪") == "🇮🇪")
-    }
-
-    @Test func keepsASkinToneWhole() {
-        #expect(EmojiInput.emoji(from: "👍🏽") == "👍🏽")
-    }
-
-    @Test func keepsAJoinedSequenceWhole() {
-        #expect(EmojiInput.emoji(from: "🏠👨‍👩‍👧") == "👨‍👩‍👧")
-    }
-
-    @Test func rejectsPlainLetters() {
-        #expect(EmojiInput.emoji(from: "abc") == nil)
-        #expect(EmojiInput.emoji(from: "123") == nil)
-    }
-
-    @Test func emptyGivesNil() {
-        #expect(EmojiInput.emoji(from: "") == nil)
-    }
-}

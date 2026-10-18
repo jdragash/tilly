@@ -204,7 +204,7 @@ struct PocketGrid: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("New category")
-        .accessibilityHint("Opens the emoji keyboard to make one")
+        .accessibilityHint("Picks a symbol to make one")
     }
 }
 

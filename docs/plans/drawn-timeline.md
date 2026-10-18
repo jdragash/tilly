@@ -360,6 +360,12 @@ the device while flinging through a year.
   takes `iconAccessible`. Text lines (quiet line, picked lane's label, chips) keep `picture.inline`,
   where a symbol draws as a plain glyph.
 
+- **The catalogue is 332 symbols once the invalid ones were struck** (`ladder`, `fence`, `recycle`,
+  `piggybank`, `gift.card`, `passport` don't exist on iOS 27; `everyNameResolves` catches this).
+- **The symbols take the keypad's place under the row** at `Size.symbolPicker` (340); the name's
+  keyboard replaces them while a name is typed (`nameFocused`), so there's no second keyboard on screen.
+  VoiceOver was not driven in the Simulator; labels and values are set but unheard.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

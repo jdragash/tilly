@@ -341,7 +341,11 @@ enum Tokens {
         /// the graphical calendar is the tallest panel, and a six-row month (August 2026) measures
         /// about 336pt at the default text size, so 340 clears it without clipping.
         static let editorPanel: CGFloat = 340
+        /// The picture slot beside a new category's name.
         static let emojiSlot: CGFloat = 48
+        /// A symbol in the picker's grid, and the height of the picker where the keypad was.
+        static let symbolCell: CGFloat = 44
+        static let symbolPicker: CGFloat = 340
         static let categoryField: CGFloat = 44
         static let categoryRow: CGFloat = 48
         /// A category's colour, drawn as a filled circle in Settings and the new-category row.

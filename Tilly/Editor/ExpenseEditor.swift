@@ -252,7 +252,7 @@ struct ExpenseEditor: View {
     }
 
     /// The keyboard covers the editor at standard sizes. It can't while a category is made, where
-    /// the row has to sit directly above the emoji keyboard, or at accessibility sizes, where it
+    /// the symbols take the keypad's place and the name's keyboard pushes the sheet up, or at accessibility sizes, where it
     /// would cover the name field.
     private var keyboardCovers: Bool {
         !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
