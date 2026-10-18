@@ -34,7 +34,7 @@ import Testing
 
     @Test func aDateLineWithAnEndAddsItsMonth() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Loan", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Loan", picture: .none, colour: nil,
             date: Self.date(2026, 9, 18), amount: 120, state: .upcoming,
             endDate: Self.date(2027, 5, 18), endHasPassed: false, isExtra: false, startsRecord: false
         )
@@ -44,7 +44,7 @@ import Testing
 
     @Test func aPassedEndReadsEnded() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Gym", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Gym", picture: .none, colour: nil,
             date: Self.date(2026, 9, 18), amount: 45, state: .charged,
             endDate: Self.date(2026, 8, 26), endHasPassed: true, isExtra: false, startsRecord: false
         )
@@ -54,7 +54,7 @@ import Testing
 
     @Test func aDateLineWithNoEndIsJustTheDay() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Rent", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Rent", picture: .none, colour: nil,
             date: Self.date(2026, 9, 18), amount: 950, state: .upcoming, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let line = TimelineFormatting.dateLine(for: entry, calendar: Self.calendar, locale: Self.locale)
@@ -63,7 +63,7 @@ import Testing
 
     @Test func anAccessibilityLabelNamesTheEnd() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Loan", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Loan", picture: .none, colour: nil,
             date: Self.date(2026, 9, 18), amount: 120, state: .upcoming,
             endDate: Self.date(2027, 5, 18), endHasPassed: false, isExtra: false, startsRecord: false
         )
@@ -73,7 +73,7 @@ import Testing
 
     @Test func aPassedEndIsSpokenAsEnded() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Gym", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2026, 9, 18), name: "Gym", picture: .none, colour: nil,
             date: Self.date(2026, 9, 18), amount: 45, state: .charged,
             endDate: Self.date(2026, 8, 26), endHasPassed: true, isExtra: false, startsRecord: false
         )
@@ -83,7 +83,7 @@ import Testing
 
     @Test func anAccessibilityLabelNamesTheState() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 30), name: "Water", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 30), name: "Water", picture: .none, colour: nil,
             date: Self.date(2027, 1, 30), amount: 38, state: .upcoming, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(for: entry, calendar: Self.calendar, locale: Self.locale)
@@ -95,7 +95,7 @@ import Testing
     /// it rendered dollars. Pinned to a non-euro locale so the suite would catch it again.
     @Test func aSpokenAmountNamesTheDevicesOwnCurrency() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 30), name: "Rent", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 30), name: "Rent", picture: .none, colour: nil,
             date: Self.date(2027, 1, 30), amount: 950, state: .charged, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(
@@ -107,7 +107,7 @@ import Testing
 
     @Test func aSkippedRowsLabelSaysSkipped() {
         let entry = TimelineEntry(
-            id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 1), name: "Streaming video", emoji: nil,
+            id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 1), name: "Streaming video", picture: .none, colour: nil,
             date: Self.date(2027, 1, 1), amount: 18, state: .skipped, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
         )
         let label = TimelineFormatting.accessibilityLabel(for: entry, calendar: Self.calendar, locale: Self.locale)

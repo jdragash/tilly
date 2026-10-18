@@ -18,7 +18,7 @@ import TillyCore
     }
 
     static func category(_ name: String) -> CategoryInfo {
-        CategoryInfo(id: UUID(), emoji: "🏠", name: name, colour: nil)
+        CategoryInfo(id: UUID(), picture: .emoji("🏠"), name: name, colour: nil)
     }
 
     /// One record of a bill; records sharing `series` are one bill.

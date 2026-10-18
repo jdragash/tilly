@@ -241,7 +241,7 @@ struct EditorCard: View {
                     tile.strokeBorder(Tokens.Ink.onCardDash, style: Tokens.Stroke.cardDash)
                         .breathing(progress.breathing(focused: focused) == .category)
                 } else if let category {
-                    Text(category.emoji)
+                    CategoryPicture(category).inline
                         .font(Tokens.Text.cardEmoji)
                         .id(category.id)
                         .transition(.emojiDrop)

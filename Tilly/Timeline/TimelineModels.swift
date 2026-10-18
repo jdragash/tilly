@@ -13,7 +13,8 @@ struct TimelineEntry: Identifiable, Equatable, Sendable {
     let expenseID: UUID
     let scheduledDate: Date // the rule's date, start of day; `date` stays the effective one
     let name: String
-    let emoji: String? // the category's; nil only for data saved before categories existed
+    let picture: CategoryPicture // the category's; .none only for data saved before categories existed
+    let colour: CategoryColour? // the category's
     let date: Date // effectiveDate, start of day
     let amount: Decimal? // already rounded to whole units
     let state: OccurrenceState
@@ -64,7 +65,8 @@ struct MonthSection: Identifiable, Equatable, Sendable {
 /// without SwiftData.
 struct TimelineExpense: Equatable, Sendable {
     let name: String
-    let emoji: String? // nil only for data saved before categories existed
+    let picture: CategoryPicture // .none only for data saved before categories existed
+    let colour: CategoryColour?
     let snapshot: ExpenseSnapshot
     let overrides: [OccurrenceOverride]
     /// The end of the latest-anchored record sharing this expense's series; nil when that

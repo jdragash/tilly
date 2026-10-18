@@ -18,7 +18,7 @@ import TillyCore
     }
 
     static func category(_ name: String, _ emoji: String = "🏠") -> CategoryInfo {
-        CategoryInfo(id: UUID(), emoji: emoji, name: name, colour: nil)
+        CategoryInfo(id: UUID(), picture: .emoji(emoji), name: name, colour: nil)
     }
 
     /// A bill in `category` (none when nil), repeating every `interval` `unit` from `anchor`.
@@ -40,7 +40,7 @@ import TillyCore
         let rule = RecurrenceRule(interval: interval, unit: unit, anchorDate: anchor, endDate: endDate)
         let snapshot = ExpenseSnapshot(id: UUID(), amount: amount, isEstimate: false, rule: rule, isArchived: false)
         return Bill(
-            expense: TimelineExpense(name: name, emoji: category?.emoji, snapshot: snapshot, overrides: overrides, seriesEndDate: endDate),
+            expense: TimelineExpense(name: name, picture: category?.picture ?? .none, colour: category?.colour, snapshot: snapshot, overrides: overrides, seriesEndDate: endDate),
             category: category
         )
     }

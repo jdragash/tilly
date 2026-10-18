@@ -71,14 +71,14 @@ struct CalendarDayCell: View {
 
     /// The costliest charge's emoji; two overlapped, the costliest on top, and "+N" for the rest.
     @ViewBuilder private var emoji: some View {
-        let emojis = day.entries.prefix(2).map { $0.emoji ?? "" }
+        let emojis = day.entries.prefix(2).map { $0.picture.inline }
         if emojis.count == 1 {
-            Text(emojis[0]).font(Tokens.Text.dayEmoji)
+            emojis[0].font(Tokens.Text.dayEmoji)
         } else {
             HStack(spacing: 0) {
                 HStack(spacing: -Tokens.Space.emojiOverlap) {
-                    Text(emojis[0]).zIndex(1)
-                    Text(emojis[1])
+                    emojis[0].zIndex(1)
+                    emojis[1]
                 }
                 .font(Tokens.Text.dayEmojiPair)
                 if day.entries.count > 2 {

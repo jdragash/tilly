@@ -4,14 +4,14 @@ import Foundation
 /// without SwiftData.
 struct CategoryInfo: Equatable, Sendable {
     let id: UUID
-    let emoji: String
+    let picture: CategoryPicture
     let name: String
     let colour: CategoryColour?
 }
 
 extension CategoryInfo {
     init(_ category: ExpenseCategory) {
-        self.init(id: category.id, emoji: category.emoji, name: category.name, colour: category.colour)
+        self.init(id: category.id, picture: CategoryPicture(category), name: category.name, colour: category.colour)
     }
 }
 

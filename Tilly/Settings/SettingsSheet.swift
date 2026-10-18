@@ -50,7 +50,7 @@ struct SettingsSheet: View {
 
     private func row(for category: ExpenseCategory) -> some View {
         HStack(spacing: Tokens.Space.gap) {
-            Text(category.emoji)
+            CategoryPicture(category).inline
                 .accessibilityHidden(true)
             Text(category.name)
                 .foregroundStyle(Tokens.Ink.primary)

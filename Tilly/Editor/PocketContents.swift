@@ -3,7 +3,7 @@ import Foundation
 /// What one pocket on the editor's card shows: its category and the bills peeking out of it.
 struct PocketContent: Identifiable, Equatable {
     let id: UUID                 // the category's
-    let emoji: String
+    let picture: CategoryPicture
     let name: String
     let colour: CategoryColour?
     let peeking: [String]        // up to three bill names, the one in front last
@@ -44,7 +44,7 @@ enum PocketContents {
                 .suffix(maxPeeking)
                 .map(\.name)
             return PocketContent(
-                id: category.id, emoji: category.emoji, name: category.name,
+                id: category.id, picture: CategoryPicture(category), name: category.name,
                 colour: category.colour, peeking: Array(names)
             )
         }

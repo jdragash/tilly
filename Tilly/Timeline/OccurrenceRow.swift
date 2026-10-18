@@ -91,10 +91,8 @@ struct OccurrenceRow: View {
             .fill(Tokens.Surface.iconWell)
             .frame(width: size, height: size)
             .overlay {
-                if let emoji = entry.emoji {
-                    Text(emoji)
-                        .font(Tokens.Text.rowEmoji)
-                }
+                entry.picture.inline
+                    .font(Tokens.Text.rowEmoji)
             }
             // An upcoming or skipped row sits back with its icon, the way its ink does.
             .opacity(entry.state == .charged ? 1 : Tokens.Opacity.upcomingIcon)

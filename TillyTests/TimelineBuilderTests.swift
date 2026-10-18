@@ -25,7 +25,8 @@ import TillyCore
         anchoredOn anchor: Date,
         interval: Int = 1,
         unit: RecurrenceUnit = .month,
-        emoji: String? = nil,
+        picture: CategoryPicture = .none,
+        colour: CategoryColour? = nil,
         endDate: Date? = nil,
         seriesEndDate: Date? = nil,
         isArchived: Bool = false,
@@ -34,7 +35,7 @@ import TillyCore
         let rule = RecurrenceRule(interval: interval, unit: unit, anchorDate: anchor, endDate: endDate)
         let snapshot = ExpenseSnapshot(id: UUID(), amount: amount, isEstimate: false, rule: rule, isArchived: isArchived)
         return TimelineExpense(
-            name: name, emoji: emoji, snapshot: snapshot, overrides: overrides,
+            name: name, picture: picture, colour: colour, snapshot: snapshot, overrides: overrides,
             seriesEndDate: seriesEndDate ?? endDate
         )
     }
@@ -75,8 +76,18 @@ import TillyCore
     }
 
     @Test func anEntryCarriesItsEmoji() {
-        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), emoji: "🏠")])
-        #expect(section.entries.first?.emoji == "🏠")
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), picture: .emoji("🏠"))])
+        #expect(section.entries.first?.picture == .emoji("🏠"))
+    }
+
+    @Test func entryCarriesSymbolPicture() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), picture: .symbol("house"))])
+        #expect(section.entries.first?.picture == .symbol("house"))
+    }
+
+    @Test func entryCarriesCategoryColour() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), colour: .orange)])
+        #expect(section.entries.first?.colour == .orange)
     }
 
     @Test func anEntryCarriesItsSeriesEnd() {

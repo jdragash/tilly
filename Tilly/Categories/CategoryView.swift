@@ -39,7 +39,7 @@ struct CategoryView: View {
             MonthHeader(
                 section: built.section, today: today, isPinned: isScrolled,
                 figure: pickedLane.map { TimelineFormatting.amount($0.total, locale: locale) },
-                figureLabel: pickedLane.map(CategoryFormatting.focusLabel),
+                figureLabel: pickedLane.map(focusLabel),
                 trailingClearance: Tokens.Space.categoryHeaderTrailingClearance
             )
             // Steps aside with the shell's controls while the readout holds the row.
@@ -84,18 +84,18 @@ struct CategoryView: View {
     private func readout(_ scrub: LanesView.Scrub, built: CategoryMonth, pickedID: String?) -> CategoryReadoutPlacement {
         let lanes = built.lanes.filter { pickedID == nil || $0.id == pickedID }
         var charges: [TimelineEntry] = []
-        var emojis: [String: String] = [:]
+        var pictures: [String: CategoryPicture] = [:]
         for lane in lanes {
             for dot in lane.dots where dot.day == scrub.day {
                 charges.append(dot.entry)
-                emojis[dot.entry.id] = lane.category?.emoji ?? dot.entry.emoji
+                pictures[dot.entry.id] = lane.category?.picture ?? dot.entry.picture
             }
         }
         let date = calendar.date(from: DateComponents(
             year: built.section.month.year, month: built.section.month.month, day: scrub.day
         )) ?? today
         return CategoryReadoutPlacement(
-            date: date, charges: charges, emojis: emojis,
+            date: date, charges: charges, pictures: pictures,
             lineX: lanesFrame.minX + scrub.lineX
         )
     }
@@ -120,8 +120,8 @@ struct CategoryView: View {
     private func footer(_ built: CategoryMonth) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             let monthName = built.section.month.name(in: calendar, relativeTo: today, locale: locale)
-            if let quiet = CategoryFormatting.quietLine(built.quiet, month: monthName, calendar: calendar, locale: locale) {
-                Text(quiet)
+            if let quiet = quietLine(built.quiet, month: monthName) {
+                quiet
                     .font(Tokens.Text.quietLine)
                     .foregroundStyle(Tokens.Ink.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -147,9 +147,24 @@ struct CategoryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// "Nothing in September: 📗 next Nov 3 · ✈️ next Jan 12", each picture drawn as itself.
+    private func quietLine(_ quiet: [QuietCategory], month: String) -> Text? {
+        guard !quiet.isEmpty else { return nil }
+        let items = quiet.map { item in
+            let next = CategoryFormatting.quietNext(item, calendar: calendar, locale: locale)
+            return next.isEmpty ? item.category.picture.inline : Text("\(item.category.picture.inline) \(next)")
+        }
+        let joined = items.dropFirst().reduce(items[0]) { Text("\($0) \u{00B7} \($1)") }
+        return Text("Nothing in \(month): \(joined)")
+    }
+
+    private func focusLabel(_ lane: CategoryLane) -> Text {
+        Text("\((lane.category?.picture ?? .none).inline) \(CategoryFormatting.focusLabel(lane))")
+    }
+
     private func nextRow(_ next: NextCharge) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.tight) {
-            Text(next.category?.emoji ?? next.entry.emoji ?? "")
+            (next.category?.picture ?? next.entry.picture).inline
             Text(next.entry.name)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)

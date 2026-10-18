@@ -219,8 +219,8 @@ struct LanesView: View {
     private func emojiButton(_ lane: CategoryLane, isPicked: Bool) -> some View {
         Button { onPick(lane) } label: {
             Group {
-                if let emoji = lane.category?.emoji {
-                    Text(emoji).font(Tokens.Text.laneEmoji(laneHeight: laneHeight))
+                if let picture = lane.category?.picture, !picture.isNone {
+                    picture.inline.font(Tokens.Text.laneEmoji(laneHeight: laneHeight))
                 } else {
                     // Charges saved before categories existed carry no emoji.
                     Image(systemName: "circle.dashed")

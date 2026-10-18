@@ -146,7 +146,7 @@ struct PocketGrid: View {
 
     private func lipView(_ pocket: PocketContent, colour: Color) -> some View {
         HStack(spacing: Tokens.Space.pocketLipGap) {
-            Text(pocket.emoji)
+            pocket.picture.inline
             Text(pocket.name)
                 .lineLimit(1)
         }
@@ -220,12 +220,12 @@ struct FilingTargetKey: PreferenceKey {
 
 private func previewPockets(_ count: Int) -> [PocketContent] {
     let names = ["Home", "Subscriptions", "Car", "Phone", "Insurance", "Gym", "Savings"]
-    let emoji = ["🏠", "📺", "🚗", "📱", "🛡️", "🏋️", "🐷"]
+    let pictures: [CategoryPicture] = [.emoji("🏠"), .emoji("📺"), .emoji("🚗"), .emoji("📱"), .emoji("🛡️"), .emoji("🏋️"), .emoji("🐷")]
     let colours = CategoryColour.allCases
     return (0..<count).map { index in
         PocketContent(
             id: UUID(),
-            emoji: emoji[index % emoji.count],
+            picture: pictures[index % pictures.count],
             name: names[index % names.count],
             colour: colours[index % colours.count],
             peeking: Array(["Rent", "Water", "Power"].prefix(index % 4))

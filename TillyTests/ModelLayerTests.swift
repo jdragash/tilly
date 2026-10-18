@@ -227,7 +227,7 @@ import TillyCore
         context.insert(expense)
         try context.save()
 
-        #expect(expense.timelineExpense.emoji == "🏠")
+        #expect(expense.timelineExpense.picture == .emoji("🏠"))
     }
 
     @Test func anExpenseWithNoCategoryHasNoEmoji() throws {
@@ -236,7 +236,7 @@ import TillyCore
         context.insert(expense)
         try context.save()
 
-        #expect(expense.timelineExpense.emoji == nil)
+        #expect(expense.timelineExpense.picture == .none)
     }
 
     // MARK: Series

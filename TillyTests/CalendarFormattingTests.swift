@@ -18,7 +18,7 @@ import Testing
 
     static func entry(_ name: String, day: Int, amount: Decimal?) -> TimelineEntry {
         TimelineEntry(
-            id: "\(name)\(day)", expenseID: UUID(), scheduledDate: date(2027, 1, day), name: name, emoji: nil,
+            id: "\(name)\(day)", expenseID: UUID(), scheduledDate: date(2027, 1, day), name: name, picture: .none, colour: nil,
             date: date(2027, 1, day), amount: amount, state: .upcoming, endDate: nil, endHasPassed: false,
             isExtra: true, startsRecord: false
         )
