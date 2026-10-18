@@ -83,6 +83,7 @@ struct AllBillsSheet: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
+        .drawnGround()
         .presentationDetents([.large])
         .sheet(item: $editing, onDismiss: { refresh &+= 1 }) { session in
             ExpenseEditor(today: today, session: session)

@@ -38,6 +38,7 @@ struct SettingsSheet: View {
                 #endif
             }
             .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -46,6 +47,7 @@ struct SettingsSheet: View {
                 }
             }
         }
+        .drawnGround()
     }
 
     private func row(for category: ExpenseCategory) -> some View {
@@ -57,6 +59,7 @@ struct SettingsSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             colourMenu(for: category)
         }
+        .listRowBackground(Tokens.Drawn.paperCard)
     }
 
     private func colourMenu(for category: ExpenseCategory) -> some View {

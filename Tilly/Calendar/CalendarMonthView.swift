@@ -37,7 +37,7 @@ struct CalendarMonthView: View {
             grid
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Tokens.Surface.base)
+        .drawnPaper()
     }
 
     // MARK: Title

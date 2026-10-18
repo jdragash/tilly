@@ -293,13 +293,14 @@ struct TimelineView: View {
                     dayTopRow(window)
                     list(window)
                 }
-                .background(Tokens.Surface.base)
+                .drawnPaper()
                 .overlay(alignment: .top) {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
                     // the `GeometryReader` wrapping the whole screen in `body`, and passed
                     // down instead. See "The month header" in `docs/DESIGN.md`.
-                    Tokens.Surface.base
+                    Color.clear
+                        .drawnPaper()
                         .frame(height: topInset)
                         .frame(maxWidth: .infinity)
                         .ignoresSafeArea(edges: .top)

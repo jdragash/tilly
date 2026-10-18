@@ -343,6 +343,15 @@ the device while flinging through a year.
 
 ## Lessons
 
+- **Metal needs the Metal Toolchain**, a separate 840MB Xcode component: `xcodebuild -downloadComponent
+  MetalToolchain`. Without it any `.metal` file fails the build.
+- **Module-default main-actor isolation reaches `Shape`.** A `Shape` that reads `Tokens` can't conform
+  (the conformance "crosses into main actor-isolated code"). `Tokens.Drawn` is `nonisolated`, and the
+  shapes and `CategoryPicture` (read from `Expense+Timeline`) are `nonisolated` too.
+- **A screen's own `.background(Surface.base)` hides the root's grain.** Screens use `.drawnPaper()`
+  and a sheet's root `.drawnGround()` (which also sets `presentationBackground`); `Surface.base` is
+  paper without grain, for fills that sit on something.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

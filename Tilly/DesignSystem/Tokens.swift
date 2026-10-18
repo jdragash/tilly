@@ -3,6 +3,8 @@ import UIKit
 
 enum Tokens {
     enum Text {
+        /// The face the whole app is set in: SF Pro Rounded, through `.fontDesign` at the root.
+        static let design: Font.Design = .rounded
         static let monthName: Font = .title3.weight(.semibold)
         static let monthTotal: Font = .subheadline
         /// Calendar's Today: 17pt medium. Measured at 3x, Today's label has a 12.0pt cap height
@@ -154,7 +156,7 @@ enum Tokens {
     }
 
     enum Surface {
-        static let base: Color = Color(.systemBackground)
+        static let base: Color = Drawn.paper
         static let iconWell: Color = Color(.quaternarySystemFill)
         static let rule: Color = Color(.separator)
         /// The pinned month header's ground. Opaque, and deliberately the same paper as
@@ -162,7 +164,7 @@ enum Tokens {
         /// Because it matches `base`, the header can carry it at rest too — see the note in
         /// `MonthHeader`. Liquid Glass is for things that float *over* content, which the
         /// floating buttons are and a full-bleed sticky header is not.
-        static let pinned: Color = Color(.systemBackground)
+        static let pinned: Color = Drawn.paper
         static let editorButtonActive: Color = Color(.tertiarySystemFill)
         /// Behind a picked-out lane's emoji.
         static let pickedLane: Color = Color(.secondarySystemFill)
@@ -575,6 +577,68 @@ extension Tokens {
                 blue: CGFloat(hex & 0xff) / 255,
                 alpha: 1
             )
+        }
+    }
+}
+
+extension Tokens {
+    /// The Drawn look: paper with a grain, colour laid down as a wash with a rough, blooming edge.
+    /// Every value is the combined prototype's `DT`; Jake tunes them on the phone, so a change here
+    /// reaches every drawn thing.
+    nonisolated enum Drawn {
+        static let paper = dynamic(light: 0xEFEEEA, dark: 0x1D1C1A)
+        static let paperCard = dynamic(light: 0xF7F6F2, dark: 0x2B2A27)
+        static let ink = dynamic(light: 0x1C1B19, dark: 0xF2F1EE)
+        static let ink2 = dynamic(light: 0x8A8883, dark: 0x8D8B86)
+
+        /// The grain: a square tile (pt) made once, each pixel on a random half at this alpha (of 255),
+        /// black or white.
+        static let grainTile: CGFloat = 160
+        static let grainAlpha: UInt8 = 9
+        static let grainSeed: UInt64 = 77
+
+        /// An edge's displacement (pt), how fast it varies (per pt), and the pt between sampled points.
+        static let edgeWobble: CGFloat = 5
+        static let edgeFrequency: CGFloat = 0.012
+        static let edgeStep: CGFloat = 3
+        /// The second, finer wobble (pt), and its frequency (per pt).
+        static let roughAmplitude: CGFloat = 0.6
+        static let roughEdgeFrequency: CGFloat = 0.9
+        /// How far a fill's alpha varies, and how fast across the card (per pt).
+        static let bloom: Float = 0.22
+        static let bloomFrequency: Float = 0.006
+        static let bloomSeed: Float = 13
+
+        /// A card: fill and edge opacity, and the edge's width.
+        static let cardFill: Double = 0.9
+        static let cardEdge: Double = 1
+        static let edgeWidth: CGFloat = 3
+        /// A wash: fill, edge, and as a well behind a picture.
+        static let washFill: Double = 0.72
+        static let washEdge: Double = 0.85
+        static let washWell: Double = 0.24
+        /// A symbol sitting on its own solid card: a faint white wash behind it.
+        static let onCardWash: Double = 0.35
+
+        /// The dotted outline of what's still to come.
+        static let dotWidth: CGFloat = 2
+        static let dotDash: [CGFloat] = [0.1, 5]
+        static let dotOpacity: Double = 0.9
+
+        /// A symbol roughened as it draws: the noise's frequency (per pt) and how far it moves a pixel.
+        static let roughFrequency: Float = 0.32
+        static let roughAmount: Float = 1.3
+        /// The three drawings swapped to boil a picture.
+        static let boilSeeds: [Float] = [1, 2, 3]
+
+        private static func dynamic(light: UInt32, dark: UInt32) -> Color {
+            func rgb(_ hex: UInt32) -> UIColor {
+                UIColor(
+                    red: CGFloat((hex >> 16) & 0xff) / 255, green: CGFloat((hex >> 8) & 0xff) / 255,
+                    blue: CGFloat(hex & 0xff) / 255, alpha: 1
+                )
+            }
+            return Color(UIColor { rgb($0.userInterfaceStyle == .dark ? dark : light) })
         }
     }
 }

@@ -139,6 +139,7 @@ struct ExpenseEditor: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
+        .drawnGround()
         .onPreferenceChange(FilingTargetKey.self) { landing = $0 }
         .overlay {
             // While the card files, any tap closes the sheet at once.

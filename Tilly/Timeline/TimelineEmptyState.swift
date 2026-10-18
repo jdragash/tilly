@@ -15,7 +15,7 @@ struct TimelineEmptyState: View {
         }
         .padding(.horizontal, Tokens.Space.gutter)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Tokens.Surface.base)
+        .drawnPaper()
     }
 }
 

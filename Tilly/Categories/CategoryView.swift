@@ -72,7 +72,7 @@ struct CategoryView: View {
         }
         .coordinateSpace(.named(Self.space))
         .preference(key: CategoryReadoutKey.self, value: scrub.map { readout($0, built: built, pickedID: pickedLane?.id) })
-        .background(Tokens.Surface.base)
+        .drawnPaper()
         .sensoryFeedback(.selection, trigger: scrub?.day) { _, new in new != nil }
         .onChange(of: month) { _, _ in
             picked = nil

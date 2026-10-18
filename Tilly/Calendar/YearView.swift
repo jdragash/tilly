@@ -30,7 +30,7 @@ struct YearView: View {
         .scrollBounceBehavior(.basedOnSize)
         .padding(.top, Tokens.Size.headerRow)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Tokens.Surface.base)
+        .drawnPaper()
     }
 
     // MARK: Title
