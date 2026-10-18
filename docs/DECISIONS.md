@@ -51,14 +51,18 @@ When an occurrence's date passes, it is charged. Setting a real amount is always
 - **Rejected — the user confirms each occurrence:** turns visibility into a chore, and skipped confirmations rot the data.
 - **Rejected — assume, but prompt on variable bills:** the same chore, just rarer.
 
-## Stock SwiftUI in v1, behind a token layer
-**Decided:** 2026-09-04
-System components supply Liquid Glass, Dynamic Type, dark mode and VoiceOver. Every value
-reaches a view through `Tokens`, dimensions included, so the design pass is a one-file change,
-and it layers on system materials rather than replacing them.
-- **Rejected — build a design system in v1:** functionality first.
+## Tilly is Drawn, on the token layer, with the glass left stock
+**Decided:** 2026-09-04, the look 2026-10-18
+Paper with a grain, colour as a rough-edged wash, SF Pro Rounded, and each category drawn as a
+roughened symbol. System components still supply Liquid Glass, Dynamic Type, dark mode and
+VoiceOver, and every value reaches a view through `Tokens`, so tuning the look is a one-file change.
+Settled in the combined prototype (`docs/prototypes/combined.html`), ahead of the motion and All
+bills, which are drawn in it.
+- **Rejected — stock until a v2 design pass:** the motion and All bills would be built twice.
+- **Rejected — handwriting (`icons-and-type.html`):** words and figures lose their instant read.
+- **Rejected — cream cards, and a glass sheet:** tried in the prototype; colour cards and an opaque sheet read best.
 - **Rejected — raw values now, extract tokens later:** the extraction is the expensive part.
-- **Revisit when:** the v2 design pass, which is Jake's.
+- **Revisit when:** a value can't be reached through `Tokens`, or a drawn part costs a scroll its frames.
 
 ## The timeline is one list, future above and past below, and the future runs five years on
 **Decided:** 2026-09-19
@@ -118,19 +122,23 @@ twelve months' monthly bills.
 - **Rejected — what's about to change as its own picture:** three directions, all confusing; rings on the year carry the plain cases.
 - **Revisit when:** planned one-offs arrive; they are extras by this definition.
 
-## Every expense has a category, and a category is an emoji, a name and a colour
-**Decided:** 2026-09-19, colour and order added 2026-09-24
+## Every expense has a category, and a category is a symbol, a name and a colour
+**Decided:** 2026-09-19, colour and order added 2026-09-24, the symbol 2026-10-18
 Amount, name, category and date are all required. The app ships with no categories, so the first
-expense makes the first. The emoji comes from the system emoji keyboard; the colour is one of eight
-tokens, checked so neighbours stay distinct for colour-blind readers, and a new category starts on
-the next one unused. Categories keep an order the user sets in Settings.
+expense makes the first. The picture is a symbol from Tilly's own set, searched by word in the
+keypad's place, and drawn roughened (`DESIGN.md`, the look). A category made before symbols keeps its
+emoji until one is picked. The colour is one of eight tokens, checked so neighbours stay distinct for
+colour-blind readers, and a new category starts on the next one unused. Categories keep an order the
+user sets in Settings.
+- **Rejected — the emoji keyboard, with a symbol matched to each emoji:** any emoji without a match shows a mixed row.
+- **Rejected — keeping emoji under the Drawn look:** the one part of every row that wouldn't draw alike.
+- **Rejected — pictures made on the phone (L), or Tilly's own hand (G):** prototyped in `icons-in-app.html`; I won.
 - **Rejected — Tilly assigning colours in the order categories were made:** a colour the user didn't pick means nothing to them.
-- **Rejected — a colour taken from the emoji:** 🏠 and 🚗 land on orange and red, too close to tell apart as dots.
+- **Rejected — a colour taken from the picture:** 🏠 and 🚗 landed on orange and red, too close to tell apart as dots.
 - **Rejected — ordering by size or by name:** an order that reshuffles as bills change, where the user's own holds still.
-- **Rejected — an optional category:** the row's icon and any insight by category would need a stand-in that means nothing.
+- **Rejected — an optional category:** the row's picture and any insight by category would need a stand-in that means nothing.
 - **Rejected — a starter set:** the user's categories are theirs (tenet 4).
-- **Rejected — a custom emoji grid:** a curated set, and weaker than the system keyboard's search.
-- **Revisit when:** icons are explored as an alternative to emoji; the pairing with a colour stays.
+- **Revisit when:** someone can't find a symbol for a category they mean; the set grows, or emoji return beside it.
 
 ## The category view is lanes across one month
 **Decided:** 2026-09-24
@@ -147,6 +155,15 @@ arrows; dragging reads charges one at a time. Chosen from ten directions and a w
 **Decided:** 2026-09-19
 Two charges on one day are two rows, each with its date. The timeline has no day groups.
 - **Rejected — grouping a day under a heading with a day total:** the list changes shape, and rows inside lose their dates.
+
+## The timeline is a Wallet stack of the bills' own cards
+**Decided:** 2026-10-18
+Each row is its bill's card, tucked under the next: washed solid in its colour once charged, a
+dotted outline in its colour while still to come. Chosen in the combined prototype from four looks.
+- **Rejected — a card chip in the well, colour nowhere else (recommended at the time):** Jake took the stack.
+- **Rejected — dashed outlines for what's to come, solid cards for what's charged, as separate rows:** the stack reads as one wallet.
+- **Rejected — rounded corners on a tucked card:** the stack stopped reading as a stack.
+- **Revisit when:** the stack costs a scroll its frames, or a row's tucked edge hides what it says.
 
 ## Adding a bill is a card you complete, and the pockets pick its category
 **Decided:** 2026-10-16

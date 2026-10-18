@@ -13,12 +13,22 @@ are in `PROJECT.md`, the principles behind them in `TASTE.md`, and the evidence 
 | **Time** | upcoming / charged | Weight: secondary vs. full |
 | **Certainty** | estimated / known | *Not rendered in v1.* Returns with variable bills |
 
-An upcoming row sits back: name, date, icon and amount at secondary weight; a charged row comes
-forward at full weight. A skipped row withdraws further and strikes its amount through: listed,
+An upcoming row sits back: its card a dotted outline in its colour on the paper, name, date, picture
+and amount at secondary weight. A charged row is its card, washed solid in its colour, at full weight. A skipped row withdraws further and strikes its amount through: listed,
 visibly not counted, and marking no calendar. Nothing in v1 skips a charge. A charge dated today is
 charged; one with no amount shows an em dash and adds nothing. Certainty, when it returns, gets its
 own channel, a mark beside the amount, never lightness. The grammar holds wherever a date or amount
 appears: the editor's date button shows a calendar with a clock for a date still to come.
+
+---
+
+## The look
+
+Tilly, Drawn: paper with a faint grain under everything, sheets included; colour laid down as a wash
+with a rough edge that blooms; SF Pro Rounded, and no handwriting. A category's picture is a symbol,
+roughened, in its colour on a faint wash, or white on its own card. On the editor's card it boils,
+three drawings swapped eight times a second, still under Reduce Motion; everywhere else it holds
+still. A category made before symbols shows its emoji until one is picked. The glass stays stock.
 
 ---
 
@@ -29,7 +39,7 @@ A glass pair floats at the right end of the top row: the view button, whose icon
 you're in and whose menu lists the views with a checkmark on the current one, and +. The month
 button sits bottom left; All bills and settings share a glass capsule bottom right, in every view.
 Everything else is a sheet, so the reader never leaves their place: no tab bar, no pushed pages.
-Settings keeps the categories in your order: drag to reorder, tap a colour to change it.
+Settings keeps the categories in your order: drag to reorder, tap a picture or a colour to change it.
 
 ### Amounts
 
@@ -65,7 +75,7 @@ colour.`
 ### The month
 
 A grid from the week's first day, capped at `xxxLarge` as Calendar's is. A day shows its costliest
-charge's emoji, two overlapped and `+N` beyond, and its total; an upcoming day sits back as an
+charge's picture, two overlapped and `+N` beyond, and its total; an upcoming day sits back as an
 upcoming row does; neighbouring months' days show only their number. Arrows and a swipe page it,
 across the timeline's span. Under its name, the header's figure, or `Nothing this month`.
 
@@ -90,8 +100,9 @@ history clears it.
 
 ## The timeline
 
-The calendar's closest level. Icon well, then name with the date beneath it, then the amount. The
-well holds the category's emoji. A bill that ends adds its last month to the date, `Fri 18 · ends
+The calendar's closest level, a Wallet stack: each row is its bill's card, with the picture, then
+the name over its date, then the amount along the card's top. A card is tucked 12pt under the next,
+so only its top corners are rounded; the last in a month is whole. A bill that ends adds its last month to the date, `Fri 18 · ends
 05/27`, or `ended 08/26` once that payment is today or past. Nothing else joins that line. Every
 charge is its own row, carrying its own date: no day heading or day total. Rows descend by date, a
 day's charges by amount, ties by name. No separator between rows, and no `TODAY` badge: space and
@@ -138,7 +149,7 @@ where it was.
 One month, one lane per category across its days, in the Settings order. Each charge is a dot on its
 day in its category's colour: filled once charged, a ring while still to come, a dashed ring at €0.
 A dot's area follows its amount on one scale for every month, so paging never resizes anything. A
-line marks today. Each lane starts with the category's emoji and ends with its month total. Lanes
+line marks today. Each lane starts with the category's picture and ends with its month total. Lanes
 shrink to fit, 60pt down to 30pt, then the page scrolls. A category with nothing this month gets a
 line under the lanes, `Nothing in September: 📗 next Nov 3`; on the current month, `Next` lists the
 three soonest charges, at most one per category. The header is the timeline's, with a glass pair of
@@ -148,9 +159,9 @@ stopping, dimmed, at either end.
 Dragging across the lanes starts on touch and moves charge to charge, never stopping on an empty
 day, with a tick at each. A readout names that day's charges and nothing else, in the header's row,
 whose name and controls step aside while the finger is down; a name shortens before an amount does.
-Tapping a dot opens its charge in the editor. Tapping a lane's emoji picks the category out: the
+Tapping a dot opens its charge in the editor. Tapping a lane's picture picks the category out: the
 other lanes fade and the header figure becomes its total, until it's tapped again. Every category's
-colour, one of eight, shows here and on the year; the timeline's wells stay grey.
+colour, one of eight, shows here, on the year and on the timeline's cards.
 
 ---
 
@@ -171,13 +182,13 @@ bill opens its next charge in the editor, an ended one its last.
 
 ### The card is the input
 
-Adding a bill opens a Wallet card at the top of a white sheet, in the category's colour or grey
+Adding a bill opens a Wallet card at the top of the sheet, washed in the category's colour, or grey
 until it has one, with white type. The amount is top left and largest, the date and repeat top
-right on two small lines, the name bottom left, the category's emoji bottom right. Close is top
+right on two small lines, the name bottom left, the category's picture bottom right. Close is top
 left, and Save is the system's prominent checkmark top right. The input area under the card keeps
 the keypad's height, so the card never moves.
 
-Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed emoji tile. A pencil
+Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed picture tile. A pencil
 after the date, repeat and category means it's filled in and yours to change. A caret blinks after the
 amount on the keypad. Once it's in, the next part still needed, other than the one being typed,
 breathes: a slow pulse on its dashes. At accessibility sizes the parts stack, full width, and the
@@ -186,7 +197,7 @@ sheet scrolls.
 ### Amount, name and category are required
 
 ✓ stays disabled until all three are there, and while a new category is half made. The date starts
-as today and the repeat as monthly. The row leads with the emoji and the name.
+as today and the repeat as monthly. The row leads with the picture and the name.
 
 ### Tapping a part opens its input in the keypad's place
 
@@ -201,12 +212,12 @@ as today and the repeat as monthly. The row leads with the emoji and the name.
 ### The pockets are the category picker
 
 A pocket per category, three across (two at accessibility sizes), in the Settings order, with a
-dashed `New` last; more than fit scroll. Each is its category's colour, emoji and name on its front,
+dashed `New` last; more than fit scroll. Each is its category's colour, picture and name on its front,
 with up to three of its running bills' names peeking out, the latest started in front. Tapping one
-dresses the card: the colour crossfades in and the emoji drops into its tile, and the pocket lifts
+dresses the card: the colour crossfades in and the picture drops into its tile, and the pocket lifts
 with the bill's name standing in it.
 
-`New` opens the emoji keyboard under an emoji slot, a name field and the eight colours, the next
+`New` opens Tilly's symbols in the keypad's place, searchable by word, under a picture slot, a name field and the eight colours, the next
 unused one chosen. Return makes the category before `New` and dresses the card. With none yet,
 `New` is the only pocket, and it breathes once the amount and name are in.
 

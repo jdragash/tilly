@@ -32,7 +32,7 @@ The smallest thing that does the job.
 
 | Item | Why not v1 |
 |---|---|
-| The calendar, All bills and the category view, in the card's language | They stay as built. Once the card and pockets are in use, each is revisited with them: All bills' category cards and the pockets are close cousins already. |
+| The calendar and the category view, in the card's language | They take the Drawn ground, type and colours now; their own redesign waits. All bills becomes folders of cards, briefed after the look and the motion. |
 | Pockets under the card | The pockets start right under the card and grow down the sheet, scrolling under it so the card floats over them. Waits until the card and pockets are in use, because the scroll and the card's place have to be built together. |
 | Viewing a charge before editing it | Prototyped and set aside: the editor-first version read better (`DECISIONS.md`). Reopens with variable bills, where the page could show an actual amount beside the estimate. |
 | Variable bills, with an amount you can leave rough | Needs a design pass, not a checkbox: does a rough amount count toward a month total, and are "I don't know yet" and "roughly this" one state or two? The schema already carries an optional amount and an estimate flag. An estimate gets a mark, never a tilde or lightness. |
@@ -50,7 +50,7 @@ The smallest thing that does the job.
 
 | Item | Why not sooner |
 |---|---|
-| **Design system pass**: typography, colour, spacing | Jake's pass. Stock SwiftUI and the token layer make it a one-file change, with the gallery as the workbench. |
+| **Design system pass**: a type scale and spacing | The look itself, Tilly, Drawn, is being built now (`docs/briefs/drawn-timeline/brief.md`). A scale and spacing stay Jake's pass, through `Tokens`. |
 | Savings buckets, and the "pre-paid" bridge | A bucket funding an upcoming expense shows it as pre-paid. Only makes sense once the calendar is trusted. |
 | Richer insight visualisations | Needs months of real data before it says anything. |
 | Quality-of-life settings | Display cents (default off), appearance, week start. |

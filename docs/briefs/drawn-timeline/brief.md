@@ -125,3 +125,13 @@ sheet, which lost.
   `icons-in-app.html`; `docs/prototypes/combined.html` and its settled state (read 2026-10-18).
 - `Tilly/Models/ExpenseCategory.swift`, `Tilly/DesignSystem/Tokens.swift`, `Tilly/Timeline/`.
 - `git log`: `4030eae` (v0.6.0, the card editor), `origin/card-polish` (`811fdd6`..`8c757e0`).
+
+## Updates
+
+### 2026-10-18: the open questions are answered
+
+1. A category picks a symbol from Tilly's own set, searched by word; one made before symbols shows
+   its emoji until changed (Jake, on the decision card).
+2. The boil runs on the editor's card only, and the calendar and category view take the ground,
+   type and colours without their own redesign (Jake agreed to both defaults).
+3. Left to the build: the row grows to the prototype's 64pt so its tucked 12pt hides nothing.
