@@ -100,13 +100,14 @@ not the process survived. The current month decides where you land only on first
 Laid out like iOS Calendar: a view button and + as one glass pair at the top row's right end, the
 month button bottom left, and All bills and settings in one capsule bottom right. The view button's
 menu lists Calendar and Categories, so more can join it. The editor, All bills and settings open as
-sheets; categories live in Settings. Over the days the top row holds the back button, and month
+sheets, the editor one the app draws itself so its card can fly into the timeline beneath; categories live in Settings. Over the days the top row holds the back button, and month
 headers pin beneath it.
 - **Rejected — a toggle that flips between two views:** a tap fewer, but the icon must show where you'd go, and a third view has nowhere to live.
 - **Rejected — All bills as a view in the menu:** tried on the prototype's switches; the sheet won, opened from beside settings.
 - **Rejected — a categories button:** categories are set up rarely, which is what Settings is for.
 - **Rejected — a return pill that appears 240pt away:** a control that comes and goes; the month button is always there.
 - **Rejected — pushed pages:** they replace the timeline instead of sitting over it.
+- **Rejected — the system sheet for the editor:** it presents in a layer of its own, so its card can't fly into a row, and its timing isn't Tilly's to tune.
 
 ## Calendar is three zoom levels: the year, a month, and the days
 **Decided:** 2026-10-01
@@ -165,18 +166,19 @@ dotted outline in its colour while still to come. Chosen in the combined prototy
 - **Rejected — rounded corners on a tucked card:** the stack stopped reading as a stack.
 - **Revisit when:** the stack costs a scroll its frames, or a row's tucked edge hides what it says.
 
-## Adding a bill is a card you complete, and the pockets pick its category
-**Decided:** 2026-10-16
+## Adding a bill is a card you complete, a hand of categories dresses it, and it lands in the timeline
+**Decided:** 2026-10-16, the hand and the landing 2026-10-18
 The sheet is a card whose missing parts are dashed, and the input for whichever part you tap opens
-in the keypad's place. The category is chosen by tapping one of the pockets bills are filed in, and
-✓ saves and files the card there. Chosen from canvas rounds 1 to 7 and a working prototype
-(`docs/prototypes/edit-revisit-card.html`), built first in the iOS look.
+in the keypad's place. The category is played onto the card from a fanned hand, and ✓ turns the
+card over to its back and drops it into its row in the timeline. Opening a row flips its card back
+into the sheet. Chosen from canvas rounds, `docs/prototypes/edit-revisit-card.html` and
+`docs/prototypes/combined.html`.
 - **Rejected — a form that leads, one step at a time, or the bill as a sentence:** each version still read as filling out a form, and a next button that moves leaves nothing clear to press.
-- **Rejected — filing into a pocket as the save itself (P1):** nothing said it was final.
-- **Rejected — playing a category onto the card from a fanned hand (P2):** close, and the stamp of applying it felt good, but it's a second set of category cards beside the pockets the bill lands in.
-- **Rejected — showing the pocket's monthly total, a dense grid, or a list of strips:** the bills peeking say what a pocket is for.
-- **Rejected — pockets in the order categories were last used:** an order that reshuffles under the thumb, where the Settings order holds still.
-- **Revisit when:** the pockets move under the card (`ROADMAP.md`), or Tilly, Drawn arrives.
+- **Rejected — pockets the card files into on ✓ (built in v0.6.0):** the bill ended in a pocket, away from the timeline where it lives. Once it lands in its row, pockets are a second home for it.
+- **Rejected — the card flipping and dropping as one motion:** too quick to see what happened. The turn and the drop each get their beat.
+- **Rejected — the card landing without a flip, or a reopened bill staying an outline:** the flip is what says the card and the row are one thing. A charged card never flips, since its row is already solid.
+- **Rejected — landings that slam, slide, zoom, highlight or ripple:** tried in the combined prototype; the card leading into its row read as the bill itself arriving.
+- **Revisit when:** All bills becomes folders, which reuses this flight.
 
 ## Editing a charge is Calendar's: edit first, then this charge or future ones
 **Decided:** 2026-09-22
