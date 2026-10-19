@@ -116,9 +116,9 @@ struct EditorCard: View {
                     wash(for: flood.previous, id: nil)
                     wash(for: category?.colour, id: category?.id)
                         .mask {
-                            let reach = flood.reach(from: tileCentre, in: geometry.size)
+                            let diameter = 2 * flood.reach(from: tileCentre, in: geometry.size) * flood.progress
                             Circle()
-                                .frame(width: 2 * reach * flood.progress, height: 2 * reach * flood.progress)
+                                .frame(width: diameter, height: diameter)
                                 .position(tileCentre)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
