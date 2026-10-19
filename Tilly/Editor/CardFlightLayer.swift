@@ -12,8 +12,9 @@ struct CardFlight: Equatable {
     let entry: TimelineEntry
     /// The back's corners, as in its month.
     let isLast: Bool
-    /// The editor's card, in `CardFlightLayer.space`.
-    let cardFrame: CGRect
+    /// The editor's card, in `CardFlightLayer.space`. An opening aims at where it last rested, and is
+    /// corrected if the sheet's card reports another place.
+    var cardFrame: CGRect
     /// The row at its full height, in `CardFlightLayer.space`.
     var rowFrame: CGRect
     /// 0 … 1: 0 the front up, 1 the back up.
@@ -31,6 +32,24 @@ struct CardFlight: Equatable {
     static let landingFade: CGFloat = 0.65
     /// A charged opening fades the card in between these points of the travel, coming up.
     static let openingFade: ClosedRange<CGFloat> = 0.05...0.45
+
+    /// How far an opening travels before a flipping card turns over: in place, rather than after the
+    /// spring's last fraction of a point.
+    static let openingTurnsAt: Double = 0.985
+
+    /// When a spring from 0 to 1 first reaches `fraction` of the way, in seconds: an animated value
+    /// can't be watched, so the turn that follows an opening's travel is timed from the spring.
+    nonisolated static func time(toReach fraction: Double, duration: TimeInterval, bounce: Double) -> TimeInterval {
+        let spring = Spring(duration: duration, bounce: bounce)
+        let step: TimeInterval = 1.0 / 240
+        let limit = max(duration, spring.settlingDuration)
+        var time: TimeInterval = 0
+        while time < limit {
+            if spring.value(target: 1.0, time: time) >= fraction { return time }
+            time += step
+        }
+        return limit
+    }
 
     /// Where the flyer is at `travel`: straight from the card to the row, its size with it, past
     /// the row while a spring overshoots.

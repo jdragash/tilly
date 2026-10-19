@@ -103,4 +103,37 @@ import TillyCore
         #expect(!inView(690))
         #expect(!inView(900))
     }
+
+    @Test func unmovedChargeLandsInPlace() {
+        let bill = Builder.expense(name: "Rent", anchoredOn: Builder.date(2026, 11, 5))
+        let sections = Self.sections([bill])
+        let month = Builder.thisMonth.advanced(by: 1)
+        let opened = sections[month]!.entries[0]
+        let target = TimelineLanding.target(
+            expenseID: bill.snapshot.id, date: opened.date, in: sections, calendar: Builder.calendar
+        )!
+        #expect(TimelineLanding.landsInPlace(opened: opened, target: target))
+        #expect(TimelineLanding.openedRowRemains(opened, in: sections, calendar: Builder.calendar))
+    }
+
+    @Test func movedChargeLandsElsewhereAndItsOldPlaceGoes() {
+        let scheduled = Builder.date(2027, 1, 10)
+        let moved = Builder.date(2027, 1, 22)
+        let before = Builder.expense(anchoredOn: Builder.date(2026, 12, 10))
+        let opened = Self.sections([before])[MonthKey(containing: scheduled, calendar: Builder.calendar)]!
+            .entries.first { $0.date == scheduled }!
+        // The same bill saved with this charge moved: it keeps its id, on another day.
+        let after = TimelineExpense(
+            name: before.name, picture: before.picture, colour: before.colour, snapshot: before.snapshot,
+            overrides: [OccurrenceOverride(scheduledDate: scheduled, actualAmount: nil, movedDate: moved, isSkipped: false)],
+            seriesEndDate: before.seriesEndDate
+        )
+        let sections = Self.sections([after])
+        let target = TimelineLanding.target(
+            expenseID: before.snapshot.id, date: moved, in: sections, calendar: Builder.calendar
+        )!
+        #expect(target.id == opened.id)
+        #expect(!TimelineLanding.landsInPlace(opened: opened, target: target))
+        #expect(!TimelineLanding.openedRowRemains(opened, in: sections, calendar: Builder.calendar))
+    }
 }

@@ -56,6 +56,9 @@ struct EditorSheet<Content: View>: View {
     /// Where the editor's card rests when the sheet is up, in `CardFlightLayer.space`, with the
     /// sheet's own travel taken out: a flight can aim at it before the sheet has arrived.
     let onCardRest: (CGRect) -> Void
+    /// How far a drag had pulled the sheet down as it let go to close: a card landing back from it
+    /// starts where it was, not at its rest.
+    var onDragClose: (CGFloat) -> Void = { _ in }
     @ViewBuilder let content: (EditorRequest) -> Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -179,6 +182,7 @@ struct EditorSheet<Content: View>: View {
                 let closes = value.translation.height > height * Tokens.Motion.sheetDragCloses
                     || value.predictedEndTranslation.height > height * Tokens.Motion.sheetFlingCloses
                 if closes {
+                    onDragClose(travel)
                     request = nil
                 } else {
                     withAnimation(riseAnimation) { travel = 0 }
@@ -200,6 +204,9 @@ struct EditorSheet<Content: View>: View {
         withTransaction(instant) {
             shown = new
             contents = 1
+            // Reported afresh for every open: one opened while the last was still leaving would
+            // otherwise match the old report and never be sent.
+            reportedCardRest = nil
             if isFresh {
                 if reduceMotion {
                     travel = 0
@@ -210,6 +217,7 @@ struct EditorSheet<Content: View>: View {
                 }
             }
         }
+        reportCardRest()
         // A turn later, so the sheet is drawn where it starts before it moves. A sheet still
         // leaving rises again from wherever it has got to.
         DispatchQueue.main.async {

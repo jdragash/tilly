@@ -38,6 +38,9 @@ struct TimelineView: View {
     @State private var editor: EditorRequest?
     /// Where the editor's card rests while its sheet is up, in `CardFlightLayer.space`.
     @State private var editorCardRest: CGRect?
+    /// Where it rested last time, kept after it closes: an opening sets off for it at once, rather
+    /// than waiting the turns the sheet takes to report (156ms measured).
+    @State private var lastCardRest: CGRect?
     /// The day a calendar tap opened, its rows marked until the mark fades.
     @State private var markedDay: Date?
     /// The row a card stands in for: opening into its place as a card lands, or kept open, empty,
@@ -67,6 +70,14 @@ struct TimelineView: View {
     @State private var heldRowHeight: CGFloat = 0
     /// A save's close refreshes the months itself, before the sheet goes, to find its row.
     @State private var refreshedOnClose = false
+    /// The row whose card went up into the sheet, its place held open and empty until it comes back.
+    @State private var openedEntry: TimelineEntry?
+    /// That row's height as it opened: what the list gives up if a save moves the charge away.
+    @State private var openedRowHeight: CGFloat = 0
+    /// Counts openings, for the opening's haptic.
+    @State private var openings = 0
+    /// How far a drag had pulled the sheet down as it closed: a card landing back starts there.
+    @State private var closingDrag: CGFloat = 0
     /// Which view shows. The app opens on the one it was left on, as Calendar does.
     @AppStorage("viewMode") private var mode: ViewMode = .firstRun
     /// The month the category view shows. Set properly once the window is.
@@ -194,7 +205,9 @@ struct TimelineView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
         // Above the levels, the glass controls and the bottom row.
         .overlay {
-            EditorSheet(request: $editor, onCardRest: { editorCardRest = $0 }) { request in
+            EditorSheet(
+                request: $editor, onCardRest: cardRested, onDragClose: { closingDrag = $0 }
+            ) { request in
                 switch request {
                 case .add:
                     ExpenseEditor(today: today, onFace: { flyerFace = $0 }, onClose: closeEditor)
@@ -210,6 +223,7 @@ struct TimelineView: View {
         }
         .coordinateSpace(name: CardFlightLayer.space)
         .sensoryFeedback(.impact(weight: .light), trigger: landings)
+        .sensoryFeedback(.impact(weight: .light), trigger: openings)
         // Every close refreshes, a drag down included: a save writes an `OverrideRecord` or edits
         // fields on the same `Expense` instances this view already holds, and `@Query`'s own
         // change notification doesn't reliably fire for a relationship-only edit, while
@@ -218,13 +232,21 @@ struct TimelineView: View {
         // edit, and deleting future charges, which only ends a record, left the months ahead.
         .onChange(of: editor) { _, new in
             if new == nil {
+                let rest = editorCardRest
                 editorCardRest = nil
                 if refreshedOnClose {
                     refreshedOnClose = false
                 } else {
                     refreshWindow()
                 }
-            } else {
+                // ✕, an unchanged close or a drag down: a card opened from a row goes back into it.
+                // A save or a delete has already let the row go.
+                if let opened = openedEntry {
+                    openedEntry = nil
+                    landBack(opened, from: rest)
+                }
+            } else if flight == nil {
+                // An opening's flyer stands in for the card until it arrives.
                 hidesEditorCard = false
             }
         }
@@ -680,28 +702,180 @@ struct TimelineView: View {
     /// A row tap builds the session fresh from the store, keyed on what the entry itself
     /// carries — never from `sections`, which is a snapshot rebuilt on every change. See
     /// "Opening a charge edits it" in `docs/DESIGN.md`.
+    ///
+    /// Over the days, the row's card lifts into the sheet's place as the sheet rises, its place in the
+    /// list left open and empty. The category view's rows, and Reduce Motion, open the sheet alone.
     private func openEntry(_ entry: TimelineEntry) {
+        let session: EditSession
         do {
-            guard let session = try EditSession.make(
+            guard let made = try EditSession.make(
                 expenseID: entry.expenseID, scheduledDate: entry.scheduledDate,
                 context: modelContext, calendar: calendar
             ) else { return }
-            editor = .edit(session)
+            session = made
         } catch {
             Self.logger.error("Opening a charge failed: \(error)")
+            return
+        }
+        guard mode == .timeline, level == .day, !reduceMotion, flight == nil,
+              let row = rowFrames.frames[entry.id]
+        else {
+            editor = .edit(session)
+            return
+        }
+        landingGeneration &+= 1
+        let generation = landingGeneration
+        let month = MonthKey(containing: entry.date, calendar: calendar)
+        let isLast = sections[month]?.entries.last?.id == entry.id
+        let category = categories.first { $0.id == session.draft.categoryID }
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) {
+            flyerFace = EditorCardFace(draft: session.draft, category: category)
+            openedEntry = entry
+            openedRowHeight = row.height
+            closingDrag = 0
+            heldRowHeight = 0
+            hold = RowHold(entryID: entry.id, height: 1, showsCard: false)
+            // At the row until the card's rest is known: at a travel of 1 it draws there whatever
+            // card it is headed for.
+            flight = CardFlight(
+                kind: .opening(flips: entry.state != .charged), entry: entry, isLast: isLast,
+                cardFrame: row, rowFrame: row, turn: 1, travel: 1
+            )
+            hidesEditorCard = true
+        }
+        openings += 1
+        editor = .edit(session)
+        if let lastCardRest {
+            // `cardRested` corrects the aim if the sheet's card reports elsewhere.
+            rise(to: lastCardRest, generation: generation)
+        } else {
+            awaitCardRest(generation: generation, tries: Self.frameTries)
+        }
+    }
+
+    /// The sheet's card reported where it rests. An opening already under way towards where it
+    /// rested last corrects its aim, without disturbing its travel.
+    private func cardRested(_ rest: CGRect) {
+        editorCardRest = rest
+        lastCardRest = rest
+        guard let current = flight, case .opening = current.kind, current.cardFrame != rest else { return }
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) { flight?.cardFrame = rest }
+    }
+
+    /// The sheet's card reports its rest once the sheet has laid out, a turn or two after it opens.
+    private func awaitCardRest(generation: Int, tries: Int) {
+        DispatchQueue.main.async {
+            guard generation == landingGeneration else { return }
+            if let rest = editorCardRest {
+                rise(to: rest, generation: generation)
+            } else if tries > 0 {
+                awaitCardRest(generation: generation, tries: tries - 1)
+            } else {
+                Self.logger.error("An opening's card never reported its rest")
+                finishOpening()
+            }
+        }
+    }
+
+    /// The opening's flight: the card travels from its row to the sheet's card on `open`'s spring as
+    /// the sheet rises. One still to come then turns over, back to front, as it reaches its place; a
+    /// charged one fades its front in over the back as it arrives.
+    private func rise(to rest: CGRect, generation: Int) {
+        guard let current = flight else { return }
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) {
+            flight = CardFlight(
+                kind: current.kind, entry: current.entry, isLast: current.isLast,
+                cardFrame: rest, rowFrame: current.rowFrame, turn: 1, travel: 1
+            )
+        }
+        let duration = Tokens.Motion.Card.open
+        let bounce = Tokens.Motion.Card.openBounce
+        let spring = Animation.spring(duration: duration, bounce: bounce)
+        guard current.flips else {
+            withAnimation(spring, completionCriteria: .logicallyComplete) {
+                flight?.travel = 0
+            } completion: {
+                guard generation == landingGeneration else { return }
+                finishOpening()
+            }
+            return
+        }
+        withAnimation(spring) { flight?.travel = 0 }
+        let turnsAt = CardFlight.time(toReach: CardFlight.openingTurnsAt, duration: duration, bounce: bounce)
+        DispatchQueue.main.asyncAfter(deadline: .now() + turnsAt) {
+            guard generation == landingGeneration else { return }
+            withAnimation(.spring(duration: Tokens.Motion.Card.flip, bounce: 0), completionCriteria: .logicallyComplete) {
+                flight?.turn = 0
+            } completion: {
+                guard generation == landingGeneration else { return }
+                finishOpening()
+            }
+        }
+    }
+
+    /// The card is in the sheet: the flyer goes and the sheet's own card shows. The row stays open
+    /// and empty while the card is up. A touch mid-flight finishes it here at once (TASTE 12).
+    private func finishOpening() {
+        guard let flight, case .opening = flight.kind else { return }
+        landingGeneration &+= 1
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) {
+            self.flight = nil
+            hidesEditorCard = false
+        }
+    }
+
+    /// A card opened from a row and closed without a save that moved it: it lands back in its row,
+    /// which is still open for it, as a new one lands. With the row gone, it's let go.
+    private func landBack(_ opened: TimelineEntry, from rest: CGRect?) {
+        if case .opening = flight?.kind { finishOpening() }
+        let month = MonthKey(containing: opened.date, calendar: calendar)
+        guard mode == .timeline, level == .day,
+              let entry = sections[month]?.entries.first(where: { TimelineLanding.landsInPlace(opened: opened, target: $0) })
+        else {
+            releaseOpenedRow()
+            return
+        }
+        land(entry, figureBefore: nil, inPlace: true, from: rest.map { $0.offsetBy(dx: 0, dy: closingDrag) })
+    }
+
+    /// The opened row goes back to drawing its own card, with nothing landing in it.
+    private func releaseOpenedRow() {
+        guard openedEntry != nil || hold != nil else { return }
+        if case .opening = flight?.kind { finishOpening() }
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) {
+            openedEntry = nil
+            hold = nil
         }
     }
 
     /// The editor closed. A save over the days lands its card in its row; anything else, a save
     /// over another view or level included, closes as a cancel does: the sheet's soft exit. The
     /// calendar's month and year drop the charge into its day in step 8 of the card-motion plan.
+    ///
+    /// A card opened from a row goes back on ✕ (from `onChange(of: editor)`, which a drag down
+    /// reaches too). A save that moved its charge lands on the new row and lets the old one go; a
+    /// delete lets it go, and the row leaves with its charge.
     private func closeEditor(_ close: EditorClose) {
+        if close == .deleted { releaseOpenedRow() }
         guard case .saved(let expenseID, let date) = close,
               mode == .timeline, level == .day, window != nil, !expenses.isEmpty
         else {
+            if case .saved = close { releaseOpenedRow() }
             editor = nil
             return
         }
+        let opened = openedEntry
+        openedEntry = nil
         let month = MonthKey(containing: calendar.startOfDay(for: date), calendar: calendar)
         let figureBefore = sections[month].map { TimelineFormatting.headerFigure(for: $0, locale: locale) }
         // The months are rebuilt now, not as the sheet goes, so the saved charge's row is there to
@@ -710,17 +884,35 @@ struct TimelineView: View {
         refreshedOnClose = true
         guard let entry = TimelineLanding.target(expenseID: expenseID, date: date, in: sections, calendar: calendar) else {
             // Outside the window, or hidden by Extras.
+            if opened != nil { releaseOpenedRow() }
             editor = nil
             return
         }
-        land(entry, figureBefore: figureBefore.map { (month, $0) })
+        guard let opened else {
+            land(entry, figureBefore: figureBefore.map { (month, $0) })
+            return
+        }
+        if TimelineLanding.landsInPlace(opened: opened, target: entry) {
+            land(entry, figureBefore: figureBefore.map { (month, $0) }, inPlace: true)
+        } else {
+            // Moved: the old place goes as the new one opens, so the list keeps its length.
+            let remains = TimelineLanding.openedRowRemains(opened, in: sections, calendar: calendar)
+            land(entry, figureBefore: figureBefore.map { (month, $0) }, releasedHeight: remains ? 0 : openedRowHeight)
+        }
     }
 
     /// The landing: the row held closed and empty, brought into view behind the sheet if it isn't,
     /// and the sheet's soft exit begun. A charge still to come turns over to its back, rests a
     /// beat, then drops; a charged one drops at once, crossfading into its back. The rows below open
     /// on the drop's own spring. Reduce Motion fades the sheet and then the row.
-    private func land(_ entry: TimelineEntry, figureBefore: (MonthKey, String)?) {
+    ///
+    /// `inPlace`: the row is already open for the card, as a row opened into the sheet is, so it
+    /// stays at its whole height and is never jumped to. `releasedHeight`: what a row the card left
+    /// gives up, in place of what this one had.
+    private func land(
+        _ entry: TimelineEntry, figureBefore: (MonthKey, String)?, inPlace: Bool = false,
+        releasedHeight: CGFloat? = nil, from start: CGRect? = nil
+    ) {
         landingGeneration &+= 1
         let generation = landingGeneration
         hasArrived = false
@@ -729,7 +921,7 @@ struct TimelineView: View {
         let flips = entry.state != .charged
         var instant = Transaction()
         instant.disablesAnimations = true
-        guard !reduceMotion, let cardFrame = editorCardRest, flyerFace != nil else {
+        guard !reduceMotion, let cardFrame = start ?? editorCardRest, flyerFace != nil else {
             withTransaction(instant) {
                 heldFigure = figureBefore.map { (month: $0.0, figure: $0.1) }
                 hold = RowHold(entryID: entry.id, height: 1, showsCard: false)
@@ -737,14 +929,15 @@ struct TimelineView: View {
             // Outside the instant transaction, which would carry into the sheet's own close and
             // take its animation away.
             editor = nil
-            bringIntoView(entry, generation: generation) { _ in fadeIn(generation: generation) }
+            bringIntoView(entry, generation: generation, mayJump: !inPlace) { _ in fadeIn(generation: generation) }
             return
         }
         withTransaction(instant) {
             heldFigure = figureBefore.map { (month: $0.0, figure: $0.1) }
             // A charge that was on screen already, as an edited one is, gives its height up here.
-            heldRowHeight = rowFrames.frames[entry.id]?.height ?? 0
-            hold = RowHold(entryID: entry.id, height: 0, showsCard: false)
+            // One already open keeps it.
+            heldRowHeight = inPlace ? 0 : releasedHeight ?? rowFrames.frames[entry.id]?.height ?? 0
+            hold = RowHold(entryID: entry.id, height: inPlace ? 1 : 0, showsCard: false)
             flight = CardFlight(
                 kind: .landing(flips: flips), entry: entry, isLast: isLast,
                 cardFrame: cardFrame, rowFrame: cardFrame, turn: 0, travel: 0
@@ -766,7 +959,7 @@ struct TimelineView: View {
                 dropWhenReady()
             }
         }
-        bringIntoView(entry, generation: generation) { row in
+        bringIntoView(entry, generation: generation, mayJump: !inPlace) { row in
             guard let row else {
                 finishFlight()
                 return
@@ -783,21 +976,22 @@ struct TimelineView: View {
         instant.disablesAnimations = true
         withTransaction(instant) { flight?.rowFrame = row }
         let spring = Animation.spring(duration: Tokens.Motion.Card.drop, bounce: Tokens.Motion.Card.dropBounce)
-        // The row opens in the same update, on the same spring, so the two move as one. Its
-        // logical end is where the card reads as arrived: the haptic, and the figure rolls.
-        withAnimation(spring, completionCriteria: .logicallyComplete) {
-            hold?.height = 1
-        } completion: {
+        // The row opens in the same transaction, on the same spring, so the two move as one; a row
+        // already open has nothing to do. The logical end is where the card reads as arrived: the
+        // haptic, and the figure rolls. The flyer gives way to the row only once the spring has
+        // wholly settled, so its last frame is the row's.
+        var transaction = Transaction(animation: spring)
+        transaction.addAnimationCompletion(criteria: .logicallyComplete) {
             guard generation == landingGeneration else { return }
             arrive()
         }
-        // The flyer gives way to the row only once its spring has wholly settled, so its last
-        // frame is the row's.
-        withAnimation(spring, completionCriteria: .removed) {
-            flight?.travel = 1
-        } completion: {
+        transaction.addAnimationCompletion(criteria: .removed) {
             guard generation == landingGeneration else { return }
             finishFlight()
+        }
+        withTransaction(transaction) {
+            hold?.height = 1
+            flight?.travel = 1
         }
     }
 
@@ -813,6 +1007,10 @@ struct TimelineView: View {
     /// The card is in its row: the flyer goes, the row shows its own card, and the month's figure
     /// rolls to its new total. A touch mid-flight lands it here at once (TASTE 12).
     private func finishFlight() {
+        if case .opening = flight?.kind {
+            finishOpening()
+            return
+        }
         guard flight != nil else { return }
         landingGeneration &+= 1
         var instant = Transaction()
@@ -839,7 +1037,11 @@ struct TimelineView: View {
     /// Brings a held row wholly into view, then hands over its frame at its whole height: two turns
     /// for the rebuilt rows to lay out and any anchoring scroll to land, a jump if the row isn't in
     /// view, then a turn at a time until the row reports (nil if it never does).
-    private func bringIntoView(_ entry: TimelineEntry, generation: Int, then done: @escaping (CGRect?) -> Void) {
+    /// A row the card left from is where it was (nothing scrolls under the sheet), so it's never
+    /// jumped to: under a keyboard the list reads shorter than it is.
+    private func bringIntoView(
+        _ entry: TimelineEntry, generation: Int, mayJump: Bool = true, then done: @escaping (CGRect?) -> Void
+    ) {
         func awaitFrame(tries: Int) {
             DispatchQueue.main.async {
                 guard generation == landingGeneration else { return }
@@ -856,7 +1058,7 @@ struct TimelineView: View {
         DispatchQueue.main.async {
             DispatchQueue.main.async {
                 guard generation == landingGeneration else { return }
-                if isInView(entry) {
+                if !mayJump || isInView(entry) {
                     awaitFrame(tries: Self.frameTries)
                 } else {
                     jump(to: entry) { awaitFrame(tries: Self.frameTries) }
@@ -870,12 +1072,14 @@ struct TimelineView: View {
 
     /// The flyer's front: the editor's card as it closed, nothing focused.
     private func flyerFront() -> EditorCard {
+        let isOpening = if case .opening = flight?.kind { true } else { false }
         let draft = flyerFace?.draft ?? ExpenseDraft(today: today, calendar: calendar)
         let category = flyerFace?.category
         return EditorCard(
             draft: draft, name: .constant(draft.name), nameFocus: $flyerNameFocus, category: category,
             progress: CardProgress(draft: draft, categoryExists: category != nil, isMakingCategory: false),
-            focused: nil, today: today, onTap: { _ in }, onNameSubmit: {}
+            // Opening, it arrives as the sheet's card shows it, keypad up.
+            focused: isOpening ? .amount : nil, today: today, onTap: { _ in }, onNameSubmit: {}
         )
     }
 

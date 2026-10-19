@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import SwiftUI
 import Testing
 @testable import Tilly
 
@@ -80,5 +81,30 @@ import Testing
         #expect(CardTurn.lift(0, by: 0.06) == 1)
         #expect(abs(CardTurn.lift(0.5, by: 0.06) - 1.06) < 1e-9)
         #expect(abs(CardTurn.lift(1, by: 0.06) - 1) < 1e-9)
+    }
+
+    @Test func openingTurnsAsTheSpringReachesItsPlace() {
+        let duration = 0.4, bounce = 0.3
+        let time = CardFlight.time(toReach: CardFlight.openingTurnsAt, duration: duration, bounce: bounce)
+        let spring = Spring(duration: duration, bounce: bounce)
+        // The first moment it's that far: just before, it isn't yet.
+        #expect(spring.value(target: 1.0, time: time) >= CardFlight.openingTurnsAt)
+        #expect(spring.value(target: 1.0, time: time - 1.0 / 240) < CardFlight.openingTurnsAt)
+        // Well before the spring settles, and within its own duration.
+        #expect(time > 0 && time < duration)
+    }
+
+    @Test func aSlowerSpringTurnsLater() {
+        let quick = CardFlight.time(toReach: CardFlight.openingTurnsAt, duration: 0.4, bounce: 0.3)
+        let slow = CardFlight.time(toReach: CardFlight.openingTurnsAt, duration: 0.8, bounce: 0.3)
+        #expect(slow > quick)
+    }
+
+    @Test func chargedOpeningIsOnlyBackUntilItsFadeBegins() {
+        let flight = Self.flight(.opening(flips: false))
+        // At the row the flyer is the row; the card comes up through it from 0.45 to 0.05.
+        #expect(flight.frame(at: 1) == Self.row)
+        let midway = flight.faceOpacities(at: 0.25)
+        #expect(abs(midway.front - 0.5) < 1e-9 && midway.back == 1)
     }
 }

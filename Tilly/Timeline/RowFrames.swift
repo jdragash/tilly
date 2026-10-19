@@ -45,6 +45,19 @@ enum TimelineLanding {
         return sections[month]?.entries.first { $0.expenseID == expenseID && $0.date == day }
     }
 
+    /// Whether a card opened from `opened` goes back into the same place: the same charge, still on
+    /// the same day. A moved charge keeps its id (it's keyed on the rule's date), so the day decides.
+    static func landsInPlace(opened: TimelineEntry, target: TimelineEntry) -> Bool {
+        opened.id == target.id && opened.date == target.date
+    }
+
+    /// Whether the opened row is still in the list where it was, once a save has rebuilt it: if
+    /// not, its place goes as the card lands elsewhere, and the list keeps that height as slack.
+    static func openedRowRemains(_ opened: TimelineEntry, in sections: [MonthKey: MonthSection], calendar: Calendar) -> Bool {
+        let month = MonthKey(containing: opened.date, calendar: calendar)
+        return sections[month]?.entries.contains { $0.id == opened.id && $0.date == opened.date } ?? false
+    }
+
     /// Whether a row's frame is fully inside the list, under the pinned header and above the
     /// bottom row: `listBottom` is where the bottom row's clearance begins.
     static func isInView(_ frame: CGRect, listTop: CGFloat, headerHeight: CGFloat, listBottom: CGFloat) -> Bool {

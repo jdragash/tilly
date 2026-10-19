@@ -480,8 +480,21 @@ reported as such and skipped.
   the scrim read, and in recordings it looks gone at once. Worth Jake's eye on the phone.
 - **`@Query` is current inside the editor's close:** a new bill and an edit both found their target at
   once, so the landing needs no extra turn.
-- **For step 7:** `land` takes any held entry; an opening holds at 1, so `heldRowHeight` should stay 0
-  for it (nothing given up). `CardFlight.faceOpacities` already carries the opening's fade.
+- **An opening can't wait for the sheet's card to report its rest:** it came 156–297ms after the tap,
+  the flyer standing still on its row. It sets off for where the card last rested (`lastCardRest`)
+  and corrects its aim if the report differs; only the first open after launch waits.
+- **"Once `travel` passes 0.985" means 0.985 of the way, not the value:** travel runs 1 → 0, so it
+  passes 0.985 at once. An animated value can't be watched either; the turn is timed from
+  `Spring.value` (0.204s into a 0.4s, 0.3-bounce spring).
+- **A moved charge keeps its id** (keyed on the rule's date), so "in place" is the same id on the same
+  day. Its old place closes at once as the new one opens on the drop's spring: the rows between jump
+  one row behind the dropping sheet. `openedRowHeight` goes to `holdSlack`. Worth Jake's eye.
+- **A row already open has no height to animate,** so a completion on `hold.height` fired at once.
+  The drop runs both completions off one `Transaction` (`addAnimationCompletion`) on `travel`.
+- **A restored place past the list's end** (typicalYear, April, above) snapped 92pt as a row opened,
+  and the card landed back in the moved row. Scrolled to by hand, every round trip ended at 0.000pt.
+- **A tap mid-opening is spent finishing it** (TASTE 12): a date tapped 0.4s in did nothing else. Once,
+  while recording, the turn's timer fired 0.62s late, not 0.20s. Both for the device check.
 - **`RowFrames` is `@State`, not a `let`:** a `let` on a view struct is rebuilt with every redraw
   of the parent, and would start empty.
 
