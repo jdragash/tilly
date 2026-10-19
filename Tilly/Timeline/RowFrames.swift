@@ -19,9 +19,16 @@ struct RowHold: Equatable {
 @MainActor @Observable
 final class RowFrames {
     private(set) var frames: [String: CGRect] = [:]
+    /// A held row's frame at its whole height, which `frames` cuts to what shows.
+    private(set) var fullFrames: [String: CGRect] = [:]
 
     func report(_ id: String, frame: CGRect?) {
         frames[id] = frame
+        if frame == nil { fullFrames[id] = nil }
+    }
+
+    func reportFull(_ id: String, frame: CGRect) {
+        fullFrames[id] = frame
     }
 }
 

@@ -38,6 +38,15 @@ struct OccurrenceRow: View {
     var heightFraction: CGFloat = 1
     /// False while a flying card stands in for this one: the row keeps its place, drawn empty.
     var showsCard = true
+    /// 0 … 1: at 0 the card fills the frame with `Radius.card` on every corner and no `stackInset`,
+    /// as the editor's card does; at 1 it is the row. The content keeps the row's layout. A flying
+    /// card's back is drawn this way.
+    var morph: CGFloat = 1
+    /// The card drawn this tall, past the content, as a flying card's back is; nil for a row.
+    var cardHeight: CGFloat? = nil
+    /// Reports the row's frame at its whole height, in `CardFlightLayer.space`, while held, however
+    /// little of it shows: where a card lands. Nil reports nothing.
+    var onFullFrame: ((CGRect) -> Void)? = nil
 
     /// The scroll target at the top of a day's first row, for a calendar tap to land on. A
     /// string, so it can't collide with a month's `Int` id in the same list.
@@ -56,7 +65,8 @@ struct OccurrenceRow: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
-        RowHeightLayout(fraction: heightFraction) {
+        let reportsFullFrame = onFullFrame != nil
+        return RowHeightLayout(fraction: heightFraction) {
             Group {
                 if dynamicTypeSize.isAccessibilitySize {
                     accessibleLayout
@@ -64,9 +74,18 @@ struct OccurrenceRow: View {
                     standardLayout
                 }
             }
+            .frame(minHeight: cardHeight, alignment: .top)
             // Behind the row and no part of its height, so the row's height stays the row's own and
             // a day's zero-high scroll marker still lands on the row's top.
             .background { card }
+            // Laid out whole inside the cut, so this is the row's full frame. Every row carries it,
+            // so a hold coming and going changes nothing about the row's identity; unheld, it
+            // reads nil and never reports.
+            .onGeometryChange(for: CGRect?.self) { proxy in
+                reportsFullFrame ? proxy.frame(in: .named(CardFlightLayer.space)) : nil
+            } action: { frame in
+                if let frame { onFullFrame?(frame) }
+            }
         }
         .clipShape(RowHeightClip(fraction: heightFraction))
         .opacity(showsCard ? 1 : 0)
@@ -131,8 +150,8 @@ struct OccurrenceRow: View {
                 .fill(Tokens.Surface.pickedLane)
                 .opacity(isMarked ? 1 : 0)
         }
-        .padding(.horizontal, Tokens.Space.stackInset)
-        .padding(.bottom, -Tokens.Space.stackTuck)
+        .padding(.horizontal, Tokens.Space.stackInset * morphed)
+        .padding(.bottom, -Tokens.Space.stackTuck * morphed)
         .accessibilityHidden(true)
     }
 
@@ -143,11 +162,16 @@ struct OccurrenceRow: View {
     /// From the occurrence's id, so a row draws the same edge every time it's built.
     private var seed: UInt64 { stableSeed(entry.id) }
 
+    private var morphed: CGFloat { min(1, max(0, morph)) }
+
+    /// The row's corners, from the editor's card's at `morph` 0.
     private var cornerRadii: RectangleCornerRadii {
-        let bottom = isLast ? Tokens.Radius.stackCard : 0
+        let card = Tokens.Radius.card
+        let top = card + (Tokens.Radius.stackCard - card) * morphed
+        let bottom = card + ((isLast ? Tokens.Radius.stackCard : 0) - card) * morphed
         return RectangleCornerRadii(
-            topLeading: Tokens.Radius.stackCard, bottomLeading: bottom,
-            bottomTrailing: bottom, topTrailing: Tokens.Radius.stackCard
+            topLeading: top, bottomLeading: bottom,
+            bottomTrailing: bottom, topTrailing: top
         )
     }
 

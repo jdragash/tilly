@@ -457,6 +457,31 @@ reported as such and skipped.
   the row's month pinned with rows hidden under its header, which reads 0, so re-anchoring to 0
   scrolled the month's top into view: adding a monthly bill moved the rows 136pt (current month)
   and 72pt (two years back). Plain `refreshWindow()` held them at 0.000 in both, held or not.
+- **A held row's full frame comes from inside its cut:** `RowHeightLayout` lays the row out whole, so a
+  geometry read on its content is the row at full height however little shows. `RowFrames.fullFrames`
+  holds it for held rows only; `frames` stays the cut height `jump` needs.
+- **Closing a row that was there shortens the list, and at its end the list is pulled back:** holding
+  an edited Rent at 0 dropped every row above it 156pt. `holdSlack` keeps the row's old height at the
+  list's end and gives it back on the same spring. A `.frame(height:)` there didn't work: the scroll
+  view reads its length from layout, and the frame jumped to its end value while only its drawing
+  animated. `SlackLayout` animates in layout, as `RowHeightLayout` does. Measured after: the list's
+  offset never changed, the held row's top held to 0.000, rows above reported no change.
+- **A restored place can rest past the list's end** (typicalYear, April: 92pt past it). Any change of
+  the list's length then snaps it back, a landing's last rounding pixel included. Not new, and not
+  fixed here; a place the reader scrolls to never rests there.
+- **The drop's spring settles long after it reads as arrived** (0.45s, bounce 0.3): `.logicallyComplete`
+  fired at 0.57s, `.removed` at 1.0s. The haptic and the figure's roll take the first; the flyer gives
+  way to the row on the second, when its last frame is the row's to 0.001pt. Two `withAnimation`s with
+  one spring in one update stay in step.
+- **The flyer animates `travel` as an `Animatable` view and the turn in `CardFlip` inside it,** so neither
+  is interpolated twice. The front is a snapshot of the editor's card handed up by `onFace` as a save
+  closes it; the sheet's card hides through `\.editorCardHidden` until the next open.
+- **With its card gone and contents faded, the dropping sheet is paper on paper:** only its top edge and
+  the scrim read, and in recordings it looks gone at once. Worth Jake's eye on the phone.
+- **`@Query` is current inside the editor's close:** a new bill and an edit both found their target at
+  once, so the landing needs no extra turn.
+- **For step 7:** `land` takes any held entry; an opening holds at 1, so `heldRowHeight` should stay 0
+  for it (nothing given up). `CardFlight.faceOpacities` already carries the opening's fade.
 - **`RowFrames` is `@State`, not a `let`:** a `let` on a view struct is rebuilt with every redraw
   of the parent, and would start empty.
 

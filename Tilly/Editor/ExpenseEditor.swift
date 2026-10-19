@@ -20,9 +20,12 @@ struct ExpenseEditor: View {
     let session: EditSession?
     /// How it closed: the sheet holding it goes, and a save says which charge to land on.
     let onClose: (EditorClose) -> Void
+    /// What the card wears as a save closes it, just before `onClose`: a flight's front.
+    let onFace: (EditorCardFace) -> Void
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.editorSheetContents) private var sheetContents
+    @Environment(\.editorCardHidden) private var cardHidden
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -49,10 +52,12 @@ struct ExpenseEditor: View {
     /// `session` and no explicit `draft`, the draft opens from the session's own baseline.
     init(
         today: Date, draft: ExpenseDraft? = nil, panel: EditorPanel = .keypad, session: EditSession? = nil,
+        onFace: @escaping (EditorCardFace) -> Void = { _ in },
         onClose: @escaping (EditorClose) -> Void
     ) {
         self.today = today
         self.session = session
+        self.onFace = onFace
         self.onClose = onClose
         _draft = State(initialValue: draft ?? session?.draft ?? ExpenseDraft(today: today, calendar: .current))
         _panel = State(initialValue: panel)
@@ -69,6 +74,8 @@ struct ExpenseEditor: View {
                 VStack(spacing: Tokens.Space.section) {
                     card
                         .padding(.horizontal, Tokens.Space.editorCardInset)
+                        // Kept in the layout while a flyer stands in for it, so nothing moves.
+                        .opacity(cardHidden ? 0 : 1)
                     Spacer(minLength: 0)
                     // A new category takes the panel's place, above its keyboard. At accessibility
                     // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
@@ -539,6 +546,9 @@ struct ExpenseEditor: View {
         guard !isClosing else { return }
         isClosing = true
         nameFocused = false
+        if case .saved = how {
+            onFace(EditorCardFace(draft: draft, category: selectedCategory))
+        }
         onClose(how)
     }
 

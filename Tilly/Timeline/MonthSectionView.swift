@@ -12,6 +12,8 @@ struct MonthSectionView: View {
     var hold: RowHold?
     /// Each row's frame in `CardFlightLayer.space` as it changes, and nil as it leaves.
     var onRowFrame: (String, CGRect?) -> Void = { _, _ in }
+    /// The held row's frame at its whole height, however little of it shows: where a card lands.
+    var onHeldRowFrame: (String, CGRect) -> Void = { _, _ in }
     let onOpen: (TimelineEntry) -> Void
 
     var body: some View {
@@ -33,7 +35,8 @@ struct MonthSectionView: View {
                     OccurrenceRow(
                         entry: entry, isMarked: entry.date == markedDay,
                         isLast: index == section.entries.count - 1,
-                        heightFraction: held?.height ?? 1, showsCard: held?.showsCard ?? true
+                        heightFraction: held?.height ?? 1, showsCard: held?.showsCard ?? true,
+                        onFullFrame: held == nil ? nil : { onHeldRowFrame(entry.id, $0) }
                     )
                         .contentShape(Rectangle())
                 }

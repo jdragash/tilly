@@ -107,12 +107,13 @@ struct MonthHeader: View {
             .foregroundStyle(Tokens.Ink.primary)
     }
 
-    /// The figure, after `label` when there is one.
+    /// The figure, after `label` when there is one. It rolls to a new total when one lands.
     private func figureText(label: Text?) -> some View {
         let figure = figure ?? TimelineFormatting.headerFigure(for: section, locale: locale)
         return (label.map { Text("\($0) \(figure)") } ?? Text(figure))
             .font(Tokens.Text.monthTotal)
             .monospacedDigit()
+            .contentTransition(.numericText())
             .foregroundStyle(Tokens.Ink.secondary)
     }
 }

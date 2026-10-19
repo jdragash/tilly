@@ -23,12 +23,6 @@ enum EditorClose: Equatable {
     case deleted
 }
 
-/// The named coordinate space on `TimelineView`'s root that a card's flight is drawn in. Step 6
-/// of the card-motion plan makes `CardFlightLayer` the layer itself; the space stays its name.
-enum CardFlightLayer {
-    static let space = "cardFlight"
-}
-
 /// The sheet's own coordinate space, which moves with it.
 enum EditorSheetSpace {
     static let name = "editorSheet"
