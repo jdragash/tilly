@@ -207,29 +207,37 @@ as today and the repeat as monthly. The row leads with the picture and the name.
 - **Repeat:** one wheel, `Every 1 month`, with an end column that rests on `no end` and rolls into
   payment counts, the only way to set an end. Then the label is `05/27` behind a one-way arrow,
   and `Last payment Sep 30, 2027` shows under the wheel.
-- **Category, or the card's background:** the pockets. Nothing stacks a second sheet.
+- **Category, or the card's background:** the hand. Nothing stacks a second sheet.
 
-### The pockets are the category picker
+### The hand is the category picker
 
-A pocket per category, three across (two at accessibility sizes), in the Settings order, with a
-dashed `New` last; more than fit scroll. Each is its category's colour, picture and name on its front,
-with up to three of its running bills' names peeking out, the latest started in front. Tapping one
-dresses the card: the colour crossfades in and the picture drops into its tile, and the pocket lifts
-with the bill's name standing in it.
+The categories are a fan of small cards, in the Settings order, each its colour, picture and name,
+with a dotted `New` last. They deal up from below when the hand opens. Pressing a card lifts it and
+tilts its neighbours aside; letting go on it plays it: it flies onto the card's picture tile and
+shrinks into it, the colour floods out across the card from the tile, the picture stamps, and the
+card dips. A crowded hand tightens, then scrolls sideways.
 
-`New` opens Tilly's symbols in the keypad's place, searchable by word, under a picture slot, a name field and the eight colours, the next
-unused one chosen. Return makes the category before `New` and dresses the card. With none yet,
-`New` is the only pocket, and it breathes once the amount and name are in.
+`New` opens Tilly's symbols in the keypad's place, searchable by word, under a picture slot, a name
+field and the eight colours, the next unused one chosen. Return makes the category and plays it.
+With none yet, `New` is the only card, and it breathes once the amount and name are in.
 
-On ✓ the bill is saved at once, then the card shrinks into its pocket, the pocket bounces, and the
-sheet closes; a tap closes it at once, and Reduce Motion fades the card instead. A saved edit files
-the same way; deleting doesn't.
+### The card lands in the timeline
+
+On ✓ the bill is saved at once. The sheet's contents fade and it drops away from under the card,
+which turns over in place to its back, the bill as the stack draws it, rests a beat, and drops into
+its row as the rows below open for it. The month's figure rolls to its new total. A row off screen
+is brought into view behind the sheet before the card leaves. A charged bill has nothing to turn
+over to and drops straight in. Over the calendar's month or year, the sheet drops and the charge
+drops into its day. A tap during a landing finishes it. Reduce Motion fades the sheet and the row.
 
 ### Opening a charge edits it
 
-Tapping a row opens the card for that charge, filled in, keypad up. The date is the charge's own,
-where it landed if it was moved; a moved charge shows only there, with no trace at the old date. ✓
-waits for a change, and a red trash button sits left of it.
+Tapping a row lifts its card into the sheet's place as the sheet rises behind it, its place in the
+stack left open. One still to come arrives as its outline and turns over to the solid card; a
+charged one fills with its colour as it arrives. The card is filled in for that charge, keypad up.
+The date is the charge's own, where it landed if it was moved; a moved charge shows only there,
+with no trace at the old date. ✓ waits for a change, and a red trash button sits left of it. ✓ or
+✕ lands the card back in its row as a new one lands; deleting closes the sheet and the row goes.
 
 ### This charge, or future charges
 
