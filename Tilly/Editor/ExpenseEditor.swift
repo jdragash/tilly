@@ -33,6 +33,12 @@ struct ExpenseEditor: View {
     /// The category tile's frame (global): where a played card flies to.
     @State private var tileFrame: CGRect = .zero
     @State private var isClosing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The card being dressed: the colour flooding from the tile, the picture's stamp, the dip.
+    @State private var flood: CardFlood?
+    @State private var stamp: CGFloat = 1
+    @State private var dip: CGFloat = 0
+    @State private var dressings = 0
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
@@ -149,8 +155,12 @@ struct ExpenseEditor: View {
             today: today,
             onTap: open,
             onNameSubmit: submitName,
-            onTileFrame: { tileFrame = $0 }
+            onTileFrame: { tileFrame = $0 },
+            flood: flood,
+            stamp: stamp,
+            dip: dip
         )
+        .sensoryFeedback(.impact(weight: .medium), trigger: dressings)
         .submitLabel(afterName == nil ? .done : .next)
     }
 
@@ -203,7 +213,7 @@ struct ExpenseEditor: View {
                 selection: draft.categoryID,
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
                 tileFrame: tileFrame,
-                onPlay: pick,
+                onPlay: dress,
                 onNew: { panel = .newCategory }
             )
         case .newCategory:
@@ -257,9 +267,38 @@ struct ExpenseEditor: View {
         )
     }
 
-    /// Dresses the card in the category.
-    private func pick(_ id: UUID) {
-        draft.categoryID = id
+    /// Dresses the card in the category: the new colour floods out from the tile, the picture stamps
+    /// (1.3, then 0.95, then 1) and the card dips. Reduce Motion crossfades the colour and does
+    /// nothing else.
+    private func dress(_ id: UUID) {
+        let previous = selectedCategory?.colour
+        guard !reduceMotion else {
+            withAnimation(.easeInOut(duration: Tokens.Motion.Card.flood)) { draft.categoryID = id }
+            return
+        }
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) {
+            draft.categoryID = id
+            flood = CardFlood(previous: previous, progress: 0)
+            stamp = Tokens.Motion.Card.stampScale
+        }
+        dressings += 1
+        withAnimation(.easeOut(duration: Tokens.Motion.Card.flood)) {
+            flood?.progress = 1
+        } completion: {
+            flood = nil
+        }
+        withAnimation(.easeOut(duration: Tokens.Motion.Card.stampDown)) {
+            stamp = Tokens.Motion.Card.stampUnder
+        } completion: {
+            withAnimation(.easeInOut(duration: Tokens.Motion.Card.stampSettle)) { stamp = 1 }
+        }
+        withAnimation(.easeOut(duration: 0.07)) {
+            dip = Tokens.Motion.Card.dip
+        } completion: {
+            withAnimation(.easeOut(duration: 0.13)) { dip = 0 }
+        }
     }
 
     /// A category made in the editor dresses the card at once, and the hand comes back.
@@ -270,7 +309,7 @@ struct ExpenseEditor: View {
         } catch {
             Self.logger.error("Saving a category failed: \(error)")
         }
-        pick(category.id)
+        dress(category.id)
         panel = .category
     }
 

@@ -15,6 +15,12 @@ struct EditorCard: View {
     let onNameSubmit: () -> Void
     /// The category tile's frame (global), for a played card to fly to.
     var onTileFrame: (CGRect) -> Void = { _ in }
+    /// A played card's colour arriving, from the tile outward; nil at rest.
+    var flood: CardFlood? = nil
+    /// The tile's picture scale: the stamp.
+    var stamp: CGFloat = 1
+    /// The card's drop and recovery when the colour lands.
+    var dip: CGFloat = 0
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
@@ -22,12 +28,20 @@ struct EditorCard: View {
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.cardAmount
     @ScaledMetric(relativeTo: .title) private var tileSize = Tokens.Size.cardCategoryTile
 
+    /// Where the tile sits on the card, so the flood can start from it.
+    @State private var tileCentre: CGPoint = .zero
+    private static let space = "editorCard"
+
     var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            stacked
-        } else {
-            standard
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                stacked
+            } else {
+                standard
+            }
         }
+        .coordinateSpace(name: Self.space)
+        .offset(y: dip)
     }
 
     // MARK: Layouts
@@ -92,21 +106,40 @@ struct EditorCard: View {
         .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
     }
 
-    /// The card's colour. A new category crossfades over the old one rather than blending
-    /// through it.
+    /// The card's colour. Played from the hand, the new colour grows from the tile over the old one
+    /// (`flood`); otherwise a new category crossfades over the old one, which is how Reduce Motion
+    /// gets it.
     private var fill: some View {
-        ZStack {
-            Wash(
-                colour: category?.colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured,
-                cornerRadii: RectangleCornerRadii(
-                    topLeading: Tokens.Radius.card, bottomLeading: Tokens.Radius.card,
-                    bottomTrailing: Tokens.Radius.card, topTrailing: Tokens.Radius.card
-                ),
-                seed: stableSeed(category?.id.uuidString ?? "")
-            )
-            .id(category?.id)
-            .transition(.opacity)
+        GeometryReader { geometry in
+            ZStack {
+                if let flood {
+                    wash(for: flood.previous, id: nil)
+                    wash(for: category?.colour, id: category?.id)
+                        .mask {
+                            let reach = flood.reach(from: tileCentre, in: geometry.size)
+                            Circle()
+                                .frame(width: 2 * reach * flood.progress, height: 2 * reach * flood.progress)
+                                .position(tileCentre)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                } else {
+                    wash(for: category?.colour, id: category?.id)
+                        .id(category?.id)
+                        .transition(.opacity)
+                }
+            }
         }
+    }
+
+    private func wash(for colour: CategoryColour?, id: UUID?) -> some View {
+        Wash(
+            colour: colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured,
+            cornerRadii: RectangleCornerRadii(
+                topLeading: Tokens.Radius.card, bottomLeading: Tokens.Radius.card,
+                bottomTrailing: Tokens.Radius.card, topTrailing: Tokens.Radius.card
+            ),
+            seed: stableSeed(id?.uuidString ?? "")
+        )
     }
 
     private var cardShape: RoundedRectangle {
@@ -253,12 +286,16 @@ struct EditorCard: View {
                         picture: CategoryPicture(category), colour: category.colour, size: tileSize,
                         onCard: true, boils: true
                     )
-                        .id(category.id)
-                        .transition(.emojiDrop)
+                    .scaleEffect(stamp)
+                    .id(category.id)
                 }
             }
             .frame(width: tileSize, height: tileSize)
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { onTileFrame($0) }
+            .onGeometryChange(for: CGPoint.self) { proxy in
+                let frame = proxy.frame(in: .named(Self.space))
+                return CGPoint(x: frame.midX, y: frame.midY)
+            } action: { tileCentre = $0 }
             .overlay {
                 if isOpen {
                     tile.stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
@@ -314,18 +351,6 @@ private struct AmountCaret: TextRenderer {
             height: height
         )
         context.fill(Capsule().path(in: caret), with: .color(Tokens.Ink.onCard))
-    }
-}
-
-private extension AnyTransition {
-    /// The emoji drops into its tile: from a little larger and higher, to rest.
-    static var emojiDrop: AnyTransition {
-        .asymmetric(
-            insertion: .scale(scale: Tokens.Scale.emojiDrop)
-                .combined(with: .offset(y: -Tokens.Space.emojiDrop))
-                .combined(with: .opacity),
-            removal: .opacity
-        )
     }
 }
 
@@ -426,4 +451,15 @@ private func previewCategory() -> (ModelContainer, ExpenseCategory) {
 #Preview("Accessibility size") {
     EditorCardPreview(draft: previewDraft([.digit(9), .digit(5), .digit(0)]))
         .dynamicTypeSize(.accessibility3)
+}
+
+/// The colour arriving on the card: the new wash revealed by a circle growing from the tile.
+struct CardFlood: Equatable {
+    let previous: CategoryColour?   // nil = the grey card
+    var progress: CGFloat           // 0 … 1, animated over Motion.Card.flood
+
+    /// The circle's final radius from `centre`: far enough to reach the card's furthest corner.
+    func reach(from centre: CGPoint, in size: CGSize) -> CGFloat {
+        hypot(max(centre.x, size.width - centre.x), max(centre.y, size.height - centre.y)) + Tokens.Stroke.cardFocus
+    }
 }

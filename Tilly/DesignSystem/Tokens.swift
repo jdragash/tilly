@@ -103,8 +103,6 @@ enum Tokens {
         /// than this, and the further level no larger than `zoomMax`. Tuning values.
         static let zoomMin: CGFloat = 0.2
         static let zoomMax: CGFloat = 3
-        /// The card's emoji drops into its tile from this size.
-        static let emojiDrop: CGFloat = 1.35
     }
 
     enum Opacity {
@@ -283,8 +281,6 @@ enum Tokens {
         /// Inside the name's dashed field.
         static let cardFieldHorizontal: CGFloat = 10
         static let cardFieldVertical: CGFloat = 4
-        /// The card's emoji drops into its tile from this far up.
-        static let emojiDrop: CGFloat = 6
         /// The timeline's Wallet stack, from the prototype: how far each card runs on under the next,
         /// how far in from the screen's sides it sits, where its content starts inside it, and the
         /// clear space under a month's last card. Tuning values.
