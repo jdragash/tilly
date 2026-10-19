@@ -62,10 +62,6 @@ enum Tokens {
         /// The pencil badge on a chosen category's tile: a fixed 10pt glyph in a fixed 16pt
         /// circle, from the prototype.
         static let cardBadge: Font = .system(size: 10, weight: .semibold)
-        /// A pocket's emoji and name on its lip, and the bills peeking out of it; from the
-        /// prototype's 13pt and 11pt.
-        static let pocketName: Font = .footnote.weight(.semibold)
-        static let pocketPeek: Font = .caption2.weight(.semibold)
     }
 
     enum Stroke {
@@ -84,9 +80,8 @@ enum Tokens {
         static let cardDash = StrokeStyle(lineWidth: 2, dash: [5, 4])
         /// Round the part of the card whose input is open; from the prototype.
         static let cardFocus: CGFloat = 2
-        /// Round the chosen pocket; the dashed outline of `New`. From the prototype.
+        /// Round a chosen symbol in the picker. From the prototype.
         static let pocketRing: CGFloat = 2.5
-        static let pocketNew = StrokeStyle(lineWidth: 2, dash: [5, 4])
     }
 
     /// How far text may shrink to fit a line before it truncates.
@@ -125,9 +120,6 @@ enum Tokens {
         /// otherwise read as a second line. From the prototype.
         static let offLineDot: Double = 0.28
         static let todayLineWhileDragging: Double = 0.2
-        /// A pocket's back, its colour at this strength; its lip, nearly solid. From the prototype.
-        static let pocketBack: Double = 0.35
-        static let pocketLip: Double = 0.95
     }
 
     enum Ink {
@@ -149,8 +141,6 @@ enum Tokens {
         /// A charged card's date in the timeline's stack, a touch softer than its name; from the
         /// prototype.
         static let onStackSoft: Color = .white.opacity(0.82)
-        /// A peeking bill's name on its white slip, in both modes; from the prototype.
-        static let onPocketPeek: Color = Color(white: 0.23)
     }
 
     enum Surface {
@@ -173,8 +163,6 @@ enum Tokens {
         static let chip: Color = Color(.secondarySystemFill)
         /// The pencil badge's ground: white in light, the prototype's #2C2C2E in dark.
         static let cardBadge: Color = Color(.tertiarySystemBackground)
-        /// A peeking bill's slip: white in both modes, as the prototype draws paper.
-        static let pocketPeek: Color = .white
     }
 
     enum Chart {
@@ -190,6 +178,10 @@ enum Tokens {
         static let handStepMax: CGFloat = 48
         static let handStepMin: CGFloat = 24
         static let handSideClearance: CGFloat = 64
+        /// The hand's cards sit this far below the top of the hand, which leaves room to lift.
+        static let handTop: CGFloat = 60
+        /// A hand card's picture above its name.
+        static let handCardGap: CGFloat = 6
         static let gutter: CGFloat = 20
         static let section: CGFloat = 16
         static let gap: CGFloat = 12
@@ -291,29 +283,8 @@ enum Tokens {
         /// Inside the name's dashed field.
         static let cardFieldHorizontal: CGFloat = 10
         static let cardFieldVertical: CGFloat = 4
-        /// The pockets: between rows and columns, how far apart the peeking bills sit, and above
-        /// the first row. From the prototype; the editor's gutter gives the sides.
-        static let pocketRow: CGFloat = 22
-        static let pocketColumn: CGFloat = 14
-        static let pocketPeekStep: CGFloat = 11
-        static let pocketsTop: CGFloat = 24
-        /// A peeking bill's slip: from the pocket's sides, and its text's inset.
-        static let pocketPeekInset: CGFloat = 10
-        static let pocketPeekTextHorizontal: CGFloat = 7
-        static let pocketPeekTextTop: CGFloat = 2
-        /// Inside a pocket's lip, and between its emoji and name.
-        static let pocketLipHorizontal: CGFloat = 6
-        static let pocketLipGap: CGFloat = 4
-        /// Where the front bill peeks out: this far above the lip.
-        static let pocketFront: CGFloat = 14
-        /// A chosen pocket's lip drops this far as the bill stands in it.
-        static let pocketLipDrop: CGFloat = 5
         /// The card's emoji drops into its tile from this far up.
         static let emojiDrop: CGFloat = 6
-        /// Where a filed card lands in its pocket: this far in from the pocket's sides, its top this
-        /// far above the lip. From the prototype.
-        static let pocketCardInset: CGFloat = 6
-        static let pocketCardAboveLip: CGFloat = 10
         /// The timeline's Wallet stack, from the prototype: how far each card runs on under the next,
         /// how far in from the screen's sides it sits, where its content starts inside it, and the
         /// clear space under a month's last card. Tuning values.
@@ -440,13 +411,6 @@ enum Tokens {
         static let cardCategoryTile: CGFloat = 46
         static let cardBadge: CGFloat = 16
         static let cardBadgeOverhang: CGFloat = 5
-        /// A pocket, its lip and a peeking bill's slip, before Dynamic Type scales them, and how
-        /// far the chosen one lifts. From the prototype.
-        static let pocketWidth: CGFloat = 108
-        static let pocketHeight: CGFloat = 86
-        static let pocketLip: CGFloat = 46
-        static let pocketPeekHeight: CGFloat = 34
-        static let pocketLift: CGFloat = 6
         /// The caret after the card's amount. The prototype sizes it from the font: 0.82em tall,
         /// 0.055em wide (never under `caretMinWidth`), 0.04em from the text. Here it's drawn from
         /// the laid-out line, about 1.2em tall in SF, so it follows the amount as it shrinks.
@@ -462,6 +426,9 @@ enum Tokens {
         /// The hand's fan opens by this many degrees per step, and the card's turn is drawn with this
         /// perspective. From the prototype; not tuned.
         static let handArc: Double = 8
+        /// The fan stops curving at this many degrees and runs straight beyond it, so a hand wider
+        /// than the screen scrolls along a line, not round a circle. A tuning value.
+        static let handArcMax: Double = 40
         static let flipPerspective: CGFloat = 0.4
         /// How often a boiling picture swaps to its next drawing; from the prototype.
         static let boilStep: TimeInterval = 0.125
@@ -496,19 +463,6 @@ enum Tokens {
         static let breatheOpacity: Double = 0.55
         /// How long the amount's caret stays on, then off: half the prototype's 1.06s blink.
         static let caretBlink: TimeInterval = 0.53
-        /// Picking a pocket: the card's colour crossfades and its emoji drops in.
-        static let pick: TimeInterval = 0.3
-        /// Filing on ✓: the card shrinks into its pocket, the pocket bounces, and the sheet closes
-        /// `fileHold` after ✓. Reduce Motion fades the card instead. From the prototype.
-        static let file: TimeInterval = 0.24
-        static let fileCurve: Animation = .timingCurve(0.3, 0.6, 0.35, 1, duration: file)
-        static let fileHold: TimeInterval = 0.7
-        static let fileFade: TimeInterval = 0.16
-        static let pocketBounce: TimeInterval = 0.28
-        static let pocketBounceScales: [CGFloat] = [1.06, 0.98, 1]
-        /// How long the pockets get to appear and scroll the target into view before the card
-        /// leaves. A tuning value.
-        static let fileSettle: TimeInterval = 0.05
     }
 
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is
@@ -521,13 +475,6 @@ enum Tokens {
         static let badgeColour: Color = .black.opacity(0.14)
         static let badgeRadius: CGFloat = 1
         static let badgeY: CGFloat = 1
-        /// Under a pocket's lip and its peeking bills: the prototype's 0 -2 6 at 14% black, 40%
-        /// in dark.
-        static let pocketColour: Color = Color(UIColor { traits in
-            UIColor(white: 0, alpha: traits.userInterfaceStyle == .dark ? 0.4 : 0.14)
-        })
-        static let pocketRadius: CGFloat = 3
-        static let pocketY: CGFloat = -2
         /// Along a charged card's top in the timeline's stack, falling on the card above: the
         /// prototype's 0 -1 2.5 at 16% black.
         static let stackColour: Color = .black.opacity(0.16)
@@ -536,6 +483,8 @@ enum Tokens {
     }
 
     enum Radius {
+        /// A card in the hand; from the prototype.
+        static let handCard: CGFloat = 10
         static let icon: CGFloat = 10
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
@@ -547,10 +496,6 @@ enum Tokens {
         /// The name's dashed field, and the ring round an open date or repeat; from the prototype.
         static let cardField: CGFloat = 9
         static let cardFocus: CGFloat = 6
-        /// A pocket's back, its lip's top corners, and a peeking bill's slip. From the prototype.
-        static let pocket: CGFloat = 12
-        static let pocketLipTop: CGFloat = 10
-        static let pocketPeek: CGFloat = 6
         /// A card's top corners in the timeline's stack; a month's last card is round all round.
         static let stackCard: CGFloat = 14
     }
@@ -571,24 +516,7 @@ extension Tokens {
             return Image(uiImage: circle.withTintColor(uiColor(colour), renderingMode: .alwaysOriginal))
         }
 
-        /// A pocket's lip: the colour lit toward its top left corner and shaded toward its bottom
-        /// right, as the prototype draws it (28% white, the colour, then 24% black, at 135°). A lip
-        /// without a colour is grey, mixed the same way.
-        static func lipFill(_ colour: Tilly.CategoryColour?) -> LinearGradient {
-            let base = colour.map(color) ?? Chart.uncoloured
-            return LinearGradient(
-                colors: [
-                    base.mix(with: .white, by: lipLight, in: .device),
-                    base,
-                    base.mix(with: .black, by: lipShade, in: .device),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
 
-        private static let lipLight: Double = 0.28
-        private static let lipShade: Double = 0.24
 
         private static func uiColor(_ colour: Tilly.CategoryColour) -> UIColor {
             switch colour {

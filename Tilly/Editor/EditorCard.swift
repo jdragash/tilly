@@ -13,6 +13,8 @@ struct EditorCard: View {
     let today: Date
     let onTap: (CardPart?) -> Void          // nil = the card's background
     let onNameSubmit: () -> Void
+    /// The category tile's frame (global), for a played card to fly to.
+    var onTileFrame: (CGRect) -> Void = { _ in }
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
@@ -256,6 +258,7 @@ struct EditorCard: View {
                 }
             }
             .frame(width: tileSize, height: tileSize)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { onTileFrame($0) }
             .overlay {
                 if isOpen {
                     tile.stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)

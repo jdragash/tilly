@@ -415,6 +415,17 @@ reported as such and skipped.
 
 ## Lessons
 
+- **The prototype's fan only works while the cards fit.** Its arc keeps turning 8° a step, so past about
+  eleven cards a hand that scrolls would curl into a circle (20 categories: ±80°). `HandFan` stops the
+  curve at `Motion.handArcMax` (40°) and runs the rest straight at the same height and angle. A tuning value.
+- **The category the bill is in is on the card, so it isn't in the fan** (the prototype hides the
+  played card too). The hand is sorted by `sortOrder`; the editor's `@Query` is sorted by name.
+- **The hand draws its own flyer** in an overlay on its scroll view (`scrollClipDisabled`), so it can
+  leave the hand and reach the tile; the hand sits at `zIndex(1)` over the card for that. The tile
+  reports its frame in `.global`, and the hand converts with its own.
+- **A `ButtonStyle`'s `isPressed` drives the lift and the neighbours' tilt**; `onGeometryChange` after
+  `.offset` reports the card's place without its rotation or scale.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be
