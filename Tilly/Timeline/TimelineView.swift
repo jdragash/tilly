@@ -59,6 +59,12 @@ struct TimelineView: View {
     /// Bumped by every landing and every finish, so steps still waiting from one left behind
     /// do nothing.
     @State private var landingGeneration = 0
+    /// The day a charge was just saved on over the calendar's month or year, while it arrives.
+    @State private var arrivingDay: Date?
+
+    /// How long an arrival waits, for the editor's sheet to have mostly left.
+    private var arrivalDelay: TimeInterval { Tokens.Motion.Card.sheetExit * Tokens.Motion.dayArrivalAfter }
+
     /// The landing month's figure as it read before the save, shown until the card arrives and
     /// then rolled to the new total.
     @State private var heldFigure: (month: MonthKey, figure: String)?
@@ -301,6 +307,7 @@ struct TimelineView: View {
                 CalendarMonthView(
                     month: calendarMonthBinding(in: window), window: window,
                     calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay,
+                    arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
                     onDayFrame: { zoomFrames.report(day: $0, frame: $1) },
                     onBack: { setLevel(.year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window))) },
                     titleTrailingClearance: toggleClearance
@@ -312,6 +319,7 @@ struct TimelineView: View {
                     overview: yearOverview(in: window), extrasOnly: extrasOnly, today: today,
                     titleTrailingClearance: toggleClearance,
                     onOpenMonth: { openMonth($0, in: window) },
+                    arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
                     onMonthFrame: { zoomFrames.report(month: $0, frame: $1) }
                 )
                 .transition(yearTransition)
@@ -871,6 +879,9 @@ struct TimelineView: View {
               mode == .timeline, level == .day, window != nil, !expenses.isEmpty
         else {
             if case .saved = close { releaseOpenedRow() }
+            if case .saved(_, let date) = close, mode == .timeline, level != .day {
+                arrive(on: date)
+            }
             editor = nil
             return
         }
@@ -898,6 +909,18 @@ struct TimelineView: View {
             // Moved: the old place goes as the new one opens, so the list keeps its length.
             let remains = TimelineLanding.openedRowRemains(opened, in: sections, calendar: calendar)
             land(entry, figureBefore: figureBefore.map { (month, $0) }, releasedHeight: remains ? 0 : openedRowHeight)
+        }
+    }
+
+    /// Over the calendar's month or year the saved charge drops into its day: the day is marked
+    /// arriving from now (its picture held back), the drop begins once the sheet has mostly left, and
+    /// the mark is cleared when it is over.
+    private func arrive(on date: Date) {
+        let day = calendar.startOfDay(for: date)
+        arrivingDay = day
+        let over = arrivalDelay + Tokens.Motion.Card.dayDropDuration + Tokens.Motion.dayFade + 0.5
+        DispatchQueue.main.asyncAfter(deadline: .now() + over) {
+            if arrivingDay == day { arrivingDay = nil }
         }
     }
 

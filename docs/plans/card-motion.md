@@ -498,6 +498,11 @@ reported as such and skipped.
 - **`RowFrames` is `@State`, not a `let`:** a `let` on a view struct is rebuilt with every redraw
   of the parent, and would start empty.
 
+- **A day's arrival hides its picture from the save, not from the drop**: the data refreshes as the sheet
+  closes, so a day that only just gained a charge would show it early. `DayArrival` starts hidden while
+  `arrives` is set, waits `sheetExit × dayArrivalAfter`, then drops; the day's total is held at its old
+  figure until the tap at 40% of the drop. Saved into another month than the one shown, nothing arrives.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

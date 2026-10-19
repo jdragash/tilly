@@ -485,6 +485,11 @@ enum Tokens {
         static let caretBlink: TimeInterval = 0.53
         /// Reduce Motion's fade, in place of a movement; from the prototype.
         static let reducedFade: TimeInterval = 0.16
+        /// A saved charge arriving on its day: it fades in over this long, the tap lands at this
+        /// fraction of the drop, and the drop begins once this fraction of the sheet's exit is done.
+        static let dayFade: TimeInterval = 0.15
+        static let dayImpactAt: Double = 0.4
+        static let dayArrivalAfter: Double = 0.6
         /// The editor's sheet closes when dragged down past this fraction of its height, or flung
         /// past half of it. A tuning value.
         static let sheetDragCloses: CGFloat = 0.25
