@@ -8,6 +8,10 @@ struct MonthSectionView: View {
     let showsFirstWeekLine: Bool
     /// The day a calendar tap opened, its rows marked until the mark fades.
     var markedDay: Date?
+    /// The row a card stands in for, if it's in this month.
+    var hold: RowHold?
+    /// Each row's frame in `CardFlightLayer.space` as it changes, and nil as it leaves.
+    var onRowFrame: (String, CGRect?) -> Void = { _, _ in }
     let onOpen: (TimelineEntry) -> Void
 
     var body: some View {
@@ -20,6 +24,7 @@ struct MonthSectionView: View {
                         .frame(height: Tokens.Size.scrollMarker)
                         .id(OccurrenceRow.dayScrollID(entry.date))
                 }
+                let held = hold?.entryID == entry.id ? hold : nil
                 Button {
                     onOpen(entry)
                 } label: {
@@ -27,12 +32,20 @@ struct MonthSectionView: View {
                     // shape, so outside it the gap between name and amount stays dead.
                     OccurrenceRow(
                         entry: entry, isMarked: entry.date == markedDay,
-                        isLast: index == section.entries.count - 1
+                        isLast: index == section.entries.count - 1,
+                        heightFraction: held?.height ?? 1, showsCard: held?.showsCard ?? true
                     )
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Edits this charge")
+                .id(OccurrenceRow.rowScrollID(entry.id))
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    proxy.frame(in: .named(CardFlightLayer.space))
+                } action: { frame in
+                    onRowFrame(entry.id, frame)
+                }
+                .onDisappear { onRowFrame(entry.id, nil) }
             }
             if !section.entries.isEmpty {
                 // The last card runs on `stackTuck` past its row, as every card does; this keeps

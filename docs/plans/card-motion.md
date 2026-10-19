@@ -284,9 +284,9 @@ private let rowFrames = RowFrames()
 private func jump(to entry: TimelineEntry)
 ```
 `OccurrenceRow` gains `var heightFraction: CGFloat = 1` (the row's frame and card clip to it) and
-`var showsCard = true`. A held row's months are rebuilt with the anchor held: `refreshWindow()`
-followed by `anchorAndSettle(monthUnderMiddle())` even when the window is unchanged, so a monthly
-bill's new charges in the months above move nothing on screen (TASTE 2).
+`var showsCard = true`. A held row's months are rebuilt by `refreshWindow()` as any others are: with
+the window unchanged the list keeps what's on screen still by itself, so a monthly bill's new
+charges in the months above move nothing (TASTE 2). No extra anchoring.
 
 **Done when:** `TimelineLandingTests`: `targetIsTheChargeOnItsDate`, `targetFollowsAMovedCharge`,
 `targetIsNilOutsideWindow`, `targetIsNilWhenExtrasHidesIt`, `inViewNeedsWholeRowUnderHeader`,
@@ -448,6 +448,17 @@ reported as such and skipped.
   to theirs); from the grabber, the buttons' row, the card or bare ground it moves the sheet.
 - **A drag down arrives as `request` going nil with no `EditorClose`:** the timeline reads it as a
   cancel. Every close, a drag included, refreshes from `onChange(of: editor)`.
+- **A jump aims at the row's own id, not its day's marker:** the held row is often not its day's
+  first (the debug jump held a second charge on the 8th). Each row's button carries
+  `OccurrenceRow.rowScrollID`; held at 0 it is zero high, so `f = top / (room − h)` with `h` 0
+  lands it: 119.88, 120.05 and 120.00 under the header (current month, two years back, and back).
+- **Re-anchoring to a pinned header moves the list; a held row needs no anchor of its own.** The
+  plan first rebuilt a held row's months with `anchorAndSettle(monthUnderMiddle())`. A jump leaves
+  the row's month pinned with rows hidden under its header, which reads 0, so re-anchoring to 0
+  scrolled the month's top into view: adding a monthly bill moved the rows 136pt (current month)
+  and 72pt (two years back). Plain `refreshWindow()` held them at 0.000 in both, held or not.
+- **`RowFrames` is `@State`, not a `let`:** a `let` on a view struct is rebuilt with every redraw
+  of the parent, and would start empty.
 
 ## If a step is wrong
 

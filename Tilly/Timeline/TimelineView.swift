@@ -40,6 +40,12 @@ struct TimelineView: View {
     @State private var editorCardRest: CGRect?
     /// The day a calendar tap opened, its rows marked until the mark fades.
     @State private var markedDay: Date?
+    /// The row a card stands in for: opening into its place as a card lands, or kept open, empty,
+    /// while its card is up in the sheet.
+    @State private var hold: RowHold?
+    /// The rows on screen, for a card's flight to aim at. State, not a plain `let`: the view is
+    /// rebuilt whenever its parent redraws, and a `let` would start empty each time.
+    @State private var rowFrames = RowFrames()
     /// Which view shows. The app opens on the one it was left on, as Calendar does.
     @AppStorage("viewMode") private var mode: ViewMode = .firstRun
     /// The month the category view shows. Set properly once the window is.
@@ -194,7 +200,32 @@ struct TimelineView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             handleDayChange()
         }
+        #if DEBUG
+        .onReceive(NotificationCenter.default.publisher(for: .debugLandingJump)) { debugJump($0) }
+        #endif
     }
+
+    #if DEBUG
+    /// The Developer section's jump, until a landing uses `jump(to:)` (step 6 of the card-motion
+    /// plan removes it): holds a charge `monthsBack` months before this one at height 0, card
+    /// hidden, and jumps to it. With no `monthsBack`, lets the held row go.
+    private func debugJump(_ note: Notification) {
+        isSettingsPresented = false
+        guard let monthsBack = note.userInfo?["monthsBack"] as? Int else {
+            hold = nil
+            return
+        }
+        guard let window else { return }
+        let month = window.current.advanced(by: -monthsBack)
+        guard let entries = sections[month]?.entries, !entries.isEmpty else { return }
+        let picked = entries[entries.count / 2]
+        guard let entry = TimelineLanding.target(
+            expenseID: picked.expenseID, date: picked.date, in: sections, calendar: calendar
+        ) else { return }
+        hold = RowHold(entryID: entry.id, height: 0, showsCard: false)
+        DispatchQueue.main.async { jump(to: entry) }
+    }
+    #endif
 
     /// The category view lies over the timeline, which stays mounted beneath it, hidden, so its
     /// place survives a switch: rebuilt, the list would restore only to the month, and pay
@@ -355,6 +386,8 @@ struct TimelineView: View {
                                 section: monthSection,
                                 showsFirstWeekLine: monthSection.isCurrent && !monthSection.hasChargedEntry,
                                 markedDay: markedDay,
+                                hold: hold,
+                                onRowFrame: { rowFrames.report($0, frame: $1) },
                                 onOpen: openEntry
                             )
                             // The content, not the `Section`: a geometry modifier there
@@ -579,6 +612,45 @@ struct TimelineView: View {
         }
     }
 
+    /// Puts the held row's top `landingRowOffset` under its month's pinned header, unanimated, so a
+    /// card can land in a row that was off screen: behind the sheet, before the card leaves.
+    ///
+    /// Two scrolls a turn apart, as `openDay`'s: the month first, which lays it out, then the row's
+    /// own target. `scrollTo` lands a target's point at fraction `f` on the container's point at
+    /// `f`, so a target `h` high has its top at `f × (room − h)`; a row held at height 0 is zero
+    /// high, as a day's marker is, and needs no height at all.
+    private func jump(to entry: TimelineEntry) {
+        guard let scrollProxy else { return }
+        let month = MonthKey(containing: entry.date, calendar: calendar)
+        isProgrammaticScroll = true
+        scrollProxy.scrollTo(month.id, anchor: .top)
+        DispatchQueue.main.async {
+            let headerHeight = headerHeights[month] ?? 0
+            let rowHeight = rowFrames.frames[entry.id]?.height ?? 0
+            let room = listHeight - bottomClearance - rowHeight
+            let top = headerHeight + Tokens.Motion.Card.landingRowOffset
+            let fraction = room > 0 ? min(1, max(0, top / room)) : 0
+            scrollProxy.scrollTo(OccurrenceRow.rowScrollID(entry.id), anchor: UnitPoint(x: 0.5, y: fraction))
+            DispatchQueue.main.async {
+                isProgrammaticScroll = false
+                if hasRestoredPlace { saveCurrentPlace() }
+            }
+        }
+    }
+
+    /// Whether the entry's row is wholly on screen, under the pinned header and above the bottom
+    /// row. The list starts under the days' top row; `CardFlightLayer.space` starts at the safe
+    /// area's top, as the list's own frame does.
+    private func isInView(_ entry: TimelineEntry) -> Bool {
+        guard let frame = rowFrames.frames[entry.id] else { return false }
+        let month = MonthKey(containing: entry.date, calendar: calendar)
+        let listTop = Tokens.Size.headerRow
+        return TimelineLanding.isInView(
+            frame, listTop: listTop, headerHeight: headerHeights[month] ?? 0,
+            listBottom: listTop + listHeight - bottomClearance
+        )
+    }
+
     /// A row tap builds the session fresh from the store, keyed on what the entry itself
     /// carries — never from `sections`, which is a snapshot rebuilt on every change. See
     /// "Opening a charge edits it" in `docs/DESIGN.md`.
@@ -729,6 +801,10 @@ struct TimelineView: View {
     ///
     /// The first bill arrives with no window yet, because `setUpIfNeeded` found no floor on
     /// appear; without setting up here the list would stay blank.
+    ///
+    /// A window that stays as it was is rebuilt without anchoring, a held row's included: the list
+    /// keeps what's on screen still by itself, and re-anchoring to a pinned header (which reads 0
+    /// however deep into its month the reader is) would scroll that month's top into view.
     private func refreshWindow() {
         guard let window else {
             setUpIfNeeded()
