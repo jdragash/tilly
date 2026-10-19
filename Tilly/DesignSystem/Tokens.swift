@@ -185,6 +185,11 @@ enum Tokens {
     }
 
     enum Space {
+        /// The hand's fan: the step between cards at most and at least (it tightens to fit, then
+        /// scrolls), and the clearance kept at either side.
+        static let handStepMax: CGFloat = 48
+        static let handStepMin: CGFloat = 24
+        static let handSideClearance: CGFloat = 64
         static let gutter: CGFloat = 20
         static let section: CGFloat = 16
         static let gap: CGFloat = 12
@@ -320,6 +325,9 @@ enum Tokens {
     }
 
     enum Size {
+        /// The hand's cards (portrait), and the picture on one.
+        static let handCard = CGSize(width: 84, height: 120)
+        static let handPicture: CGFloat = 44
         static let row: CGFloat = 52
         /// A row in the timeline's Wallet stack: the part of its card left showing above the next.
         /// From the prototype; the timeline's only, every other list keeps `row`.
@@ -451,6 +459,10 @@ enum Tokens {
     }
 
     enum Motion {
+        /// The hand's fan opens by this many degrees per step, and the card's turn is drawn with this
+        /// perspective. From the prototype; not tuned.
+        static let handArc: Double = 8
+        static let flipPerspective: CGFloat = 0.4
         /// How often a boiling picture swaps to its next drawing; from the prototype.
         static let boilStep: TimeInterval = 0.125
         // The return scroll's duration scales with how far the reader actually has to
