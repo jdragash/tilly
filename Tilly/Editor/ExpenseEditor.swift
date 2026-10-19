@@ -8,8 +8,9 @@ enum EditorPanel: Equatable {
     case keypad, date, `repeat`, category, newCategory
 }
 
-/// The sheet for adding an expense. The card is the input: tapping a part opens its input in the
-/// keypad's place, under the card, at the keypad's height, so the card never moves. At standard
+/// The editor, in `EditorSheet` over the timeline, or a system sheet over All bills. The card is
+/// the input: tapping a part opens its input in the keypad's place, under the card, at the
+/// keypad's height, so the card never moves. At standard
 /// text sizes the keyboard covers the panel rather than pushing the sheet up. See "The editor" in
 /// `docs/DESIGN.md`.
 struct ExpenseEditor: View {
@@ -17,9 +18,11 @@ struct ExpenseEditor: View {
     /// Set when the editor opened from a row: editing a real charge rather than adding a new
     /// bill. See "Opening a charge edits it" in `docs/DESIGN.md`.
     let session: EditSession?
+    /// How it closed: the sheet holding it goes, and a save says which charge to land on.
+    let onClose: (EditorClose) -> Void
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.editorSheetContents) private var sheetContents
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -44,15 +47,21 @@ struct ExpenseEditor: View {
 
     /// `draft` and `panel` exist so previews can open the editor part-way through. With a
     /// `session` and no explicit `draft`, the draft opens from the session's own baseline.
-    init(today: Date, draft: ExpenseDraft? = nil, panel: EditorPanel = .keypad, session: EditSession? = nil) {
+    init(
+        today: Date, draft: ExpenseDraft? = nil, panel: EditorPanel = .keypad, session: EditSession? = nil,
+        onClose: @escaping (EditorClose) -> Void
+    ) {
         self.today = today
         self.session = session
+        self.onClose = onClose
         _draft = State(initialValue: draft ?? session?.draft ?? ExpenseDraft(today: today, calendar: .current))
         _panel = State(initialValue: panel)
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            header
+                .opacity(sheetContents)
             ScrollView {
                 // The card holds the top and the panel the bottom; the space between them gives
                 // way, so neither moves when the panel changes or a keyboard pushes the sheet up.
@@ -77,6 +86,7 @@ struct ExpenseEditor: View {
                         }
                     }
                     .padding(.horizontal, Tokens.Space.gutter)
+                    .opacity(sheetContents)
                     // The hand's played card flies up over the card to its tile.
                     .zIndex(1)
                 }
@@ -87,53 +97,7 @@ struct ExpenseEditor: View {
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
                 viewportHeight = height
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .close) { dismiss() }
-                }
-                if let session {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        // A `Menu`, not a `confirmationDialog`: the dialog ran its button's action
-                        // only once its closing transition had finished, a second after it had
-                        // visibly gone (measured), and it couldn't be dismissed while opening.
-                        Menu {
-                            Section {
-                                deleteButtons(for: session)
-                            } header: {
-                                Text("\(deleteTitle(for: session)) \(deleteMessage(for: session))")
-                            }
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .tint(Tokens.Ink.destructive)
-                        .accessibilityLabel("Delete")
-                    }
-                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
-                }
-                // A half-made category is finished or cancelled before the expense is saved.
-                ToolbarItem(placement: .confirmationAction) {
-                    if asksScope {
-                        // A `Menu` for the same reason as trash. Styled to match the system ✓, with
-                        // the toolbar's own glass hidden so it isn't drawn twice.
-                        Menu {
-                            scopeButtons
-                        } label: {
-                            Image(systemName: "checkmark")
-                        }
-                        .menuStyle(.button)
-                        .buttonStyle(.glassProminent)
-                        .buttonBorderShape(.circle)
-                        .accessibilityLabel("Save")
-                    } else {
-                        Button(role: .confirm, action: save)
-                            .disabled(!canSave)
-                    }
-                }
-                .sharedBackgroundVisibility(asksScope ? .hidden : .automatic)
-            }
-            .navigationBarTitleDisplayMode(.inline)
         }
-        .drawnGround()
         .onChange(of: panel) { _, newPanel in
             if newPanel != .keypad { nameFocused = false }
         }
@@ -143,6 +107,82 @@ struct ExpenseEditor: View {
     }
 
     // MARK: Pieces
+
+    /// ✕ top left; trash, when a charge is open, and ✓ top right. Glass circles the size and place
+    /// of the system sheet's toolbar buttons, which this row replaced when the editor stopped being
+    /// a system sheet. A half-made category is finished or cancelled before the expense is saved.
+    private var header: some View {
+        HStack(spacing: Tokens.Space.sheetButtonGap) {
+            Button { close(.cancelled) } label: {
+                headerSymbol("xmark", ink: Tokens.Ink.primary)
+            }
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: Circle())
+            .accessibilityLabel("Close")
+            Spacer(minLength: 0)
+            if let session {
+                // A `Menu`, not a `confirmationDialog`: the dialog ran its button's action only
+                // once its closing transition had finished, a second after it had visibly gone
+                // (measured), and it couldn't be dismissed while opening.
+                Menu {
+                    Section {
+                        deleteButtons(for: session)
+                    } header: {
+                        Text("\(deleteTitle(for: session)) \(deleteMessage(for: session))")
+                    }
+                } label: {
+                    headerSymbol("trash", ink: Tokens.Ink.destructive)
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: Circle())
+                .accessibilityLabel("Delete")
+            }
+            confirm
+        }
+        .padding(.horizontal, Tokens.Space.sheetButtonInset)
+        .padding(.top, Tokens.Space.sheetButtonInset)
+        .padding(.bottom, Tokens.Space.sheetHeaderBottom)
+    }
+
+    /// ✓: the system's prominent checkmark, grey while there's nothing to save, and a menu of
+    /// "this charge or future charges" when a save has to ask.
+    @ViewBuilder
+    private var confirm: some View {
+        let glass = Glass.regular.tint(canSave ? Tokens.Ink.accent : Tokens.Surface.confirmDisabled).interactive(canSave)
+        if asksScope {
+            // A `Menu` for the same reason as trash.
+            Menu {
+                scopeButtons
+            } label: {
+                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .glassEffect(glass, in: Circle())
+            .accessibilityLabel("Save")
+        } else {
+            Button(action: save) {
+                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+            }
+            // Not `.plain`, which dims a disabled label: the system's disabled ✓ keeps it white
+            // on grey glass.
+            .buttonStyle(UndimmedButtonStyle())
+            .glassEffect(glass, in: Circle())
+            .disabled(!canSave)
+            .accessibilityLabel("Save")
+        }
+    }
+
+    private func headerSymbol(_ name: String, ink: Color) -> some View {
+        Image(systemName: name)
+            .font(Tokens.Text.floatingSymbol)
+            // Fixed, as toolbar symbols are: the circle doesn't grow with the text.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            .foregroundStyle(ink)
+            .frame(width: Tokens.Size.floatingButton, height: Tokens.Size.floatingButton)
+            .contentShape(Circle())
+    }
 
     private var card: some View {
         EditorCard(
@@ -162,6 +202,12 @@ struct ExpenseEditor: View {
         )
         .sensoryFeedback(.impact(weight: .medium), trigger: dressings)
         .submitLabel(afterName == nil ? .done : .next)
+        // Where the card rests in the sheet, for a flight to aim at.
+        .background {
+            GeometryReader { proxy in
+                Color.clear.preference(key: EditorCardFrameKey.self, value: proxy.frame(in: .named(EditorSheetSpace.name)))
+            }
+        }
     }
 
     /// Where Return goes from the name: the next part still missing besides the name itself. The
@@ -353,7 +399,7 @@ struct ExpenseEditor: View {
         modelContext.insert(expense)
         do {
             try modelContext.save()
-            close()
+            close(.saved(expenseID: expense.id, date: draft.date))
         } catch {
             Self.logger.error("Saving an expense failed: \(error)")
         }
@@ -473,14 +519,14 @@ struct ExpenseEditor: View {
     /// A saved edit closes the sheet.
     private func edit(_ session: EditSession, _ operation: (Expense, ExpenseCategory) throws -> Void) {
         guard let category = selectedCategory, let expense = fetchExpense(session.expenseID) else { return }
-        performEdit({ try operation(expense, category) }, then: { close() })
+        performEdit({ try operation(expense, category) }, then: .saved(expenseID: expense.id, date: draft.date))
     }
 
-    /// Deleting closes the sheet directly; saving passes `then`.
-    private func performEdit(_ operation: () throws -> Void, then finish: (() -> Void)? = nil) {
+    /// Runs an edit, then closes as `close` says: a delete by default, a save when one passes it.
+    private func performEdit(_ operation: () throws -> Void, then close: EditorClose = .deleted) {
         do {
             try operation()
-            if let finish { finish() } else { dismiss() }
+            self.close(close)
         } catch {
             Self.logger.error("Editing an expense failed: \(error)")
         }
@@ -488,11 +534,12 @@ struct ExpenseEditor: View {
 
     // MARK: Closing
 
-    /// Closes the sheet once.
-    private func close() {
+    /// Closes the sheet once: ✓ pressed twice is ignored.
+    private func close(_ how: EditorClose) {
         guard !isClosing else { return }
         isClosing = true
-        dismiss()
+        nameFocused = false
+        onClose(how)
     }
 
     private func fetchExpense(_ id: UUID) -> Expense? {
@@ -511,7 +558,8 @@ private func previewContainer() -> (ModelContainer, ExpenseCategory) {
 }
 
 #Preview("Empty") {
-    ExpenseEditor(today: Date())
+    ExpenseEditor(today: Date(), onClose: { _ in })
+        .drawnGround()
         .modelContainer(previewContainer().0)
 }
 
@@ -525,17 +573,20 @@ private func previewContainer() -> (ModelContainer, ExpenseCategory) {
     draft.date = calendar.date(byAdding: .day, value: 12, to: calendar.startOfDay(for: today))!
     draft.paymentCount = 12
     draft.categoryID = category.id
-    return ExpenseEditor(today: today, draft: draft)
+    return ExpenseEditor(today: today, draft: draft, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
 }
 
 #Preview("Repeat panel") {
-    ExpenseEditor(today: Date(), panel: .repeat)
+    ExpenseEditor(today: Date(), panel: .repeat, onClose: { _ in })
+        .drawnGround()
         .modelContainer(previewContainer().0)
 }
 
 #Preview("Date panel") {
-    ExpenseEditor(today: Date(), panel: .date)
+    ExpenseEditor(today: Date(), panel: .date, onClose: { _ in })
+        .drawnGround()
         .modelContainer(previewContainer().0)
 }
 
@@ -545,7 +596,8 @@ private func previewContainer() -> (ModelContainer, ExpenseCategory) {
     draft.press(.digit(9))
     draft.name = "Sofa"
     draft.categoryID = category.id
-    return ExpenseEditor(today: Date(), draft: draft)
+    return ExpenseEditor(today: Date(), draft: draft, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
         .dynamicTypeSize(.accessibility3)
 }
@@ -566,7 +618,8 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
 #Preview("Editing a charge") {
     let (container, category) = previewContainer()
     let session = previewEditSession(monthsAgo: 0, in: container, category: category)
-    return ExpenseEditor(today: Date(), session: session)
+    return ExpenseEditor(today: Date(), session: session, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
 }
 
@@ -575,15 +628,24 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
     let session = previewEditSession(monthsAgo: 3, in: container, category: category)
     var draft = session.draft
     draft.digits = "75"
-    return ExpenseEditor(today: Date(), draft: draft, session: session)
+    return ExpenseEditor(today: Date(), draft: draft, session: session, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
 }
 
 #Preview("Editing, dark, accessibility size") {
     let (container, category) = previewContainer()
     let session = previewEditSession(monthsAgo: 0, in: container, category: category)
-    return ExpenseEditor(today: Date(), session: session)
+    return ExpenseEditor(today: Date(), session: session, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
         .preferredColorScheme(.dark)
         .dynamicTypeSize(.accessibility3)
+}
+
+/// A button that draws its label as it is, enabled or not; its glass answers the press.
+private struct UndimmedButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
 }

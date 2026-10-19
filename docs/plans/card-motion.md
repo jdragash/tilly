@@ -425,6 +425,29 @@ reported as such and skipped.
   reports its frame in `.global`, and the hand converts with its own.
 - **A `ButtonStyle`'s `isPressed` drives the lift and the neighbours' tilt**; `onGeometryChange` after
   `.offset` reports the card's place without its rotation or scale.
+- **The system sheet it replaced, measured (iPhone 17, iOS 27, 3x):** top at the safe area's top
+  (62pt), full width, circular 38pt top corners, 44pt glass buttons 16pt in from the sides and top,
+  trash 12pt before ✓, the card 70pt under the sheet's top (132.00 global). `EditorSheet` lands the
+  card at 132.00 too, at a standard and an accessibility size.
+- **`CardFlightLayer.space` starts at the safe area's top,** not the screen's: the timeline's root
+  respects it. The card rests at y 70 in it. Rows reported in step 5 share the space, so it cancels.
+- **A frame read inside a moving view includes the move, every frame:** `onGeometryChange` logged
+  the card 910 → 132 through the rise. The card's rest is its frame in the sheet's own space
+  (`EditorSheetSpace`, which moves with it) plus the origin of an unmoved slot. It held at 70.0
+  through the rise, a drag and the spring back.
+- **The sheet's slot shrinks by the keyboard (812 → 484pt):** an off-screen distance read from it
+  stopped a closing sheet halfway. The ground's own height, which ignores the keyboard, is used.
+- **The timeline's root shrinks under the keyboard despite `.ignoresSafeArea(.keyboard)`:** 778 → 484
+  under the name keyboard, with the old system sheet too (measured on `51c7db6`). Hidden behind the
+  sheet; step 5 should know `listHeight` changes while a keyboard is up. The sheet sits in an
+  `.overlay` after that modifier and still gets the keyboard's inset.
+- **Making a category at an accessibility size moves the card** as the field scrolls into view:
+  132 → 117.00 in the system sheet, → 115.67 in the drawn one. Not new; the 1.33pt is the old nav
+  bar's content inset.
+- **A drag starting on a key or a hand card belongs to that control** (the sheet's `.gesture` loses
+  to theirs); from the grabber, the buttons' row, the card or bare ground it moves the sheet.
+- **A drag down arrives as `request` going nil with no `EditorClose`:** the timeline reads it as a
+  cancel. Every close, a drag included, refreshes from `onChange(of: editor)`.
 
 ## If a step is wrong
 

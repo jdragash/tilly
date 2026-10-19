@@ -17,10 +17,13 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
   with nothing measured. Its top edge measured the same under the keypad, the name keyboard,
   the calendar, the wheel, the category list and the emoji keyboard.
 
+- **`EditorSheet` matches the system sheet it replaced:** the card measured 132.00 global in both,
+  under every panel. At an accessibility size, making a category scrolls it up (117.00 → 115.67 now).
+- **Read the card's frame in `EditorSheetSpace`, which moves with the sheet;** elsewhere it reports
+  every frame of the sheet's travel. Its slot shrinks by the keyboard: measure the drop from the
+  ground, which ignores it, or a closing sheet stops halfway.
 - **A shape's fill eats the taps of a button in its `.background`.** The card's background button
   is an overlay over the fill and under the parts.
-- **Three 108pt pockets and two 14pt gaps are 352pt, which fits only inside the 20pt gutter.** Any
-  side padding of the grid's own widens the whole sheet, card included.
 
 ## Filing the card
 
@@ -32,6 +35,8 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
 
 ## Pickers and menus
 
+- **The header's buttons are its own glass circles, not a toolbar.** `.plain` dims a disabled
+  label; the system's ✓ stays white on grey, so ✓ uses a `ButtonStyle` returning its label.
 - A wheel `Picker`'s natural width is unbounded: `fixedSize` on one widens the whole layout. Give
   narrow wheels explicit widths.
 - A `confirmationDialog`'s button ran only once its closing transition finished, 1.1s after it

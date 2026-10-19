@@ -134,6 +134,8 @@ enum Tokens {
         /// Type on the editor's card, which is always a colour, or grey before it has one. From the
         /// prototype: white, a soft white for what's still faint, and the dashes between.
         static let onCard: Color = .white
+        /// A symbol on a tinted glass button, the editor's ✓.
+        static let onProminent: Color = .white
         static let onCardSoft: Color = .white.opacity(0.58)
         static let onCardDash: Color = .white.opacity(0.75)
         /// A charged card's date in the timeline's stack, a touch softer than its name; from the
@@ -161,6 +163,12 @@ enum Tokens {
         static let chip: Color = Color(.secondarySystemFill)
         /// The pencil badge's ground: white in light, the prototype's #2C2C2E in dark.
         static let cardBadge: Color = Color(.tertiarySystemBackground)
+        /// Behind the editor's sheet: the system's dimming, 16% black (the prototype's too).
+        static let scrim: Color = .black.opacity(0.16)
+        /// The editor's ✓ while there's nothing to save, as the system draws a disabled one.
+        static let confirmDisabled: Color = Color(white: 0.5, opacity: 0.45)
+        /// The editor's grabber.
+        static let grabber: Color = Color(.tertiaryLabel)
     }
 
     enum Chart {
@@ -274,6 +282,20 @@ enum Tokens {
         static let cardHorizontal: CGFloat = 18
         static let cardVertical: CGFloat = 16
         static let editorCardInset: CGFloat = 22
+        /// The editor's sheet, measured from the system sheet it replaces (iPhone 17, iOS 27, 3x):
+        /// ✕ and ✓ sit 16pt in from its sides and top, trash 12pt before ✓, and the card starts
+        /// 10pt under the buttons, 70pt under the sheet's top. The grabber sits 5pt down.
+        static let sheetButtonInset: CGFloat = 16
+        static let sheetButtonGap: CGFloat = 12
+        static let sheetHeaderBottom: CGFloat = 10
+        static let grabberTop: CGFloat = 5
+        /// How far a finger moves before it drags the sheet rather than tapping what's on it.
+        static let sheetDragSlop: CGFloat = 10
+        /// A measured frame that moves less than this hasn't moved: the scroll-anchoring tolerance.
+        static let frameTolerance: CGFloat = 0.5
+        /// Below its rest, the sheet is off the screen by this much more than its own height: the
+        /// home indicator's band, before the sheet has measured itself.
+        static let sheetOffMargin: CGFloat = 60
         /// Between the date's line and the repeat's.
         static let cardWhenGap: CGFloat = 2
         /// Before the pencil that follows a filled-in part.
@@ -332,6 +354,8 @@ enum Tokens {
         /// the graphical calendar is the tallest panel, and a six-row month (August 2026) measures
         /// about 336pt at the default text size, so 340 clears it without clipping.
         static let editorPanel: CGFloat = 340
+        /// The editor's sheet's grabber, the system's.
+        static let grabber = CGSize(width: 36, height: 5)
         /// The picture slot beside a new category's name.
         static let emojiSlot: CGFloat = 48
         /// A symbol in the picker's grid, and the height of the picker where the keypad was.
@@ -459,6 +483,14 @@ enum Tokens {
         static let breatheOpacity: Double = 0.55
         /// How long the amount's caret stays on, then off: half the prototype's 1.06s blink.
         static let caretBlink: TimeInterval = 0.53
+        /// Reduce Motion's fade, in place of a movement; from the prototype.
+        static let reducedFade: TimeInterval = 0.16
+        /// The editor's sheet closes when dragged down past this fraction of its height, or flung
+        /// past half of it. A tuning value.
+        static let sheetDragCloses: CGFloat = 0.25
+        static let sheetFlingCloses: CGFloat = 0.5
+        /// Dragged up, the sheet gives this fraction of the finger's travel. A tuning value.
+        static let sheetDragResistance: CGFloat = 0.1
     }
 
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is
@@ -487,6 +519,9 @@ enum Tokens {
         static let readout: CGFloat = 16
         /// An All bills card, and the editor's card; both from their prototypes.
         static let card: CGFloat = 20
+        /// The editor's sheet's top corners, measured from the system sheet it replaces (iPhone
+        /// 17, iOS 27): a circular 38pt, the prototype's too.
+        static let sheet: CGFloat = 38
         /// The category's tile on the editor's card: 0.28 of its side, from the prototype.
         static let cardCategoryTile: CGFloat = Size.cardCategoryTile * 0.28
         /// The name's dashed field, and the ring round an open date or repeat; from the prototype.

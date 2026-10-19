@@ -32,10 +32,12 @@ struct TimelineView: View {
     @State private var currentContentTop: CGFloat?
     @State private var floorLineBottom: CGFloat?
     @State private var floorSpacer: CGFloat = 0
-    @State private var isEditorPresented = false
     @State private var isSettingsPresented = false
     @State private var isBillsPresented = false
-    @State private var editing: EditSession?
+    /// What the editor's sheet is open for; nil while it's closed.
+    @State private var editor: EditorRequest?
+    /// Where the editor's card rests while its sheet is up, in `CardFlightLayer.space`.
+    @State private var editorCardRest: CGRect?
     /// The day a calendar tap opened, its rows marked until the mark fades.
     @State private var markedDay: Date?
     /// Which view shows. The app opens on the one it was left on, as Calendar does.
@@ -148,12 +150,36 @@ struct TimelineView: View {
         GeometryReader { rootProxy in
             content(topInset: rootProxy.safeAreaInsets.top, bottomInset: rootProxy.safeAreaInsets.bottom)
         }
-        // A sheet's keyboard shrinks the screen behind it too, and the bottom row rode up
+        // The editor's keyboard shrinks the screen behind it too, and the bottom row rode up
         // behind the editor to sit on the keyboard (measured: y 772 → 418). The timeline has
         // no text field of its own, so it ignores the keyboard whole: ignoring it on the row
         // alone isn't enough, because the row follows the bottom of what it sits in.
         .ignoresSafeArea(.keyboard)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+        // Above the levels, the glass controls and the bottom row.
+        .overlay {
+            EditorSheet(request: $editor, onCardRest: { editorCardRest = $0 }) { request in
+                switch request {
+                case .add:
+                    ExpenseEditor(today: today, onClose: closeEditor)
+                case .edit(let session):
+                    ExpenseEditor(today: today, session: session, onClose: closeEditor)
+                }
+            }
+        }
+        .coordinateSpace(name: CardFlightLayer.space)
+        // Every close refreshes, a drag down included: a save writes an `OverrideRecord` or edits
+        // fields on the same `Expense` instances this view already holds, and `@Query`'s own
+        // change notification doesn't reliably fire for a relationship-only edit, while
+        // `.onChange(of: expenses)` compares the array by model identity, not by the fields
+        // within it. Without this a saved amount left the row showing what it read before the
+        // edit, and deleting future charges, which only ends a record, left the months ahead.
+        .onChange(of: editor) { _, new in
+            if new == nil {
+                editorCardRest = nil
+                refreshWindow()
+            }
+        }
         .onAppear {
             // Where the timeline rests while another level shows: the size an arrival grows from.
             if level != .day { timelineScale = Tokens.Scale.zoomIn }
@@ -244,7 +270,7 @@ struct TimelineView: View {
                         step: { calendarMonthID = shown.advanced(by: $0).id }
                     )
                 }
-                HeaderControls(mode: $mode) { isEditorPresented = true }
+                HeaderControls(mode: $mode) { editor = .add }
             }
             .frame(height: Tokens.Size.headerRow)
             .padding(.trailing, Tokens.Space.gutter)
@@ -266,19 +292,8 @@ struct TimelineView: View {
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         // Above the glass controls, which fade while it shows: the readout takes the header row.
         .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
-        .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
         .sheet(isPresented: $isBillsPresented) { AllBillsSheet(today: today) }
-        // `onDismiss` refreshes explicitly: a save writes an `OverrideRecord` or edits fields
-        // on the same `Expense` instances this view already holds, so the in-memory objects
-        // are correct the moment the sheet closes, but `@Query`'s own change notification
-        // doesn't reliably fire for a relationship-only edit, and `.onChange(of: expenses)`
-        // compares the array by model identity, not by the fields within it — so without
-        // this, a saved amount left the row showing what it read before the edit, and
-        // deleting future charges, which only ends a record, left the months ahead standing.
-        .sheet(item: $editing, onDismiss: refreshWindow) { session in
-            ExpenseEditor(today: today, session: session)
-        }
     }
 
     @ViewBuilder
@@ -569,13 +584,20 @@ struct TimelineView: View {
     /// "Opening a charge edits it" in `docs/DESIGN.md`.
     private func openEntry(_ entry: TimelineEntry) {
         do {
-            editing = try EditSession.make(
+            guard let session = try EditSession.make(
                 expenseID: entry.expenseID, scheduledDate: entry.scheduledDate,
                 context: modelContext, calendar: calendar
-            )
+            ) else { return }
+            editor = .edit(session)
         } catch {
             Self.logger.error("Opening a charge failed: \(error)")
         }
+    }
+
+    /// The editor closed. Nothing flies yet, so a save closes as a cancel does: the sheet's soft
+    /// exit. Steps 6 and 7 of the card-motion plan land a save in its row.
+    private func closeEditor(_ close: EditorClose) {
+        editor = nil
     }
 
     /// The month button bottom left and All bills and settings bottom right, always visible, placed as

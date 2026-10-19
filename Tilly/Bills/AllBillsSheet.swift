@@ -85,8 +85,12 @@ struct AllBillsSheet: View {
         }
         .drawnGround()
         .presentationDetents([.large])
+        // A system sheet still, over this one: the timeline's own editor sheet is drawn beneath
+        // every system sheet, so it can't rise over All bills.
         .sheet(item: $editing, onDismiss: { refresh &+= 1 }) { session in
-            ExpenseEditor(today: today, session: session)
+            ExpenseEditor(today: today, session: session, onClose: { _ in editing = nil })
+                .drawnGround()
+                .presentationDragIndicator(.visible)
         }
     }
 
