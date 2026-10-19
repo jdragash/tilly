@@ -57,6 +57,8 @@ enum Tokens {
         /// The editor's card, at the prototype's sizes L, L, L, S. The amount scales
         /// `Size.cardAmount` with `@ScaledMetric`, as the editor's amount does.
         static func cardAmount(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
+        /// The amount's letter spacing as a fraction of its size: the prototype's -0.026em.
+        static let cardAmountTracking: CGFloat = -0.026
         static let cardName: Font = .title2.weight(.semibold)
         static let cardWhen: Font = .footnote.weight(.semibold)
         /// The pencil badge on a chosen category's tile: a fixed 10pt glyph in a fixed 16pt
@@ -423,6 +425,8 @@ enum Tokens {
         /// A category chip in All bills.
         static let chipHeight: CGFloat = 34
         /// The editor's card: a bank card's proportions (ISO/IEC 7810 ID-1), from the prototype.
+        /// The name field's height: room for it focused, which is taller than it is at rest.
+        static let cardNameField: CGFloat = 28
         static let cardAspect: CGFloat = 1.586
         /// The card's amount, before Dynamic Type scales it; from the prototype's L.
         static let cardAmount: CGFloat = 60

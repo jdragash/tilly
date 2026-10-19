@@ -503,6 +503,14 @@ reported as such and skipped.
   `arrives` is set, waits `sheetExit × dayArrivalAfter`, then drops; the day's total is held at its old
   figure until the tap at 40% of the drop. Saved into another month than the one shown, nothing arrives.
 
+- **Card-polish's device fixes (step 9):** the name's box is now drawn round the text, outside it (the field
+  is 28pt tall always: a focused one is 1.67pt taller than at rest), so the text and everything near it
+  hold still; measured: x 40.0 and height 28.0 unfocused, typing, focused. The amount's −0.026em tracking
+  fits `$85.55` at full size. Date and repeat are each 44pt tall with the line at the top, so the repeat
+  line sits 28pt lower than before. **Backspace erasing the whole name did not reproduce in the Simulator**
+  (one tap removed one character; the keyboard's typing path doesn't trigger autocorrect). Not fixed or
+  worked around: it needs the phone, to see whether autocorrect's revert is the cause.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

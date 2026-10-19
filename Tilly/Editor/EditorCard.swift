@@ -27,6 +27,7 @@ struct EditorCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.cardAmount
     @ScaledMetric(relativeTo: .title) private var tileSize = Tokens.Size.cardCategoryTile
+    @ScaledMetric(relativeTo: .title2) private var nameHeight = Tokens.Size.cardNameField
 
     /// Where the tile sits on the card, so the flood can start from it.
     @State private var tileCentre: CGPoint = .zero
@@ -167,6 +168,7 @@ struct EditorCard: View {
                     .font(Tokens.Text.cardAmount(size: amountSize))
                     .foregroundStyle(progress.isMissing(.amount) ? Tokens.Ink.onCardSoft : Tokens.Ink.onCard)
                     .monospacedDigit()
+                    .tracking(amountSize * Tokens.Text.cardAmountTracking)
                     .lineLimit(1)
                     .minimumScaleFactor(Tokens.Scale.editorAmountMin)
                     .textRenderer(AmountCaret(isShown: focused == .amount && tick.isMultiple(of: 2)))
@@ -195,16 +197,23 @@ struct EditorCard: View {
             .focused(nameFocus)
             .onSubmit(onNameSubmit)
             .fixedSize(horizontal: isEmpty, vertical: false)
-            .padding(.horizontal, isEmpty ? Tokens.Space.cardFieldHorizontal : 0)
-            .padding(.vertical, isEmpty ? Tokens.Space.cardFieldVertical : 0)
+            // A focused field is taller than an unfocused one, so it always has this much room.
+            .frame(minHeight: nameHeight, alignment: .top)
+            // The box is drawn round the text, outside it, so neither the text nor anything near it
+            // moves when the field is tapped, typed in or emptied.
             .overlay {
                 if isEmpty {
-                    if isFocused {
-                        field.strokeBorder(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardDash.lineWidth)
-                    } else {
-                        field.strokeBorder(Tokens.Ink.onCardDash, style: Tokens.Stroke.cardDash)
-                            .breathing(progress.breathing(focused: focused) == .name)
+                    Group {
+                        if isFocused {
+                            field.strokeBorder(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardDash.lineWidth)
+                        } else {
+                            field.strokeBorder(Tokens.Ink.onCardDash, style: Tokens.Stroke.cardDash)
+                                .breathing(progress.breathing(focused: focused) == .name)
+                        }
                     }
+                    .padding(.horizontal, -Tokens.Space.cardFieldHorizontal)
+                    .padding(.vertical, -Tokens.Space.cardFieldVertical)
+                    .allowsHitTesting(false)
                 }
             }
             .onChange(of: isFocused) { _, nowFocused in
@@ -255,13 +264,16 @@ struct EditorCard: View {
             .font(Tokens.Text.cardWhen)
             .foregroundStyle(Tokens.Ink.onCard)
             .lineLimit(1)
-            .contentShape(Rectangle())
             .overlay {
                 if isOpen {
                     ring.stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
                         .padding(-Tokens.Stroke.cardFocus)
                 }
             }
+            // The line keeps its place at the top of a hit area 44pt tall, so the type is unchanged
+            // and the two lines no longer share one.
+            .frame(minHeight: Tokens.Size.minimumTapTarget, alignment: .top)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
