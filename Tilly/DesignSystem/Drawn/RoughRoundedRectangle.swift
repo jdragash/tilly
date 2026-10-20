@@ -14,22 +14,40 @@ nonisolated struct RoughRoundedRectangle: Shape {
         let outline = Self.outline(of: rect.insetBy(dx: inset, dy: inset), radii: cornerRadii, step: Tokens.Drawn.edgeStep)
         guard outline.count > 1 else { return Path() }
 
-        let slow = (x: SmoothNoise(seed: seed &* 31 &+ 7, frequency: Tokens.Drawn.edgeFrequency),
-                    y: SmoothNoise(seed: seed &* 17 &+ 5, frequency: Tokens.Drawn.edgeFrequency))
+        // `edgeFrequency` is cycles per pt, as the prototype's filter has it; the noise wants radians.
+        let slowRate = Double(Tokens.Drawn.edgeFrequency) * 2 * .pi
+        let slow = (x: SmoothNoise(seed: seed &* 31 &+ 7, frequency: slowRate),
+                    y: SmoothNoise(seed: seed &* 17 &+ 5, frequency: slowRate))
         let fine = (x: SmoothNoise(seed: seed &* 13 &+ 3, frequency: Tokens.Drawn.roughEdgeFrequency),
                     y: SmoothNoise(seed: seed &* 29 &+ 11, frequency: Tokens.Drawn.roughEdgeFrequency))
         // Each axis moves by amount/√2, so a point never leaves a circle of that radius.
         let slowAxis = Double(wobble) / 2.0.squareRoot()
         let fineAxis = Double(Tokens.Drawn.roughAmplitude) / 2.0.squareRoot()
 
-        var length = 0.0
-        var previous = outline[0]
-        let points = outline.map { point -> CGPoint in
-            length += Double(hypot(point.x - previous.x, point.y - previous.y))
-            previous = point
+        // Distance along the edge to each point, and all the way round, so the noise can be made
+        // to close on itself: without that the outline has a notch where it ends.
+        var distances: [Double] = [0]
+        for index in 1..<outline.count {
+            distances.append(distances[index - 1] + Double(hypot(outline[index].x - outline[index - 1].x, outline[index].y - outline[index - 1].y)))
+        }
+        let total = max(
+            distances.last! + Double(hypot(outline[0].x - outline[outline.count - 1].x, outline[0].y - outline[outline.count - 1].y)), 0.001
+        )
+        /// The noise at `t` along a loop of `total`: over its last stretch it is blended into the
+        /// noise one loop back, so at `total` it is exactly the noise at 0.
+        func closed(_ noise: SmoothNoise, _ t: Double) -> Double {
+            let start = 0.85 * total
+            guard t > start else { return noise(t) }
+            let w = (t - start) / (total - start)
+            let eased = w * w * (3 - 2 * w)
+            return noise(t) * (1 - eased) + noise(t - total) * eased
+        }
+
+        let points = outline.enumerated().map { index, point -> CGPoint in
+            let t = distances[index]
             return CGPoint(
-                x: point.x + CGFloat(slowAxis * slow.x(length) + fineAxis * fine.x(length)),
-                y: point.y + CGFloat(slowAxis * slow.y(length) + fineAxis * fine.y(length))
+                x: point.x + CGFloat(slowAxis * closed(slow.x, t) + fineAxis * closed(fine.x, t)),
+                y: point.y + CGFloat(slowAxis * closed(slow.y, t) + fineAxis * closed(fine.y, t))
             )
         }
 

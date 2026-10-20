@@ -613,8 +613,10 @@ extension Tokens {
         static let grainAlpha: UInt8 = 9
         static let grainSeed: UInt64 = 77
 
-        /// An edge's displacement (pt), how fast it varies (per pt), and the pt between sampled points.
-        static let edgeWobble: CGFloat = 5
+        /// An edge's displacement (pt: the most it moves, a typical point moving about half that), how
+        /// fast it varies (cycles per pt), and the pt between sampled points. The prototype's filter
+        /// moves an edge by scale 5 × (noise − 0.5): at most 2.5, usually under 1.
+        static let edgeWobble: CGFloat = 0.6
         static let edgeFrequency: CGFloat = 0.012
         static let edgeStep: CGFloat = 3
         /// The second, finer wobble (pt), and its frequency (per pt).
@@ -648,7 +650,7 @@ extension Tokens {
 
         /// A symbol roughened as it draws: the noise's frequency (per pt) and how far it moves a pixel.
         static let roughFrequency: Float = 0.32
-        static let roughAmount: Float = 1.3
+        static let roughAmount: Float = 1.8
         /// The three drawings swapped to boil a picture.
         static let boilSeeds: [Float] = [1, 2, 3]
 

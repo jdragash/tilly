@@ -30,10 +30,12 @@ static float valueNoise(float2 p, float seed) {
     return color * half(factor);
 }
 
-/// Moves each pixel a little by noise, so a symbol's clean line wobbles as if drawn by hand.
+/// Moves each pixel a little by noise, so a symbol's clean line wobbles as if drawn by hand. Like the
+/// prototype's displacement filter it moves a pixel by `amount × (noise − 0.5)`: at most half of
+/// `amount`, and usually a fraction of that.
 [[ stitchable ]] float2 roughen(float2 position, float frequency, float amount, float seed) {
     float2 p = position * frequency;
-    float dx = valueNoise(p, seed) + 0.5 * valueNoise(p * 2.0, seed + 5.0) - 0.75;
-    float dy = valueNoise(p + 31.7, seed + 9.0) + 0.5 * valueNoise(p * 2.0 + 31.7, seed + 14.0) - 0.75;
-    return position + float2(dx, dy) * amount * 1.33;
+    float nx = (valueNoise(p, seed) + 0.5 * valueNoise(p * 2.0, seed + 5.0)) / 1.5;
+    float ny = (valueNoise(p + 31.7, seed + 9.0) + 0.5 * valueNoise(p * 2.0 + 31.7, seed + 14.0)) / 1.5;
+    return position + float2(nx - 0.5, ny - 0.5) * amount;
 }

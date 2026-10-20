@@ -8,22 +8,18 @@ struct CategoryPictureView: View {
     let colour: CategoryColour?
     let size: CGFloat
     var onCard: Bool = false
-    /// Three drawings swapped every `Tokens.Motion.boilStep`; ignored under Reduce Motion.
-    var boils: Bool = false
+    /// Three drawings swapped every `Tokens.Motion.boilStep`, off the shared `BoilClock`; held on the
+    /// first under Reduce Motion, or when a picture is told not to.
+    var boils: Bool = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         switch picture {
         case .symbol(let name):
-            if boils && !reduceMotion {
-                SwiftUI.TimelineView(.animation(minimumInterval: Tokens.Motion.boilStep)) { context in
-                    let step = Int(context.date.timeIntervalSinceReferenceDate / Tokens.Motion.boilStep)
-                    symbol(name, seed: Tokens.Drawn.boilSeeds[step % Tokens.Drawn.boilSeeds.count])
-                }
-            } else {
-                symbol(name, seed: Tokens.Drawn.boilSeeds[0])
-            }
+            let seeds = Tokens.Drawn.boilSeeds
+            let step = boils && !reduceMotion ? BoilClock.shared.step : 0
+            symbol(name, seed: seeds[step % seeds.count])
         case .emoji(let emoji):
             Text(emoji)
                 .font(.system(size: size * Tokens.Drawn.emojiScale))

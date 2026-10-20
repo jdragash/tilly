@@ -296,7 +296,7 @@ struct EditorCard: View {
                 } else if let category {
                     CategoryPictureView(
                         picture: CategoryPicture(category), colour: category.colour, size: tileSize,
-                        onCard: true, boils: true
+                        onCard: true
                     )
                     .scaleEffect(stamp)
                     .id(category.id)
