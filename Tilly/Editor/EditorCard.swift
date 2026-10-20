@@ -49,7 +49,9 @@ struct EditorCard: View {
 
     /// Amount top left, date and repeat top right, name bottom left, the emoji bottom right.
     private var standard: some View {
+        // The shadow is the fill's alone: on the whole card the amount and name cast one too.
         fill
+            .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
             .aspectRatio(Tokens.Size.cardAspect, contentMode: .fit)
             .frame(maxWidth: .infinity)
             .overlay {
@@ -62,6 +64,8 @@ struct EditorCard: View {
                     HStack(alignment: .top, spacing: Tokens.Space.gap) {
                         amount
                         Spacer(minLength: 0)
+                        // Date and repeat stacked tight at the card's top right, as the prototype has
+                        // them; each lends its hit area the room above or below it.
                         VStack(alignment: .trailing, spacing: Tokens.Space.cardWhenGap) {
                             date
                             repeatLine
@@ -78,7 +82,6 @@ struct EditorCard: View {
                 .padding(.horizontal, Tokens.Space.cardHorizontal)
                 .padding(.vertical, Tokens.Space.cardVertical)
             }
-            .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
     }
 
     /// At accessibility sizes the parts stack, full width, in `CardPart.allCases` order, and the
@@ -101,10 +104,10 @@ struct EditorCard: View {
         .background {
             ZStack {
                 fill
+                    .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
                 backgroundButton
             }
         }
-        .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
     }
 
     /// The card's colour. Played from the hand, the new colour grows from the tile over the old one
@@ -226,7 +229,7 @@ struct EditorCard: View {
     private var date: some View {
         let label = draft.dateLabel(calendar: calendar, locale: locale)
         let isFuture = draft.isFuture(today: today, calendar: calendar)
-        return whenButton(.date, label: "Date", value: label, hint: "Opens the calendar") {
+        return whenButton(.date, pinned: .top, label: "Date", value: label, hint: "Opens the calendar") {
             if isFuture {
                 Image(systemName: "calendar.badge.clock")
                     .foregroundStyle(Tokens.Ink.onCardSoft)
@@ -237,7 +240,7 @@ struct EditorCard: View {
 
     private var repeatLine: some View {
         let label = draft.repeatLabel(calendar: calendar, locale: locale)
-        return whenButton(.repeat, label: "Repeat", value: label, hint: "Opens the repeat wheel") {
+        return whenButton(.repeat, pinned: .bottom, label: "Repeat", value: label, hint: "Opens the repeat wheel") {
             if draft.paymentCount != nil {
                 Image(systemName: "arrow.right.to.line")
                     .foregroundStyle(Tokens.Ink.onCardSoft)
@@ -246,9 +249,17 @@ struct EditorCard: View {
         }
     }
 
+    private struct Reach { let up: CGFloat; let down: CGFloat }
+
+    /// How far a date's or repeat's hit area reaches beyond its line.
+    private func reach(_ side: KeyPath<Reach, CGFloat>) -> CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? 0 : Reach(up: Tokens.Space.cardWhenReach, down: Tokens.Space.cardWhenReachLess)[keyPath: side]
+    }
+
     /// The date's line or the repeat's: always filled in, so always followed by the pencil.
     private func whenButton<Content: View>(
         _ part: CardPart,
+        pinned: Alignment,
         label: String,
         value: String,
         hint: String,
@@ -270,10 +281,15 @@ struct EditorCard: View {
                         .padding(-Tokens.Stroke.cardFocus)
                 }
             }
-            // The line keeps its place at the top of a hit area 44pt tall, so the type is unchanged
-            // and the two lines no longer share one.
-            .frame(minHeight: Tokens.Size.minimumTapTarget, alignment: .top)
+            // The line stays where it is; its hit area reaches past it, up for the date and down for the
+            // repeat, to where the other begins. At accessibility sizes the lines stack and each is
+            // 44pt tall outright.
+            .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? Tokens.Size.minimumTapTarget : nil, alignment: pinned)
+            .padding(.top, reach(pinned == .top ? \.up : \.down))
+            .padding(.bottom, reach(pinned == .top ? \.down : \.up))
             .contentShape(Rectangle())
+            .padding(.top, -reach(pinned == .top ? \.up : \.down))
+            .padding(.bottom, -reach(pinned == .top ? \.down : \.up))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)

@@ -122,53 +122,53 @@ struct CategoryHand: View {
         }
     }
 
-    /// What a card looks like: a wash in the category's colour with its picture and name, or, for
-    /// `New`, what's still to come.
+    /// What a card looks like, as the prototype draws it: a paper card with its colour as a bar along
+    /// the bottom, the category's picture in its colour and its name beneath; `New` is an outline and a
+    /// plus.
     @ViewBuilder
     private func face(_ item: Item) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Tokens.Radius.handCard, style: .continuous)
         switch item {
         case .category(let category):
-            ZStack {
-                Wash(
-                    colour: category.colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured,
-                    cornerRadii: Self.radii,
-                    seed: stableSeed(category.id.uuidString)
-                )
-                VStack(spacing: Tokens.Space.handCardGap) {
-                    CategoryPictureView(
-                        picture: CategoryPicture(category), colour: category.colour,
-                        size: Tokens.Size.handPicture, onCard: true
-                    )
-                    Text(category.name)
-                        .font(Tokens.Text.caption)
-                        .foregroundStyle(Tokens.Ink.onCard)
-                        .lineLimit(1)
-                        .minimumScaleFactor(Tokens.Scale.headerMin)
-                        .padding(.horizontal, Tokens.Space.tight)
+            let colour = category.colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured
+            shape.fill(Tokens.Drawn.paperCard)
+                .overlay {
+                    VStack(spacing: Tokens.Space.handCardGap) {
+                        CategoryPictureView(
+                            picture: CategoryPicture(category), colour: category.colour,
+                            size: Tokens.Size.handPicture
+                        )
+                        Text(category.name)
+                            .font(Tokens.Text.handName)
+                            .foregroundStyle(Tokens.Drawn.ink2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(Tokens.Scale.headerMin)
+                            .padding(.horizontal, Tokens.Space.tight)
+                    }
+                    .padding(.bottom, Tokens.Size.handBar)
                 }
-            }
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(colour).frame(height: Tokens.Size.handBar)
+                }
+                .clipShape(shape)
+                .overlay { shape.strokeBorder(Tokens.Shadow.handHairline, lineWidth: Tokens.Size.hairline) }
+                .shadow(color: Tokens.Shadow.handColour, radius: Tokens.Shadow.handRadius, y: Tokens.Shadow.handY)
         case .new:
-            ZStack {
-                DottedOutline(colour: Tokens.Ink.tertiary, cornerRadii: Self.radii, seed: stableSeed("new"))
-                VStack(spacing: Tokens.Space.handCardGap) {
-                    Image(systemName: "plus")
-                    Text("New")
-                        .font(Tokens.Text.caption)
+            shape.strokeBorder(Tokens.Ink.tertiary, lineWidth: Tokens.Stroke.handNew)
+                .overlay {
+                    VStack(spacing: Tokens.Space.handCardGap) {
+                        Image(systemName: "plus").font(Tokens.Text.handPlus)
+                        Text("New").font(Tokens.Text.handName)
+                    }
+                    .foregroundStyle(Tokens.Ink.secondary)
                 }
-                .foregroundStyle(Tokens.Ink.secondary)
-            }
-            .phaseAnimator(newBreathes ? [1, Tokens.Motion.breatheOpacity] : [1]) { view, opacity in
-                view.opacity(opacity)
-            } animation: { _ in
-                .easeInOut(duration: Tokens.Motion.breathe / 2)
-            }
+                .phaseAnimator(newBreathes ? [1, Tokens.Motion.breatheOpacity] : [1]) { view, opacity in
+                    view.opacity(opacity)
+                } animation: { _ in
+                    .easeInOut(duration: Tokens.Motion.breathe / 2)
+                }
         }
     }
-
-    private static let radii = RectangleCornerRadii(
-        topLeading: Tokens.Radius.handCard, bottomLeading: Tokens.Radius.handCard,
-        bottomTrailing: Tokens.Radius.handCard, topTrailing: Tokens.Radius.handCard
-    )
 
     // MARK: Playing
 

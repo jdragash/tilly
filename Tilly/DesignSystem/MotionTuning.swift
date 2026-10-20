@@ -48,6 +48,9 @@ final class MotionTuning {
         MotionValue(id: "dayDrop", label: "Day drop", defaultValue: 48, range: 0...120, step: 1),
         MotionValue(id: "dayDropDuration", label: "Day drop duration", defaultValue: 0.45, range: 0.2...1, step: 0.01),
         MotionValue(id: "dayDropBounce", label: "Day drop bounce", defaultValue: 0.3, range: 0...0.6, step: 0.01),
+        // The drawn look, also tunable here: how far an edge wanders and how far a symbol is moved.
+        MotionValue(id: "edgeWobble", label: "Edge wobble", defaultValue: 0.6, range: 0...4, step: 0.1),
+        MotionValue(id: "roughAmount", label: "Symbol roughness", defaultValue: 1.8, range: 0...4, step: 0.1),
     ]
 
     private let defaults: UserDefaults
@@ -86,6 +89,16 @@ final class MotionTuning {
             }
             #endif
         }
+    }
+
+    /// Every value as it stands now, tuned or default, for saving a setup.
+    func snapshot() -> [String: Double] {
+        Dictionary(uniqueKeysWithValues: Self.values.map { ($0.id, self[$0.id]) })
+    }
+
+    /// Takes every value in `setup`, and leaves the rest as they are.
+    func apply(_ setup: [String: Double]) {
+        for (id, value) in setup { self[id] = value }
     }
 
     /// Every value back to its default, and what was saved removed.

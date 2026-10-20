@@ -42,6 +42,10 @@ struct OccurrenceRow: View {
     /// as the editor's card does; at 1 it is the row. The content keeps the row's layout. A flying
     /// card's back is drawn this way.
     var morph: CGFloat = 1
+    /// Whether the card runs on beneath the next one. A card in flight leaves it out unless it is the
+    /// month's last, so where it lands it ends exactly where the row's own card shows, and nothing
+    /// pops when the row takes its place.
+    var tucksUnder = true
     /// The card drawn this tall, past the content, as a flying card's back is; nil for a row.
     var cardHeight: CGFloat? = nil
     /// Reports the row's frame at its whole height, in `CardFlightLayer.space`, while held, however
@@ -151,7 +155,7 @@ struct OccurrenceRow: View {
                 .opacity(isMarked ? 1 : 0)
         }
         .padding(.horizontal, Tokens.Space.stackInset * morphed)
-        .padding(.bottom, -Tokens.Space.stackTuck * morphed)
+        .padding(.bottom, tucksUnder ? -Tokens.Space.stackTuck * morphed : 0)
         .accessibilityHidden(true)
     }
 

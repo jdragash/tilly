@@ -80,8 +80,6 @@ struct TimelineView: View {
     @State private var openedEntry: TimelineEntry?
     /// That row's height as it opened: what the list gives up if a save moves the charge away.
     @State private var openedRowHeight: CGFloat = 0
-    /// Counts openings, for the opening's haptic.
-    @State private var openings = 0
     /// How far a drag had pulled the sheet down as it closed: a card landing back starts there.
     @State private var closingDrag: CGFloat = 0
     /// Which view shows. The app opens on the one it was left on, as Calendar does.
@@ -229,7 +227,6 @@ struct TimelineView: View {
         }
         .coordinateSpace(name: CardFlightLayer.space)
         .sensoryFeedback(.impact(weight: .light), trigger: landings)
-        .sensoryFeedback(.impact(weight: .light), trigger: openings)
         // Every close refreshes, a drag down included: a save writes an `OverrideRecord` or edits
         // fields on the same `Expense` instances this view already holds, and `@Query`'s own
         // change notification doesn't reliably fire for a relationship-only edit, while
@@ -753,7 +750,6 @@ struct TimelineView: View {
             )
             hidesEditorCard = true
         }
-        openings += 1
         editor = .edit(session)
         if let lastCardRest {
             // `cardRested` corrects the aim if the sheet's card reports elsewhere.

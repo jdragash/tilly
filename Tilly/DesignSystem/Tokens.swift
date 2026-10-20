@@ -3,6 +3,9 @@ import UIKit
 
 enum Tokens {
     enum Text {
+        /// A hand card's name, and the plus on `New`; from the prototype.
+        static let handName: Font = .caption2.weight(.semibold)
+        static let handPlus: Font = .title.weight(.light)
         /// The face the whole app is set in: SF Pro Rounded, through `.fontDesign` at the root.
         static let design: Font.Design = .rounded
         static let monthName: Font = .title3.weight(.semibold)
@@ -67,6 +70,8 @@ enum Tokens {
     }
 
     enum Stroke {
+        /// The outline of `New` in the hand.
+        static let handNew: CGFloat = 2
         /// The empty emoji slot's dashed outline.
         static let emojiSlot = StrokeStyle(lineWidth: 1.5, dash: [4, 3])
         /// The ring round the chosen colour swatch.
@@ -300,6 +305,10 @@ enum Tokens {
         static let sheetOffMargin: CGFloat = 60
         /// Between the date's line and the repeat's.
         static let cardWhenGap: CGFloat = 2
+        /// How far a date's hit area reaches above its line and a repeat's below its own, and how far
+        /// each reaches toward the other. Together the two lines are about 31pt tall each.
+        static let cardWhenReach: CGFloat = 14
+        static let cardWhenReachLess: CGFloat = 1
         /// Before the pencil that follows a filled-in part.
         static let cardMarkGap: CGFloat = 4
         /// Inside the name's dashed field.
@@ -319,6 +328,8 @@ enum Tokens {
         /// The hand's cards (portrait), and the picture on one.
         static let handCard = CGSize(width: 84, height: 120)
         static let handPicture: CGFloat = 44
+        /// The colour bar along a hand card's bottom; from the prototype.
+        static let handBar: CGFloat = 4
         static let row: CGFloat = 52
         /// A row in the timeline's Wallet stack: the part of its card left showing above the next.
         /// From the prototype; the timeline's only, every other list keeps `row`.
@@ -505,6 +516,11 @@ enum Tokens {
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is
     /// half the CSS blur.
     enum Shadow {
+        /// A hand card's: the prototype's 0 6 14 at 16% black, with a hairline round it.
+        static let handColour: Color = .black.opacity(0.16)
+        static let handRadius: CGFloat = 7
+        static let handY: CGFloat = 6
+        static let handHairline: Color = .black.opacity(0.14)
         static let cardColour: Color = .black.opacity(0.16)
         static let cardRadius: CGFloat = 14
         static let cardY: CGFloat = 12
@@ -616,7 +632,7 @@ extension Tokens {
         /// An edge's displacement (pt: the most it moves, a typical point moving about half that), how
         /// fast it varies (cycles per pt), and the pt between sampled points. The prototype's filter
         /// moves an edge by scale 5 × (noise − 0.5): at most 2.5, usually under 1.
-        static let edgeWobble: CGFloat = 0.6
+        static var edgeWobble: CGFloat { tuned("edgeWobble", 0.6) }
         static let edgeFrequency: CGFloat = 0.012
         static let edgeStep: CGFloat = 3
         /// The second, finer wobble (pt), and its frequency (per pt).
@@ -650,9 +666,19 @@ extension Tokens {
 
         /// A symbol roughened as it draws: the noise's frequency (per pt) and how far it moves a pixel.
         static let roughFrequency: Float = 0.32
-        static let roughAmount: Float = 1.8
+        static var roughAmount: Float { Float(tuned("roughAmount", 1.8)) }
         /// The three drawings swapped to boil a picture.
         static let boilSeeds: [Float] = [1, 2, 3]
+
+        /// A look value as set in the debug tuning panel; its default otherwise, and always in a release
+        /// build. Read straight from the defaults, since a shape draws off the main actor.
+        private static func tuned(_ id: String, _ fallback: Double) -> CGFloat {
+            #if DEBUG
+            return CGFloat(UserDefaults.standard.object(forKey: "motion.\(id)") as? Double ?? fallback)
+            #else
+            return CGFloat(fallback)
+            #endif
+        }
 
         private static func dynamic(light: UInt32, dark: UInt32) -> Color {
             func rgb(_ hex: UInt32) -> UIColor {

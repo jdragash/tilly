@@ -26,7 +26,9 @@ static float valueNoise(float2 p, float seed) {
 /// within `strength` of 1, never above it.
 [[ stitchable ]] half4 bloom(float2 position, half4 color, float frequency, float strength, float seed) {
     float n = 0.65 * valueNoise(position * frequency, seed) + 0.35 * valueNoise(position * frequency * 2.1, seed + 3.0);
-    float factor = clamp(1.0 - strength / 2.0 + strength * n, 0.0, 1.0);
+    // A touch of noise on top, so the slow gradient doesn't band into contour lines.
+    float dither = (hash21(position * 1.7) - 0.5) * 0.02;
+    float factor = clamp(1.0 - strength / 2.0 + strength * n + dither, 0.0, 1.0);
     return color * half(factor);
 }
 
