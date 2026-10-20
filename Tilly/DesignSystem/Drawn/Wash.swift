@@ -2,25 +2,28 @@ import SwiftUI
 
 /// A colour laid down as a wash: paper first, so it hides what's beneath, then the colour at
 /// `cardFill` with its edge at `cardEdge`, its alpha varied by `bloom`.
+///
+/// Drawn once into an image, cached by what it looks like, and then shown as a plain picture. Drawn
+/// live, as a shape with a shader and a blurred shadow, every card cost the GPU on every frame of
+/// every scroll, keystroke and boil, which a phone doesn't keep up with.
 struct Wash: View {
     let colour: Color
     let cornerRadii: RectangleCornerRadii
     let seed: UInt64
 
+    @Environment(\.self) private var environment
+    @Environment(\.displayScale) private var displayScale
+
     var body: some View {
-        // The path is inset by half the edge, so the line ends on the view's bounds.
-        let shape = RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, inset: Tokens.Drawn.edgeWidth / 2)
-        ZStack {
-            shape
-                .fill(Tokens.Drawn.paper)
-                .overlay { shape.stroke(Tokens.Drawn.paper, style: Self.edge) }
-            shape
-                .fill(colour.opacity(Tokens.Drawn.cardFill))
-                .overlay { shape.stroke(colour.opacity(Tokens.Drawn.cardEdge), style: Self.edge) }
-                .colorEffect(ShaderLibrary.bloom(
-                    .float(Tokens.Drawn.bloomFrequency), .float(Tokens.Drawn.bloom),
-                    .float(Tokens.Drawn.bloomSeed + Float(seed % 80))
-                ))
+        GeometryReader { geometry in
+            Image(uiImage: WashImage.image(
+                colour: colour.resolve(in: environment), paper: Tokens.Drawn.paper.resolve(in: environment),
+                size: geometry.size, cornerRadii: cornerRadii, seed: seed, scale: displayScale
+            ))
+            .resizable()
+            .frame(width: geometry.size.width + 2 * WashImage.margin, height: geometry.size.height + 2 * WashImage.margin)
+            .offset(x: -WashImage.margin, y: -WashImage.margin)
+            .allowsHitTesting(false)
         }
         .accessibilityHidden(true)
     }

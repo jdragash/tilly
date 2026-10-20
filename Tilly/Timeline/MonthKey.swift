@@ -53,12 +53,9 @@ struct MonthKey: Hashable, Comparable, Identifiable, Sendable {
         let currentYear = calendar.component(.year, from: today)
         let first = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
 
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.dateFormat = year == currentYear ? "LLLL" : "LLLL \(yearFormat)"
-        return formatter.string(from: first)
+        return FormatterCache.date(
+            format: year == currentYear ? "LLLL" : "LLLL \(yearFormat)", calendar: calendar, locale: locale
+        ).string(from: first)
     }
 
     static func < (lhs: MonthKey, rhs: MonthKey) -> Bool {

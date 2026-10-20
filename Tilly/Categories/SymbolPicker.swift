@@ -86,7 +86,7 @@ struct SymbolPicker: View {
             searchFocused = false
             onPick(entry.name)
         } label: {
-            CategoryPictureView(picture: .symbol(entry.name), colour: colour, size: Tokens.Size.symbolCell)
+            CategoryPictureView(picture: .symbol(entry.name), colour: colour, size: Tokens.Size.symbolCell, place: .editor)
                 .padding(Tokens.Stroke.pocketRing)
                 .overlay {
                     if isPicked {

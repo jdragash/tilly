@@ -9,22 +9,13 @@ enum TimelineFormatting {
     static func amount(_ value: Decimal?, locale: Locale = .current) -> String {
         guard let value else { return "\u{2014}" }
 
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = locale
-        formatter.maximumFractionDigits = 0
-        formatter.minimumFractionDigits = 0
-        return formatter.string(from: abs(value) as NSDecimalNumber) ?? "\(abs(value))"
+        return FormatterCache.wholeCurrency(locale: locale)
+            .string(from: abs(value) as NSDecimalNumber) ?? "\(abs(value))"
     }
 
     /// "Mon 28"
     static func dayLine(_ date: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.dateFormat = "EEE d"
-        return formatter.string(from: date)
+        FormatterCache.date(format: "EEE d", calendar: calendar, locale: locale).string(from: date)
     }
 
     /// "Fri 18 · ends 05/27" when the entry has an end; "Fri 18 · ended 08/26" once that
@@ -33,11 +24,7 @@ enum TimelineFormatting {
         let day = dayLine(entry.date, calendar: calendar, locale: locale)
         guard let endDate = entry.endDate else { return day }
 
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.dateFormat = "MM/yy"
+        let formatter = FormatterCache.date(format: "MM/yy", calendar: calendar, locale: locale)
         let word = entry.endHasPassed ? "ended" : "ends"
         return "\(day) \u{00B7} \(word) \(formatter.string(from: endDate))"
     }
@@ -46,12 +33,8 @@ enum TimelineFormatting {
     /// the end when there is one, and state read as a sentence, so VoiceOver announces one thing rather than four.
     /// The currency is spoken in full, from the same locale the screen formats against.
     static func accessibilityLabel(for entry: TimelineEntry, calendar: Calendar, locale: Locale) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.calendar = calendar
-        dateFormatter.timeZone = calendar.timeZone
-        dateFormatter.locale = locale
-        dateFormatter.dateFormat = "EEEE d MMMM"
-        let dateString = dateFormatter.string(from: entry.date)
+        let dateString = FormatterCache.date(format: "EEEE d MMMM", calendar: calendar, locale: locale)
+            .string(from: entry.date)
 
         let amountString: String
         if let amount = entry.amount {
@@ -62,9 +45,9 @@ enum TimelineFormatting {
 
         var parts = [entry.name, dateString, amountString]
         if let endDate = entry.endDate {
-            dateFormatter.dateFormat = "MMMM yyyy"
             let word = entry.endHasPassed ? "ended" : "ends"
-            parts.append("\(word) \(dateFormatter.string(from: endDate))")
+            let ended = FormatterCache.date(format: "MMMM yyyy", calendar: calendar, locale: locale).string(from: endDate)
+            parts.append("\(word) \(ended)")
         }
         parts.append(stateWord(for: entry.state))
         return parts.joined(separator: ", ")

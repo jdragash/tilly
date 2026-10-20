@@ -142,8 +142,8 @@ struct OccurrenceRow: View {
         ZStack {
             switch entry.state {
             case .charged:
+                // The wash carries its own faint shadow, drawn into its picture.
                 Wash(colour: colour, cornerRadii: cornerRadii, seed: seed)
-                    .shadow(color: Tokens.Shadow.stackColour, radius: Tokens.Shadow.stackRadius, y: Tokens.Shadow.stackY)
             case .upcoming:
                 DottedOutline(colour: colour, cornerRadii: cornerRadii, seed: seed)
             case .skipped:

@@ -51,6 +51,8 @@ final class MotionTuning {
         // The drawn look, also tunable here: how far an edge wanders and how far a symbol is moved.
         MotionValue(id: "edgeWobble", label: "Edge wobble", defaultValue: 0.6, range: 0...4, step: 0.1),
         MotionValue(id: "roughAmount", label: "Symbol roughness", defaultValue: 1.8, range: 0...4, step: 0.1),
+        // Where pictures boil: 0 nowhere, 1 in the editor and its pickers, 2 everywhere.
+        MotionValue(id: "boil", label: "Boil", defaultValue: 1, range: 0...2, step: 1),
     ]
 
     private let defaults: UserDefaults

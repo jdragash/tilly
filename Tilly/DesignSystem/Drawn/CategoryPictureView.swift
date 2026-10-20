@@ -11,14 +11,28 @@ struct CategoryPictureView: View {
     /// Three drawings swapped every `Tokens.Motion.boilStep`, off the shared `BoilClock`; held on the
     /// first under Reduce Motion, or when a picture is told not to.
     var boils: Bool = true
+    /// Where the picture is: the editor and its pickers boil when the setting is "Editor", every
+    /// place when it is "Everywhere".
+    var place: BoilPlace = .list
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Whether this picture is boiling now. Reading the clock only then means a picture that holds
+    /// still never redraws with it.
+    private var isBoiling: Bool {
+        guard boils, !reduceMotion else { return false }
+        switch BoilSetting.current {
+        case .off: return false
+        case .editor: return place == .editor
+        case .everywhere: return true
+        }
+    }
 
     var body: some View {
         switch picture {
         case .symbol(let name):
             let seeds = Tokens.Drawn.boilSeeds
-            let step = boils && !reduceMotion ? BoilClock.shared.step : 0
+            let step = isBoiling ? BoilClock.shared.step : 0
             symbol(name, seed: seeds[step % seeds.count])
         case .emoji(let emoji):
             Text(emoji)
@@ -74,3 +88,17 @@ struct CategoryPictureView: View {
     .drawnGround()
 }
 #endif
+
+
+enum BoilPlace: Sendable {
+    case list, editor
+}
+
+/// Where pictures boil, from the debug panel; in a release build, the default.
+enum BoilSetting: Int, Sendable {
+    case off, editor, everywhere
+
+    @MainActor static var current: BoilSetting {
+        BoilSetting(rawValue: Int(MotionTuning.shared["boil"])) ?? .editor
+    }
+}

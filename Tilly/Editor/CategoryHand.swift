@@ -136,7 +136,7 @@ struct CategoryHand: View {
                     VStack(spacing: Tokens.Space.handCardGap) {
                         CategoryPictureView(
                             picture: CategoryPicture(category), colour: category.colour,
-                            size: Tokens.Size.handPicture
+                            size: Tokens.Size.handPicture, place: .editor
                         )
                         Text(category.name)
                             .font(Tokens.Text.handName)

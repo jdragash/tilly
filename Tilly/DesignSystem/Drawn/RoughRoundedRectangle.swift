@@ -10,7 +10,24 @@ nonisolated struct RoughRoundedRectangle: Shape {
     /// Drawn this far inside the rect, so a stroke of twice this ends on its bounds.
     var inset: CGFloat = 0
 
+    /// Paths already made, by what they're made from: the same card is drawn again and again as a
+    /// list scrolls, and its edge costs a few thousand sines to find.
+    private final class PathBox: @unchecked Sendable { let path: Path; init(_ path: Path) { self.path = path } }
+    nonisolated(unsafe) private static let cache: NSCache<NSString, PathBox> = {
+        let cache = NSCache<NSString, PathBox>()
+        cache.countLimit = 600
+        return cache
+    }()
+
     func path(in rect: CGRect) -> Path {
+        let key = "\(seed)|\(rect.origin.x),\(rect.origin.y),\(rect.width),\(rect.height)|\(cornerRadii.topLeading),\(cornerRadii.bottomLeading),\(cornerRadii.bottomTrailing),\(cornerRadii.topTrailing)|\(wobble)|\(inset)" as NSString
+        if let hit = Self.cache.object(forKey: key) { return hit.path }
+        let made = makePath(in: rect)
+        Self.cache.setObject(PathBox(made), forKey: key)
+        return made
+    }
+
+    private func makePath(in rect: CGRect) -> Path {
         let outline = Self.outline(of: rect.insetBy(dx: inset, dy: inset), radii: cornerRadii, step: Tokens.Drawn.edgeStep)
         guard outline.count > 1 else { return Path() }
 

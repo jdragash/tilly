@@ -122,8 +122,8 @@ struct TimelineView: View {
     /// `.last` (rather than `.first`) matters too: a single scroll update can cross more than
     /// one month's threshold at once, and the later month in document order is the one that
     /// has actually taken over pinning.
-    private var pinnedMonth: MonthKey? {
-        visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= 0 }
+    private func pinnedMonth(in months: [MonthKey]) -> MonthKey? {
+        months.last { (headerOffsets[$0] ?? .infinity) <= 0 }
     }
 
     /// Months from the ceiling down to the floor, with an empty month dropped unless it's the
@@ -423,7 +423,11 @@ struct TimelineView: View {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                     if isLastPayment { ceilingLine(window.ceiling) }
-                    ForEach(visibleMonths) { month in
+                    // Once per update, not once per month: each was a filter of every month in the
+                    // window, run again for every header on every scroll frame.
+                    let months = visibleMonths
+                    let pinned = pinnedMonth(in: months)
+                    ForEach(months) { month in
                         let monthSection = section(for: month)
                         Section {
                             MonthSectionView(
@@ -449,7 +453,7 @@ struct TimelineView: View {
                             // Pinned beneath the top row, where only the All / Extras toggle
                             // floats over its trailing end.
                             MonthHeader(
-                                section: monthSection, today: today, isPinned: pinnedMonth == month,
+                                section: monthSection, today: today, isPinned: pinned == month,
                                 figure: heldFigure?.month == month ? heldFigure?.figure : nil,
                                 trailingClearance: toggleClearance
                             )

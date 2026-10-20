@@ -21,6 +21,9 @@ struct MotionTuningSection: View {
             ForEach(MotionGroup.all) { group in
                 VStack(alignment: .leading, spacing: Tokens.Space.tight) {
                     Text(group.label)
+                    Text(group.detail)
+                        .font(Tokens.Text.caption)
+                        .foregroundStyle(Tokens.Ink.secondary)
                     Picker(group.label, selection: Binding(
                         get: { group.current(in: tuning)?.name ?? "" },
                         set: { name in
