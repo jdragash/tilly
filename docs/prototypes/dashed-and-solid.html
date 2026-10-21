@@ -89,12 +89,25 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .r:not(.past) .rb{background:var(--paper);box-shadow:0 0 0 1px var(--hair)}
 .ri{display:inline-flex;align-items:center;gap:2px;margin-left:4px}
 .ri svg{width:10px;height:10px}
-.nb{display:inline-block;font-size:11px;font-weight:700;line-height:15px;padding:0 6px;border-radius:7px;margin-right:6px;
-  background:var(--ink);color:var(--paper);vertical-align:1px}
-.nb.up{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.2px var(--ink2)}
-.tdl{display:flex;align-items:center;gap:10px;padding:6px 24px 8px;color:var(--ink);font-size:13px;font-weight:700}
-.tdl::before,.tdl::after{content:"";height:1px;background:var(--ink2);opacity:.5;flex:1}
-.tdl::before{flex:0 0 10px}
+.nb{display:inline-block;font-size:11.5px;font-weight:700;line-height:16px;padding:0 6px;border-radius:5px;margin-right:6px;vertical-align:1px;
+  --bc:var(--ink)}
+.nb.solid{background:var(--bc);color:#fff}
+.nb.tint{background:color-mix(in srgb,var(--bc) 16%,transparent);color:var(--bc)}
+.nb.outline{box-shadow:inset 0 0 0 1.2px var(--bc);color:var(--bc)}
+.nb.text{padding:0;color:var(--bc)}
+.nb.caps,.caps .nb{text-transform:uppercase;font-size:10px;letter-spacing:.06em}
+.rd.caps{text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+.tdl{display:flex;align-items:center;gap:12px;padding:8px 24px;color:var(--ink2);font-size:13px;font-weight:600}
+.tdl.caps{text-transform:uppercase;font-size:11.5px;letter-spacing:.06em}
+.tdl.hair::before,.tdl.hair::after,.tdl.squiggle::before,.tdl.squiggle::after{content:"";flex:1;height:1px;background:var(--ink2);opacity:.45}
+.tdl.squiggle::before,.tdl.squiggle::after{height:6px;opacity:.5;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 3Q3 0 6 3T12 3' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E") repeat-x;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 3Q3 0 6 3T12 3' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E") repeat-x}
+.tdl.gap{padding:30px 24px 10px;justify-content:flex-start}
+.tdl.dot{color:#e5483b;gap:0;padding:6px 18px 6px 14px}
+.tdl.dot i{width:9px;height:9px;border-radius:50%;background:#e5483b;flex:none}
+.tdl.dot::after{content:"";flex:1;height:1.5px;background:#e5483b;order:3;margin-left:8px}
+.tdl.dot span{order:4;margin-left:8px}
 .edge{padding:22px 20px;color:var(--ink2);font-size:13px}
 .edge.top{padding-top:14px}
 .edge.bottom{padding-bottom:140px}
@@ -304,7 +317,8 @@ const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker
 /* ---------- state, kept in this browser only ---------- */
 const KEY="tilly-dashed-and-solid";
 const S=Object.assign({row:"strip",picker:"grid",across:4,motion:"quick",boil:"all",dark:null,custom:false,customText:"",
-  recur:"badge",today:"line",dates:"relative",near:"badge",upPic:"reverse",upEdge:"faint",line:"off"},
+  recur:"badge",today:"line",dates:"relative",near:"badge",lineAt:"left",cLine:"off",cPic:"tile",uLine:"off",uPic:"bare",uEdge:"faint",today2:"squiggle",todayLabel:"word",
+  badge:"tint",badgeCol:"day",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"word"},
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 if(S.dark===null){ const t=document.documentElement.getAttribute("data-theme");
@@ -437,6 +451,8 @@ const BILLS0=[["Rent",0,950,1],["Electricity",1,64,12],["Water",1,31,20],["Broad
   ["Music",4,11,15],["Dentist plan",5,16,3],["Gym",6,39,28],["Parking",7,45,2],["Car insurance",8,640,3,"y",2],["Home insurance",8,210,14,"y",10],
   ["Design app",9,12,18],["Cloud storage",9,3,22],["Language course",10,25,8],["Pet insurance",11,22,16],["Charity",12,15,25],["Game pass",13,15,30],
   ["Domain",9,14,6,"y",0],["Magazine",10,49,19,"y",11]];
+// bills with a last payment: [name, cat, amount, day, months from now to the last one]
+const ENDING0=[["Phone plan",2,24,26,0],["Bike loan",7,33,11,1],["Sofa, 12 payments",0,95,7,5]];
 let cats=[], bills=[], nextId=1;
 const now=new Date(), TODAY=new Date(now.getFullYear(),now.getMonth(),now.getDate());
 function parseCustom(t){
@@ -449,9 +465,12 @@ function loadData(){
   if(S.custom){ cats=parseCustom(S.customText); if(!cats.length) S.custom=false; }
   if(!S.custom){ cats=CATS0.map((c,i)=>({name:c[0],glyph:c[1],col:i%8})); }
   const start=new Date(TODAY.getFullYear(),TODAY.getMonth()-3,1);
-  if(!S.custom) bills=BILLS0.map(b=>({id:nextId++,name:b[0],cat:b[1],amount:b[2],day:b[3],every:b[4]||"m",month:b[5]??0,start}));
+  const endOf=(n,day)=>new Date(TODAY.getFullYear(),TODAY.getMonth()+n,Math.min(day,dim(TODAY.getFullYear(),TODAY.getMonth()+n)));
+  if(!S.custom){ bills=BILLS0.map(b=>({id:nextId++,name:b[0],cat:b[1],amount:b[2],day:b[3],every:b[4]||"m",month:b[5]??0,start}));
+    ENDING0.forEach(b=>bills.push({id:nextId++,name:b[0],cat:b[1],amount:b[2],day:b[3],every:"m",month:0,start,end:endOf(b[4],b[3])})); }
   else bills=cats.map((c,i)=>{ const h=hashStr(c.name), y=i%5===3;
-    return {id:nextId++,name:c.name,cat:i,amount:y?60+h%500:6+h%90,day:1+h%28,every:y?"y":"m",month:(TODAY.getMonth()+1+i)%12,start}; });
+    const e=i===1?0:i===4?1:i===6?5:null, day=1+h%28;
+    return {id:nextId++,name:c.name,cat:i,amount:y?60+h%500:6+h%90,day,every:y?"y":"m",month:(TODAY.getMonth()+1+i)%12,start,end:e==null||y?undefined:endOf(e,day)}; });
 }
 
 /* ---------- the timeline ---------- */
@@ -464,7 +483,7 @@ function monthsShown(){ const out=[]; for(let k=6;k>=-3;k--){ const d=new Date(T
 function occurrences(y,m){
   const out=[];
   bills.forEach(b=>{ if(b.every==="y"&&b.month!==m) return; const d=new Date(y,m,Math.min(b.day,dim(y,m)));
-    if(d<b.start) return; out.push({b,date:d,past:d<=TODAY}); });
+    if(d<b.start||(b.end&&d>b.end)) return; out.push({b,date:d,past:d<=TODAY}); });
   return out.sort((a,b)=>b.date-a.date||b.b.amount-a.b.amount||a.b.name.localeCompare(b.b.name));
 }
 const isCur=mo=>mo.y===TODAY.getFullYear()&&mo.m===TODAY.getMonth();
@@ -473,34 +492,47 @@ const dayLabel=d=>d.toLocaleDateString("en-US",{weekday:"short"})+" "+d.getDate(
 
 /* each look, as a row's ground and picture */
 function rowBg(o,W,H){
-  const hex=catHex(o.b.cat), m=md(), faint=S.upEdge==="faint", dashN=(faint?DT.dashF:DT.dashN)[m];
-  if(S.row==="strip") return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:S.line==="on"?{side:"left",col:hex,w:7}:null})
-                                    : cardSrc(W,H,{dash:dashN});
-  if(S.row==="card")  return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:S.line==="on"?{side:"bottom",col:hex,w:4}:null})
-                                    : cardSrc(W,H,{dash:hex,dashes:"5 4",dashOp:faint?.45:1});
-  return o.past ? cardSrc(W,H,{fill:DT.paperCard[m]}) : cardSrc(W,H,{dash:dashN});
+  const hex=catHex(o.b.cat), m=md(), at=S.lineAt==="left"?{side:"left",w:7}:{side:"bottom",w:4};
+  if(o.past) return cardSrc(W,H,{fill:DT.paperCard[m],strip:S.cLine==="on"?Object.assign({col:hex},at):null});
+  const dash=S.uEdge==="colour"?hex:(S.uEdge==="faint"?DT.dashF:DT.dashN)[m];
+  return cardSrc(W,H,{dash,dashOp:S.uEdge==="colour"?.6:1,strip:S.uLine==="on"?Object.assign({col:hex,op:.5},at):null});
 }
 function tileSrc(s,hex,solid){ return solid ? cardSrc(s,s,{wash:hex,r:Math.round(s*.28)}) : cardSrc(s,s,{dash:hex,r:Math.round(s*.28),dashes:"3 3"}); }
 function rowPic(o){
-  const ci=o.b.cat, up=!o.past, tileOf=solid=>solid ? `<span class="tl solid" style="background:${catHex(ci)}">${catPic(ci,26,true,boilRows(),true)}</span>`
-                             : `<span class="tl"><img class="tb" src="${tileSrc(36,catHex(ci),false)}" alt="">${catPic(ci,26,false,boilRows())}</span>`;
-  let pic;
-  if(S.row==="tile") pic = up&&S.upPic!=="same" ? catPic(ci,34,false,boilRows(),true) : tileOf(o.past);
-  else if(S.upPic==="reverse") pic = up ? catPic(ci,34,false,boilRows(),true) : tileOf(true);
-  else if(S.upPic==="outline"&&up) pic = catPic(ci,34,false,boilRows(),true);
-  else pic = catPic(ci,34,false,boilRows());
-  return pic+(S.recur==="badge"?`<span class="rb">${REC}</span>`:"");
+  const ci=o.b.cat, kind=o.past?S.cPic:S.uPic, b=boilRows(); let pic;
+  if(kind==="tile") pic=`<span class="tl solid" style="background:${catHex(ci)}">${catPic(ci,26,true,b,true)}</span>`;
+  else if(kind==="dtile") pic=`<span class="tl"><img class="tb" src="${tileSrc(36,catHex(ci),false)}" alt="">${catPic(ci,26,false,b,true)}</span>`;
+  else pic=catPic(ci,34,false,b,kind==="bare");
+  return pic+(S.recur==="badge"?`<span class="rb">${o.b.end?END:REC}</span>`:"");
 }
 const REC=`<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 6.4A3.6 3.6 0 1 1 8.4 3.3"/><path d="M8.9 1.4l-.3 2.1-2.1-.3"/></svg>`;
+const END=`<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.6 6h6.6"/><path d="M5.8 3.4 8.4 6 5.8 8.6"/><path d="M10.4 2.6v6.8"/></svg>`;
 function nearWord(d){ const n=Math.round((d-TODAY)/864e5); return n===0?"Today":n===1?"Tomorrow":n===-1?"Yesterday":null; }
+const DAYCOL={Today:["#2a78d6","#3987e5"],Tomorrow:["#eda100","#c98500"],Yesterday:["#8a8883","#8d8b86"]};
+function badge(word,o){
+  const c=S.badgeCol==="cat"?catHex(o.b.cat):S.badgeCol==="day"?DAYCOL[word][S.dark?1:0]:(S.dark?"#f2f1ee":"#1c1b19");
+  return `<span class="nb ${S.badge}${S.badgeCase==="caps"?" caps":""}" style="--bc:${c}">${word}</span>`;
+}
+function monthsTo(d){ return (d.getFullYear()-TODAY.getFullYear())*12+d.getMonth()-TODAY.getMonth(); }
+function endText(o){
+  const e=o.b.end; if(!e) return null;
+  if(sameDay(e,o.date)) return "Last payment";
+  const n=monthsTo(e), num=`ends ${String(e.getMonth()+1).padStart(2,"0")}/${String(e.getFullYear()).slice(2)}`;
+  if(S.ends==="numeric") return num;
+  if(n===0) return "ends this month"; if(n===1) return "ends next month";
+  if(S.ends==="near") return num;
+  return n<12?`ends in ${n} months`:`ends ${MS[e.getMonth()]} ’${String(e.getFullYear()).slice(2)}`;
+}
 function dateLine(o){
   const d=o.date, dm=d.getDate()+" "+MS[d.getMonth()];
   let t = S.dates==="weekday" ? dayLabel(d) : dm;
   const w=S.dates==="relative"?nearWord(d):null;
-  if(w) t = S.near==="badge" ? `<span class="nb${o.past?"":" up"}">${w}</span>${dm}` : `${w} · ${dm}`;
-  if(S.recur==="inline") t+=` <span class="ri">${REC}${o.b.every==="y"?"Yearly":"Monthly"}</span>`;
-  else if(o.b.every==="y") t+=" · yearly";
-  return t;
+  if(w) t = S.badge==="none" ? `${w} · ${dm}` : badge(w,o)+dm;
+  const tail=[], et=endText(o);
+  if(o.b.every==="y"&&S.yearly!=="none") tail.push(S.yearly==="badge"?`<span class="nb outline" style="--bc:var(--ink2)">Yearly</span>`:"yearly");
+  if(S.recur==="inline") t+=` <span class="ri">${o.b.end?END:REC}${et||(o.b.every==="y"?"":"Monthly")}</span>`;
+  else if(et) tail.push(et);
+  return t+tail.map(x=>x.startsWith("<")?" "+x:" · "+x).join("");
 }
 function renderList(keep){
   const st=list.scrollTop, W=Math.round(list.clientWidth||390)-24, H=58;
@@ -509,8 +541,8 @@ function renderList(keep){
     const occ=occurrences(mo.y,mo.m); if(!occ.length&&!isCur(mo)) return;
     const fig=isCur(mo)?money(occ.filter(o=>!o.past).reduce((s,o)=>s+Math.round(o.b.amount),0))+" left":money(occ.reduce((s,o)=>s+Math.round(o.b.amount),0));
     html+=`<section class="month${isCur(mo)?" cur":""}"><div class="mh"><div class="mn">${mname(mo)}</div><div class="mf">${fig}</div></div><div class="rows">`+
-      occ.map((o,k)=>(S.today!=="off"&&isCur(mo)&&o.past&&(k===0||!occ[k-1].past)?todayLine():"")+`<div class="r${o.past?" past":""}" data-bid="${o.b.id}" data-t="${o.date.getTime()}"><img class="bg" src="${rowBg(o,W,H)}" alt="">`+
-        `<span class="pic">${rowPic(o)}</span><div class="rt"><div class="rn">${esc(o.b.name)}</div><div class="rd">${dateLine(o)}</div></div>`+
+      occ.map((o,k)=>(S.today2!=="off"&&isCur(mo)&&o.past&&(k===0||!occ[k-1].past)?todayLine():"")+`<div class="r${o.past?" past":""}" data-bid="${o.b.id}" data-t="${o.date.getTime()}"><img class="bg" src="${rowBg(o,W,H)}" alt="">`+
+        `<span class="pic">${rowPic(o)}</span><div class="rt"><div class="rn">${esc(o.b.name)}</div><div class="rd${S.dateCase==="caps"?" caps":""}">${dateLine(o)}</div></div>`+
         `<div class="ra">${money(o.b.amount)}</div></div>`).join("")+`</div></section>`;
   });
   const first=new Date(TODAY.getFullYear(),TODAY.getMonth()-3,1);
@@ -519,7 +551,10 @@ function renderList(keep){
   if(keep) list.scrollTop=st; else toCurrent();
   $("monthB").textContent=MN[TODAY.getMonth()];
 }
-function todayLine(){ return `<div class="tdl"><span>Today${S.today==="date"?", "+TODAY.getDate()+" "+MS[TODAY.getMonth()]:""}</span></div>`; }
+function todayLine(){
+  const lab=S.todayLabel==="none"?"":S.todayLabel==="date"?`Today, ${TODAY.getDate()} ${MS[TODAY.getMonth()]}`:"Today";
+  return `<div class="tdl ${S.today2}${S.dateCase==="caps"?" caps":""}">${S.today2==="dot"?"<i></i>":""}${lab?`<span>${lab}</span>`:""}</div>`;
+}
 function toCurrent(smooth){ const c=list.querySelector(".month.cur"); if(c) list.scrollTo({top:c.offsetTop,behavior:smooth&&S.motion==="quick"?"smooth":"auto"}); }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -653,14 +688,22 @@ function optHTML(k){ return `<div class="opts">`+OPT[k].map(o=>`<button class="o
 function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class="chip${String(S[k])===String(v[0])?" on":""}" data-k="${k}" data-v="${v[0]}">${v[1]}</button>`).join("")+`</div>`; }
 function panelHTML(){
   return `<h1>Dashed and solid</h1><p class="lead">The timeline's row and the category picker, drawn at an iPhone 13 Pro's size. Tap a row to open it, + to add one, and the card's picture tile for the picker.</p>`+
-    `<h2>Row</h2>${optHTML("row")}`+
-    `<h2>Colour line on charged rows</h2>${chips("line",[["off","Off"],["on","On"]])}<p class="desc">The left edge on Dashed and solid, the bottom strip on Category card. Off leaves the colour to the picture alone.</p>`+
-    `<h2>Upcoming picture</h2>${chips("upPic",[["same","As charged"],["outline","Symbol only"],["reverse","Reversed"]])}<p class="desc">Reversed: a charged bill's picture is a solid tile in its colour with a white symbol; one to come is just the symbol in its colour, no ground.</p>`+
-    `<h2>Upcoming outline</h2>${chips("upEdge",[["normal","As drawn"],["faint","Fainter"]])}`+
-    `<h2>Recurring mark</h2>${chips("recur",[["off","None"],["badge","On the picture"],["inline","In the date line"]])}`+
-    `<h2>Today</h2>${chips("today",[["off","No divider"],["line","Divider"],["date","Divider with date"]])}<p class="desc">A line between what's still to come and what's charged, in this month.</p>`+
+    `<h2>Charged rows</h2><p class="desc" style="margin:0 0 6px">Colour line</p>${chips("cLine",[["off","Off"],["on","On"]])}`+
+    `<p class="desc" style="margin:8px 0 6px">Picture</p>${chips("cPic",[["wash","On a wash"],["bare","Symbol only"],["tile","Solid tile"]])}`+
+    `<h2>Upcoming rows</h2><p class="desc" style="margin:0 0 6px">Colour line</p>${chips("uLine",[["off","Off"],["on","On, faint"]])}`+
+    `<p class="desc" style="margin:8px 0 6px">Picture</p>${chips("uPic",[["wash","On a wash"],["bare","Symbol only"],["dtile","Dashed tile"],["tile","Solid tile"]])}`+
+    `<p class="desc" style="margin:8px 0 6px">Outline</p>${chips("uEdge",[["grey","Grey"],["faint","Faint grey"],["colour","Its colour"]])}`+
+    `<h2>Colour line sits</h2>${chips("lineAt",[["left","Left edge"],["bottom","Along the bottom"]])}`+
+    `<h2>Recurring mark</h2>${chips("recur",[["off","None"],["badge","On the picture"],["inline","In the date line"]])}<p class="desc">A bill with a last payment gets an arrow to a bar instead of the circle: it repeats, but only until then.</p>`+
+    `<h2>Today divider</h2>${chips("today2",[["off","None"],["hair","Hairline"],["squiggle","Squiggle"],["gap","Gap"],["dot","Now line"]])}`+
+    `<p class="desc" style="margin:8px 0 6px">Label</p>${chips("todayLabel",[["word","Today"],["date","Today, 21 Oct"],["none","None"]])}`+
     `<h2>Dates</h2>${chips("dates",[["weekday","Tue 20"],["daymonth","20 Oct"],["relative","Yesterday, 20 Oct"]])}`+
-    (S.dates==="relative"?`<h2>Today, tomorrow, yesterday</h2>${chips("near",[["text","As words"],["badge","As a badge"]])}`:"")+
+    `<p class="desc" style="margin:8px 0 6px">Case</p>${chips("dateCase",[["normal","20 Oct"],["caps","20 OCT"]])}`+
+    (S.dates==="relative"?`<h2>Today, tomorrow, yesterday</h2>${chips("badge",[["none","Words"],["solid","Solid"],["tint","Tinted"],["outline","Outline"],["text","Coloured text"]])}`+
+      (S.badge!=="none"?`<p class="desc" style="margin:8px 0 6px">Colour</p>${chips("badgeCol",[["neutral","Ink"],["day","By day"],["cat","Category"]])}<p class="desc">By day: today blue, tomorrow amber, yesterday grey.</p>`+
+      `<p class="desc" style="margin:8px 0 6px">Case</p>${chips("badgeCase",[["normal","Tomorrow"],["caps","TOMORROW"]])}`:""):"")+
+    `<h2>Ends</h2>${chips("ends",[["numeric","ends 03/27"],["near","Words this and next month"],["words","Words always"]])}<p class="desc">"ends this month", "ends next month", "ends in 5 months". The last charge itself says "Last payment".</p>`+
+    `<h2>Yearly</h2>${chips("yearly",[["word","· yearly"],["badge","Badge"],["none","Nothing"]])}`+
     `<h2>Category picker</h2>${optHTML("picker")}`+
     (S.picker==="grid"?`<h2>Cards across</h2>${chips("across",[[3,"3"],[4,"4"]])}`:"")+
     `<h2>Motion</h2>${chips("motion",[["none","None"],["quick","Quick"]])}<p class="desc">Quick: the sheet slides as a stock sheet does and the card's colour fades in 0.16s. None: everything changes at once. No flips, no flight.</p>`+
@@ -693,7 +736,7 @@ function apply(k){
   document.documentElement.classList.toggle("dark",S.dark);
   phone.classList.toggle("mq",S.motion==="quick");
   renderPanel();
-  if(["row","dark","boil","recur","today","dates","near","upPic","upEdge","line"].includes(k)||!k) renderList(!!k);
+  if(!["picker","across","motion"].includes(k)) renderList(!!k);
   if(sheet.classList.contains("open")){ if(sheet.dataset.panel==="picker") renderPicker(); renderCard(true); }
 }
 function rebuild(){ closeSheet(); loadData(); apply(); }
