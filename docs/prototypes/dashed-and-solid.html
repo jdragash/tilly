@@ -304,7 +304,7 @@ const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker
 /* ---------- state, kept in this browser only ---------- */
 const KEY="tilly-dashed-and-solid";
 const S=Object.assign({row:"strip",picker:"grid",across:4,motion:"quick",boil:"all",dark:null,custom:false,customText:"",
-  recur:"badge",today:"line",dates:"relative",near:"badge",upPic:"reverse",upEdge:"faint"},
+  recur:"badge",today:"line",dates:"relative",near:"badge",upPic:"reverse",upEdge:"faint",line:"off"},
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 if(S.dark===null){ const t=document.documentElement.getAttribute("data-theme");
@@ -474,9 +474,9 @@ const dayLabel=d=>d.toLocaleDateString("en-US",{weekday:"short"})+" "+d.getDate(
 /* each look, as a row's ground and picture */
 function rowBg(o,W,H){
   const hex=catHex(o.b.cat), m=md(), faint=S.upEdge==="faint", dashN=(faint?DT.dashF:DT.dashN)[m];
-  if(S.row==="strip") return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:{side:"left",col:hex,w:7}})
+  if(S.row==="strip") return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:S.line==="on"?{side:"left",col:hex,w:7}:null})
                                     : cardSrc(W,H,{dash:dashN});
-  if(S.row==="card")  return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:{side:"bottom",col:hex,w:4}})
+  if(S.row==="card")  return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:S.line==="on"?{side:"bottom",col:hex,w:4}:null})
                                     : cardSrc(W,H,{dash:hex,dashes:"5 4",dashOp:faint?.45:1});
   return o.past ? cardSrc(W,H,{fill:DT.paperCard[m]}) : cardSrc(W,H,{dash:dashN});
 }
@@ -654,6 +654,7 @@ function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class=
 function panelHTML(){
   return `<h1>Dashed and solid</h1><p class="lead">The timeline's row and the category picker, drawn at an iPhone 13 Pro's size. Tap a row to open it, + to add one, and the card's picture tile for the picker.</p>`+
     `<h2>Row</h2>${optHTML("row")}`+
+    `<h2>Colour line on charged rows</h2>${chips("line",[["off","Off"],["on","On"]])}<p class="desc">The left edge on Dashed and solid, the bottom strip on Category card. Off leaves the colour to the picture alone.</p>`+
     `<h2>Upcoming picture</h2>${chips("upPic",[["same","As charged"],["outline","Symbol only"],["reverse","Reversed"]])}<p class="desc">Reversed: a charged bill's picture is a solid tile in its colour with a white symbol; one to come is just the symbol in its colour, no ground.</p>`+
     `<h2>Upcoming outline</h2>${chips("upEdge",[["normal","As drawn"],["faint","Fainter"]])}`+
     `<h2>Recurring mark</h2>${chips("recur",[["off","None"],["badge","On the picture"],["inline","In the date line"]])}`+
@@ -692,7 +693,7 @@ function apply(k){
   document.documentElement.classList.toggle("dark",S.dark);
   phone.classList.toggle("mq",S.motion==="quick");
   renderPanel();
-  if(["row","dark","boil","recur","today","dates","near","upPic","upEdge"].includes(k)||!k) renderList(!!k);
+  if(["row","dark","boil","recur","today","dates","near","upPic","upEdge","line"].includes(k)||!k) renderList(!!k);
   if(sheet.classList.contains("open")){ if(sheet.dataset.panel==="picker") renderPicker(); renderCard(true); }
 }
 function rebuild(){ closeSheet(); loadData(); apply(); }
