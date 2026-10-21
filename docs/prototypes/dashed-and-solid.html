@@ -101,7 +101,9 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .lk-tile .pic{width:36px;height:36px}
 .tl{position:relative;display:block;width:100%;height:100%}
 .tl>img.tb{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);height:calc(100% + 12px);max-width:none}
-.tl>.ic{position:absolute;inset:13%}
+.tl>.ic{position:absolute;inset:4%;width:auto;height:auto}
+.tl.solid{border-radius:10px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.08)}
+.tl.solid>.ic{inset:4%}
 
 #monthB{position:absolute;left:16px;bottom:calc(var(--sab) + 4px);padding:0 18px;font-weight:600;z-index:4}
 .cap{position:absolute;right:16px;bottom:calc(var(--sab) + 4px);z-index:4}
@@ -480,7 +482,8 @@ function rowBg(o,W,H){
 }
 function tileSrc(s,hex,solid){ return solid ? cardSrc(s,s,{wash:hex,r:Math.round(s*.28)}) : cardSrc(s,s,{dash:hex,r:Math.round(s*.28),dashes:"3 3"}); }
 function rowPic(o){
-  const ci=o.b.cat, up=!o.past, tileOf=solid=>`<span class="tl"><img class="tb" src="${tileSrc(36,catHex(ci),solid)}" alt="">${catPic(ci,26,solid,boilRows())}</span>`;
+  const ci=o.b.cat, up=!o.past, tileOf=solid=>solid ? `<span class="tl solid" style="background:${catHex(ci)}">${catPic(ci,26,true,boilRows(),true)}</span>`
+                             : `<span class="tl"><img class="tb" src="${tileSrc(36,catHex(ci),false)}" alt="">${catPic(ci,26,false,boilRows())}</span>`;
   let pic;
   if(S.row==="tile") pic = up&&S.upPic!=="same" ? catPic(ci,34,false,boilRows(),true) : tileOf(o.past);
   else if(S.upPic==="reverse") pic = up ? catPic(ci,34,false,boilRows(),true) : tileOf(true);
