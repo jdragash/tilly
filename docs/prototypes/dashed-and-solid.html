@@ -288,7 +288,7 @@ const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker
 
 /* ---------- state, kept in this browser only ---------- */
 const KEY="tilly-dashed-and-solid";
-const S=Object.assign({row:"card",picker:"grid",across:4,motion:"quick",boil:"editor",dark:null,custom:false,customText:""},
+const S=Object.assign({row:"card",picker:"grid",across:4,motion:"quick",boil:"all",dark:null,custom:false,customText:""},
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 if(S.dark===null){ const t=document.documentElement.getAttribute("data-theme");
