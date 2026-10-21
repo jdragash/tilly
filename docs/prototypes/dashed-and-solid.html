@@ -78,10 +78,23 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .rd{font-size:13px;line-height:17px;color:var(--ink2)}
 .ra{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
 .r:not(.past) .rn,.r:not(.past) .ra{font-weight:500;color:var(--ink2)}
-.r:not(.past) .pic{opacity:.8}
+.r:not(.past) .pic>.ic,.r:not(.past) .pic>.tl{opacity:.8}
 .r.mark::after{content:"";position:absolute;left:12px;right:12px;top:3px;bottom:3px;border-radius:14px;background:var(--mark);
   z-index:2;pointer-events:none;opacity:1;transition:opacity 1.4s ease 1s}
 .r.mark.fade::after{opacity:0}
+.pic{position:relative}
+.rb{position:absolute;right:-5px;bottom:-5px;width:17px;height:17px;border-radius:50%;background:var(--paperCard);color:var(--ink2);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px var(--paper),0 1px 2px rgba(0,0,0,.12);z-index:2}
+.rb svg{width:11px;height:11px}
+.r:not(.past) .rb{background:var(--paper);box-shadow:0 0 0 1px var(--hair)}
+.ri{display:inline-flex;align-items:center;gap:2px;margin-left:4px}
+.ri svg{width:10px;height:10px}
+.nb{display:inline-block;font-size:11px;font-weight:700;line-height:15px;padding:0 6px;border-radius:7px;margin-right:6px;
+  background:var(--ink);color:var(--paper);vertical-align:1px}
+.nb.up{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.2px var(--ink2)}
+.tdl{display:flex;align-items:center;gap:10px;padding:6px 24px 8px;color:var(--ink);font-size:13px;font-weight:700}
+.tdl::before,.tdl::after{content:"";height:1px;background:var(--ink2);opacity:.5;flex:1}
+.tdl::before{flex:0 0 10px}
 .edge{padding:22px 20px;color:var(--ink2);font-size:13px}
 .edge.top{padding-top:14px}
 .edge.bottom{padding-bottom:140px}
@@ -288,7 +301,8 @@ const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker
 
 /* ---------- state, kept in this browser only ---------- */
 const KEY="tilly-dashed-and-solid";
-const S=Object.assign({row:"card",picker:"grid",across:4,motion:"quick",boil:"all",dark:null,custom:false,customText:""},
+const S=Object.assign({row:"strip",picker:"grid",across:4,motion:"quick",boil:"all",dark:null,custom:false,customText:"",
+  recur:"badge",today:"line",dates:"relative",near:"badge",upPic:"reverse",upEdge:"faint"},
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 if(S.dark===null){ const t=document.documentElement.getAttribute("data-theme");
@@ -298,7 +312,7 @@ if(S.dark===null){ const t=document.documentElement.getAttribute("data-theme");
    TILLY, DRAWN. The noise, roughening, wash and grain are combined.html's, so the two draw alike.
    ===================================================================================================== */
 const DT={edgeFreq:.012,edgeWobble:5,bloomFreq:.006,bloom:.22,cardFill:.9,cardEdge:1,edgeW:3,washFill:.72,washEdge:.85,washWell:.24,grain:9,
-  paper:{l:"#efeeea",d:"#1d1c1a"},paperCard:{l:"#f7f6f2",d:"#2b2a27"},dashN:{l:"rgba(28,27,25,.42)",d:"rgba(242,241,238,.36)"}};
+  paper:{l:"#efeeea",d:"#1d1c1a"},paperCard:{l:"#f7f6f2",d:"#2b2a27"},dashN:{l:"rgba(28,27,25,.42)",d:"rgba(242,241,238,.36)"},dashF:{l:"rgba(28,27,25,.22)",d:"rgba(242,241,238,.2)"}};
 const md=()=>S.dark?"d":"l";
 function prng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 function smooth(seed,freq){ const r=prng(seed), k=[0,1,2].map(i=>({f:freq*(.55+r()*.9)*(i+1)*.8,p:r()*6.283,a:1/(i+1)})); return t=>k.reduce((s,o)=>s+o.a*Math.sin(t*o.f+o.p),0)/1.83; }
@@ -353,7 +367,7 @@ function cardSrc(w,h,o){
     else rect=`<rect x="5" y="14" width="3" height="${h-28}" rx="1.5"/>`;
     body+=`<clipPath id="cl"><path ${tr} d="${rp}"/></clipPath><g clip-path="url(#cl)"><g transform="translate(${P} ${P})" fill="${s.col}" fill-opacity="${s.op??.92}" filter="url(#washF)">${rect}</g></g>`;
     ids.push("washF"); }
-  if(o.dash){ body+=`<path ${tr} d="${rp}" fill="none" stroke="${o.dash}" stroke-width="${sw}" stroke-dasharray="${o.dashes||"5 4"}" stroke-linecap="round"/>`; }
+  if(o.dash){ body+=`<path ${tr} d="${rp}" fill="none" stroke="${o.dash}" stroke-opacity="${o.dashOp??1}" stroke-width="${sw}" stroke-dasharray="${o.dashes||"5 4"}" stroke-linecap="round"/>`; }
   return svgUrl(w+2*P,h+2*P,`0 0 ${w+2*P} ${h+2*P}`,body,[...new Set(ids)]);
 }
 
@@ -405,12 +419,12 @@ const GREY=["#8E8E93","#98989D"];
 const catHex=ci=>ci==null?GREY[S.dark?1:0]:PAL[cats[ci].col%8][S.dark?1:0];
 
 /* the category's picture: a roughened symbol in its colour on a faint wash, or white with a faint white wash on its own colour */
-function catPic(ci,size,on,boiling){
+function catPic(ci,size,on,boiling,noWash){
   const c=cats[ci], g=G[c.glyph]||G.tag, hex=on?"#ffffff":catHex(ci), seed=(hashStr(c.name)%80)+1, W=size+Math.round(size*.13), pad=(W-size)/2;
   const wash=`<g opacity="${on?.35:DT.washWell}"><path d="${blob(size/2,size/2,size/2-size*.08,seed,.07)}" fill="${hex}" fill-opacity="${DT.washFill}" stroke="${hex}" stroke-opacity="${DT.washEdge}" stroke-width="${Math.max(.8,size*.42*.09).toFixed(2)}" filter="url(#washF)"/></g>`;
   const u=svgUrl(W,W,`${-pad} ${-pad} ${W} ${W}`,wash,["washF"]);
   const imgs=[1,2,3].map(k=>`<img src="${svgUrl(28,28,"-2 -2 28 28",`<path d="${g}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" filter="url(#sfR${k})"/>`,["sfR"+k])}" alt="">`).join("");
-  return `<span class="ic"><img class="u" src="${u}" alt=""><span class="boil${boiling?" boiling":""}">${imgs}</span></span>`;
+  return `<span class="ic">${noWash?"":`<img class="u" src="${u}" alt="">`}<span class="boil${boiling?" boiling":""}">${imgs}</span></span>`;
 }
 const boilRows=()=>S.boil==="all";
 
@@ -457,17 +471,33 @@ const dayLabel=d=>d.toLocaleDateString("en-US",{weekday:"short"})+" "+d.getDate(
 
 /* each look, as a row's ground and picture */
 function rowBg(o,W,H){
-  const hex=catHex(o.b.cat), m=md(), dashN=DT.dashN[m];
+  const hex=catHex(o.b.cat), m=md(), faint=S.upEdge==="faint", dashN=(faint?DT.dashF:DT.dashN)[m];
   if(S.row==="strip") return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:{side:"left",col:hex,w:7}})
-                                    : cardSrc(W,H,{dash:dashN,strip:{side:"leftShort",col:hex,op:.7}});
+                                    : cardSrc(W,H,{dash:dashN});
   if(S.row==="card")  return o.past ? cardSrc(W,H,{fill:DT.paperCard[m],strip:{side:"bottom",col:hex,w:4}})
-                                    : cardSrc(W,H,{dash:hex,dashes:"5 4"});
+                                    : cardSrc(W,H,{dash:hex,dashes:"5 4",dashOp:faint?.45:1});
   return o.past ? cardSrc(W,H,{fill:DT.paperCard[m]}) : cardSrc(W,H,{dash:dashN});
 }
 function tileSrc(s,hex,solid){ return solid ? cardSrc(s,s,{wash:hex,r:Math.round(s*.28)}) : cardSrc(s,s,{dash:hex,r:Math.round(s*.28),dashes:"3 3"}); }
 function rowPic(o){
-  if(S.row!=="tile") return catPic(o.b.cat,34,false,boilRows());
-  return `<span class="tl"><img class="tb" src="${tileSrc(36,catHex(o.b.cat),o.past)}" alt="">${catPic(o.b.cat,26,o.past,boilRows())}</span>`;
+  const ci=o.b.cat, up=!o.past, tileOf=solid=>`<span class="tl"><img class="tb" src="${tileSrc(36,catHex(ci),solid)}" alt="">${catPic(ci,26,solid,boilRows())}</span>`;
+  let pic;
+  if(S.row==="tile") pic = up&&S.upPic!=="same" ? catPic(ci,34,false,boilRows(),true) : tileOf(o.past);
+  else if(S.upPic==="reverse") pic = up ? catPic(ci,34,false,boilRows(),true) : tileOf(true);
+  else if(S.upPic==="outline"&&up) pic = catPic(ci,34,false,boilRows(),true);
+  else pic = catPic(ci,34,false,boilRows());
+  return pic+(S.recur==="badge"?`<span class="rb">${REC}</span>`:"");
+}
+const REC=`<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 6.4A3.6 3.6 0 1 1 8.4 3.3"/><path d="M8.9 1.4l-.3 2.1-2.1-.3"/></svg>`;
+function nearWord(d){ const n=Math.round((d-TODAY)/864e5); return n===0?"Today":n===1?"Tomorrow":n===-1?"Yesterday":null; }
+function dateLine(o){
+  const d=o.date, dm=d.getDate()+" "+MS[d.getMonth()];
+  let t = S.dates==="weekday" ? dayLabel(d) : dm;
+  const w=S.dates==="relative"?nearWord(d):null;
+  if(w) t = S.near==="badge" ? `<span class="nb${o.past?"":" up"}">${w}</span>${dm}` : `${w} · ${dm}`;
+  if(S.recur==="inline") t+=` <span class="ri">${REC}${o.b.every==="y"?"Yearly":"Monthly"}</span>`;
+  else if(o.b.every==="y") t+=" · yearly";
+  return t;
 }
 function renderList(keep){
   const st=list.scrollTop, W=Math.round(list.clientWidth||390)-24, H=58;
@@ -476,8 +506,8 @@ function renderList(keep){
     const occ=occurrences(mo.y,mo.m); if(!occ.length&&!isCur(mo)) return;
     const fig=isCur(mo)?money(occ.filter(o=>!o.past).reduce((s,o)=>s+Math.round(o.b.amount),0))+" left":money(occ.reduce((s,o)=>s+Math.round(o.b.amount),0));
     html+=`<section class="month${isCur(mo)?" cur":""}"><div class="mh"><div class="mn">${mname(mo)}</div><div class="mf">${fig}</div></div><div class="rows">`+
-      occ.map(o=>`<div class="r${o.past?" past":""}" data-bid="${o.b.id}" data-t="${o.date.getTime()}"><img class="bg" src="${rowBg(o,W,H)}" alt="">`+
-        `<span class="pic">${rowPic(o)}</span><div class="rt"><div class="rn">${esc(o.b.name)}</div><div class="rd">${dayLabel(o.date)}${o.b.every==="y"?" · yearly":""}</div></div>`+
+      occ.map((o,k)=>(S.today!=="off"&&isCur(mo)&&o.past&&(k===0||!occ[k-1].past)?todayLine():"")+`<div class="r${o.past?" past":""}" data-bid="${o.b.id}" data-t="${o.date.getTime()}"><img class="bg" src="${rowBg(o,W,H)}" alt="">`+
+        `<span class="pic">${rowPic(o)}</span><div class="rt"><div class="rn">${esc(o.b.name)}</div><div class="rd">${dateLine(o)}</div></div>`+
         `<div class="ra">${money(o.b.amount)}</div></div>`).join("")+`</div></section>`;
   });
   const first=new Date(TODAY.getFullYear(),TODAY.getMonth()-3,1);
@@ -486,6 +516,7 @@ function renderList(keep){
   if(keep) list.scrollTop=st; else toCurrent();
   $("monthB").textContent=MN[TODAY.getMonth()];
 }
+function todayLine(){ return `<div class="tdl"><span>Today${S.today==="date"?", "+TODAY.getDate()+" "+MS[TODAY.getMonth()]:""}</span></div>`; }
 function toCurrent(smooth){ const c=list.querySelector(".month.cur"); if(c) list.scrollTo({top:c.offsetTop,behavior:smooth&&S.motion==="quick"?"smooth":"auto"}); }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -620,6 +651,12 @@ function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class=
 function panelHTML(){
   return `<h1>Dashed and solid</h1><p class="lead">The timeline's row and the category picker, drawn at an iPhone 13 Pro's size. Tap a row to open it, + to add one, and the card's picture tile for the picker.</p>`+
     `<h2>Row</h2>${optHTML("row")}`+
+    `<h2>Upcoming picture</h2>${chips("upPic",[["same","As charged"],["outline","Symbol only"],["reverse","Reversed"]])}<p class="desc">Reversed: a charged bill's picture is a solid tile in its colour with a white symbol; one to come is just the symbol in its colour, no ground.</p>`+
+    `<h2>Upcoming outline</h2>${chips("upEdge",[["normal","As drawn"],["faint","Fainter"]])}`+
+    `<h2>Recurring mark</h2>${chips("recur",[["off","None"],["badge","On the picture"],["inline","In the date line"]])}`+
+    `<h2>Today</h2>${chips("today",[["off","No divider"],["line","Divider"],["date","Divider with date"]])}<p class="desc">A line between what's still to come and what's charged, in this month.</p>`+
+    `<h2>Dates</h2>${chips("dates",[["weekday","Tue 20"],["daymonth","20 Oct"],["relative","Yesterday, 20 Oct"]])}`+
+    (S.dates==="relative"?`<h2>Today, tomorrow, yesterday</h2>${chips("near",[["text","As words"],["badge","As a badge"]])}`:"")+
     `<h2>Category picker</h2>${optHTML("picker")}`+
     (S.picker==="grid"?`<h2>Cards across</h2>${chips("across",[[3,"3"],[4,"4"]])}`:"")+
     `<h2>Motion</h2>${chips("motion",[["none","None"],["quick","Quick"]])}<p class="desc">Quick: the sheet slides as a stock sheet does and the card's colour fades in 0.16s. None: everything changes at once. No flips, no flight.</p>`+
@@ -652,7 +689,7 @@ function apply(k){
   document.documentElement.classList.toggle("dark",S.dark);
   phone.classList.toggle("mq",S.motion==="quick");
   renderPanel();
-  if(k==="row"||k==="dark"||k==="boil"||!k) renderList(!!k);
+  if(["row","dark","boil","recur","today","dates","near","upPic","upEdge"].includes(k)||!k) renderList(!!k);
   if(sheet.classList.contains("open")){ if(sheet.dataset.panel==="picker") renderPicker(); renderCard(true); }
 }
 function rebuild(){ closeSheet(); loadData(); apply(); }
