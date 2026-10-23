@@ -17,16 +17,16 @@
 :root{
   --page:#D9D8D3; --paper:#EFEEEA; --paperCard:#F7F6F2; --ink:#1C1B19; --ink2:#8A8883;
   --hair:rgba(28,27,25,.12); --accent:#2A78D6; --glass:rgba(247,246,242,.74); --glassedge:rgba(0,0,0,.08);
-  --panel:#FBFAF8; --panelfg:#1C1B19; --ctl:#EFEEEA; --key:#E7E6E1; --mark:rgba(42,120,214,.14);
+  --panel:#EAE9E4; --panelfg:#1C1B19; --ctl:#EFEEEA; --cardbg:#FFFFFF; --key:#E7E6E1; --mark:rgba(42,120,214,.14);
   --round:ui-rounded,"SF Pro Rounded","Nunito",-apple-system,"Helvetica Neue",sans-serif;
   --text:-apple-system,system-ui,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --page:#0D0D0C; --panel:#1F1E1C; --panelfg:#F2F1EE; --ctl:#2B2A27; color-scheme:dark } }
-:root[data-theme="dark"]{ --page:#0D0D0C; --panel:#1F1E1C; --panelfg:#F2F1EE; --ctl:#2B2A27; color-scheme:dark }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --page:#0D0D0C; --panel:#161513; --panelfg:#F2F1EE; --ctl:#363531; --cardbg:#24231F; color-scheme:dark } }
+:root[data-theme="dark"]{ --page:#0D0D0C; --panel:#161513; --panelfg:#F2F1EE; --ctl:#363531; --cardbg:#24231F; color-scheme:dark }
 html.dark{
   --page:#0D0D0C; --paper:#1D1C1A; --paperCard:#2B2A27; --ink:#F2F1EE; --ink2:#8D8B86;
   --hair:rgba(242,241,238,.16); --accent:#0A84FF; --glass:rgba(43,42,39,.74); --glassedge:rgba(255,255,255,.1);
-  --panel:#1F1E1C; --panelfg:#F2F1EE; --ctl:#2B2A27; --key:#2B2A27; --mark:rgba(10,132,255,.2); color-scheme:dark;
+  --panel:#161513; --panelfg:#F2F1EE; --ctl:#363531; --cardbg:#24231F; --key:#2B2A27; --mark:rgba(10,132,255,.2); color-scheme:dark;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;overflow:hidden;background:var(--page);color:var(--panelfg);font:14px/1.3 var(--text);
@@ -245,8 +245,24 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
   padding:14px 0 8px;font-size:17px;font-weight:700;z-index:2}
 #dclose{width:34px;height:34px;border-radius:50%;background:var(--ctl);font-size:15px}
 .ctl h1{font-size:17px;margin:0 0 4px}
+.ptop{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.reset{flex:none;background:#E5483B;color:#fff;border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px}
+.tc{display:block;background:var(--cardbg);border-radius:14px;padding:12px 14px 4px;margin:0 0 10px;box-shadow:0 0 0 .5px var(--hair)}
+.tc .ch{font-size:15px;font-weight:700}
+.tc .cs{font-size:12px;line-height:1.35;color:var(--ink2);margin:2px 0 4px}
+.fld{padding:10px 0;border-top:1px solid var(--hair);display:flex;flex-direction:column;gap:7px}
+.tc .cs+.fld,.tc .ch+.fld{border-top:0}
+.fl{font-size:12.5px;font-weight:600}
+.fld .desc{margin:0}
+.tc>.opts{margin:8px 0 10px}
+.tc>.btns{margin:8px 0}
+.tc>textarea{margin-top:8px}
+.tc>.desc{margin:0 0 10px}
+.lies-c{padding-bottom:12px}
+.lies-c summary{cursor:pointer;list-style-position:inside}
+.ctl .chip{background:var(--ctl)}
 .ctl .lead{font-size:12.5px;line-height:1.4;color:var(--ink2);margin:0 0 6px}
-.ctl h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:20px 0 6px;font-weight:700}
+.ctl h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--panelfg);margin:22px 2px 8px;font-weight:800}
 .opts{display:flex;flex-direction:column;gap:6px}
 .opt{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:var(--ctl);border-radius:12px;padding:9px 12px}
 .opt b{font-size:14px}
@@ -316,13 +332,15 @@ const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker
 
 /* ---------- state, kept in this browser only ---------- */
 const KEY="tilly-dashed-and-solid";
-const S=Object.assign({row:"strip",picker:"grid",across:4,motion:"quick",boil:"all",dark:null,custom:false,customText:"",
-  recur:"badge",today:"line",dates:"relative",near:"badge",lineAt:"left",cLine:"off",cPic:"tile",uLine:"off",uPic:"bare",uEdge:"faint",today2:"squiggle",todayLabel:"word",
-  badge:"tint",badgeCol:"day",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"word"},
+const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
+  recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"tile",uLine:"off",uPic:"bare",uEdge:"faint",today2:"squiggle",todayLabel:"word",
+  badge:"tint",badgeCol:"day",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"word"};
+const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
-if(S.dark===null){ const t=document.documentElement.getAttribute("data-theme");
-  S.dark = t ? t==="dark" : !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); }
+function systemDark(){ const t=document.documentElement.getAttribute("data-theme");
+  return t ? t==="dark" : !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); }
+if(S.dark===null) S.dark=systemDark();
 
 /* =====================================================================================================
    TILLY, DRAWN. The noise, roughening, wash and grain are combined.html's, so the two draw alike.
@@ -686,45 +704,59 @@ const OPT={
 };
 function optHTML(k){ return `<div class="opts">`+OPT[k].map(o=>`<button class="opt${S[k]===o[0]?" on":""}" data-k="${k}" data-v="${o[0]}"><b>${o[1]}${o[3]?`<i>${o[3]}</i>`:""}</b><span>${o[2]}</span></button>`).join("")+`</div>`; }
 function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class="chip${String(S[k])===String(v[0])?" on":""}" data-k="${k}" data-v="${v[0]}">${v[1]}</button>`).join("")+`</div>`; }
+const fld=(label,body,note)=>`<div class="fld"><div class="fl">${label}</div>${body}${note?`<p class="desc">${note}</p>`:""}</div>`;
+const tcard=(title,sub,body)=>`<section class="tc"><div class="ch">${title}</div>${sub?`<div class="cs">${sub}</div>`:""}${body}</section>`;
 function panelHTML(){
-  return `<h1>Dashed and solid</h1><p class="lead">The timeline's row and the category picker, drawn at an iPhone 13 Pro's size. Tap a row to open it, + to add one, and the card's picture tile for the picker.</p>`+
-    `<h2>Charged rows</h2><p class="desc" style="margin:0 0 6px">Colour line</p>${chips("cLine",[["off","Off"],["on","On"]])}`+
-    `<p class="desc" style="margin:8px 0 6px">Picture</p>${chips("cPic",[["wash","On a wash"],["bare","Symbol only"],["tile","Solid tile"]])}`+
-    `<h2>Upcoming rows</h2><p class="desc" style="margin:0 0 6px">Colour line</p>${chips("uLine",[["off","Off"],["on","On, faint"]])}`+
-    `<p class="desc" style="margin:8px 0 6px">Picture</p>${chips("uPic",[["wash","On a wash"],["bare","Symbol only"],["dtile","Dashed tile"],["tile","Solid tile"]])}`+
-    `<p class="desc" style="margin:8px 0 6px">Outline</p>${chips("uEdge",[["grey","Grey"],["faint","Faint grey"],["colour","Its colour"]])}`+
-    `<h2>Colour line sits</h2>${chips("lineAt",[["left","Left edge"],["bottom","Along the bottom"]])}`+
-    `<h2>Recurring mark</h2>${chips("recur",[["off","None"],["badge","On the picture"],["inline","In the date line"]])}<p class="desc">A bill with a last payment gets an arrow to a bar instead of the circle: it repeats, but only until then.</p>`+
-    `<h2>Today divider</h2>${chips("today2",[["off","None"],["hair","Hairline"],["squiggle","Squiggle"],["gap","Gap"],["dot","Now line"]])}`+
-    `<p class="desc" style="margin:8px 0 6px">Label</p>${chips("todayLabel",[["word","Today"],["date","Today, 21 Oct"],["none","None"]])}`+
-    `<h2>Dates</h2>${chips("dates",[["weekday","Tue 20"],["daymonth","20 Oct"],["relative","Yesterday, 20 Oct"]])}`+
-    `<p class="desc" style="margin:8px 0 6px">Case</p>${chips("dateCase",[["normal","20 Oct"],["caps","20 OCT"]])}`+
-    (S.dates==="relative"?`<h2>Today, tomorrow, yesterday</h2>${chips("badge",[["none","Words"],["solid","Solid"],["tint","Tinted"],["outline","Outline"],["text","Coloured text"]])}`+
-      (S.badge!=="none"?`<p class="desc" style="margin:8px 0 6px">Colour</p>${chips("badgeCol",[["neutral","Ink"],["day","By day"],["cat","Category"]])}<p class="desc">By day: today blue, tomorrow amber, yesterday grey.</p>`+
-      `<p class="desc" style="margin:8px 0 6px">Case</p>${chips("badgeCase",[["normal","Tomorrow"],["caps","TOMORROW"]])}`:""):"")+
-    `<h2>Ends</h2>${chips("ends",[["numeric","ends 03/27"],["near","Words this and next month"],["words","Words always"]])}<p class="desc">"ends this month", "ends next month", "ends in 5 months". The last charge itself says "Last payment".</p>`+
-    `<h2>Yearly</h2>${chips("yearly",[["word","· yearly"],["badge","Badge"],["none","Nothing"]])}`+
-    `<h2>Category picker</h2>${optHTML("picker")}`+
-    (S.picker==="grid"?`<h2>Cards across</h2>${chips("across",[[3,"3"],[4,"4"]])}`:"")+
-    `<h2>Motion</h2>${chips("motion",[["none","None"],["quick","Quick"]])}<p class="desc">Quick: the sheet slides as a stock sheet does and the card's colour fades in 0.16s. None: everything changes at once. No flips, no flight.</p>`+
-    `<h2>Boil</h2>${chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]])}`+
-    `<h2>Appearance</h2>${chips("dark",[["false","Light"],["true","Dark"]])}`+
-    `<h2>Your categories</h2><p class="desc" style="margin:0 0 6px">One per line, in your order. A symbol is guessed from the name; to choose one, add it after a colon, like <b>Rent: home</b>. Kept in this browser only, never in the repo. Each gets one made-up bill.</p>`+
-    `<textarea id="catsIn" spellcheck="false" placeholder="Home\nEnergy\nStreaming">${esc(S.custom?S.customText:"")}</textarea>`+
-    `<div class="btns"><button class="pri" id="catsApply">Use these</button><button id="catsReset">Example set</button></div>`+
-    `<p class="desc">Symbols: ${Object.keys(G).join(", ")}.</p>`+
-    `<h2>What this prototype lies about</h2><ul class="lies">`+
+  return `<div class="ptop"><div><h1>Dashed and solid</h1><p class="lead">iPhone 13 Pro size. Tap a row to open it, + to add one, the card's picture tile for the picker.</p></div>`+
+    `<button class="reset" data-reset="1">Reset</button></div>`+
+    `<h2>Timeline</h2>`+
+    tcard("Charged rows","Bills whose date has passed, below Today.",
+      fld("Colour line",chips("cLine",[["off","Off"],["on","On"]]))+
+      fld("Picture",chips("cPic",[["wash","On a wash"],["bare","Symbol only"],["tile","Solid tile"]])))+
+    tcard("Upcoming rows","Bills still to come, above Today.",
+      fld("Colour line",chips("uLine",[["off","Off"],["on","On, faint"]]))+
+      fld("Picture",chips("uPic",[["wash","On a wash"],["bare","Symbol only"],["dtile","Dashed tile"],["tile","Solid tile"]]))+
+      fld("Dashed outline",chips("uEdge",[["grey","Grey"],["faint","Faint grey"],["colour","Its colour"]])))+
+    tcard("Every row","Applies to charged and upcoming alike.",
+      fld("Colour line sits",chips("lineAt",[["left","Left edge"],["bottom","Along the bottom"]]))+
+      fld("Recurring mark",chips("recur",[["off","None"],["badge","On the picture"],["inline","In the date line"]]),"A bill with a last payment shows an arrow to a bar instead of the circle."))+
+    tcard("Today divider","The line between upcoming and charged, this month only.",
+      fld("Style",chips("today2",[["off","None"],["hair","Hairline"],["squiggle","Squiggle"],["gap","Gap"],["dot","Now line"]]))+
+      fld("Label",chips("todayLabel",[["word","Today"],["date","Today, 21 Oct"],["none","None"]])))+
+    tcard("Dates","The small line under each bill's name.",
+      fld("Format",chips("dates",[["weekday","Tue 20"],["daymonth","20 Oct"],["relative","Yesterday · 20 Oct"]]))+
+      fld("Case",chips("dateCase",[["normal","20 Oct"],["caps","20 OCT"]]))+
+      (S.dates==="relative"?
+        fld("Today, tomorrow, yesterday",chips("badge",[["none","Plain words"],["solid","Solid"],["tint","Tinted"],["outline","Outline"],["text","Coloured text"]]))+
+        (S.badge!=="none"?fld("Badge colour",chips("badgeCol",[["neutral","Ink"],["day","By day"],["cat","Category"]]),"By day: today blue, tomorrow amber, yesterday grey.")+
+          fld("Badge case",chips("badgeCase",[["normal","Tomorrow"],["caps","TOMORROW"]])):"")
+      :`<p class="desc">Pick the third format to try Today, Tomorrow and Yesterday.</p>`))+
+    tcard("Ends and yearly","Bills that stop, and bills once a year.",
+      fld("When a bill ends",chips("ends",[["numeric","ends 03/27"],["near","Words for this and next month"],["words","Always words"]]),'"ends this month", "ends in 5 months". The last charge says "Last payment".')+
+      fld("Yearly bills",chips("yearly",[["word","· yearly"],["badge","Badge"],["none","Nothing"]])))+
+    `<h2>Adding a bill</h2>`+
+    tcard("Category picker","Opens from the card's picture tile.",
+      optHTML("picker")+(S.picker==="grid"?fld("Cards across",chips("across",[[3,"3"],[4,"4"]])):""))+
+    tcard("Motion","",fld("Sheet and card",chips("motion",[["none","None"],["quick","Quick"]]),"Quick: a stock sheet slide and a 0.16s colour fade. No flips, no flight."))+
+    `<h2>Prototype</h2>`+
+    tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]])))+
+    tcard("Your categories","One per line, in your order. Kept in this browser only, never in the repo.",
+      `<textarea id="catsIn" spellcheck="false" placeholder="Home\nEnergy\nStreaming">${esc(S.custom?S.customText:"")}</textarea>`+
+      `<div class="btns"><button class="pri" id="catsApply">Use these</button><button id="catsReset">Example set</button></div>`+
+      `<p class="desc">A symbol is guessed from the name; to choose one, add it after a colon, like <b>Rent: home</b>. Symbols: ${Object.keys(G).join(", ")}.</p>`)+
+    `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
     `<li>The symbols are stand-ins drawn in SF Symbols' manner. The app roughens the real ones with a shader.</li>`+
     `<li>Edges, washes and grain are SVG filters here; the app draws them with Metal and Canvas, a little differently.</li>`+
     `<li>The type is SF Pro Rounded on an iPhone and Nunito elsewhere. No Dynamic Type.</li>`+
     `<li>Scrolling has the browser's momentum; the glass buttons are a blur, not Liquid Glass; the sheet is CSS, not the system sheet.</li>`+
-    `<li>Dates and repeats cycle through a few presets. Bills you add last until you reload.</li></ul>`;
+    `<li>Dates and repeats cycle through a few presets. Bills you add last until you reload or reset.</li></ul></details>`;
 }
 function renderPanel(){ const h=panelHTML(); $("panel").innerHTML=h; $("drawerBody").innerHTML=h; }
 function onPanel(e){
   const b=e.target.closest("button"); if(!b) return;
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
+  if(b.dataset.reset){ Object.assign(S,DEFAULTS); S.dark=systemDark(); save(); $("drawer").classList.remove("open"); rebuild(); toast("Reset to the starting setup"); return; }
   const k=b.dataset.k; if(!k) return; let v=b.dataset.v;
   if(k==="across") v=+v; if(k==="dark") v=v==="true";
   S[k]=v; save(); apply(k);
