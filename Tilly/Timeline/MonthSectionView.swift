@@ -15,9 +15,23 @@ struct MonthSectionView: View {
     var onRowFrame: (String, CGRect?) -> Void = { _, _ in }
     let onOpen: (TimelineEntry) -> Void
 
+    /// Where the today divider goes in the current month: before the first row on or before today,
+    /// the top of its day. None while nothing is charged yet, or in any other month.
+    private var todayDividerIndex: Int? {
+        guard section.isCurrent, section.hasChargedEntry else { return nil }
+        let start = calendar.startOfDay(for: today)
+        return section.entries.firstIndex { $0.date <= start }
+    }
+
+    @Environment(\.calendar) private var calendar
+
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
+                // Before the day's scroll marker, so a calendar tap on today lands on the row.
+                if index == todayDividerIndex {
+                    TodayDivider(today: today)
+                }
                 // A day's first row carries the day's scroll target: zero high, so the
                 // target's top is the row's top and landing on it needs no row height.
                 if index == 0 || section.entries[index - 1].date != entry.date {

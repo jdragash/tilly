@@ -46,6 +46,11 @@ enum TimelineFormatting {
         "Today, \(FormatterCache.date(format: "d MMM", calendar: calendar, locale: locale).string(from: today))"
     }
 
+    /// "Today, 24 October": the divider as VoiceOver reads it.
+    static func spokenTodayDivider(_ today: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+        "Today, \(FormatterCache.date(format: "d MMMM", calendar: calendar, locale: locale).string(from: today))"
+    }
+
     /// "Rent, today, Saturday 24 October, 950 US dollars out, yearly, last payment, upcoming" —
     /// name, the near word within a day, date, amount, yearly, the end when there is one, and
     /// state read as a sentence, so VoiceOver announces one thing rather than six. The currency

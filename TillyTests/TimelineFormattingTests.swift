@@ -127,6 +127,11 @@ import Testing
         #expect(line == "Today, 24 Oct")
     }
 
+    @Test func theTodayDividerIsSpokenInFull() {
+        let line = TimelineFormatting.spokenTodayDivider(Self.date(2026, 10, 24), calendar: Self.calendar, locale: Self.locale)
+        #expect(line == "Today, 24 October")
+    }
+
     // MARK: Accessibility
 
     @Test func anAccessibilityLabelSaysLastPayment() {

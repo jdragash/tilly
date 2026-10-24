@@ -333,6 +333,13 @@ before landing.
 - **Step 3: at `accessibility3` the date line truncated** ("29 Oct · ends next…"). At accessibility
   sizes the end now takes its own line when the three don't fit (`ViewThatFits`).
 - **`simctl ui … appearance` and `content_size` reach the app only after a relaunch.**
+- **Step 4: the divider sits before the first row dated today or earlier**, the top of its day, so
+  it always comes before that day's scroll marker; a calendar tap on today landed the first row
+  59.97pt under the list's top, flush under the 60pt header, with the divider tucked behind it.
+- **Step 4: a `Shape` that reads `Tokens.Size` won't build** (main-actor isolation crosses into
+  `Shape`): `Squiggle` takes its period and height. The divider's sides use `Space.gutter` (20pt)
+  as the spec says, where the prototype's `.tdl` pads 24.
+- **Step 4: VoiceOver reads "Today, 24 October"**, from `spokenTodayDivider`, beside `todayDivider`.
 
 ## If a step is wrong
 

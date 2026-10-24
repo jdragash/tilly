@@ -23,6 +23,8 @@ enum Tokens {
         static let rowAmount: Font = .body.weight(.semibold)
         static let rowNameSoft: Font = .body.weight(.medium)
         static let rowAmountSoft: Font = .body.weight(.medium)
+        /// The label on the today divider: caption, semibold; from the prototype.
+        static let todayDivider: Font = .footnote.weight(.semibold)
         /// The `Yearly` tag after a row's date; from the prototype.
         static let tag: Font = .caption2.bold()
         /// The symbol in a row's badge, at a fixed size as the badge is.
@@ -105,6 +107,8 @@ enum Tokens {
         static let tag: CGFloat = 1.2
         static let badgeRing: CGFloat = 1.5
         static let badgeHairline: CGFloat = 1
+        /// The today divider's waves; from the prototype.
+        static let squiggle: CGFloat = 1.3
     }
 
     /// How far text may shrink to fit a line before it truncates.
@@ -133,6 +137,8 @@ enum Tokens {
         static let upcomingIcon: Double = 0.55
         /// A timeline row's picture while still to come; from the prototype.
         static let upcomingPicture: Double = 0.8
+        /// The today divider's waves; from the prototype.
+        static let squiggle: Double = 0.5
         /// The category view's today line; from the prototype.
         static let todayLine: Double = 0.75
         /// The lanes not picked out while one category is; from the prototype.
@@ -341,6 +347,9 @@ enum Tokens {
         /// Across inside the `Yearly` tag, and before it on the date's line.
         static let tagHorizontal: CGFloat = 6
         static let tagLeading: CGFloat = 4
+        /// Above and below the today divider, and between its label and its waves; from the prototype.
+        static let dividerVertical: CGFloat = 8
+        static let dividerGap: CGFloat = 12
         /// The clear space under a month's last row.
         static let stackMonthBottom: CGFloat = 14
     }
@@ -357,6 +366,9 @@ enum Tokens {
         static let rowPicture: CGFloat = 34
         static let rowBadge: CGFloat = 17
         static let rowBadgeSymbol: CGFloat = 11
+        /// One wave of the today divider's squiggle, and its height; from the prototype.
+        static let squigglePeriod: CGFloat = 12
+        static let squiggle: CGFloat = 6
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
         /// A category's picture, by where it's drawn: replaces the font each emoji was set in.
