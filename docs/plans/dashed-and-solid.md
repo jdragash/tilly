@@ -322,6 +322,17 @@ before landing.
   0.00) with nothing marked.
 - **Step 2's seam grep matches `CategoryHand`'s own `flyer`**, the hand's played card, which
   goes with the hand in step 5. Nothing of the card's flight is left.
+- **Step 3: the badge sits by its edges, not its centre.** The spec put the badge's centre 5pt
+  outside the picture's corner; the prototype's `.rb` has `right: -5px; bottom: -5px`, its edges
+  5pt out. Built as the prototype, for the side-by-side.
+- **Step 3: the prototype's charged card has a light-mode shadow** (`drop-shadow(0 1px 1.5px
+  rgba(0,0,0,.09))` on `.r.past .bg`); the spec says no shadow, and the build has none. Worth a
+  look on the phone.
+- **Step 3: skipped keeps its dotted outline**, as it is now, so `DottedOutline` stays.
+  `Shadow.stack*` stays too: `WashImage` still draws it under the editor's card.
+- **Step 3: at `accessibility3` the date line truncated** ("29 Oct · ends next…"). At accessibility
+  sizes the end now takes its own line when the three don't fit (`ViewThatFits`).
+- **`simctl ui … appearance` and `content_size` reach the app only after a relaunch.**
 
 ## If a step is wrong
 

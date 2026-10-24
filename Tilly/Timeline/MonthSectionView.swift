@@ -32,8 +32,7 @@ struct MonthSectionView: View {
                     // shape, so outside it the gap between name and amount stays dead.
                     OccurrenceRow(
                         entry: entry, today: today,
-                        isMarked: entry.date == markedDay || entry.id == markedEntryID,
-                        isLast: index == section.entries.count - 1
+                        isMarked: entry.date == markedDay || entry.id == markedEntryID
                     )
                         .contentShape(Rectangle())
                 }
@@ -48,10 +47,8 @@ struct MonthSectionView: View {
                 .onDisappear { onRowFrame(entry.id, nil) }
             }
             if !section.entries.isEmpty {
-                // The last card runs on `stackTuck` past its row, as every card does; this keeps
-                // that clear of the month below, with `stackMonthBottom` under it.
                 Color.clear
-                    .frame(height: Tokens.Space.stackTuck + Tokens.Space.stackMonthBottom)
+                    .frame(height: Tokens.Space.stackMonthBottom)
             }
             if showsFirstWeekLine {
                 Text("This fills in as bills go out.")

@@ -17,6 +17,16 @@ enum Tokens {
         static let name: Font = .body
         static let amount: Font = .body
         static let caption: Font = .footnote
+        /// A timeline row's name and amount: 17pt semibold when charged, medium while still to come.
+        /// From the prototype.
+        static let rowName: Font = .body.weight(.semibold)
+        static let rowAmount: Font = .body.weight(.semibold)
+        static let rowNameSoft: Font = .body.weight(.medium)
+        static let rowAmountSoft: Font = .body.weight(.medium)
+        /// The `Yearly` tag after a row's date; from the prototype.
+        static let tag: Font = .caption2.bold()
+        /// The symbol in a row's badge, at a fixed size as the badge is.
+        static let rowBadge: Font = .system(size: Size.rowBadgeSymbol, weight: .semibold)
         static let body: Font = .body
         static let emptyTitle: Font = .title2.weight(.semibold)
         static let rowEmoji: Font = .title2
@@ -89,6 +99,12 @@ enum Tokens {
         static let cardFocus: CGFloat = 2
         /// Round a chosen symbol in the picker. From the prototype.
         static let pocketRing: CGFloat = 2.5
+        /// The faint dashed line round a timeline row still to come; from the prototype.
+        static let rowDash = StrokeStyle(lineWidth: 1.6, lineCap: .round, dash: [5, 4])
+        /// The `Yearly` tag's outline, and the page-paper ring round a charged row's badge.
+        static let tag: CGFloat = 1.2
+        static let badgeRing: CGFloat = 1.5
+        static let badgeHairline: CGFloat = 1
     }
 
     /// How far text may shrink to fit a line before it truncates.
@@ -115,6 +131,8 @@ enum Tokens {
     enum Opacity {
         /// How far an upcoming or skipped row's icon well sits back; from the prototype.
         static let upcomingIcon: Double = 0.55
+        /// A timeline row's picture while still to come; from the prototype.
+        static let upcomingPicture: Double = 0.8
         /// The category view's today line; from the prototype.
         static let todayLine: Double = 0.75
         /// The lanes not picked out while one category is; from the prototype.
@@ -145,9 +163,6 @@ enum Tokens {
         static let onProminent: Color = .white
         static let onCardSoft: Color = .white.opacity(0.58)
         static let onCardDash: Color = .white.opacity(0.75)
-        /// A charged card's date in the timeline's stack, a touch softer than its name; from the
-        /// prototype.
-        static let onStackSoft: Color = .white.opacity(0.82)
     }
 
     enum Surface {
@@ -312,13 +327,21 @@ enum Tokens {
         /// Inside the name's dashed field.
         static let cardFieldHorizontal: CGFloat = 10
         static let cardFieldVertical: CGFloat = 4
-        /// The timeline's Wallet stack, from the prototype: how far each card runs on under the next,
-        /// how far in from the screen's sides it sits, where its content starts inside it, and the
-        /// clear space under a month's last card. Tuning values.
-        static let stackTuck: CGFloat = 12
-        static let stackInset: CGFloat = 12
-        static let stackTop: CGFloat = 11
-        static let stackLeading: CGFloat = 14
+        /// A timeline row's card, from the prototype: in from the screen's sides, cards `rowGap`
+        /// apart, and where the content starts and ends inside one.
+        static let rowInset: CGFloat = 12
+        static let rowGap: CGFloat = 6
+        static let rowLeading: CGFloat = 12
+        static let rowTrailing: CGFloat = 14
+        /// Above and below the content of a row at an accessibility size, inside its card.
+        static let rowAccessibleVertical: CGFloat = 12
+        /// How far a row badge's right and bottom edges sit outside its picture's: the prototype's
+        /// `right: -5px; bottom: -5px`.
+        static let rowBadgeOffset: CGFloat = 5
+        /// Across inside the `Yearly` tag, and before it on the date's line.
+        static let tagHorizontal: CGFloat = 6
+        static let tagLeading: CGFloat = 4
+        /// The clear space under a month's last row.
         static let stackMonthBottom: CGFloat = 14
     }
 
@@ -328,12 +351,12 @@ enum Tokens {
         static let handPicture: CGFloat = 44
         /// The colour bar along a hand card's bottom; from the prototype.
         static let handBar: CGFloat = 4
-        static let row: CGFloat = 52
-        /// A row in the timeline's Wallet stack: the part of its card left showing above the next.
-        /// From the prototype; the timeline's only, every other list keeps `row`.
-        static let stackRow: CGFloat = 64
-        /// A card's picture in the stack, from the prototype.
-        static let stackPicture: CGFloat = 36
+        /// A timeline row, its card `Space.rowGap / 2` in from its top and bottom; from the prototype.
+        static let row: CGFloat = 64
+        /// A row's picture, its badge and the badge's symbol; from the prototype.
+        static let rowPicture: CGFloat = 34
+        static let rowBadge: CGFloat = 17
+        static let rowBadgeSymbol: CGFloat = 11
         static let icon: CGFloat = 40
         static let iconAccessible: CGFloat = 44
         /// A category's picture, by where it's drawn: replaces the font each emoji was set in.
@@ -524,6 +547,10 @@ enum Tokens {
         static let badgeColour: Color = .black.opacity(0.14)
         static let badgeRadius: CGFloat = 1
         static let badgeY: CGFloat = 1
+        /// Under a charged row's badge: the prototype's 0 1 2 at 12% black.
+        static let rowBadgeColour: Color = .black.opacity(0.12)
+        static let rowBadgeRadius: CGFloat = 1
+        static let rowBadgeY: CGFloat = 1
         /// Along a charged card's top in the timeline's stack, falling on the card above: the
         /// prototype's 0 -1 2.5 at 16% black.
         static let stackColour: Color = .black.opacity(0.16)
@@ -548,8 +575,10 @@ enum Tokens {
         /// The name's dashed field, and the ring round an open date or repeat; from the prototype.
         static let cardField: CGFloat = 9
         static let cardFocus: CGFloat = 6
-        /// A card's top corners in the timeline's stack; a month's last card is round all round.
-        static let stackCard: CGFloat = 14
+        /// A timeline row's card, every corner; from the prototype.
+        static let row: CGFloat = 14
+        /// The `Yearly` tag; from the prototype.
+        static let tag: CGFloat = 5
     }
 }
 
@@ -618,6 +647,10 @@ extension Tokens {
         static let paperCard = dynamic(light: 0xF7F6F2, dark: 0x2B2A27)
         static let ink = dynamic(light: 0x1C1B19, dark: 0xF2F1EE)
         static let ink2 = dynamic(light: 0x8A8883, dark: 0x8D8B86)
+        /// The faint dashed line round what's still to come.
+        static let dashFaint = dynamic(light: 0x1C1B19, dark: 0xF2F1EE, lightAlpha: 0.22, darkAlpha: 0.2)
+        /// A hairline on paper: round a still-to-come row's badge.
+        static let hairline = dynamic(light: 0x1C1B19, dark: 0xF2F1EE, lightAlpha: 0.12, darkAlpha: 0.16)
 
         /// The grain: a square tile (pt) made once, each pixel on a random half at this alpha (of 255),
         /// black or white.
@@ -676,14 +709,18 @@ extension Tokens {
             #endif
         }
 
-        private static func dynamic(light: UInt32, dark: UInt32) -> Color {
-            func rgb(_ hex: UInt32) -> UIColor {
+        private static func dynamic(
+            light: UInt32, dark: UInt32, lightAlpha: CGFloat = 1, darkAlpha: CGFloat = 1
+        ) -> Color {
+            func rgb(_ hex: UInt32, _ alpha: CGFloat) -> UIColor {
                 UIColor(
                     red: CGFloat((hex >> 16) & 0xff) / 255, green: CGFloat((hex >> 8) & 0xff) / 255,
-                    blue: CGFloat(hex & 0xff) / 255, alpha: 1
+                    blue: CGFloat(hex & 0xff) / 255, alpha: alpha
                 )
             }
-            return Color(UIColor { rgb($0.userInterfaceStyle == .dark ? dark : light) })
+            return Color(UIColor {
+                $0.userInterfaceStyle == .dark ? rgb(dark, darkAlpha) : rgb(light, lightAlpha)
+            })
         }
     }
 }

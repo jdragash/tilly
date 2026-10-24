@@ -99,6 +99,6 @@ enum BoilSetting: Int, Sendable {
     case off, editor, everywhere
 
     @MainActor static var current: BoilSetting {
-        BoilSetting(rawValue: Int(MotionTuning.shared["boil"])) ?? .editor
+        BoilSetting(rawValue: Int(MotionTuning.shared["boil"])) ?? .everywhere
     }
 }

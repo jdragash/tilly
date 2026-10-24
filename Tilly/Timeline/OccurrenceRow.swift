@@ -23,18 +23,17 @@ extension OccurrenceState {
     }
 }
 
-/// One occurrence, as its bill's card in the Wallet stack: the picture, then the name with the date
-/// beneath it, then the amount, along the card's top. The card runs on `stackTuck` under the next
-/// row, which covers it, so only its top corners show rounded. Every charge is its own row and
-/// carries its own date.
+/// One occurrence, drawn like a category card: a solid paper card once charged, a faint dashed
+/// outline while still to come. The picture on its wash with a badge, then the name over the date
+/// line, then the amount. Every charge is its own row and carries its own date. See "The timeline"
+/// in `docs/DESIGN.md`.
 struct OccurrenceRow: View {
     let entry: TimelineEntry
     /// Near dates read as words, and ends count months, from here.
     let today: Date
-    /// Picked out by a calendar tap on its day, then faded: `Tokens.Motion.dayMark`.
+    /// Picked out by a calendar tap on its day or a save, then faded: `Tokens.Motion.dayMark`.
     var isMarked = false
-    /// The month's last card is whole; every other one is tucked under the next.
-    var isLast = false
+
     /// The scroll target at the top of a day's first row, for a calendar tap to land on. A
     /// string, so it can't collide with a month's `Int` id in the same list.
     static func dayScrollID(_ day: Date) -> String {
@@ -66,20 +65,21 @@ struct OccurrenceRow: View {
     }
 
     private var standardLayout: some View {
-        HStack(alignment: .top, spacing: Tokens.Space.gap) {
-            picture(size: Tokens.Size.stackPicture)
+        HStack(spacing: Tokens.Space.gap) {
+            picture(size: Tokens.Size.rowPicture)
             VStack(alignment: .leading, spacing: 0) {
                 nameText(wraps: false)
-                dateText
+                dateLine
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             amountText
                 .layoutPriority(1)
         }
-        .padding(.horizontal, Tokens.Space.stackInset + Tokens.Space.stackLeading)
+        .padding(.leading, Tokens.Space.rowInset + Tokens.Space.rowLeading)
+        .padding(.trailing, Tokens.Space.rowInset + Tokens.Space.rowTrailing)
         // Under the content too, so a larger text size grows the card rather than crowding it.
-        .padding(.vertical, Tokens.Space.stackTop)
-        .frame(minHeight: Tokens.Size.stackRow, alignment: .top)
+        .padding(.vertical, Tokens.Space.rowGap / 2)
+        .frame(minHeight: Tokens.Size.row)
     }
 
     private var accessibleLayout: some View {
@@ -87,7 +87,7 @@ struct OccurrenceRow: View {
             picture(size: Tokens.Size.iconAccessible)
             VStack(alignment: .leading, spacing: Tokens.Space.tight) {
                 nameText(wraps: true)
-                dateText
+                dateLine
                 amountText
             }
         }
@@ -96,93 +96,115 @@ struct OccurrenceRow: View {
         // wide one overflows both edges. The standard layout is saved from this by the
         // `maxWidth: .infinity` on its text column.
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Tokens.Space.stackInset + Tokens.Space.stackLeading)
-        .padding(.top, Tokens.Space.stackTop)
-        .padding(.bottom, Tokens.Space.rowVerticalAccessible)
+        .padding(.leading, Tokens.Space.rowInset + Tokens.Space.rowLeading)
+        .padding(.trailing, Tokens.Space.rowInset + Tokens.Space.rowTrailing)
+        .padding(.vertical, Tokens.Space.rowGap / 2 + Tokens.Space.rowAccessibleVertical)
     }
 
     // MARK: The card
 
-    /// The card, `stackInset` in from each side, from the row's top to `stackTuck` below its
-    /// bottom. Charged is a wash in the category's colour; still to come, a dotted outline in it;
+    /// The card, `rowInset` in from each side and `rowGap / 2` from the row's top and bottom, so
+    /// cards stand `rowGap` apart. Charged is a paper card; still to come, a faint dashed outline;
     /// skipped, a dotted outline that has withdrawn to tertiary.
     private var card: some View {
         ZStack {
             switch entry.state {
             case .charged:
-                // The wash carries its own faint shadow, drawn into its picture.
-                Wash(colour: colour, cornerRadii: cornerRadii, seed: seed)
+                PaperCard(cornerRadii: cornerRadii, seed: seed)
             case .upcoming:
-                DottedOutline(colour: colour, cornerRadii: cornerRadii, seed: seed)
+                DashedOutline(cornerRadii: cornerRadii, seed: seed)
             case .skipped:
                 DottedOutline(colour: Tokens.Ink.tertiary, cornerRadii: cornerRadii, seed: seed)
             }
-            // The calendar tap's mark, on the card's own shape rather than across the row.
-            RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, inset: Tokens.Drawn.edgeWidth / 2)
+            // The mark of a calendar tap or a save, on the card's own shape rather than across the row.
+            RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed)
                 .fill(Tokens.Surface.pickedLane)
                 .opacity(isMarked ? 1 : 0)
         }
-        .padding(.horizontal, Tokens.Space.stackInset)
-        .padding(.bottom, -Tokens.Space.stackTuck)
+        .padding(.horizontal, Tokens.Space.rowInset)
+        .padding(.vertical, Tokens.Space.rowGap / 2)
         .accessibilityHidden(true)
-    }
-
-    private var colour: Color {
-        entry.colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured
     }
 
     /// From the occurrence's id, so a row draws the same edge every time it's built.
     private var seed: UInt64 { stableSeed(entry.id) }
 
-    /// Rounded at the top; at the bottom only on the month's last card, which nothing covers.
     private var cornerRadii: RectangleCornerRadii {
-        let top = Tokens.Radius.stackCard
-        let bottom = isLast ? Tokens.Radius.stackCard : 0
-        return RectangleCornerRadii(
-            topLeading: top, bottomLeading: bottom,
-            bottomTrailing: bottom, topTrailing: top
-        )
+        let radius = Tokens.Radius.row
+        return RectangleCornerRadii(topLeading: radius, bottomLeading: radius, bottomTrailing: radius, topTrailing: radius)
     }
 
     private var isCharged: Bool { entry.state == .charged }
 
     // MARK: The content
 
-    /// The category's picture in a square of `size`, which draws its own wash: white on a
-    /// charged card, in its colour on an outline.
+    /// The category's picture on its wash, in a square of `size`, with the badge at its lower right.
     private func picture(size: CGFloat) -> some View {
-        CategoryPictureView(picture: entry.picture, colour: entry.colour, size: size, onCard: isCharged)
+        CategoryPictureView(picture: entry.picture, colour: entry.colour, size: size)
             .frame(width: size, height: size)
-            // An upcoming or skipped row sits back with its picture, the way its ink does.
-            .opacity(isCharged ? 1 : Tokens.Opacity.upcomingIcon)
+            // Still to come, the picture sits back with its ink.
+            .opacity(isCharged ? 1 : Tokens.Opacity.upcomingPicture)
+            .overlay(alignment: .bottomTrailing) {
+                RowBadge(ends: entry.endDate != nil, state: entry.state)
+                    .offset(x: Tokens.Space.rowBadgeOffset, y: Tokens.Space.rowBadgeOffset)
+            }
             .accessibilityHidden(true)
+    }
+
+    /// Charged reads in full; still to come and skipped sit back.
+    private var ink: Color {
+        switch entry.state {
+        case .charged: Tokens.Ink.primary
+        case .upcoming: Tokens.Drawn.ink2
+        case .skipped: Tokens.Ink.tertiary
+        }
     }
 
     private func nameText(wraps: Bool) -> some View {
         Text(entry.name)
-            .font(Tokens.Text.name)
-            .foregroundStyle(isCharged ? Tokens.Ink.onCard : entry.state.primaryInk)
+            .font(isCharged ? Tokens.Text.rowName : Tokens.Text.rowNameSoft)
+            .foregroundStyle(ink)
             .lineLimit(wraps ? nil : 1)
             .truncationMode(.tail)
     }
 
-    private var dateText: some View {
-        Text(
-            [
-                TimelineFormatting.rowDate(entry.date, today: today, calendar: calendar, locale: locale),
-                TimelineFormatting.endLine(for: entry, today: today, calendar: calendar, locale: locale)
-            ]
-            .compactMap(\.self)
-            .joined(separator: " \u{00B7} ")
-        )
-            .font(Tokens.Text.caption)
-            .foregroundStyle(isCharged ? Tokens.Ink.onStackSoft : entry.state.secondaryInk)
+    /// "Today · 24 Oct", a `Yearly` tag when yearly, then " · " and how the bill ends. At an
+    /// accessibility size the end takes a line of its own when the three don't fit on one.
+    @ViewBuilder
+    private var dateLine: some View {
+        let end = TimelineFormatting.endLine(for: entry, today: today, calendar: calendar, locale: locale)
+        let date = HStack(spacing: Tokens.Space.tagLeading) {
+            Text(TimelineFormatting.rowDate(entry.date, today: today, calendar: calendar, locale: locale))
+            if entry.isYearly { YearlyTag() }
+        }
+        Group {
+            if dynamicTypeSize.isAccessibilitySize, let end {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Tokens.Space.tagLeading) {
+                        date
+                        Text("\u{00B7} \(end)")
+                    }
+                    VStack(alignment: .leading, spacing: 0) {
+                        date
+                        Text(end)
+                    }
+                }
+            } else {
+                HStack(spacing: Tokens.Space.tagLeading) {
+                    date
+                    if let end { Text("\u{00B7} \(end)") }
+                }
+            }
+        }
+        .font(Tokens.Text.caption)
+        .foregroundStyle(entry.state == .skipped ? Tokens.Ink.quaternary : Tokens.Drawn.ink2)
+        .lineLimit(1)
     }
 
     private var amountText: some View {
         Text(TimelineFormatting.amount(entry.amount, locale: locale))
-            .font(Tokens.Text.amount)
-            .foregroundStyle(isCharged ? Tokens.Ink.onCard : entry.state.primaryInk)
+            .font(isCharged ? Tokens.Text.rowAmount : Tokens.Text.rowAmountSoft)
+            .foregroundStyle(ink)
             .monospacedDigit()
             .strikethrough(entry.state == .skipped)
             .fixedSize()

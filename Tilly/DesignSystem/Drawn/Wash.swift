@@ -50,3 +50,28 @@ struct DottedOutline: View {
         .accessibilityHidden(true)
     }
 }
+
+/// What's charged: a solid paper card, `Drawn.paperCard`, on the rough shape. No colour, no shadow.
+struct PaperCard: View {
+    let cornerRadii: RectangleCornerRadii
+    let seed: UInt64
+
+    var body: some View {
+        RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed)
+            .fill(Tokens.Drawn.paperCard)
+            .accessibilityHidden(true)
+    }
+}
+
+/// What's still to come: paper inside a faint dashed line, `Drawn.dashFaint`, `Stroke.rowDash`.
+struct DashedOutline: View {
+    let cornerRadii: RectangleCornerRadii
+    let seed: UInt64
+
+    var body: some View {
+        let dash = Tokens.Stroke.rowDash
+        RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, inset: dash.lineWidth / 2)
+            .stroke(Tokens.Drawn.dashFaint, style: dash)
+            .accessibilityHidden(true)
+    }
+}
