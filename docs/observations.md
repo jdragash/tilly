@@ -11,5 +11,6 @@ fixed, tick it and move it to Done in the same change.
 - [ ] Fine-tune creating a category.
 - [ ] Suggest a category's symbol while typing its name. Start with a keyword-to-symbol list plus
   on-device word similarity (`NLEmbedding`); Apple's on-device model as an optional extra.
+- [ ] Let the sheet drag down to a middle height, not just full or dismissed.
 
 ## Done
