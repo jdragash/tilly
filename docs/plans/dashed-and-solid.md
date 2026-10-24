@@ -340,6 +340,14 @@ before landing.
   `Shape`): `Squiggle` takes its period and height. The divider's sides use `Space.gutter` (20pt)
   as the spec says, where the prototype's `.tdl` pads 24.
 - **Step 4: VoiceOver reads "Today, 24 October"**, from `spokenTodayDivider`, beside `todayDivider`.
+- **Step 5: at `accessibility3` (capped at `.xxxLarge`) a 98pt card can't hold two lines of name**
+  under its picture: names ran into the picture and "Phone & internet" truncated. A card is now at
+  least 98pt and grows as the name needs, filling its row so a row's cards line up, and the name may
+  shrink to 0.8 before it truncates. At the default size every card is 98pt, as specified. At
+  `accessibility3` the system breaks long words ("Stream-ing").
+- **Step 5: a pick fades the card over 0.15–0.17s**, measured from a recording (`categoryFade` 0.16).
+  The editor keeps its medium impact on a pick.
+- **Step 5: the grid scrolls inside the 340pt panel**; fourteen categories and `New` make four rows.
 
 ## If a step is wrong
 

@@ -25,19 +25,6 @@ final class MotionTuning {
         MotionValue(id: "sheetRise", label: "Sheet rise", defaultValue: 0.45, range: 0.2...1, step: 0.01),
         MotionValue(id: "sheetRiseBounce", label: "Sheet rise bounce", defaultValue: 0.1, range: 0...0.5, step: 0.01),
         MotionValue(id: "landingRowOffset", label: "Landing row offset", defaultValue: 120, range: 0...300, step: 1),
-        MotionValue(id: "press", label: "Press", defaultValue: 0.14, range: 0.05...0.4, step: 0.01),
-        MotionValue(id: "pressLift", label: "Press lift", defaultValue: 18, range: 0...40, step: 1),
-        MotionValue(id: "pressScale", label: "Press scale", defaultValue: 1.06, range: 1...1.2, step: 0.005),
-        MotionValue(id: "neighbourTilt", label: "Neighbour tilt", defaultValue: 3, range: 0...10, step: 0.5),
-        MotionValue(id: "play", label: "Play", defaultValue: 0.26, range: 0.1...0.8, step: 0.01),
-        MotionValue(id: "flood", label: "Flood", defaultValue: 0.38, range: 0.1...1, step: 0.01),
-        MotionValue(id: "stampScale", label: "Stamp scale", defaultValue: 1.3, range: 1...1.6, step: 0.01),
-        MotionValue(id: "stampUnder", label: "Stamp under", defaultValue: 0.95, range: 0.8...1, step: 0.01),
-        MotionValue(id: "stampDown", label: "Stamp down", defaultValue: 0.14, range: 0.05...0.4, step: 0.01),
-        MotionValue(id: "stampSettle", label: "Stamp settle", defaultValue: 0.1, range: 0.05...0.4, step: 0.01),
-        MotionValue(id: "dip", label: "Dip", defaultValue: 2, range: 0...8, step: 0.5),
-        MotionValue(id: "deal", label: "Deal", defaultValue: 200, range: 0...400, step: 1),
-        MotionValue(id: "dealStagger", label: "Deal stagger", defaultValue: 0.022, range: 0...0.08, step: 0.001),
         MotionValue(id: "dayDrop", label: "Day drop", defaultValue: 48, range: 0...120, step: 1),
         MotionValue(id: "dayDropDuration", label: "Day drop duration", defaultValue: 0.45, range: 0.2...1, step: 0.01),
         MotionValue(id: "dayDropBounce", label: "Day drop bounce", defaultValue: 0.3, range: 0...0.6, step: 0.01),
@@ -116,10 +103,9 @@ final class MotionTuning {
 
     private static func swiftType(of id: String) -> String {
         switch id {
-        case "sheetExit", "sheetContentsFade", "sheetRise", "press", "play",
-             "flood", "stampDown", "stampSettle", "dealStagger", "dayDropDuration":
+        case "sheetExit", "sheetContentsFade", "sheetRise", "dayDropDuration":
             "TimeInterval"
-        case "landingRowOffset", "pressLift", "dip", "deal", "dayDrop":
+        case "landingRowOffset", "dayDrop":
             "CGFloat"
         default:
             "Double"
@@ -145,20 +131,6 @@ extension Tokens.Motion {
         static var sheetRiseBounce: Double { MotionTuning.shared["sheetRiseBounce"] }
         /// A jumped-to row's top, under its pinned header.
         static var landingRowOffset: CGFloat { CGFloat(MotionTuning.shared["landingRowOffset"]) }
-        static var press: TimeInterval { MotionTuning.shared["press"] }
-        static var pressLift: CGFloat { CGFloat(MotionTuning.shared["pressLift"]) }
-        static var pressScale: Double { MotionTuning.shared["pressScale"] }
-        /// Degrees.
-        static var neighbourTilt: Double { MotionTuning.shared["neighbourTilt"] }
-        static var play: TimeInterval { MotionTuning.shared["play"] }
-        static var flood: TimeInterval { MotionTuning.shared["flood"] }
-        static var stampScale: Double { MotionTuning.shared["stampScale"] }
-        static var stampUnder: Double { MotionTuning.shared["stampUnder"] }
-        static var stampDown: TimeInterval { MotionTuning.shared["stampDown"] }
-        static var stampSettle: TimeInterval { MotionTuning.shared["stampSettle"] }
-        static var dip: CGFloat { CGFloat(MotionTuning.shared["dip"]) }
-        static var deal: CGFloat { CGFloat(MotionTuning.shared["deal"]) }
-        static var dealStagger: TimeInterval { MotionTuning.shared["dealStagger"] }
         /// The calendar month's and the year's drop of a saved charge into its day.
         static var dayDrop: CGFloat { CGFloat(MotionTuning.shared["dayDrop"]) }
         static var dayDropDuration: TimeInterval { MotionTuning.shared["dayDropDuration"] }

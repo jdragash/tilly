@@ -27,22 +27,22 @@ import Testing
         let defaults = Self.suite()
         let tuning = MotionTuning(defaults: defaults)
         tuning["sheetExit"] = 0.7
-        tuning["deal"] = 300
+        tuning["dayDrop"] = 60
         tuning.reset()
         #expect(tuning["sheetExit"] == 0.55)
-        #expect(tuning["deal"] == 200)
+        #expect(tuning["dayDrop"] == 48)
         #expect(MotionTuning(defaults: defaults)["sheetExit"] == 0.55)
     }
 
     @Test func snippetListsOnlyChangedValues() {
         let tuning = MotionTuning(defaults: Self.suite())
         tuning["sheetExit"] = 0.7
-        tuning["deal"] = 300
-        tuning["pressScale"] = 1.1
+        tuning["dayDrop"] = 60
+        tuning["sheetRiseBounce"] = 0.2
         #expect(tuning.swiftSnippet == """
             static let sheetExit: TimeInterval = 0.7
-            static let pressScale: Double = 1.1
-            static let deal: CGFloat = 300
+            static let sheetRiseBounce: Double = 0.2
+            static let dayDrop: CGFloat = 60
             """)
     }
 

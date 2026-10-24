@@ -3,9 +3,9 @@ import UIKit
 
 enum Tokens {
     enum Text {
-        /// A hand card's name, and the plus on `New`; from the prototype.
-        static let handName: Font = .caption2.weight(.semibold)
-        static let handPlus: Font = .title.weight(.light)
+        /// A picker card's name, 12pt bold, and the light plus on `New`; from the prototype.
+        static let pickerName: Font = .caption.bold()
+        static let pickerPlus: Font = .largeTitle.weight(.light)
         /// The face the whole app is set in: SF Pro Rounded, through `.fontDesign` at the root.
         static let design: Font.Design = .rounded
         static let monthName: Font = .title3.weight(.semibold)
@@ -82,8 +82,9 @@ enum Tokens {
     }
 
     enum Stroke {
-        /// The outline of `New` in the hand.
-        static let handNew: CGFloat = 2
+        /// The dashed outline of `New` in the picker, and the ring round the picked card; from the prototype.
+        static let pickerNew = StrokeStyle(lineWidth: 2, dash: [5, 4])
+        static let pickerRing: CGFloat = 2.5
         /// The empty emoji slot's dashed outline.
         static let emojiSlot = StrokeStyle(lineWidth: 1.5, dash: [4, 3])
         /// The ring round the chosen colour swatch.
@@ -207,15 +208,16 @@ enum Tokens {
     }
 
     enum Space {
-        /// The hand's fan: the step between cards at most and at least (it tightens to fit, then
-        /// scrolls), and the clearance kept at either side.
-        static let handStepMax: CGFloat = 48
-        static let handStepMin: CGFloat = 24
-        static let handSideClearance: CGFloat = 64
-        /// The hand's cards sit this far below the top of the hand, which leaves room to lift.
-        static let handTop: CGFloat = 60
-        /// A hand card's picture above its name.
-        static let handCardGap: CGFloat = 6
+        /// The picker's cards, both ways; a card's picture from its top, its name from its bottom,
+        /// and the ring outside the picked card. From the prototype.
+        static let pickerGap: CGFloat = 10
+        static let pickerPictureTop: CGFloat = 14
+        static let pickerNameBottom: CGFloat = 12
+        static let pickerNameSide: CGFloat = 5
+        /// The least room between a picker card's picture and its name, where a large text size
+        /// grows the card.
+        static let pickerNameTop: CGFloat = 4
+        static let pickerRingOutset: CGFloat = 4
         static let gutter: CGFloat = 20
         static let section: CGFloat = 16
         static let gap: CGFloat = 12
@@ -355,11 +357,12 @@ enum Tokens {
     }
 
     enum Size {
-        /// The hand's cards (portrait), and the picture on one.
-        static let handCard = CGSize(width: 84, height: 120)
-        static let handPicture: CGFloat = 44
-        /// The colour bar along a hand card's bottom; from the prototype.
-        static let handBar: CGFloat = 4
+        /// The category picker: cards across, a card's height, its picture and the colour strip
+        /// along its bottom. From the prototype.
+        static let pickerColumns = 4
+        static let pickerCard: CGFloat = 98
+        static let pickerPicture: CGFloat = 36
+        static let pickerStrip: CGFloat = 4
         /// A timeline row, its card `Space.rowGap / 2` in from its top and bottom; from the prototype.
         static let row: CGFloat = 64
         /// A row's picture, its badge and the badge's symbol; from the prototype.
@@ -491,11 +494,8 @@ enum Tokens {
     }
 
     enum Motion {
-        /// The hand's fan opens by this many degrees per step. From the prototype; not tuned.
-        static let handArc: Double = 8
-        /// The fan stops curving at this many degrees and runs straight beyond it, so a hand wider
-        /// than the screen scrolls along a line, not round a circle. A tuning value.
-        static let handArcMax: Double = 40
+        /// A picked category's colour crossfading on the editor's card; from the prototype.
+        static let categoryFade: TimeInterval = 0.16
         /// How often a boiling picture swaps to its next drawing; from the prototype.
         static let boilStep: TimeInterval = 0.125
         // The return scroll's duration scales with how far the reader actually has to
@@ -547,11 +547,10 @@ enum Tokens {
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is
     /// half the CSS blur.
     enum Shadow {
-        /// A hand card's: the prototype's 0 6 14 at 16% black, with a hairline round it.
-        static let handColour: Color = .black.opacity(0.16)
-        static let handRadius: CGFloat = 7
-        static let handY: CGFloat = 6
-        static let handHairline: Color = .black.opacity(0.14)
+        /// A picker card's, in light mode only: the prototype's 0 1 2 at 10% black.
+        static let pickerCardColour: Color = .black.opacity(0.1)
+        static let pickerCardRadius: CGFloat = 1
+        static let pickerCardY: CGFloat = 1
         static let cardColour: Color = .black.opacity(0.16)
         static let cardRadius: CGFloat = 14
         static let cardY: CGFloat = 12
@@ -571,8 +570,9 @@ enum Tokens {
     }
 
     enum Radius {
-        /// A card in the hand; from the prototype.
-        static let handCard: CGFloat = 10
+        /// A card in the category picker, and the ring round the picked one; from the prototype.
+        static let pickerCard: CGFloat = 10
+        static let pickerRing: CGFloat = 14
         static let icon: CGFloat = 10
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12

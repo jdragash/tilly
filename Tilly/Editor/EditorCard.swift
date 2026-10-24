@@ -13,14 +13,6 @@ struct EditorCard: View {
     let today: Date
     let onTap: (CardPart?) -> Void          // nil = the card's background
     let onNameSubmit: () -> Void
-    /// The category tile's frame (global), for a played card to fly to.
-    var onTileFrame: (CGRect) -> Void = { _ in }
-    /// A played card's colour arriving, from the tile outward; nil at rest.
-    var flood: CardFlood? = nil
-    /// The tile's picture scale: the stamp.
-    var stamp: CGFloat = 1
-    /// The card's drop and recovery when the colour lands.
-    var dip: CGFloat = 0
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
@@ -28,10 +20,6 @@ struct EditorCard: View {
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.cardAmount
     @ScaledMetric(relativeTo: .title) private var tileSize = Tokens.Size.cardCategoryTile
     @ScaledMetric(relativeTo: .title2) private var nameHeight = Tokens.Size.cardNameField
-
-    /// Where the tile sits on the card, so the flood can start from it.
-    @State private var tileCentre: CGPoint = .zero
-    private static let space = "editorCard"
 
     var body: some View {
         Group {
@@ -41,8 +29,6 @@ struct EditorCard: View {
                 standard
             }
         }
-        .coordinateSpace(name: Self.space)
-        .offset(y: dip)
     }
 
     // MARK: Layouts
@@ -110,28 +96,12 @@ struct EditorCard: View {
         }
     }
 
-    /// The card's colour. Played from the hand, the new colour grows from the tile over the old one
-    /// (`flood`); otherwise a new category crossfades over the old one, which is how Reduce Motion
-    /// gets it.
+    /// The card's colour. A new category crossfades over the old one, on whatever animation picked it.
     private var fill: some View {
-        GeometryReader { geometry in
-            ZStack {
-                if let flood {
-                    wash(for: flood.previous, id: nil)
-                    wash(for: category?.colour, id: category?.id)
-                        .mask {
-                            let diameter = 2 * flood.reach(from: tileCentre, in: geometry.size) * flood.progress
-                            Circle()
-                                .frame(width: diameter, height: diameter)
-                                .position(tileCentre)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                } else {
-                    wash(for: category?.colour, id: category?.id)
-                        .id(category?.id)
-                        .transition(.opacity)
-                }
-            }
+        ZStack {
+            wash(for: category?.colour, id: category?.id)
+                .id(category?.id)
+                .transition(.opacity)
         }
     }
 
@@ -314,16 +284,10 @@ struct EditorCard: View {
                         picture: CategoryPicture(category), colour: category.colour, size: tileSize,
                         onCard: true, place: .editor
                     )
-                    .scaleEffect(stamp)
                     .id(category.id)
                 }
             }
             .frame(width: tileSize, height: tileSize)
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { onTileFrame($0) }
-            .onGeometryChange(for: CGPoint.self) { proxy in
-                let frame = proxy.frame(in: .named(Self.space))
-                return CGPoint(x: frame.midX, y: frame.midY)
-            } action: { tileCentre = $0 }
             .overlay {
                 if isOpen {
                     tile.stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
@@ -479,15 +443,4 @@ private func previewCategory() -> (ModelContainer, ExpenseCategory) {
 #Preview("Accessibility size") {
     EditorCardPreview(draft: previewDraft([.digit(9), .digit(5), .digit(0)]))
         .dynamicTypeSize(.accessibility3)
-}
-
-/// The colour arriving on the card: the new wash revealed by a circle growing from the tile.
-struct CardFlood: Equatable {
-    let previous: CategoryColour?   // nil = the grey card
-    var progress: CGFloat           // 0 … 1, animated over Motion.Card.flood
-
-    /// The circle's final radius from `centre`: far enough to reach the card's furthest corner.
-    func reach(from centre: CGPoint, in size: CGSize) -> CGFloat {
-        hypot(max(centre.x, size.width - centre.x), max(centre.y, size.height - centre.y)) + Tokens.Stroke.cardFocus
-    }
 }
