@@ -142,15 +142,11 @@ enum TimelineFormatting {
         }
     }
 
-    /// "950 US dollars" — the currency named in full, so VoiceOver speaks it rather than
-    /// reading a symbol. Taken from `locale`, never assumed: the screen renders whatever
-    /// currency the device is set to, and the spoken label has to agree with it.
+    /// "950 euros" — `Money`'s currency named in full, so VoiceOver speaks it rather than
+    /// reading a symbol, in the words of `locale`.
     static func spokenAmount(_ value: Decimal, locale: Locale) -> String {
-        guard let code = locale.currency?.identifier else {
-            return "\(value)"
-        }
-        return value.formatted(
-            .currency(code: code)
+        value.formatted(
+            .currency(code: Money.currencyCode)
                 .presentation(.fullName)
                 .precision(.fractionLength(0))
                 .locale(locale)

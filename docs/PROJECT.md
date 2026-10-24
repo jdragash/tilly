@@ -95,4 +95,4 @@ Each of these was considered and deferred with a reason. See `ROADMAP.md` for wh
 - **Logging spending** — Tilly declares what's coming and never records what already went out. A
   one-off belongs here only when it's planned: dated ahead, like a bill with a single payment.
 - **Income and budgets** — Dime does this well; it's a different job from the one here.
-- **Multi-currency** — one currency, taken from the device locale.
+- **Multi-currency** — one currency, the euro, for now.

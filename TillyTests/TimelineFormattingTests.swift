@@ -19,6 +19,10 @@ import Testing
         #expect(TimelineFormatting.amount(950, locale: Self.locale) == "\u{20AC}950")
     }
 
+    @Test func anAmountIsInEurosWhateverTheRegion() {
+        #expect(TimelineFormatting.amount(30, locale: Locale(identifier: "en_US")) == "\u{20AC}30")
+    }
+
     @Test func aZeroTotalCarriesNoSign() {
         #expect(TimelineFormatting.amount(0, locale: Self.locale) == "\u{20AC}0")
     }
@@ -180,9 +184,8 @@ import Testing
         #expect(label.contains("upcoming"))
     }
 
-    /// The label used to say "euro" whatever the device was set to, while the screen beside
-    /// it rendered dollars. Pinned to a non-euro locale so the suite would catch it again.
-    @Test func aSpokenAmountNamesTheDevicesOwnCurrency() {
+    /// Amounts are euros whatever the region: a US-region phone still hears euros, as it sees €.
+    @Test func aSpokenAmountIsInEurosWhateverTheRegion() {
         let entry = TimelineEntry(
             id: "1", expenseID: UUID(), scheduledDate: Self.date(2027, 1, 30), name: "Rent", picture: .none, colour: nil,
             date: Self.date(2027, 1, 30), amount: 950, state: .charged, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false, isYearly: false
@@ -190,8 +193,8 @@ import Testing
         let label = TimelineFormatting.accessibilityLabel(
             for: entry, today: Self.date(2026, 9, 15), calendar: Self.calendar, locale: Locale(identifier: "en_US")
         )
-        #expect(label.localizedCaseInsensitiveContains("dollars"))
-        #expect(!label.localizedCaseInsensitiveContains("euro"))
+        #expect(label.localizedCaseInsensitiveContains("euros"))
+        #expect(!label.localizedCaseInsensitiveContains("dollar"))
     }
 
     @Test func aSkippedRowsLabelSaysSkipped() {

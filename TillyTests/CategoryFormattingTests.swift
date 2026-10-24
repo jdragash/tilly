@@ -84,10 +84,10 @@ import Testing
         #expect(CategoryFormatting.laneLabel(one, locale: Self.euro) == "Car, 120 euros out, 1 charge")
     }
 
-    @Test func laneTextInDollars() {
+    @Test func laneTextInEurosOnAUSRegion() {
         let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950, 309])
-        #expect(CategoryFormatting.focusFigure(lane, locale: Self.us) == "Home $1,259")
-        #expect(CategoryFormatting.laneLabel(lane, locale: Self.us) == "Home, 1,259 US dollars out, 2 charges")
+        #expect(CategoryFormatting.focusFigure(lane, locale: Self.us) == "Home \u{20AC}1,259")
+        #expect(CategoryFormatting.laneLabel(lane, locale: Self.us) == "Home, 1,259 euros out, 2 charges")
     }
 
     @Test func anUncategorisedLaneIsNamedNoCategory() {

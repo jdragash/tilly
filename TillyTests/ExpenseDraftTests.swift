@@ -206,9 +206,9 @@ import TillyCore
         #expect(Self.typed("1250.5").amountText(locale: Self.locale) == "\u{20AC}1,250.5")
     }
 
-    @Test func amountTextUsesTheLocalesOwnCurrency() {
+    @Test func amountTextIsInEurosWhateverTheRegion() {
         let text = Self.typed("1250.5").amountText(locale: Locale(identifier: "en_US"))
-        #expect(text == "$1,250.5")
+        #expect(text == "\u{20AC}1,250.5")
     }
 
     // MARK: The end

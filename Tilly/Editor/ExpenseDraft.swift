@@ -224,11 +224,12 @@ struct ExpenseDraft: Equatable, Sendable {
         return formatter.string(from: rounded as NSDecimalNumber) ?? "\(rounded)"
     }
 
-    /// "€0" when empty, "€1,250.5" mid-entry. The currency and separators are the locale's.
+    /// "€0" when empty, "€1,250.5" mid-entry, in `Money`'s currency with the locale's separators.
     func amountText(locale: Locale) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.locale = locale
+        formatter.currencyCode = Money.currencyCode
 
         let parts = digits.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
         let whole = parts.first.map(String.init) ?? ""

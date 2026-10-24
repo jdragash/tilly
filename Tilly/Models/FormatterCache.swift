@@ -23,7 +23,7 @@ nonisolated enum FormatterCache {
         return formatter
     }
 
-    /// A whole-unit currency formatter in `locale`.
+    /// A whole-unit formatter in `Money`'s currency, with `locale`'s separators.
     static func wholeCurrency(locale: Locale) -> NumberFormatter {
         let key = locale.identifier
         lock.lock()
@@ -32,6 +32,7 @@ nonisolated enum FormatterCache {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.locale = locale
+        formatter.currencyCode = Money.currencyCode
         formatter.maximumFractionDigits = 0
         formatter.minimumFractionDigits = 0
         numbers[key] = formatter

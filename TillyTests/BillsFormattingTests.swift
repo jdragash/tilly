@@ -86,15 +86,15 @@ import TillyCore
         #expect(Self.note(row, .month) == "ended 08/26")
     }
 
-    @Test func dollarsFollowTheLocale() {
-        #expect(Self.note(Self.row(charge: 640, every: 1, .year), .month, locale: Self.us) == "$640 yearly")
+    @Test func aUSRegionStillReadsEuros() {
+        #expect(Self.note(Self.row(charge: 640, every: 1, .year), .month, locale: Self.us) == "\u{20AC}640 yearly")
         let row = Self.row(state: .changes(Self.date(2027, 11, 10), from: 25))
-        #expect(Self.note(row, .month, locale: Self.us) == "$25 until Nov 10")
+        #expect(Self.note(row, .month, locale: Self.us) == "\u{20AC}25 until Nov 10")
     }
 
     @Test func totalsReadAMonthOrAYear() {
         #expect(BillsFormatting.total(1563, period: .month, locale: Self.euro) == "\u{20AC}1,563 a month")
         #expect(BillsFormatting.total(18756, period: .year, locale: Self.euro) == "\u{20AC}18,756 a year")
-        #expect(BillsFormatting.total(1563, period: .month, locale: Self.us) == "$1,563 a month")
+        #expect(BillsFormatting.total(1563, period: .month, locale: Self.us) == "\u{20AC}1,563 a month")
     }
 }
