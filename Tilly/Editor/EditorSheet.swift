@@ -18,23 +18,9 @@ enum EditorRequest: Identifiable, Equatable {
 enum EditorClose: Equatable {
     /// ✕, or a drag down.
     case cancelled
-    /// The charge to land on: the saved bill's charge at `date`.
+    /// The charge to bring into view: the saved bill's charge at `date`.
     case saved(expenseID: UUID, date: Date)
     case deleted
-}
-
-/// The sheet's own coordinate space, which moves with it.
-enum EditorSheetSpace {
-    static let name = "editorSheet"
-}
-
-/// The editor's card reports its frame in the sheet's own space, which moves with the sheet, so
-/// the frame is the same wherever the sheet is in its travel.
-struct EditorCardFrameKey: PreferenceKey {
-    static let defaultValue: CGRect? = nil
-    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
-        value = nextValue() ?? value
-    }
 }
 
 extension EnvironmentValues {
@@ -45,20 +31,13 @@ extension EnvironmentValues {
 
 /// The editor's sheet, drawn by the timeline: a scrim, then the sheet rising from the bottom with
 /// the system sheet's corner radius and grabber, dragged down to close. Drawn by the app rather
-/// than presented, so the card can fly between it and the list (DECISIONS.md, "Views switch in
-/// place…").
+/// than presented; it matches the system sheet as measured, and swapping it gains nothing yet.
 ///
 /// It rises over `sheetRise` with `sheetRiseBounce`. Closing, its contents fade over
 /// `sheetContentsFade` while it drops over `sheetExit` (the prototype's soft exit). Reduce Motion
 /// fades it both ways. The scrim takes taps and does nothing with them, as a sheet's does.
 struct EditorSheet<Content: View>: View {
     @Binding var request: EditorRequest?
-    /// Where the editor's card rests when the sheet is up, in `CardFlightLayer.space`, with the
-    /// sheet's own travel taken out: a flight can aim at it before the sheet has arrived.
-    let onCardRest: (CGRect) -> Void
-    /// How far a drag had pulled the sheet down as it let go to close: a card landing back from it
-    /// starts where it was, not at its rest.
-    var onDragClose: (CGFloat) -> Void = { _ in }
     @ViewBuilder let content: (EditorRequest) -> Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -74,17 +53,15 @@ struct EditorSheet<Content: View>: View {
     /// Bumped by every open and close, so a close finishing after a fresh open leaves it alone.
     @State private var generation = 0
     @State private var isDragging = false
-    /// The sheet's rest, in the flight space, measured where the travel doesn't reach.
-    @State private var rest: CGRect = .zero
+    /// The sheet's height at rest, measured where the travel doesn't reach.
+    @State private var restHeight: CGFloat = 0
     /// The sheet's drawn height, its top to the screen's bottom, behind the keyboard too.
     @State private var sheetHeight: CGFloat = 0
-    @State private var cardInSheet: CGRect?
-    @State private var reportedCardRest: CGRect?
 
     /// From its rest to fully below the screen. Its rest is shorter than the sheet while a
     /// keyboard is up, and the sheet hasn't been measured before it first opens.
     private var offDistance: CGFloat {
-        max(sheetHeight, rest.height + Tokens.Space.sheetOffMargin)
+        max(sheetHeight, restHeight + Tokens.Space.sheetOffMargin)
     }
 
     /// 1 at rest, 0 off the screen: the scrim darkens as the sheet rises.
@@ -97,12 +74,9 @@ struct EditorSheet<Content: View>: View {
     var body: some View {
         ZStack {
             scrim
-            // Where the sheet rests, never moved, so the card's rest can be read from it.
+            // Where the sheet rests, never moved, so its height at rest can be read from it.
             Color.clear
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(CardFlightLayer.space)) } action: {
-                    rest = $0
-                    reportCardRest()
-                }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { restHeight = $0 }
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
             if let shown {
@@ -132,11 +106,6 @@ struct EditorSheet<Content: View>: View {
             .id(shown.id)
             .environment(\.editorSheetContents, contents)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .coordinateSpace(name: EditorSheetSpace.name)
-            .onPreferenceChange(EditorCardFrameKey.self) { frame in
-                cardInSheet = frame
-                reportCardRest()
-            }
             .background {
                 // Down to the screen's bottom and behind the keyboard, as a system sheet's ground is.
                 Color.clear
@@ -182,7 +151,6 @@ struct EditorSheet<Content: View>: View {
                 let closes = value.translation.height > height * Tokens.Motion.sheetDragCloses
                     || value.predictedEndTranslation.height > height * Tokens.Motion.sheetFlingCloses
                 if closes {
-                    onDragClose(travel)
                     request = nil
                 } else {
                     withAnimation(riseAnimation) { travel = 0 }
@@ -204,9 +172,6 @@ struct EditorSheet<Content: View>: View {
         withTransaction(instant) {
             shown = new
             contents = 1
-            // Reported afresh for every open: one opened while the last was still leaving would
-            // otherwise match the old report and never be sent.
-            reportedCardRest = nil
             if isFresh {
                 if reduceMotion {
                     travel = 0
@@ -217,7 +182,6 @@ struct EditorSheet<Content: View>: View {
                 }
             }
         }
-        reportCardRest()
         // A turn later, so the sheet is drawn where it starts before it moves. A sheet still
         // leaving rises again from wherever it has got to.
         DispatchQueue.main.async {
@@ -238,8 +202,6 @@ struct EditorSheet<Content: View>: View {
             instant.disablesAnimations = true
             withTransaction(instant) {
                 shown = nil
-                cardInSheet = nil
-                reportedCardRest = nil
                 contents = 1
                 opacity = 1
                 travel = 0
@@ -255,20 +217,5 @@ struct EditorSheet<Content: View>: View {
         } completion: {
             finish()
         }
-    }
-
-    /// Only a real change: the frame wobbles by hundredths of a point while the sheet moves.
-    private func reportCardRest() {
-        guard let cardInSheet, rest != .zero else { return }
-        let frame = cardInSheet.offsetBy(dx: rest.minX, dy: rest.minY)
-        if let reported = reportedCardRest,
-           abs(reported.minX - frame.minX) < Tokens.Space.frameTolerance,
-           abs(reported.minY - frame.minY) < Tokens.Space.frameTolerance,
-           abs(reported.width - frame.width) < Tokens.Space.frameTolerance,
-           abs(reported.height - frame.height) < Tokens.Space.frameTolerance {
-            return
-        }
-        reportedCardRest = frame
-        onCardRest(frame)
     }
 }

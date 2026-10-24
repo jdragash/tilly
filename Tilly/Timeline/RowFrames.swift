@@ -2,40 +2,28 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// What the list is doing with one row while a card stands in for it: how much of its own height
-/// it takes, and whether its card shows. Landing, a row opens from 0 as the card drops into it;
-/// opened in the sheet, it keeps its whole height with its card gone.
-struct RowHold: Equatable {
-    let entryID: String
-    /// 0 … 1 of the row's own height; 1 while a row is open in the sheet.
-    var height: CGFloat
-    /// False while the flyer is its card.
-    var showsCard: Bool
+/// The timeline's coordinate space: rows report in it, and `isInView` reads it. It starts at the
+/// safe area's top, as the timeline's root does.
+enum TimelineSpace {
+    static let name = "timeline"
 }
 
-/// The rows on screen, by entry id, in `CardFlightLayer.space`. Rows report on appear and change,
-/// and drop out on disappear. Read in actions, never in `body`, so a scroll's stream of reports
-/// redraws nothing.
+/// The rows on screen, by entry id, in `TimelineSpace`. Rows report on appear and change, and drop
+/// out on disappear. Read in actions, never in `body`, so a scroll's stream of reports redraws
+/// nothing.
 @MainActor @Observable
 final class RowFrames {
     private(set) var frames: [String: CGRect] = [:]
-    /// A held row's frame at its whole height, which `frames` cuts to what shows.
-    private(set) var fullFrames: [String: CGRect] = [:]
 
     func report(_ id: String, frame: CGRect?) {
         frames[id] = frame
-        if frame == nil { fullFrames[id] = nil }
-    }
-
-    func reportFull(_ id: String, frame: CGRect) {
-        fullFrames[id] = frame
     }
 }
 
-/// Where a saved bill lands in the timeline, and whether its row is already in view. Pure, so it
+/// Where a saved bill appears in the timeline, and whether its row is already in view. Pure, so it
 /// is tested without views.
 enum TimelineLanding {
-    /// The entry a save lands on: the bill's charge on `date` (its effective date), from the built
+    /// The entry a save puts in place: the bill's charge on `date` (its effective date), from the built
     /// sections. Nil when that charge isn't in the window, or Extras hides it.
     static func target(
         expenseID: UUID, date: Date, in sections: [MonthKey: MonthSection], calendar: Calendar
@@ -43,19 +31,6 @@ enum TimelineLanding {
         let day = calendar.startOfDay(for: date)
         let month = MonthKey(containing: day, calendar: calendar)
         return sections[month]?.entries.first { $0.expenseID == expenseID && $0.date == day }
-    }
-
-    /// Whether a card opened from `opened` goes back into the same place: the same charge, still on
-    /// the same day. A moved charge keeps its id (it's keyed on the rule's date), so the day decides.
-    static func landsInPlace(opened: TimelineEntry, target: TimelineEntry) -> Bool {
-        opened.id == target.id && opened.date == target.date
-    }
-
-    /// Whether the opened row is still in the list where it was, once a save has rebuilt it: if
-    /// not, its place goes as the card lands elsewhere, and the list keeps that height as slack.
-    static func openedRowRemains(_ opened: TimelineEntry, in sections: [MonthKey: MonthSection], calendar: Calendar) -> Bool {
-        let month = MonthKey(containing: opened.date, calendar: calendar)
-        return sections[month]?.entries.contains { $0.id == opened.id && $0.date == opened.date } ?? false
     }
 
     /// Whether a row's frame is fully inside the list, under the pinned header and above the

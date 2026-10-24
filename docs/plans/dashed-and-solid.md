@@ -309,6 +309,20 @@ before landing.
 
 ## Lessons
 
+- **Step 2: a jump to a row needs the row laid out, not just its month.** With the held row gone,
+  `jump` reads the row's height, and a turn after the month's scroll the row sometimes hadn't laid
+  out: the height read 0 and the row's `scrollTo` did nothing (a lazy list ignores ids it hasn't
+  built), leaving the month's top in view and the row 128pt under the header, two rows down.
+  `jump` now waits a turn at a time (up to 10) for the row's frame before its second scroll.
+  Measured after: 120.00 under the header, and 119.90 under Reduce Motion (target 120).
+- **Step 2: a saved row's frame lags its scroll by a turn.** Read when the mark is set, the row
+  was still 8pt short of where it rested (127.92, then 119.92). Measure at rest.
+- **Step 2: there is no unchanged ✓ to press.** ✓ is disabled while an edit has changed nothing,
+  so check 3's third case can't happen; ✕ and a drag down both left the list still (offset to
+  0.00) with nothing marked.
+- **Step 2's seam grep matches `CategoryHand`'s own `flyer`**, the hand's played card, which
+  goes with the hand in step 5. Nothing of the card's flight is left.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

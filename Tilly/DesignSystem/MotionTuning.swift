@@ -4,8 +4,8 @@ import SwiftUI
 
 /// One tunable value: its key, label, default and range. The defaults are the prototype's.
 struct MotionValue: Identifiable, Sendable {
-    let id: String            // stable key, e.g. "flip"
-    let label: String         // "Flip"
+    let id: String            // stable key, e.g. "sheetExit"
+    let label: String         // "Sheet exit"
     let defaultValue: Double
     let range: ClosedRange<Double>
     let step: Double
@@ -24,13 +24,6 @@ final class MotionTuning {
         MotionValue(id: "sheetContentsFade", label: "Sheet contents fade", defaultValue: 0.14, range: 0...0.4, step: 0.01),
         MotionValue(id: "sheetRise", label: "Sheet rise", defaultValue: 0.45, range: 0.2...1, step: 0.01),
         MotionValue(id: "sheetRiseBounce", label: "Sheet rise bounce", defaultValue: 0.1, range: 0...0.5, step: 0.01),
-        MotionValue(id: "flip", label: "Flip", defaultValue: 0.4, range: 0.15...1, step: 0.01),
-        MotionValue(id: "flipHold", label: "Flip hold", defaultValue: 0.15, range: 0...0.6, step: 0.01),
-        MotionValue(id: "flipLift", label: "Flip lift", defaultValue: 0.06, range: 0...0.15, step: 0.005),
-        MotionValue(id: "drop", label: "Drop", defaultValue: 0.45, range: 0.2...1, step: 0.01),
-        MotionValue(id: "dropBounce", label: "Drop bounce", defaultValue: 0.3, range: 0...0.6, step: 0.01),
-        MotionValue(id: "open", label: "Open", defaultValue: 0.4, range: 0.2...1, step: 0.01),
-        MotionValue(id: "openBounce", label: "Open bounce", defaultValue: 0.3, range: 0...0.6, step: 0.01),
         MotionValue(id: "landingRowOffset", label: "Landing row offset", defaultValue: 120, range: 0...300, step: 1),
         MotionValue(id: "press", label: "Press", defaultValue: 0.14, range: 0.05...0.4, step: 0.01),
         MotionValue(id: "pressLift", label: "Press lift", defaultValue: 18, range: 0...40, step: 1),
@@ -111,7 +104,7 @@ final class MotionTuning {
         #endif
     }
 
-    /// `static let flip: TimeInterval = 0.4` per changed value, to paste into `Tokens.swift`.
+    /// `static let sheetExit: TimeInterval = 0.55` per changed value, to paste into `Tokens.swift`.
     var swiftSnippet: String {
         Self.values.compactMap { value in
             guard let tuned = changed[value.id] else { return nil }
@@ -123,7 +116,7 @@ final class MotionTuning {
 
     private static func swiftType(of id: String) -> String {
         switch id {
-        case "sheetExit", "sheetContentsFade", "sheetRise", "flip", "flipHold", "drop", "open", "press", "play",
+        case "sheetExit", "sheetContentsFade", "sheetRise", "press", "play",
              "flood", "stampDown", "stampSettle", "dealStagger", "dayDropDuration":
             "TimeInterval"
         case "landingRowOffset", "pressLift", "dip", "deal", "dayDrop":
@@ -150,13 +143,6 @@ extension Tokens.Motion {
         static var sheetContentsFade: TimeInterval { MotionTuning.shared["sheetContentsFade"] }
         static var sheetRise: TimeInterval { MotionTuning.shared["sheetRise"] }
         static var sheetRiseBounce: Double { MotionTuning.shared["sheetRiseBounce"] }
-        static var flip: TimeInterval { MotionTuning.shared["flip"] }
-        static var flipHold: TimeInterval { MotionTuning.shared["flipHold"] }
-        static var flipLift: Double { MotionTuning.shared["flipLift"] }
-        static var drop: TimeInterval { MotionTuning.shared["drop"] }
-        static var dropBounce: Double { MotionTuning.shared["dropBounce"] }
-        static var open: TimeInterval { MotionTuning.shared["open"] }
-        static var openBounce: Double { MotionTuning.shared["openBounce"] }
         /// A jumped-to row's top, under its pinned header.
         static var landingRowOffset: CGFloat { CGFloat(MotionTuning.shared["landingRowOffset"]) }
         static var press: TimeInterval { MotionTuning.shared["press"] }

@@ -19,28 +19,28 @@ import Testing
 
     @Test func setPersistsAcrossInstances() {
         let defaults = Self.suite()
-        MotionTuning(defaults: defaults)["flip"] = 0.7
-        #expect(MotionTuning(defaults: defaults)["flip"] == 0.7)
+        MotionTuning(defaults: defaults)["sheetExit"] = 0.7
+        #expect(MotionTuning(defaults: defaults)["sheetExit"] == 0.7)
     }
 
     @Test func resetRestoresDefaults() {
         let defaults = Self.suite()
         let tuning = MotionTuning(defaults: defaults)
-        tuning["flip"] = 0.7
+        tuning["sheetExit"] = 0.7
         tuning["deal"] = 300
         tuning.reset()
-        #expect(tuning["flip"] == 0.4)
+        #expect(tuning["sheetExit"] == 0.55)
         #expect(tuning["deal"] == 200)
-        #expect(MotionTuning(defaults: defaults)["flip"] == 0.4)
+        #expect(MotionTuning(defaults: defaults)["sheetExit"] == 0.55)
     }
 
     @Test func snippetListsOnlyChangedValues() {
         let tuning = MotionTuning(defaults: Self.suite())
-        tuning["flip"] = 0.7
+        tuning["sheetExit"] = 0.7
         tuning["deal"] = 300
         tuning["pressScale"] = 1.1
         #expect(tuning.swiftSnippet == """
-            static let flip: TimeInterval = 0.7
+            static let sheetExit: TimeInterval = 0.7
             static let pressScale: Double = 1.1
             static let deal: CGFloat = 300
             """)
@@ -49,8 +49,8 @@ import Testing
     @Test func snippetIsEmptyWhenNothingChanged() {
         let tuning = MotionTuning(defaults: Self.suite())
         #expect(tuning.swiftSnippet.isEmpty)
-        tuning["flip"] = 0.7
-        tuning["flip"] = 0.4
+        tuning["sheetExit"] = 0.7
+        tuning["sheetExit"] = 0.55
         #expect(tuning.swiftSnippet.isEmpty)
     }
 

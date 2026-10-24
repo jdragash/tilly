@@ -298,8 +298,6 @@ enum Tokens {
         static let grabberTop: CGFloat = 5
         /// How far a finger moves before it drags the sheet rather than tapping what's on it.
         static let sheetDragSlop: CGFloat = 10
-        /// A measured frame that moves less than this hasn't moved: the scroll-anchoring tolerance.
-        static let frameTolerance: CGFloat = 0.5
         /// Below its rest, the sheet is off the screen by this much more than its own height: the
         /// home indicator's band, before the sheet has measured itself.
         static let sheetOffMargin: CGFloat = 60
@@ -458,13 +456,11 @@ enum Tokens {
     }
 
     enum Motion {
-        /// The hand's fan opens by this many degrees per step, and the card's turn is drawn with this
-        /// perspective. From the prototype; not tuned.
+        /// The hand's fan opens by this many degrees per step. From the prototype; not tuned.
         static let handArc: Double = 8
         /// The fan stops curving at this many degrees and runs straight beyond it, so a hand wider
         /// than the screen scrolls along a line, not round a circle. A tuning value.
         static let handArcMax: Double = 40
-        static let flipPerspective: CGFloat = 0.4
         /// How often a boiling picture swaps to its next drawing; from the prototype.
         static let boilStep: TimeInterval = 0.125
         // The return scroll's duration scales with how far the reader actually has to

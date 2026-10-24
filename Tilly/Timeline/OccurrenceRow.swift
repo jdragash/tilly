@@ -35,33 +35,13 @@ struct OccurrenceRow: View {
     var isMarked = false
     /// The month's last card is whole; every other one is tucked under the next.
     var isLast = false
-    /// How much of its own height the row takes, 0 … 1: its frame and its card are cut to it, from
-    /// the top, so a landing can open the row's place in the stack. Animates.
-    var heightFraction: CGFloat = 1
-    /// False while a flying card stands in for this one: the row keeps its place, drawn empty.
-    var showsCard = true
-    /// 0 … 1: at 0 the card fills the frame with `Radius.card` on every corner and no `stackInset`,
-    /// as the editor's card does; at 1 it is the row. The content keeps the row's layout. A flying
-    /// card's back is drawn this way.
-    var morph: CGFloat = 1
-    /// Whether the card runs on beneath the next one. A card in flight leaves it out unless it is the
-    /// month's last, so where it lands it ends exactly where the row's own card shows, and nothing
-    /// pops when the row takes its place.
-    var tucksUnder = true
-    /// The card drawn this tall, past the content, as a flying card's back is; nil for a row.
-    var cardHeight: CGFloat? = nil
-    /// Reports the row's frame at its whole height, in `CardFlightLayer.space`, while held, however
-    /// little of it shows: where a card lands. Nil reports nothing.
-    var onFullFrame: ((CGRect) -> Void)? = nil
-
     /// The scroll target at the top of a day's first row, for a calendar tap to land on. A
     /// string, so it can't collide with a month's `Int` id in the same list.
     static func dayScrollID(_ day: Date) -> String {
         "day-\(Int(day.timeIntervalSinceReferenceDate))"
     }
 
-    /// The row's own scroll target, for a landing to jump to: a held row at height 0 is zero high,
-    /// so its top is where it lands, as a day's marker's is.
+    /// The row's own scroll target, for a save to bring the row into view.
     static func rowScrollID(_ entryID: String) -> String {
         "row-\(entryID)"
     }
@@ -71,30 +51,16 @@ struct OccurrenceRow: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
-        let reportsFullFrame = onFullFrame != nil
-        return RowHeightLayout(fraction: heightFraction) {
-            Group {
-                if dynamicTypeSize.isAccessibilitySize {
-                    accessibleLayout
-                } else {
-                    standardLayout
-                }
-            }
-            .frame(minHeight: cardHeight, alignment: .top)
-            // Behind the row and no part of its height, so the row's height stays the row's own and
-            // a day's zero-high scroll marker still lands on the row's top.
-            .background { card }
-            // Laid out whole inside the cut, so this is the row's full frame. Every row carries it,
-            // so a hold coming and going changes nothing about the row's identity; unheld, it
-            // reads nil and never reports.
-            .onGeometryChange(for: CGRect?.self) { proxy in
-                reportsFullFrame ? proxy.frame(in: .named(CardFlightLayer.space)) : nil
-            } action: { frame in
-                if let frame { onFullFrame?(frame) }
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                accessibleLayout
+            } else {
+                standardLayout
             }
         }
-        .clipShape(RowHeightClip(fraction: heightFraction))
-        .opacity(showsCard ? 1 : 0)
+        // Behind the row and no part of its height, so the row's height stays the row's own and
+        // a day's zero-high scroll marker still lands on the row's top.
+        .background { card }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: entry, today: today, calendar: calendar, locale: locale))
     }
@@ -156,8 +122,8 @@ struct OccurrenceRow: View {
                 .fill(Tokens.Surface.pickedLane)
                 .opacity(isMarked ? 1 : 0)
         }
-        .padding(.horizontal, Tokens.Space.stackInset * morphed)
-        .padding(.bottom, tucksUnder ? -Tokens.Space.stackTuck * morphed : 0)
+        .padding(.horizontal, Tokens.Space.stackInset)
+        .padding(.bottom, -Tokens.Space.stackTuck)
         .accessibilityHidden(true)
     }
 
@@ -168,13 +134,10 @@ struct OccurrenceRow: View {
     /// From the occurrence's id, so a row draws the same edge every time it's built.
     private var seed: UInt64 { stableSeed(entry.id) }
 
-    private var morphed: CGFloat { min(1, max(0, morph)) }
-
-    /// The row's corners, from the editor's card's at `morph` 0.
+    /// Rounded at the top; at the bottom only on the month's last card, which nothing covers.
     private var cornerRadii: RectangleCornerRadii {
-        let card = Tokens.Radius.card
-        let top = card + (Tokens.Radius.stackCard - card) * morphed
-        let bottom = card + ((isLast ? Tokens.Radius.stackCard : 0) - card) * morphed
+        let top = Tokens.Radius.stackCard
+        let bottom = isLast ? Tokens.Radius.stackCard : 0
         return RectangleCornerRadii(
             topLeading: top, bottomLeading: bottom,
             bottomTrailing: bottom, topTrailing: top
@@ -223,54 +186,5 @@ struct OccurrenceRow: View {
             .monospacedDigit()
             .strikethrough(entry.state == .skipped)
             .fixedSize()
-    }
-}
-
-/// Lays the row out at its own height and takes `fraction` of it, the row drawn from the top.
-/// Animatable, so a held row opens on whatever spring sets its fraction.
-private struct RowHeightLayout: Layout {
-    var fraction: CGFloat
-
-    var animatableData: CGFloat {
-        get { fraction }
-        set { fraction = newValue }
-    }
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let size = natural(proposal, subviews)
-        return CGSize(width: size.width, height: size.height * min(1, max(0, fraction)))
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let size = natural(proposal, subviews)
-        for subview in subviews {
-            subview.place(at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(size))
-        }
-    }
-
-    private func natural(_ proposal: ProposedViewSize, _ subviews: Subviews) -> CGSize {
-        let width = ProposedViewSize(width: proposal.width, height: nil)
-        return subviews.reduce(CGSize.zero) { size, subview in
-            let fit = subview.sizeThatFits(width)
-            return CGSize(width: max(size.width, fit.width), height: max(size.height, fit.height))
-        }
-    }
-}
-
-/// Uncut at the whole height, so the card's tuck, wobble and shadow reach past the row as ever.
-/// Below it, the row is cut at its shortened bottom and its top, and left open at the sides.
-nonisolated private struct RowHeightClip: Shape {
-    var fraction: CGFloat
-
-    var animatableData: CGFloat {
-        get { fraction }
-        set { fraction = newValue }
-    }
-
-    func path(in rect: CGRect) -> Path {
-        guard fraction < 1 else {
-            return Path(rect.insetBy(dx: -rect.width, dy: -max(rect.height, rect.width)))
-        }
-        return Path(CGRect(x: rect.minX - rect.width, y: rect.minY, width: rect.width * 3, height: rect.height))
     }
 }

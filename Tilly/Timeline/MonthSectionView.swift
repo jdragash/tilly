@@ -9,12 +9,10 @@ struct MonthSectionView: View {
     let showsFirstWeekLine: Bool
     /// The day a calendar tap opened, its rows marked until the mark fades.
     var markedDay: Date?
-    /// The row a card stands in for, if it's in this month.
-    var hold: RowHold?
-    /// Each row's frame in `CardFlightLayer.space` as it changes, and nil as it leaves.
+    /// The row a save just put in place, marked until the mark fades.
+    var markedEntryID: String?
+    /// Each row's frame in `TimelineSpace` as it changes, and nil as it leaves.
     var onRowFrame: (String, CGRect?) -> Void = { _, _ in }
-    /// The held row's frame at its whole height, however little of it shows: where a card lands.
-    var onHeldRowFrame: (String, CGRect) -> Void = { _, _ in }
     let onOpen: (TimelineEntry) -> Void
 
     var body: some View {
@@ -27,17 +25,15 @@ struct MonthSectionView: View {
                         .frame(height: Tokens.Size.scrollMarker)
                         .id(OccurrenceRow.dayScrollID(entry.date))
                 }
-                let held = hold?.entryID == entry.id ? hold : nil
                 Button {
                     onOpen(entry)
                 } label: {
                     // On the label, not the button: a plain button hit-tests its label's
                     // shape, so outside it the gap between name and amount stays dead.
                     OccurrenceRow(
-                        entry: entry, today: today, isMarked: entry.date == markedDay,
-                        isLast: index == section.entries.count - 1,
-                        heightFraction: held?.height ?? 1, showsCard: held?.showsCard ?? true,
-                        onFullFrame: held == nil ? nil : { onHeldRowFrame(entry.id, $0) }
+                        entry: entry, today: today,
+                        isMarked: entry.date == markedDay || entry.id == markedEntryID,
+                        isLast: index == section.entries.count - 1
                     )
                         .contentShape(Rectangle())
                 }
@@ -45,7 +41,7 @@ struct MonthSectionView: View {
                 .accessibilityHint("Edits this charge")
                 .id(OccurrenceRow.rowScrollID(entry.id))
                 .onGeometryChange(for: CGRect.self) { proxy in
-                    proxy.frame(in: .named(CardFlightLayer.space))
+                    proxy.frame(in: .named(TimelineSpace.name))
                 } action: { frame in
                     onRowFrame(entry.id, frame)
                 }
