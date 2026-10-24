@@ -6,6 +6,9 @@ struct YearMonthCell: View {
     let month: YearMonth
     let extrasOnly: Bool
     let isCurrent: Bool
+    /// The day a charge was just saved on, while it arrives, and how long it waits to.
+    var arrivingDay: Date? = nil
+    var arrivalDelay: TimeInterval = 0
     let onOpen: () -> Void
 
     @Environment(\.calendar) private var calendar
@@ -53,14 +56,25 @@ struct YearMonthCell: View {
         let cells = Array(repeating: Optional<YearMark>.none, count: month.leadingDays) + month.marks.map { Optional($0) }
         let columns = Array(repeating: GridItem(.fixed(Tokens.Size.yearDayWidth), spacing: 0), count: 7)
         return LazyVGrid(columns: columns, spacing: 0) {
-            ForEach(Array(cells.enumerated()), id: \.offset) { _, mark in
+            ForEach(Array(cells.enumerated()), id: \.offset) { offset, mark in
                 ZStack {
-                    if let mark { YearMarkView(mark: mark) }
+                    if let mark {
+                        YearMarkView(mark: mark)
+                            .dayArrival(arrives(dayIndex: offset - month.leadingDays), delay: arrivalDelay)
+                    }
                 }
                 .frame(width: Tokens.Size.yearDayWidth, height: Tokens.Size.yearDayHeight)
             }
         }
         .frame(width: width)
+    }
+
+    /// Whether the charge just saved is on this month's `dayIndex`th day (from 0).
+    private func arrives(dayIndex: Int) -> Bool {
+        guard let arrivingDay, dayIndex >= 0,
+              MonthKey(containing: arrivingDay, calendar: calendar) == month.month
+        else { return false }
+        return calendar.component(.day, from: arrivingDay) == dayIndex + 1
     }
 
     /// "October 2026, €1,166", or "October 2026, nothing".

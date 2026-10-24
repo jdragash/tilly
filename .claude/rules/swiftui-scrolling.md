@@ -29,17 +29,17 @@ measurement, so Opus builds it.
 
 - **Use `ScrollViewReader`, not `ScrollPosition`,** which produced no scroll at all. Defer the
   call one turn (`DispatchQueue.main.async`): the proxy isn't set when sections first populate.
-- **A lazy list resolves only ids it has laid out.** Asked for a row in a month it hadn't built,
-  it didn't move. Scroll to the month, then to the row a turn later, both unanimated. A zero-high
-  marker as the target needs no row height (landed 59.86 under a 60pt header). Two *animated*
-  scrolls a turn apart fight: the second landed at 0.0 or nowhere.
+- **A lazy list resolves only ids it has laid out.** Scroll to the month, then to the row once its
+  frame reports (a turn later wasn't always enough: 128pt off), both unanimated, to the row's own id.
+  A zero-high marker needs no row height (59.86 under a 60pt header). Two *animated* scrolls a turn
+  apart fight. A row's frame lags its scroll by a turn: measure at rest.
 - **A scroll issued while the list glides is dropped.** Rebuilding the months mid-glide lost the
   anchor, and once the list had shrunk under the glide it ran off the end, blank. Halting scrolling
   for a turn (`scrollDisabled`) stops it in the Simulator; on an iOS 27 iPhone even that hasn't
   stopped the glide. Unsolved: see the month button. Test it on a device (`simulator.md`).
-- **An animated `scrollTo` has no reliable completion.** Work that must follow it waits out its
-  own duration. An anchoring scroll lands a turn after new content: a few frames at raw offset.
-- **`scrollTo(y:)` after an id-based scroll blanked the list.** Avoid point-based scrolling.
+- **An animated `scrollTo` has no reliable completion;** wait out its duration. Avoid `scrollTo(y:)`
+  after an id-based scroll: it blanked the list.
+- **Re-anchoring to a pinned header after a save moved the list 136pt;** `refreshWindow()` didn't.
 - **`LazyVStack` stops laying out distant headers**, freezing their cached geometry, and a header
   it stops drawing keeps its last offset: after a jump the month under the middle read June from
   a stale entry. Clear it in `onDisappear`; take distance from the `ScrollView`'s own offset.

@@ -27,8 +27,9 @@ grep -REn '#[0-9A-Fa-f]{6}|Color\(red:|\.font\(\.(largeTitle|title|headline|subh
 
 - Round to whole units **before** totalling (`NSDecimalRound`, `.plain`), so a total always
   equals the figures above it.
-- VoiceOver speaks the currency in full from the device locale. Never hardcode a currency. Keep
-  a non-euro test case.
+- Every amount is in `Money.currencyCode`, shown and spoken, whatever the device's region; the
+  region sets only separators and wording. A formatter left on the region's currency showed $ on
+  a US-region phone. Keep a non-euro-region test case.
 
 ## Accessibility
 

@@ -59,7 +59,7 @@ struct AllBillsSheet: View {
                                 if showsEnded {
                                     EndedBillsCard(
                                         rows: ended, period: period,
-                                        emoji: { emoji(for: $0, in: infos) }, onOpen: open
+                                        picture: { picture(for: $0, in: infos) }, onOpen: open
                                     )
                                 }
                             }
@@ -83,9 +83,14 @@ struct AllBillsSheet: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
+        .drawnGround()
         .presentationDetents([.large])
+        // A system sheet still, over this one: the timeline's own editor sheet is drawn beneath
+        // every system sheet, so it can't rise over All bills.
         .sheet(item: $editing, onDismiss: { refresh &+= 1 }) { session in
-            ExpenseEditor(today: today, session: session)
+            ExpenseEditor(today: today, session: session, onClose: { _ in editing = nil })
+                .drawnGround()
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -93,7 +98,7 @@ struct AllBillsSheet: View {
 
     private func title(_ card: BillCard?, total: Decimal) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(titleText(card))
+            titleText(card)
                 .font(Tokens.Text.calendarTitle)
                 .foregroundStyle(Tokens.Ink.primary)
                 .accessibilityAddTraits(.isHeader)
@@ -107,16 +112,16 @@ struct AllBillsSheet: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func titleText(_ card: BillCard?) -> String {
-        guard let card else { return "All bills" }
-        guard let category = card.category else { return BillsFormatting.uncategorisedName }
-        return "\(category.emoji) \(category.name)"
+    private func titleText(_ card: BillCard?) -> Text {
+        guard let card else { return Text("All bills") }
+        guard let category = card.category else { return Text(BillsFormatting.uncategorisedName) }
+        return Text("\(category.picture.inline) \(category.name)")
     }
 
     private func chips(_ cards: [BillCard], picked pickedID: String?) -> some View {
         ScrollView(.horizontal) {
             HStack(spacing: Tokens.Space.chipGap) {
-                chip("All", isPicked: pickedID == nil) { picked = nil }
+                chip(Text("All"), isPicked: pickedID == nil) { picked = nil }
                 ForEach(cards) { card in
                     chip(chipText(card), isPicked: pickedID == card.id) {
                         picked = pickedID == card.id ? nil : card.id
@@ -129,14 +134,14 @@ struct AllBillsSheet: View {
         .padding(.top, Tokens.Space.chipsTop)
     }
 
-    private func chipText(_ card: BillCard) -> String {
-        guard let category = card.category else { return BillsFormatting.uncategorisedName }
-        return "\(category.emoji) \(category.name)"
+    private func chipText(_ card: BillCard) -> Text {
+        guard let category = card.category else { return Text(BillsFormatting.uncategorisedName) }
+        return Text("\(category.picture.inline) \(category.name)")
     }
 
-    private func chip(_ text: String, isPicked: Bool, action: @escaping () -> Void) -> some View {
+    private func chip(_ text: Text, isPicked: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(text)
+            text
                 .font(Tokens.Text.billsChip)
                 .lineLimit(1)
                 .foregroundStyle(isPicked ? Tokens.Surface.base : Tokens.Ink.primary)
@@ -171,8 +176,8 @@ struct AllBillsSheet: View {
         .accessibilityHint(showsEnded ? "Hides them" : "Shows them")
     }
 
-    private func emoji(for row: BillRow, in infos: [CategoryInfo]) -> String? {
-        row.categoryID.flatMap { id in infos.first { $0.id == id }?.emoji }
+    private func picture(for row: BillRow, in infos: [CategoryInfo]) -> CategoryPicture {
+        row.categoryID.flatMap { id in infos.first { $0.id == id }?.picture } ?? .none
     }
 
     // MARK: Opening

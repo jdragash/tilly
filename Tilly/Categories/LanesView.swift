@@ -219,8 +219,11 @@ struct LanesView: View {
     private func emojiButton(_ lane: CategoryLane, isPicked: Bool) -> some View {
         Button { onPick(lane) } label: {
             Group {
-                if let emoji = lane.category?.emoji {
-                    Text(emoji).font(Tokens.Text.laneEmoji(laneHeight: laneHeight))
+                if let picture = lane.category?.picture, !picture.isNone {
+                    CategoryPictureView(
+                        picture: picture, colour: lane.category?.colour,
+                        size: Tokens.Size.pictureLane(laneHeight: laneHeight)
+                    )
                 } else {
                     // Charges saved before categories existed carry no emoji.
                     Image(systemName: "circle.dashed")
@@ -250,7 +253,7 @@ struct LanesView: View {
             .opacity(scrubDay == nil || onLine ? 1 : Tokens.Opacity.offLineDot)
             .zIndex(onLine ? 1 : 0)
             .accessibilityElement()
-            .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: dot.entry, calendar: calendar, locale: locale))
+            .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: dot.entry, today: today, calendar: calendar, locale: locale))
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { onOpen(dot.entry) }
     }

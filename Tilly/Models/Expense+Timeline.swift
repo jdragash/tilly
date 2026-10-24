@@ -10,7 +10,7 @@ extension Expense {
     /// `timelineExpenses(_:)` instead, which carries the series' end.
     var timelineExpense: TimelineExpense {
         TimelineExpense(
-            name: name, emoji: category?.emoji, snapshot: snapshot, overrides: overrideSnapshots,
+            name: name, picture: CategoryPicture(category), colour: category?.colour, snapshot: snapshot, overrides: overrideSnapshots,
             seriesEndDate: endDate
         )
     }
@@ -26,7 +26,8 @@ extension Expense {
         }
         return expenses.map { expense in
             TimelineExpense(
-                name: expense.name, emoji: expense.category?.emoji, snapshot: expense.snapshot,
+                name: expense.name, picture: CategoryPicture(expense.category), colour: expense.category?.colour,
+                snapshot: expense.snapshot,
                 overrides: expense.overrideSnapshots, seriesEndDate: seriesEnds[expense.seriesKey] ?? nil
             )
         }

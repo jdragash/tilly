@@ -8,6 +8,8 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
+    /// The category whose symbols are open under its row; one at a time.
+    @State private var pickingSymbolFor: UUID?
     #if DEBUG
     @Environment(DeveloperSession.self) private var session: DeveloperSession?
     #endif
@@ -38,6 +40,7 @@ struct SettingsSheet: View {
                 #endif
             }
             .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -46,17 +49,45 @@ struct SettingsSheet: View {
                 }
             }
         }
+        .drawnGround()
     }
 
+    @ViewBuilder
     private func row(for category: ExpenseCategory) -> some View {
-        HStack(spacing: Tokens.Space.gap) {
-            Text(category.emoji)
-                .accessibilityHidden(true)
-            Text(category.name)
-                .foregroundStyle(Tokens.Ink.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            colourMenu(for: category)
+        let isPicking = pickingSymbolFor == category.id
+        VStack(alignment: .leading, spacing: Tokens.Space.tight) {
+            HStack(spacing: Tokens.Space.gap) {
+                Button {
+                    pickingSymbolFor = isPicking ? nil : category.id
+                } label: {
+                    CategoryPictureView(
+                        picture: CategoryPicture(category), colour: category.colour, size: Tokens.Size.pictureSettings
+                    )
+                    .frame(minWidth: Tokens.Size.minimumTapTarget, minHeight: Tokens.Size.pictureSettings)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(category.name) symbol")
+                .accessibilityHint(isPicking ? "Hides the symbols" : "Shows the symbols to change it")
+                Text(category.name)
+                    .foregroundStyle(Tokens.Ink.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                colourMenu(for: category)
+            }
+            if isPicking {
+                SymbolPicker(
+                    colour: category.colour,
+                    selection: category.symbol.isEmpty ? nil : category.symbol,
+                    onPick: { name in
+                        category.symbol = name
+                        try? modelContext.save()
+                        pickingSymbolFor = nil
+                    }
+                )
+                .frame(height: Tokens.Size.symbolPicker)
+            }
         }
+        .listRowBackground(Tokens.Drawn.paperCard)
     }
 
     private func colourMenu(for category: ExpenseCategory) -> some View {

@@ -26,26 +26,22 @@ enum CategoryFormatting {
         return formatter.string(from: date)
     }
 
-    /// "Nothing in September: 📗 next Nov 3 · ✈️ next Jan 12". A category with no next charge
-    /// shows its emoji alone. nil when nothing is quiet.
-    static func quietLine(_ quiet: [QuietCategory], month: String, calendar: Calendar, locale: Locale) -> String? {
-        guard !quiet.isEmpty else { return nil }
+    /// What follows each quiet category's picture in the footer: "next Nov 3", or nothing for a
+    /// category with no next charge. The view puts the picture in front.
+    static func quietNext(_ item: QuietCategory, calendar: Calendar, locale: Locale) -> String {
         let formatter = formatter(calendar: calendar, locale: locale)
         formatter.setLocalizedDateFormatFromTemplate("MMMd")
-        let items = quiet.map { item in
-            item.next.map { "\(item.category.emoji) next \(formatter.string(from: $0))" } ?? item.category.emoji
-        }
-        return "Nothing in \(month): \(items.joined(separator: " \u{00B7} "))"
+        return item.next.map { "next \(formatter.string(from: $0))" } ?? ""
     }
 
-    /// "🏠 Home €1,259": the header's figure while a category is picked out.
+    /// "Home €1,259": the header's figure while a category is picked out, picture left to the view.
     static func focusFigure(_ lane: CategoryLane, locale: Locale) -> String {
         "\(focusLabel(lane)) \(TimelineFormatting.amount(lane.total, locale: locale))"
     }
 
-    /// "🏠 Home": the part of `focusFigure` before the total, which the header truncates first.
+    /// "Home": the part of `focusFigure` before the total, which the header truncates first.
     static func focusLabel(_ lane: CategoryLane) -> String {
-        lane.category.map { "\($0.emoji) \($0.name)" } ?? uncategorisedName
+        lane.category?.name ?? uncategorisedName
     }
 
     /// "Home, 1,259 euros out, 3 charges", for VoiceOver: the currency spoken in full, as the

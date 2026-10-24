@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// An emoji, a name and a colour, and a place in the user's order. The app ships with none;
+/// A picture (a symbol, or the emoji it was made with), a name and a colour, and a place in the user's order. The app ships with none;
 /// people make their own while adding an expense. `CategoryOrdering` sets the colour and order
 /// of any saved before either existed.
 @Model
@@ -9,6 +9,8 @@ final class ExpenseCategory {
     var id: UUID = UUID()
     var name: String = ""
     var emoji: String = ""
+    /// An SF Symbol name; "" until one is picked. Defaulted, so the store needs no migration.
+    var symbol: String = ""
     var createdAt: Date = Date()
     /// A `CategoryColour` raw value; "" until backfilled.
     var colourRaw: String = ""
@@ -24,11 +26,12 @@ final class ExpenseCategory {
         set { colourRaw = newValue?.rawValue ?? "" }
     }
 
-    init(id: UUID = UUID(), name: String, emoji: String, colour: CategoryColour? = nil,
+    init(id: UUID = UUID(), name: String, emoji: String = "", symbol: String = "", colour: CategoryColour? = nil,
          sortOrder: Int = 0, createdAt: Date = Date()) {
         self.id = id
         self.name = name
         self.emoji = emoji
+        self.symbol = symbol
         self.colourRaw = colour?.rawValue ?? ""
         self.sortOrder = sortOrder
         self.createdAt = createdAt

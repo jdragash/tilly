@@ -54,12 +54,7 @@ enum CalendarFormatting {
 
     /// "Sep": a month's short name, as the year labels it.
     static func abbreviatedName(_ month: MonthKey, calendar: Calendar, locale: Locale) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.dateFormat = "MMM"
         let first = calendar.date(from: DateComponents(year: month.year, month: month.month, day: 1))!
-        return formatter.string(from: first)
+        return FormatterCache.date(format: "MMM", calendar: calendar, locale: locale).string(from: first)
     }
 }

@@ -18,9 +18,9 @@ import Testing
 
     static func entry(_ name: String, day: Int, amount: Decimal?) -> TimelineEntry {
         TimelineEntry(
-            id: "\(name)\(day)", expenseID: UUID(), scheduledDate: date(2027, 1, day), name: name, emoji: nil,
+            id: "\(name)\(day)", expenseID: UUID(), scheduledDate: date(2027, 1, day), name: name, picture: .none, colour: nil,
             date: date(2027, 1, day), amount: amount, state: .upcoming, endDate: nil, endHasPassed: false,
-            isExtra: true, startsRecord: false
+            isExtra: true, startsRecord: false, isYearly: false
         )
     }
 
@@ -74,7 +74,7 @@ import Testing
         let entries = [Self.entry("Rent", day: 4, amount: 950), Self.entry("Gym", day: 4, amount: 235)]
         let day = Self.day(entries, total: 1185)
         #expect(CalendarFormatting.dayLabel(day, calendar: Self.calendar, locale: Self.euro) == "Mon 4, 2 charges, 1,185 euros out")
-        #expect(CalendarFormatting.dayLabel(day, calendar: Self.calendar, locale: Self.us) == "Mon 4, 2 charges, 1,185 US dollars out")
+        #expect(CalendarFormatting.dayLabel(day, calendar: Self.calendar, locale: Self.us) == "Mon 4, 2 charges, 1,185 euros out")
     }
 
     @Test func dayLabelUsesTheSingularForOneCharge() {
@@ -136,18 +136,18 @@ import Testing
         )
     }
 
-    @Test func yearFigureInDollars() {
+    @Test func yearFigureInEurosOnAUSRegion() {
         let overview = Self.overview(total: 19610, extras: 2775, usualMonth: 1402, hasExtras: true)
         #expect(
             CalendarFormatting.yearFigure(overview, extrasOnly: true, locale: Self.us)
-                == "+$2,775 on top \u{00B7} usual month $1,402"
+                == "+\u{20AC}2,775 on top \u{00B7} usual month \u{20AC}1,402"
         )
     }
 
     @Test func monthLabelReadsTheTotal() {
         let month = Self.yearMonth(3, total: 1753, extras: 351)
         #expect(CalendarFormatting.monthLabel(month, extrasOnly: false, locale: Self.euro) == "\u{20AC}1,753")
-        #expect(CalendarFormatting.monthLabel(month, extrasOnly: false, locale: Self.us) == "$1,753")
+        #expect(CalendarFormatting.monthLabel(month, extrasOnly: false, locale: Self.us) == "\u{20AC}1,753")
     }
 
     @Test func monthLabelWithExtrasHasAPlus() {

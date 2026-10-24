@@ -206,9 +206,9 @@ import TillyCore
         #expect(Self.typed("1250.5").amountText(locale: Self.locale) == "\u{20AC}1,250.5")
     }
 
-    @Test func amountTextUsesTheLocalesOwnCurrency() {
+    @Test func amountTextIsInEurosWhateverTheRegion() {
         let text = Self.typed("1250.5").amountText(locale: Locale(identifier: "en_US"))
-        #expect(text == "$1,250.5")
+        #expect(text == "\u{20AC}1,250.5")
     }
 
     // MARK: The end
@@ -413,34 +413,5 @@ import TillyCore
         var draft = ExpenseDraft(editing: baseline)
         draft.unit = .week
         #expect(draft.lastPaymentDate(calendar: Self.calendar) == Self.date(2026, 11, 13))
-    }
-}
-
-@Suite struct EmojiInputTests {
-    @Test func takesTheLastEmoji() {
-        #expect(EmojiInput.emoji(from: "🏠🚗") == "🚗")
-        #expect(EmojiInput.emoji(from: "ab🏠x") == "🏠")
-    }
-
-    @Test func keepsAFlagWhole() {
-        #expect(EmojiInput.emoji(from: "🇮🇪") == "🇮🇪")
-        #expect(EmojiInput.emoji(from: "x🇮🇪") == "🇮🇪")
-    }
-
-    @Test func keepsASkinToneWhole() {
-        #expect(EmojiInput.emoji(from: "👍🏽") == "👍🏽")
-    }
-
-    @Test func keepsAJoinedSequenceWhole() {
-        #expect(EmojiInput.emoji(from: "🏠👨‍👩‍👧") == "👨‍👩‍👧")
-    }
-
-    @Test func rejectsPlainLetters() {
-        #expect(EmojiInput.emoji(from: "abc") == nil)
-        #expect(EmojiInput.emoji(from: "123") == nil)
-    }
-
-    @Test func emptyGivesNil() {
-        #expect(EmojiInput.emoji(from: "") == nil)
     }
 }

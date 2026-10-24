@@ -51,10 +51,8 @@ struct BillCardView: View {
     }
 
     @ViewBuilder private var emoji: some View {
-        if let emoji = card.category?.emoji {
-            Text(emoji)
-                .font(Tokens.Text.billCardEmoji)
-                .accessibilityHidden(true)
+        if let picture = card.category?.picture, !picture.isNone {
+            CategoryPictureView(picture: picture, colour: card.category?.colour, size: Tokens.Size.pictureBillCard)
         }
     }
 
@@ -77,14 +75,14 @@ struct BillCardView: View {
 struct EndedBillsCard: View {
     let rows: [BillRow]
     let period: BillPeriod
-    let emoji: (BillRow) -> String?
+    let picture: (BillRow) -> CategoryPicture
     let onOpen: (BillRow) -> Void
 
     var body: some View {
         BillCardFrame {
             ForEach(rows) { row in
                 BillRowView(
-                    row: row, period: period, trailing: .paidInAll, emoji: emoji(row),
+                    row: row, period: period, trailing: .paidInAll, picture: picture(row),
                     showsRule: row.id != rows.first?.id, onOpen: onOpen
                 )
             }
@@ -117,7 +115,7 @@ struct BillRowView: View {
     let row: BillRow
     let period: BillPeriod
     let trailing: Trailing
-    var emoji: String?
+    var picture: CategoryPicture = .none
     var showsRule = true
     let onOpen: (BillRow) -> Void
 
@@ -175,7 +173,7 @@ struct BillRowView: View {
     }
 
     private var nameText: some View {
-        Text(emoji.map { "\($0) \(row.name)" } ?? row.name)
+        Text("\(picture.inline) \(row.name)")
             .font(Tokens.Text.billName)
             .foregroundStyle(Tokens.Ink.primary)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)

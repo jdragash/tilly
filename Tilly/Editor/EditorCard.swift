@@ -19,12 +19,15 @@ struct EditorCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize = Tokens.Size.cardAmount
     @ScaledMetric(relativeTo: .title) private var tileSize = Tokens.Size.cardCategoryTile
+    @ScaledMetric(relativeTo: .title2) private var nameHeight = Tokens.Size.cardNameField
 
     var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            stacked
-        } else {
-            standard
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                stacked
+            } else {
+                standard
+            }
         }
     }
 
@@ -32,7 +35,9 @@ struct EditorCard: View {
 
     /// Amount top left, date and repeat top right, name bottom left, the emoji bottom right.
     private var standard: some View {
+        // The shadow is the fill's alone: on the whole card the amount and name cast one too.
         fill
+            .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
             .aspectRatio(Tokens.Size.cardAspect, contentMode: .fit)
             .frame(maxWidth: .infinity)
             .overlay {
@@ -45,6 +50,8 @@ struct EditorCard: View {
                     HStack(alignment: .top, spacing: Tokens.Space.gap) {
                         amount
                         Spacer(minLength: 0)
+                        // Date and repeat stacked tight at the card's top right, as the prototype has
+                        // them; each lends its hit area the room above or below it.
                         VStack(alignment: .trailing, spacing: Tokens.Space.cardWhenGap) {
                             date
                             repeatLine
@@ -61,7 +68,6 @@ struct EditorCard: View {
                 .padding(.horizontal, Tokens.Space.cardHorizontal)
                 .padding(.vertical, Tokens.Space.cardVertical)
             }
-            .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
     }
 
     /// At accessibility sizes the parts stack, full width, in `CardPart.allCases` order, and the
@@ -84,21 +90,30 @@ struct EditorCard: View {
         .background {
             ZStack {
                 fill
+                    .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
                 backgroundButton
             }
         }
-        .shadow(color: Tokens.Shadow.cardColour, radius: Tokens.Shadow.cardRadius, y: Tokens.Shadow.cardY)
     }
 
-    /// The card's colour. A new category crossfades over the old one rather than blending
-    /// through it.
+    /// The card's colour. A new category crossfades over the old one, on whatever animation picked it.
     private var fill: some View {
         ZStack {
-            cardShape
-                .fill(Tokens.CategoryColour.cardFill(category?.colour))
+            wash(for: category?.colour, id: category?.id)
                 .id(category?.id)
                 .transition(.opacity)
         }
+    }
+
+    private func wash(for colour: CategoryColour?, id: UUID?) -> some View {
+        Wash(
+            colour: colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured,
+            cornerRadii: RectangleCornerRadii(
+                topLeading: Tokens.Radius.card, bottomLeading: Tokens.Radius.card,
+                bottomTrailing: Tokens.Radius.card, topTrailing: Tokens.Radius.card
+            ),
+            seed: stableSeed(id?.uuidString ?? "")
+        )
     }
 
     private var cardShape: RoundedRectangle {
@@ -126,6 +141,7 @@ struct EditorCard: View {
                     .font(Tokens.Text.cardAmount(size: amountSize))
                     .foregroundStyle(progress.isMissing(.amount) ? Tokens.Ink.onCardSoft : Tokens.Ink.onCard)
                     .monospacedDigit()
+                    .tracking(amountSize * Tokens.Text.cardAmountTracking)
                     .lineLimit(1)
                     .minimumScaleFactor(Tokens.Scale.editorAmountMin)
                     .textRenderer(AmountCaret(isShown: focused == .amount && tick.isMultiple(of: 2)))
@@ -154,16 +170,23 @@ struct EditorCard: View {
             .focused(nameFocus)
             .onSubmit(onNameSubmit)
             .fixedSize(horizontal: isEmpty, vertical: false)
-            .padding(.horizontal, isEmpty ? Tokens.Space.cardFieldHorizontal : 0)
-            .padding(.vertical, isEmpty ? Tokens.Space.cardFieldVertical : 0)
+            // A focused field is taller than an unfocused one, so it always has this much room.
+            .frame(minHeight: nameHeight, alignment: .top)
+            // The box is drawn round the text, outside it, so neither the text nor anything near it
+            // moves when the field is tapped, typed in or emptied.
             .overlay {
                 if isEmpty {
-                    if isFocused {
-                        field.strokeBorder(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardDash.lineWidth)
-                    } else {
-                        field.strokeBorder(Tokens.Ink.onCardDash, style: Tokens.Stroke.cardDash)
-                            .breathing(progress.breathing(focused: focused) == .name)
+                    Group {
+                        if isFocused {
+                            field.strokeBorder(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardDash.lineWidth)
+                        } else {
+                            field.strokeBorder(Tokens.Ink.onCardDash, style: Tokens.Stroke.cardDash)
+                                .breathing(progress.breathing(focused: focused) == .name)
+                        }
                     }
+                    .padding(.horizontal, -Tokens.Space.cardFieldHorizontal)
+                    .padding(.vertical, -Tokens.Space.cardFieldVertical)
+                    .allowsHitTesting(false)
                 }
             }
             .onChange(of: isFocused) { _, nowFocused in
@@ -176,7 +199,7 @@ struct EditorCard: View {
     private var date: some View {
         let label = draft.dateLabel(calendar: calendar, locale: locale)
         let isFuture = draft.isFuture(today: today, calendar: calendar)
-        return whenButton(.date, label: "Date", value: label, hint: "Opens the calendar") {
+        return whenButton(.date, pinned: .top, label: "Date", value: label, hint: "Opens the calendar") {
             if isFuture {
                 Image(systemName: "calendar.badge.clock")
                     .foregroundStyle(Tokens.Ink.onCardSoft)
@@ -187,7 +210,7 @@ struct EditorCard: View {
 
     private var repeatLine: some View {
         let label = draft.repeatLabel(calendar: calendar, locale: locale)
-        return whenButton(.repeat, label: "Repeat", value: label, hint: "Opens the repeat wheel") {
+        return whenButton(.repeat, pinned: .bottom, label: "Repeat", value: label, hint: "Opens the repeat wheel") {
             if draft.paymentCount != nil {
                 Image(systemName: "arrow.right.to.line")
                     .foregroundStyle(Tokens.Ink.onCardSoft)
@@ -196,9 +219,17 @@ struct EditorCard: View {
         }
     }
 
+    private struct Reach { let up: CGFloat; let down: CGFloat }
+
+    /// How far a date's or repeat's hit area reaches beyond its line.
+    private func reach(_ side: KeyPath<Reach, CGFloat>) -> CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? 0 : Reach(up: Tokens.Space.cardWhenReach, down: Tokens.Space.cardWhenReachLess)[keyPath: side]
+    }
+
     /// The date's line or the repeat's: always filled in, so always followed by the pencil.
     private func whenButton<Content: View>(
         _ part: CardPart,
+        pinned: Alignment,
         label: String,
         value: String,
         hint: String,
@@ -214,13 +245,21 @@ struct EditorCard: View {
             .font(Tokens.Text.cardWhen)
             .foregroundStyle(Tokens.Ink.onCard)
             .lineLimit(1)
-            .contentShape(Rectangle())
             .overlay {
                 if isOpen {
                     ring.stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
                         .padding(-Tokens.Stroke.cardFocus)
                 }
             }
+            // The line stays where it is; its hit area reaches past it, up for the date and down for the
+            // repeat, to where the other begins. At accessibility sizes the lines stack and each is
+            // 44pt tall outright.
+            .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? Tokens.Size.minimumTapTarget : nil, alignment: pinned)
+            .padding(.top, reach(pinned == .top ? \.up : \.down))
+            .padding(.bottom, reach(pinned == .top ? \.down : \.up))
+            .contentShape(Rectangle())
+            .padding(.top, -reach(pinned == .top ? \.up : \.down))
+            .padding(.bottom, -reach(pinned == .top ? \.down : \.up))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -229,7 +268,9 @@ struct EditorCard: View {
         .accessibilityAddTraits(isOpen ? .isSelected : [])
     }
 
-    /// Dashed until a category is chosen, then its emoji with the pencil on its corner.
+    /// Dashed until a category is chosen, then its picture: a white symbol on a faint round wash,
+    /// with no tile and no pencil, as the prototype's. While the categories are open, a white ring
+    /// stands round the slot.
     private var categoryTile: some View {
         let isMissing = progress.isMissing(.category)
         let isOpen = focused == .category
@@ -241,21 +282,21 @@ struct EditorCard: View {
                     tile.strokeBorder(Tokens.Ink.onCardDash, style: Tokens.Stroke.cardDash)
                         .breathing(progress.breathing(focused: focused) == .category)
                 } else if let category {
-                    Text(category.emoji)
-                        .font(Tokens.Text.cardEmoji)
-                        .id(category.id)
-                        .transition(.emojiDrop)
+                    CategoryPictureView(
+                        picture: CategoryPicture(category), colour: category.colour,
+                        size: tileSize * Tokens.Size.cardTilePictureRatio,
+                        onCard: true, round: true, place: .editor
+                    )
+                    .id(category.id)
                 }
             }
             .frame(width: tileSize, height: tileSize)
             .overlay {
                 if isOpen {
-                    tile.stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
-                        .padding(-Tokens.Stroke.cardFocus)
+                    RoundedRectangle(cornerRadius: Tokens.Radius.cardTileRing, style: .continuous)
+                        .stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
+                        .padding(-Tokens.Space.cardTileRingOutset)
                 }
-            }
-            .overlay(alignment: .bottomTrailing) {
-                if !isMissing { badge }
             }
             .contentShape(tile)
         }
@@ -269,18 +310,6 @@ struct EditorCard: View {
     private var pencil: some View {
         Image(systemName: "pencil")
             .foregroundStyle(Tokens.Ink.onCardSoft)
-            .accessibilityHidden(true)
-    }
-
-    /// The pencil, small, on a chosen category's tile.
-    private var badge: some View {
-        Image(systemName: "pencil")
-            .font(Tokens.Text.cardBadge)
-            .foregroundStyle(Tokens.Ink.secondary)
-            .frame(width: Tokens.Size.cardBadge, height: Tokens.Size.cardBadge)
-            .background(Tokens.Surface.cardBadge, in: Circle())
-            .shadow(color: Tokens.Shadow.badgeColour, radius: Tokens.Shadow.badgeRadius, y: Tokens.Shadow.badgeY)
-            .offset(x: Tokens.Size.cardBadgeOverhang, y: Tokens.Size.cardBadgeOverhang)
             .accessibilityHidden(true)
     }
 }
@@ -303,18 +332,6 @@ private struct AmountCaret: TextRenderer {
             height: height
         )
         context.fill(Capsule().path(in: caret), with: .color(Tokens.Ink.onCard))
-    }
-}
-
-private extension AnyTransition {
-    /// The emoji drops into its tile: from a little larger and higher, to rest.
-    static var emojiDrop: AnyTransition {
-        .asymmetric(
-            insertion: .scale(scale: Tokens.Scale.emojiDrop)
-                .combined(with: .offset(y: -Tokens.Space.emojiDrop))
-                .combined(with: .opacity),
-            removal: .opacity
-        )
     }
 }
 

@@ -18,7 +18,7 @@ import TillyCore
     }
 
     static func category(_ name: String, _ colour: CategoryColour?) -> CategoryInfo {
-        CategoryInfo(id: UUID(), emoji: "🏠", name: name, colour: colour)
+        CategoryInfo(id: UUID(), picture: .emoji("🏠"), name: name, colour: colour)
     }
 
     struct Bill {
@@ -42,7 +42,7 @@ import TillyCore
         let snapshot = ExpenseSnapshot(id: UUID(), amount: amount, isEstimate: false, rule: rule, isArchived: false)
         return Bill(
             expense: TimelineExpense(
-                name: name, emoji: nil, snapshot: snapshot, overrides: [], seriesEndDate: seriesRunsOn ? nil : endDate
+                name: name, picture: .none, colour: nil, snapshot: snapshot, overrides: [], seriesEndDate: seriesRunsOn ? nil : endDate
             ),
             category: category
         )
@@ -209,7 +209,7 @@ import TillyCore
         var tax = Self.extra("Tax", amount: 300, month: 3, day: 10)
         tax = Bill(
             expense: TimelineExpense(
-                name: "Tax", emoji: nil, snapshot: tax.expense.snapshot, overrides: [skipped], seriesEndDate: nil
+                name: "Tax", picture: .none, colour: nil, snapshot: tax.expense.snapshot, overrides: [skipped], seriesEndDate: nil
             ),
             category: nil
         )

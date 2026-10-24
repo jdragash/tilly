@@ -10,6 +10,9 @@ struct YearView: View {
     /// What the title keeps clear for the All / Extras toggle floating over its trailing end.
     let titleTrailingClearance: CGFloat
     let onOpenMonth: (MonthKey) -> Void
+    /// The day a charge was just saved on, while it arrives, and how long it waits to.
+    var arrivingDay: Date? = nil
+    var arrivalDelay: TimeInterval = 0
     /// Each month cell's frame in `CalendarZoom.space`, for a zoom to grow from or shrink into.
     let onMonthFrame: (MonthKey, CGRect) -> Void
 
@@ -30,7 +33,7 @@ struct YearView: View {
         .scrollBounceBehavior(.basedOnSize)
         .padding(.top, Tokens.Size.headerRow)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Tokens.Surface.base)
+        .drawnPaper()
     }
 
     // MARK: Title
@@ -66,6 +69,7 @@ struct YearView: View {
             ForEach(overview.months) { month in
                 YearMonthCell(
                     month: month, extrasOnly: extrasOnly, isCurrent: month.month == current,
+                    arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
                     onOpen: { onOpenMonth(month.month) }
                 )
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(CalendarZoom.space)) } action: {

@@ -8,6 +8,13 @@ struct DeveloperSection: View {
     let session: DeveloperSession
 
     var body: some View {
+        Group {
+            developer
+            MotionTuningSection()
+        }
+    }
+
+    private var developer: some View {
         Section {
             Picker("Data", selection: Binding(get: { session.scenario }, set: { session.load($0) })) {
                 ForEach(DeveloperScenario.allCases) { scenario in

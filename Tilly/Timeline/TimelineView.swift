@@ -32,12 +32,27 @@ struct TimelineView: View {
     @State private var currentContentTop: CGFloat?
     @State private var floorLineBottom: CGFloat?
     @State private var floorSpacer: CGFloat = 0
-    @State private var isEditorPresented = false
     @State private var isSettingsPresented = false
     @State private var isBillsPresented = false
-    @State private var editing: EditSession?
+    /// What the editor's sheet is open for; nil while it's closed.
+    @State private var editor: EditorRequest?
     /// The day a calendar tap opened, its rows marked until the mark fades.
     @State private var markedDay: Date?
+    /// The row a save just put in place, marked until the mark fades.
+    @State private var markedEntryID: String?
+    /// The rows on screen, for a save to tell whether its row is in view. State, not a plain
+    /// `let`: the view is rebuilt whenever its parent redraws, and a `let` would start empty each time.
+    @State private var rowFrames = RowFrames()
+    /// Bumped by every mark, so steps still waiting from one left behind do nothing.
+    @State private var markGeneration = 0
+    /// The day a charge was just saved on over the calendar's month or year, while it arrives.
+    @State private var arrivingDay: Date?
+
+    /// How long an arrival waits, for the editor's sheet to have mostly left.
+    private var arrivalDelay: TimeInterval { Tokens.Motion.Card.sheetExit * Tokens.Motion.dayArrivalAfter }
+
+    /// A save's close refreshes the months itself, before the sheet goes, to find its row.
+    @State private var refreshedOnClose = false
     /// Which view shows. The app opens on the one it was left on, as Calendar does.
     @AppStorage("viewMode") private var mode: ViewMode = .firstRun
     /// The month the category view shows. Set properly once the window is.
@@ -78,8 +93,8 @@ struct TimelineView: View {
     /// `.last` (rather than `.first`) matters too: a single scroll update can cross more than
     /// one month's threshold at once, and the later month in document order is the one that
     /// has actually taken over pinning.
-    private var pinnedMonth: MonthKey? {
-        visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= 0 }
+    private func pinnedMonth(in months: [MonthKey]) -> MonthKey? {
+        months.last { (headerOffsets[$0] ?? .infinity) <= 0 }
     }
 
     /// Months from the ceiling down to the floor, with an empty month dropped unless it's the
@@ -148,12 +163,38 @@ struct TimelineView: View {
         GeometryReader { rootProxy in
             content(topInset: rootProxy.safeAreaInsets.top, bottomInset: rootProxy.safeAreaInsets.bottom)
         }
-        // A sheet's keyboard shrinks the screen behind it too, and the bottom row rode up
+        // The editor's keyboard shrinks the screen behind it too, and the bottom row rode up
         // behind the editor to sit on the keyboard (measured: y 772 → 418). The timeline has
         // no text field of its own, so it ignores the keyboard whole: ignoring it on the row
         // alone isn't enough, because the row follows the bottom of what it sits in.
         .ignoresSafeArea(.keyboard)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+        // Above the levels, the glass controls and the bottom row.
+        .overlay {
+            EditorSheet(request: $editor) { request in
+                switch request {
+                case .add:
+                    ExpenseEditor(today: today, onClose: closeEditor)
+                case .edit(let session):
+                    ExpenseEditor(today: today, session: session, onClose: closeEditor)
+                }
+            }
+        }
+        .coordinateSpace(name: TimelineSpace.name)
+        // Every close refreshes, a drag down included: a save writes an `OverrideRecord` or edits
+        // fields on the same `Expense` instances this view already holds, and `@Query`'s own
+        // change notification doesn't reliably fire for a relationship-only edit, while
+        // `.onChange(of: expenses)` compares the array by model identity, not by the fields
+        // within it. Without this a saved amount left the row showing what it read before the
+        // edit, and deleting future charges, which only ends a record, left the months ahead.
+        .onChange(of: editor) { _, new in
+            guard new == nil else { return }
+            if refreshedOnClose {
+                refreshedOnClose = false
+            } else {
+                refreshWindow()
+            }
+        }
         .onAppear {
             // Where the timeline rests while another level shows: the size an arrival grows from.
             if level != .day { timelineScale = Tokens.Scale.zoomIn }
@@ -205,6 +246,7 @@ struct TimelineView: View {
                 CalendarMonthView(
                     month: calendarMonthBinding(in: window), window: window,
                     calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay,
+                    arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
                     onDayFrame: { zoomFrames.report(day: $0, frame: $1) },
                     onBack: { setLevel(.year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window))) },
                     titleTrailingClearance: toggleClearance
@@ -216,6 +258,7 @@ struct TimelineView: View {
                     overview: yearOverview(in: window), extrasOnly: extrasOnly, today: today,
                     titleTrailingClearance: toggleClearance,
                     onOpenMonth: { openMonth($0, in: window) },
+                    arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
                     onMonthFrame: { zoomFrames.report(month: $0, frame: $1) }
                 )
                 .transition(yearTransition)
@@ -244,7 +287,7 @@ struct TimelineView: View {
                         step: { calendarMonthID = shown.advanced(by: $0).id }
                     )
                 }
-                HeaderControls(mode: $mode) { isEditorPresented = true }
+                HeaderControls(mode: $mode) { editor = .add }
             }
             .frame(height: Tokens.Size.headerRow)
             .padding(.trailing, Tokens.Space.gutter)
@@ -266,19 +309,8 @@ struct TimelineView: View {
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         // Above the glass controls, which fade while it shows: the readout takes the header row.
         .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
-        .sheet(isPresented: $isEditorPresented) { ExpenseEditor(today: today) }
         .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
         .sheet(isPresented: $isBillsPresented) { AllBillsSheet(today: today) }
-        // `onDismiss` refreshes explicitly: a save writes an `OverrideRecord` or edits fields
-        // on the same `Expense` instances this view already holds, so the in-memory objects
-        // are correct the moment the sheet closes, but `@Query`'s own change notification
-        // doesn't reliably fire for a relationship-only edit, and `.onChange(of: expenses)`
-        // compares the array by model identity, not by the fields within it — so without
-        // this, a saved amount left the row showing what it read before the edit, and
-        // deleting future charges, which only ends a record, left the months ahead standing.
-        .sheet(item: $editing, onDismiss: refreshWindow) { session in
-            ExpenseEditor(today: today, session: session)
-        }
     }
 
     @ViewBuilder
@@ -293,13 +325,14 @@ struct TimelineView: View {
                     dayTopRow(window)
                     list(window)
                 }
-                .background(Tokens.Surface.base)
+                .drawnPaper()
                 .overlay(alignment: .top) {
                     // A `GeometryReader` nested inside this `.overlay` reports a zero top
                     // inset here — confirmed on device — so the inset is measured once, by
                     // the `GeometryReader` wrapping the whole screen in `body`, and passed
                     // down instead. See "The month header" in `docs/DESIGN.md`.
-                    Tokens.Surface.base
+                    Color.clear
+                        .drawnPaper()
                         .frame(height: topInset)
                         .frame(maxWidth: .infinity)
                         .ignoresSafeArea(edges: .top)
@@ -332,13 +365,20 @@ struct TimelineView: View {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                     if isLastPayment { ceilingLine(window.ceiling) }
-                    ForEach(visibleMonths) { month in
+                    // Once per update, not once per month: each was a filter of every month in the
+                    // window, run again for every header on every scroll frame.
+                    let months = visibleMonths
+                    let pinned = pinnedMonth(in: months)
+                    ForEach(months) { month in
                         let monthSection = section(for: month)
                         Section {
                             MonthSectionView(
                                 section: monthSection,
+                                today: today,
                                 showsFirstWeekLine: monthSection.isCurrent && !monthSection.hasChargedEntry,
                                 markedDay: markedDay,
+                                markedEntryID: markedEntryID,
+                                onRowFrame: { rowFrames.report($0, frame: $1) },
                                 onOpen: openEntry
                             )
                             // The content, not the `Section`: a geometry modifier there
@@ -355,7 +395,7 @@ struct TimelineView: View {
                             // Pinned beneath the top row, where only the All / Extras toggle
                             // floats over its trailing end.
                             MonthHeader(
-                                section: monthSection, today: today, isPinned: pinnedMonth == month,
+                                section: monthSection, today: today, isPinned: pinned == month,
                                 trailingClearance: toggleClearance
                             )
                                 .onGeometryChange(for: CGRect.self) { proxy in
@@ -563,17 +603,138 @@ struct TimelineView: View {
         }
     }
 
+    /// Puts the row's top `landingRowOffset` under its month's pinned header, unanimated, so a saved
+    /// row that was off screen is in view as the sheet leaves: the jump happens behind it.
+    ///
+    /// Two scrolls a turn apart, as `openDay`'s: the month first, which lays it out, then the row's
+    /// own target once it has laid out. `scrollTo` lands a target's point at fraction `f` on the
+    /// container's point at `f`, so a target `h` high has its top at `f × (room − h)`.
+    private func jump(to entry: TimelineEntry, then done: @escaping () -> Void = {}) {
+        guard let scrollProxy else {
+            done()
+            return
+        }
+        let month = MonthKey(containing: entry.date, calendar: calendar)
+        isProgrammaticScroll = true
+        scrollProxy.scrollTo(month.id, anchor: .top)
+        // The row's own scroll needs the row laid out, both to resolve its id and for its height:
+        // a turn after the month's scroll it sometimes hasn't been, and the scroll did nothing.
+        func scrollToRow(tries: Int) {
+            DispatchQueue.main.async {
+                guard let rowHeight = rowFrames.frames[entry.id]?.height else {
+                    if tries > 0 {
+                        scrollToRow(tries: tries - 1)
+                    } else {
+                        Self.logger.error("A saved row never laid out")
+                        isProgrammaticScroll = false
+                        done()
+                    }
+                    return
+                }
+                let headerHeight = headerHeights[month] ?? 0
+                let room = listHeight - bottomClearance - rowHeight
+                let top = headerHeight + Tokens.Motion.Card.landingRowOffset
+                let fraction = room > 0 ? min(1, max(0, top / room)) : 0
+                scrollProxy.scrollTo(OccurrenceRow.rowScrollID(entry.id), anchor: UnitPoint(x: 0.5, y: fraction))
+                DispatchQueue.main.async {
+                    isProgrammaticScroll = false
+                    if hasRestoredPlace { saveCurrentPlace() }
+                    done()
+                }
+            }
+        }
+        scrollToRow(tries: Self.frameTries)
+    }
+
+    /// Turns a jump waits for its row to lay out before it gives up.
+    private static let frameTries = 10
+
+    /// Whether the entry's row is wholly on screen, under the pinned header and above the bottom
+    /// row. The list starts under the days' top row; `TimelineSpace` starts at the safe area's top,
+    /// as the list's own frame does.
+    private func isInView(_ entry: TimelineEntry) -> Bool {
+        guard let frame = rowFrames.frames[entry.id] else { return false }
+        let month = MonthKey(containing: entry.date, calendar: calendar)
+        let listTop = Tokens.Size.headerRow
+        return TimelineLanding.isInView(
+            frame, listTop: listTop, headerHeight: headerHeights[month] ?? 0,
+            listBottom: listTop + listHeight - bottomClearance
+        )
+    }
+
     /// A row tap builds the session fresh from the store, keyed on what the entry itself
     /// carries — never from `sections`, which is a snapshot rebuilt on every change. See
     /// "Opening a charge edits it" in `docs/DESIGN.md`.
     private func openEntry(_ entry: TimelineEntry) {
         do {
-            editing = try EditSession.make(
+            guard let session = try EditSession.make(
                 expenseID: entry.expenseID, scheduledDate: entry.scheduledDate,
                 context: modelContext, calendar: calendar
-            )
+            ) else { return }
+            editor = .edit(session)
         } catch {
             Self.logger.error("Opening a charge failed: \(error)")
+        }
+    }
+
+    /// The editor closed. A save over the days refreshes the months now, so its row is there, lets
+    /// the sheet go, then brings the row into view behind it and marks it. Anything else closes the
+    /// sheet alone; a save over the calendar's month or year drops the charge into its day.
+    private func closeEditor(_ close: EditorClose) {
+        guard case .saved(let expenseID, let date) = close,
+              mode == .timeline, level == .day, window != nil, !expenses.isEmpty
+        else {
+            if case .saved(_, let date) = close, mode == .timeline, level != .day {
+                arrive(on: date)
+            }
+            editor = nil
+            return
+        }
+        refreshWindow()
+        refreshedOnClose = true
+        let entry = TimelineLanding.target(expenseID: expenseID, date: date, in: sections, calendar: calendar)
+        editor = nil
+        // Outside the window, or hidden by Extras: nothing to show.
+        guard let entry else { return }
+        markGeneration &+= 1
+        let generation = markGeneration
+        bringIntoView(entry, generation: generation) { mark(entry, generation: generation) }
+    }
+
+    /// Over the calendar's month or year the saved charge drops into its day: the day is marked
+    /// arriving from now (its picture held back), the drop begins once the sheet has mostly left, and
+    /// the mark is cleared when it is over.
+    private func arrive(on date: Date) {
+        let day = calendar.startOfDay(for: date)
+        arrivingDay = day
+        let over = arrivalDelay + Tokens.Motion.Card.dayDropDuration + Tokens.Motion.dayFade + 0.5
+        DispatchQueue.main.asyncAfter(deadline: .now() + over) {
+            if arrivingDay == day { arrivingDay = nil }
+        }
+    }
+
+    /// Two turns for the rebuilt rows to lay out and any anchoring scroll to land, then a `jump` if
+    /// the row isn't wholly in view, then `done`.
+    private func bringIntoView(_ entry: TimelineEntry, generation: Int, then done: @escaping () -> Void) {
+        DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                guard generation == markGeneration else { return }
+                if isInView(entry) {
+                    done()
+                } else {
+                    jump(to: entry, then: done)
+                }
+            }
+        }
+    }
+
+    /// Marks the row, then fades the mark a turn later, as a calendar tap's mark fades.
+    private func mark(_ entry: TimelineEntry, generation: Int) {
+        guard generation == markGeneration else { return }
+        markedEntryID = entry.id
+        DispatchQueue.main.async {
+            guard generation == markGeneration else { return }
+            withAnimation(.easeOut(duration: Tokens.Motion.dayMark)) { markedEntryID = nil }
         }
     }
 
@@ -706,6 +867,10 @@ struct TimelineView: View {
     ///
     /// The first bill arrives with no window yet, because `setUpIfNeeded` found no floor on
     /// appear; without setting up here the list would stay blank.
+    ///
+    /// A window that stays as it was is rebuilt without anchoring, a saved row's included: the list
+    /// keeps what's on screen still by itself, and re-anchoring to a pinned header (which reads 0
+    /// however deep into its month the reader is) would scroll that month's top into view.
     private func refreshWindow() {
         guard let window else {
             setUpIfNeeded()

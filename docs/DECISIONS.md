@@ -51,14 +51,18 @@ When an occurrence's date passes, it is charged. Setting a real amount is always
 - **Rejected — the user confirms each occurrence:** turns visibility into a chore, and skipped confirmations rot the data.
 - **Rejected — assume, but prompt on variable bills:** the same chore, just rarer.
 
-## Stock SwiftUI in v1, behind a token layer
-**Decided:** 2026-09-04
-System components supply Liquid Glass, Dynamic Type, dark mode and VoiceOver. Every value
-reaches a view through `Tokens`, dimensions included, so the design pass is a one-file change,
-and it layers on system materials rather than replacing them.
-- **Rejected — build a design system in v1:** functionality first.
+## Tilly is Drawn, on the token layer, with the glass left stock
+**Decided:** 2026-09-04, the look 2026-10-18
+Paper with a grain, colour as a rough-edged wash, SF Pro Rounded, and each category drawn as a
+roughened symbol. System components still supply Liquid Glass, Dynamic Type, dark mode and
+VoiceOver, and every value reaches a view through `Tokens`, so tuning the look is a one-file change.
+Settled in the combined prototype (`docs/prototypes/combined.html`), ahead of the motion and All
+bills, which are drawn in it.
+- **Rejected — stock until a v2 design pass:** the motion and All bills would be built twice.
+- **Rejected — handwriting (`icons-and-type.html`):** words and figures lose their instant read.
+- **Rejected — cream cards, and a glass sheet:** tried in the prototype; colour cards and an opaque sheet read best.
 - **Rejected — raw values now, extract tokens later:** the extraction is the expensive part.
-- **Revisit when:** the v2 design pass, which is Jake's.
+- **Revisit when:** a value can't be reached through `Tokens`, or a drawn part costs a scroll its frames.
 
 ## The timeline is one list, future above and past below, and the future runs five years on
 **Decided:** 2026-09-19
@@ -96,13 +100,14 @@ not the process survived. The current month decides where you land only on first
 Laid out like iOS Calendar: a view button and + as one glass pair at the top row's right end, the
 month button bottom left, and All bills and settings in one capsule bottom right. The view button's
 menu lists Calendar and Categories, so more can join it. The editor, All bills and settings open as
-sheets; categories live in Settings. Over the days the top row holds the back button, and month
+sheets, the editor one the app draws itself so its card can fly into the timeline beneath; categories live in Settings. Over the days the top row holds the back button, and month
 headers pin beneath it.
 - **Rejected — a toggle that flips between two views:** a tap fewer, but the icon must show where you'd go, and a third view has nowhere to live.
 - **Rejected — All bills as a view in the menu:** tried on the prototype's switches; the sheet won, opened from beside settings.
 - **Rejected — a categories button:** categories are set up rarely, which is what Settings is for.
 - **Rejected — a return pill that appears 240pt away:** a control that comes and goes; the month button is always there.
 - **Rejected — pushed pages:** they replace the timeline instead of sitting over it.
+- **Rejected — the system sheet for the editor:** it presents in a layer of its own, so its card can't fly into a row, and its timing isn't Tilly's to tune.
 
 ## Calendar is three zoom levels: the year, a month, and the days
 **Decided:** 2026-10-01
@@ -118,19 +123,23 @@ twelve months' monthly bills.
 - **Rejected — what's about to change as its own picture:** three directions, all confusing; rings on the year carry the plain cases.
 - **Revisit when:** planned one-offs arrive; they are extras by this definition.
 
-## Every expense has a category, and a category is an emoji, a name and a colour
-**Decided:** 2026-09-19, colour and order added 2026-09-24
+## Every expense has a category, and a category is a symbol, a name and a colour
+**Decided:** 2026-09-19, colour and order added 2026-09-24, the symbol 2026-10-18
 Amount, name, category and date are all required. The app ships with no categories, so the first
-expense makes the first. The emoji comes from the system emoji keyboard; the colour is one of eight
-tokens, checked so neighbours stay distinct for colour-blind readers, and a new category starts on
-the next one unused. Categories keep an order the user sets in Settings.
+expense makes the first. The picture is a symbol from Tilly's own set, searched by word in the
+keypad's place, and drawn roughened (`DESIGN.md`, the look). A category made before symbols keeps its
+emoji until one is picked. The colour is one of eight tokens, checked so neighbours stay distinct for
+colour-blind readers, and a new category starts on the next one unused. Categories keep an order the
+user sets in Settings.
+- **Rejected — the emoji keyboard, with a symbol matched to each emoji:** any emoji without a match shows a mixed row.
+- **Rejected — keeping emoji under the Drawn look:** the one part of every row that wouldn't draw alike.
+- **Rejected — pictures made on the phone (L), or Tilly's own hand (G):** prototyped in `icons-in-app.html`; I won.
 - **Rejected — Tilly assigning colours in the order categories were made:** a colour the user didn't pick means nothing to them.
-- **Rejected — a colour taken from the emoji:** 🏠 and 🚗 land on orange and red, too close to tell apart as dots.
+- **Rejected — a colour taken from the picture:** 🏠 and 🚗 landed on orange and red, too close to tell apart as dots.
 - **Rejected — ordering by size or by name:** an order that reshuffles as bills change, where the user's own holds still.
-- **Rejected — an optional category:** the row's icon and any insight by category would need a stand-in that means nothing.
+- **Rejected — an optional category:** the row's picture and any insight by category would need a stand-in that means nothing.
 - **Rejected — a starter set:** the user's categories are theirs (tenet 4).
-- **Rejected — a custom emoji grid:** a curated set, and weaker than the system keyboard's search.
-- **Revisit when:** icons are explored as an alternative to emoji; the pairing with a colour stays.
+- **Revisit when:** someone can't find a symbol for a category they mean; the set grows, or emoji return beside it.
 
 ## The category view is lanes across one month
 **Decided:** 2026-09-24
@@ -148,18 +157,30 @@ arrows; dragging reads charges one at a time. Chosen from ten directions and a w
 Two charges on one day are two rows, each with its date. The timeline has no day groups.
 - **Rejected — grouping a day under a heading with a day total:** the list changes shape, and rows inside lose their dates.
 
-## Adding a bill is a card you complete, and the pockets pick its category
-**Decided:** 2026-10-16
+## The timeline is dashed and solid, rows drawn like category cards
+**Decided:** 2026-10-24
+A charged bill is a solid paper card, one to come a faint dashed outline; the colour lives only in
+the picture. Dates read as words near today, a squiggle marks today, and a badge on the picture says
+whether a bill repeats or ends. Chosen on the phone in `docs/prototypes/dashed-and-solid.html`.
+- **Rejected — the Wallet stack, every row a full-colour card (built 2026-10-18):** on the phone a list of coloured cards read as things to tap, and a bill is rarely edited once made. The colour drowned the amount.
+- **Rejected — a row drawn as a category card with a colour strip (recommended at the time), or colour only in a solid tile:** Jake kept the plain paper card with the picture on its wash.
+- **Rejected — a colour line down a row's edge:** redundant once the picture carries the colour.
+- **Rejected — weekday dates (`Tue 20`) and numeric ends (`ends 05/27`) everywhere:** mechanical. Words near today, a date further off.
+- **Rejected — Today and Tomorrow as coloured badges:** tried in several styles; Jake chose plain words.
+- **Revisit when:** All bills becomes folders, which reuses the row.
+
+## Adding a bill is a card you complete, and a grid of category cards dresses it
+**Decided:** 2026-10-16, the picker and the motion 2026-10-24
 The sheet is a card whose missing parts are dashed, and the input for whichever part you tap opens
-in the keypad's place. The category is chosen by tapping one of the pockets bills are filed in, and
-✓ saves and files the card there. Chosen from canvas rounds 1 to 7 and a working prototype
-(`docs/prototypes/edit-revisit-card.html`), built first in the iOS look.
+in the keypad's place. The category is one tap on a grid of category cards, and the card's colour
+fades in. On ✓ the sheet slides away and the row is marked in place. Chosen from canvas rounds,
+`docs/prototypes/edit-revisit-card.html`, then on the phone in `dashed-and-solid.html`.
 - **Rejected — a form that leads, one step at a time, or the bill as a sentence:** each version still read as filling out a form, and a next button that moves leaves nothing clear to press.
-- **Rejected — filing into a pocket as the save itself (P1):** nothing said it was final.
-- **Rejected — playing a category onto the card from a fanned hand (P2):** close, and the stamp of applying it felt good, but it's a second set of category cards beside the pockets the bill lands in.
-- **Rejected — showing the pocket's monthly total, a dense grid, or a list of strips:** the bills peeking say what a pocket is for.
-- **Rejected — pockets in the order categories were last used:** an order that reshuffles under the thumb, where the Settings order holds still.
-- **Revisit when:** the pockets move under the card (`ROADMAP.md`), or Tilly, Drawn arrives.
+- **Rejected — pockets the card files into on ✓ (built in v0.6.0):** the bill ended in a pocket, away from the timeline where it lives.
+- **Rejected — a fanned hand of categories, played onto the card (built 2026-10-18):** at the phone's size with real categories the fan hid every name and most symbols. It was judged at desktop size.
+- **Rejected — the card flipping, flying and landing in its row (built 2026-10-18):** it made adding and opening a bill feel slow. Snappy beats a story here.
+- **Rejected — folders or a plain list as the picker:** folders leave no room for the name; a list stops looking like the rows it dresses.
+- **Revisit when:** a grid of four across can't hold someone's categories without scrolling past a screen.
 
 ## Editing a charge is Calendar's: edit first, then this charge or future ones
 **Decided:** 2026-09-22

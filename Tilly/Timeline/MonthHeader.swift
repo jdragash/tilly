@@ -19,11 +19,11 @@ struct MonthHeader: View {
     let figure: String?
     /// Leads the figure, as a picked-out category's emoji and name do. It gives way first: it
     /// shrinks, then truncates, and the figure after it never does.
-    let figureLabel: String?
+    let figureLabel: Text?
     let trailingClearance: CGFloat
 
     init(section: MonthSection, today: Date, isPinned: Bool = false,
-         figure: String? = nil, figureLabel: String? = nil,
+         figure: String? = nil, figureLabel: Text? = nil,
          trailingClearance: CGFloat = Tokens.Space.headerTrailingClearance) {
         self.section = section
         self.today = today
@@ -43,7 +43,7 @@ struct MonthHeader: View {
                 // Accessibility sizes wrap rather than shrink: the row grows here anyway.
                 VStack(alignment: .leading, spacing: Tokens.Space.tight) {
                     nameText
-                    figureText(label: figureLabel.map { "\($0) " })
+                    figureText(label: figureLabel)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 // See the note in `OccurrenceRow`: the standard branch is held to full
@@ -63,7 +63,7 @@ struct MonthHeader: View {
                     // A gap rather than a space inside the label, which truncation would eat.
                     HStack(spacing: Tokens.Space.figureLabelGap) {
                         if let figureLabel {
-                            Text(figureLabel)
+                            figureLabel
                                 .lineLimit(1)
                                 .minimumScaleFactor(Tokens.Scale.headerMin)
                                 .font(Tokens.Text.monthTotal)
@@ -85,7 +85,7 @@ struct MonthHeader: View {
         // was briefly false and the header rendered with no ground at all. Deriving it from
         // measured geometry is still right; letting the *background* depend on that
         // geometry was not.
-        .background(Tokens.Surface.pinned)
+        .drawnPaper()
         .overlay(alignment: .bottom) {
             // A rule is drawn because something needs closing — at rest there is nothing to
             // close, and pinned there is content moving underneath. See "The month header" in
@@ -107,11 +107,13 @@ struct MonthHeader: View {
             .foregroundStyle(Tokens.Ink.primary)
     }
 
-    /// The figure, after `label` when there is one.
-    private func figureText(label: String?) -> some View {
-        Text((label ?? "") + (figure ?? TimelineFormatting.headerFigure(for: section, locale: locale)))
+    /// The figure, after `label` when there is one. It rolls to a new total when one lands.
+    private func figureText(label: Text?) -> some View {
+        let figure = figure ?? TimelineFormatting.headerFigure(for: section, locale: locale)
+        return (label.map { Text("\($0) \(figure)") } ?? Text(figure))
             .font(Tokens.Text.monthTotal)
             .monospacedDigit()
+            .contentTransition(.numericText())
             .foregroundStyle(Tokens.Ink.secondary)
     }
 }

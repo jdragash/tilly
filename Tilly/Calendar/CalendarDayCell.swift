@@ -5,10 +5,16 @@ import SwiftUI
 struct CalendarDayCell: View {
     let day: CalendarDay
     let isToday: Bool
+    /// A charge saved on this day is arriving: its picture drops in and its total rolls.
+    var arrives = false
+    /// How long the arrival waits, for the editor's sheet to have mostly left.
+    var arrivalDelay: TimeInterval = 0
     let onOpen: () -> Void
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
+    /// The total as it read before the arrival, held until the drop lands.
+    @State private var heldTotal: Decimal?
 
     var body: some View {
         if day.entries.isEmpty {
@@ -38,8 +44,12 @@ struct CalendarDayCell: View {
                     Spacer(minLength: 0)
                     emoji
                         .opacity(day.isUpcoming ? Tokens.Opacity.upcomingIcon : 1)
+                        .dayArrival(arrives, delay: arrivalDelay) {
+                            withAnimation(.default) { heldTotal = nil }
+                        }
                     Spacer(minLength: 0)
-                    Text(TimelineFormatting.amount(day.total, locale: locale))
+                    Text(TimelineFormatting.amount(heldTotal ?? day.total, locale: locale))
+                        .contentTransition(.numericText())
                         .font(Tokens.Text.dayTotal)
                         .monospacedDigit()
                         .lineLimit(1)
@@ -52,6 +62,10 @@ struct CalendarDayCell: View {
         .padding(.top, Tokens.Space.cellTop)
         .padding(.bottom, Tokens.Space.cellBottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        // The data changes as the sheet closes; the old total stays until the picture has landed.
+        .onChange(of: day.total) { old, _ in
+            if arrives { heldTotal = old }
+        }
     }
 
     @ViewBuilder private var number: some View {
@@ -71,16 +85,15 @@ struct CalendarDayCell: View {
 
     /// The costliest charge's emoji; two overlapped, the costliest on top, and "+N" for the rest.
     @ViewBuilder private var emoji: some View {
-        let emojis = day.entries.prefix(2).map { $0.emoji ?? "" }
-        if emojis.count == 1 {
-            Text(emojis[0]).font(Tokens.Text.dayEmoji)
+        let entries = Array(day.entries.prefix(2))
+        if entries.count == 1 {
+            picture(entries[0], size: Tokens.Size.pictureDay)
         } else {
             HStack(spacing: 0) {
                 HStack(spacing: -Tokens.Space.emojiOverlap) {
-                    Text(emojis[0]).zIndex(1)
-                    Text(emojis[1])
+                    picture(entries[0], size: Tokens.Size.pictureDayPair).zIndex(1)
+                    picture(entries[1], size: Tokens.Size.pictureDayPair)
                 }
-                .font(Tokens.Text.dayEmojiPair)
                 if day.entries.count > 2 {
                     Text("+\(day.entries.count - 2)")
                         .font(Tokens.Text.dayMore)
@@ -89,5 +102,9 @@ struct CalendarDayCell: View {
                 }
             }
         }
+    }
+
+    private func picture(_ entry: TimelineEntry, size: CGFloat) -> some View {
+        CategoryPictureView(picture: entry.picture, colour: entry.colour, size: size)
     }
 }

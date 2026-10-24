@@ -224,11 +224,12 @@ struct ExpenseDraft: Equatable, Sendable {
         return formatter.string(from: rounded as NSDecimalNumber) ?? "\(rounded)"
     }
 
-    /// "€0" when empty, "€1,250.5" mid-entry. The currency and separators are the locale's.
+    /// "€0" when empty, "€1,250.5" mid-entry, in `Money`'s currency with the locale's separators.
     func amountText(locale: Locale) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.locale = locale
+        formatter.currencyCode = Money.currencyCode
 
         let parts = digits.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
         let whole = parts.first.map(String.init) ?? ""
@@ -283,25 +284,5 @@ struct ExpenseDraft: Equatable, Sendable {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return "Last payment \(formatter.string(from: last))"
-    }
-}
-
-enum EmojiInput {
-    /// The last emoji character in `text`, or `nil`. A `Character` is a whole grapheme
-    /// cluster, so flags, skin tones and joined sequences arrive in one piece.
-    static func emoji(from text: String) -> String? {
-        text.reversed().first(where: isEmoji).map(String.init)
-    }
-
-    private static func isEmoji(_ character: Character) -> Bool {
-        let scalars = character.unicodeScalars
-        // Emoji presentation, or an explicit variation selector, makes it an emoji outright.
-        if scalars.contains(where: { $0.value == 0xFE0F || $0.properties.isEmojiPresentation }) {
-            return true
-        }
-        // Digits, "#" and "*" carry the emoji property as keycap bases, and so do a few
-        // symbols below U+238C ("©"); none of those is an emoji without a selector.
-        guard let first = scalars.first else { return false }
-        return first.properties.isEmoji && first.value > 0x238C
     }
 }

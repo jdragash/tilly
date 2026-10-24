@@ -11,6 +11,9 @@ struct CalendarMonthView: View {
     let calendarMonth: CalendarMonth
     let today: Date
     let onOpenDay: (Date) -> Void
+    /// The day a charge was just saved on, while it arrives, and how long it waits to.
+    var arrivingDay: Date? = nil
+    var arrivalDelay: TimeInterval = 0
     /// Each day cell's frame in `CalendarZoom.space`, for a zoom to grow from or shrink into.
     let onDayFrame: (Date, CGRect) -> Void
     /// Back out to the year.
@@ -37,7 +40,7 @@ struct CalendarMonthView: View {
             grid
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Tokens.Surface.base)
+        .drawnPaper()
     }
 
     // MARK: Title
@@ -103,7 +106,10 @@ struct CalendarMonthView: View {
                 neighbour(cell.day, height: rowHeight)
             }
             ForEach(calendarMonth.days) { day in
-                CalendarDayCell(day: day, isToday: day.date == todayStart) { onOpenDay(day.date) }
+                CalendarDayCell(
+                    day: day, isToday: day.date == todayStart, arrives: day.date == arrivingDay,
+                    arrivalDelay: arrivalDelay
+                ) { onOpenDay(day.date) }
                     // From the top, so a cell whose content runs a little long at the largest
                     // size hangs below its row rather than lifting its number off the line.
                     .frame(height: rowHeight, alignment: .top)

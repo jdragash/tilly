@@ -26,6 +26,8 @@ struct TillyApp: App {
                 .environment(session)
                 .environment(\.timelinePlaceStore, session.placeStore)
                 .modelContainer(session.container)
+                .fontDesign(Tokens.Text.design)
+                .drawnGround()
                 // Every load swaps the store, so each one is backfilled as it arrives.
                 .onChange(of: session.generation, initial: true) {
                     TillyApp.backfillCategories(in: session.container)
@@ -33,6 +35,8 @@ struct TillyApp: App {
             #else
             TimelineView()
                 .modelContainer(container)
+                .fontDesign(Tokens.Text.design)
+                .drawnGround()
             #endif
         }
     }

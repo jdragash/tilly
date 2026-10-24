@@ -8,8 +8,9 @@ enum EditorPanel: Equatable {
     case keypad, date, `repeat`, category, newCategory
 }
 
-/// The sheet for adding an expense. The card is the input: tapping a part opens its input in the
-/// keypad's place, under the card, at the keypad's height, so the card never moves. At standard
+/// The editor, in `EditorSheet` over the timeline, or a system sheet over All bills. The card is
+/// the input: tapping a part opens its input in the keypad's place, under the card, at the
+/// keypad's height, so the card never moves. At standard
 /// text sizes the keyboard covers the panel rather than pushing the sheet up. See "The editor" in
 /// `docs/DESIGN.md`.
 struct ExpenseEditor: View {
@@ -17,9 +18,11 @@ struct ExpenseEditor: View {
     /// Set when the editor opened from a row: editing a real charge rather than adding a new
     /// bill. See "Opening a charge edits it" in `docs/DESIGN.md`.
     let session: EditSession?
+    /// How it closed: the sheet holding it goes, and a save says which charge to bring into view.
+    let onClose: (EditorClose) -> Void
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.editorSheetContents) private var sheetContents
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -30,44 +33,38 @@ struct ExpenseEditor: View {
     @State private var panel: EditorPanel
     @FocusState private var nameFocused: Bool
     @State private var viewportHeight: CGFloat = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// The category being filed into, once ✓ has saved. See `file(into:)`.
-    @State private var filing: UUID?
-    /// A bill saved this time, left out of its pocket while the card stands in for it.
-    @State private var savedSeries: UUID?
-    @State private var cardFrame: CGRect = .zero
-    @State private var landing: CGRect?
-    @State private var isFlying = false
-    @State private var isCardGone = false
+    @State private var cardHeight: CGFloat = 0
     @State private var isClosing = false
+    /// Counts picks, for the pick's haptic.
+    @State private var picks = 0
 
     private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "ExpenseEditor")
 
     /// `draft` and `panel` exist so previews can open the editor part-way through. With a
     /// `session` and no explicit `draft`, the draft opens from the session's own baseline.
-    init(today: Date, draft: ExpenseDraft? = nil, panel: EditorPanel = .keypad, session: EditSession? = nil) {
+    init(
+        today: Date, draft: ExpenseDraft? = nil, panel: EditorPanel = .keypad, session: EditSession? = nil,
+        onClose: @escaping (EditorClose) -> Void
+    ) {
         self.today = today
         self.session = session
+        self.onClose = onClose
         _draft = State(initialValue: draft ?? session?.draft ?? ExpenseDraft(today: today, calendar: .current))
         _panel = State(initialValue: panel)
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            header
+                .opacity(sheetContents)
             ScrollView {
                 // The card holds the top and the panel the bottom; the space between them gives
                 // way, so neither moves when the panel changes or a keyboard pushes the sheet up.
                 // Accessibility sizes overflow instead, and scroll.
                 VStack(spacing: Tokens.Space.section) {
                     card
-                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-                            if !isFlying { cardFrame = frame }
-                        }
-                        .modifier(Filing(from: cardFrame, to: isFlying ? landing : nil))
                         .padding(.horizontal, Tokens.Space.editorCardInset)
-                        .opacity(isCardGone ? 0 : 1)
-                        // Drawn over the panel, which comes after it, as it flies into a pocket.
-                        .zIndex(1)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
                     Spacer(minLength: 0)
                     // A new category takes the panel's place, above its keyboard. At accessibility
                     // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
@@ -79,12 +76,19 @@ struct ExpenseEditor: View {
                             // above it moves, and hides so it can't show above a shorter keyboard.
                             panelArea
                                 .frame(maxWidth: .infinity)
-                                .frame(height: Tokens.Size.editorPanel)
+                                // The category grid takes everything under the card, as the
+                                // prototype's picker does; every other panel keeps its height.
+                                .frame(height: panel == .category ? gridHeight : Tokens.Size.editorPanel)
                                 .opacity(nameFocused ? 0 : 1)
                                 .accessibilityHidden(nameFocused)
                         }
                     }
-                    .padding(.horizontal, Tokens.Space.gutter)
+                    // The grid pads itself by its ring's room, so its cards sit `pickerSide` in.
+                    .padding(
+                        .horizontal,
+                        panel == .category ? Tokens.Space.pickerSide - Tokens.Space.pickerRingOutset : Tokens.Space.gutter
+                    )
+                    .opacity(sheetContents)
                 }
                 .frame(minHeight: viewportHeight)
             }
@@ -92,61 +96,6 @@ struct ExpenseEditor: View {
             .ignoresSafeArea(.keyboard, edges: keyboardCovers ? .bottom : [])
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
                 viewportHeight = height
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .close) { dismiss() }
-                }
-                if let session {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        // A `Menu`, not a `confirmationDialog`: the dialog ran its button's action
-                        // only once its closing transition had finished, a second after it had
-                        // visibly gone (measured), and it couldn't be dismissed while opening.
-                        Menu {
-                            Section {
-                                deleteButtons(for: session)
-                            } header: {
-                                Text("\(deleteTitle(for: session)) \(deleteMessage(for: session))")
-                            }
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .tint(Tokens.Ink.destructive)
-                        .accessibilityLabel("Delete")
-                    }
-                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
-                }
-                // A half-made category is finished or cancelled before the expense is saved.
-                ToolbarItem(placement: .confirmationAction) {
-                    if asksScope {
-                        // A `Menu` for the same reason as trash. Styled to match the system ✓, with
-                        // the toolbar's own glass hidden so it isn't drawn twice.
-                        Menu {
-                            scopeButtons
-                        } label: {
-                            Image(systemName: "checkmark")
-                        }
-                        .menuStyle(.button)
-                        .buttonStyle(.glassProminent)
-                        .buttonBorderShape(.circle)
-                        .accessibilityLabel("Save")
-                    } else {
-                        Button(role: .confirm, action: save)
-                            .disabled(!canSave)
-                    }
-                }
-                .sharedBackgroundVisibility(asksScope ? .hidden : .automatic)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-        }
-        .onPreferenceChange(FilingTargetKey.self) { landing = $0 }
-        .overlay {
-            // While the card files, any tap closes the sheet at once.
-            if filing != nil {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .ignoresSafeArea()
-                    .onTapGesture(perform: close)
             }
         }
         .onChange(of: panel) { _, newPanel in
@@ -159,6 +108,82 @@ struct ExpenseEditor: View {
 
     // MARK: Pieces
 
+    /// ✕ top left; trash, when a charge is open, and ✓ top right. Glass circles the size and place
+    /// of the system sheet's toolbar buttons, which this row replaced when the editor stopped being
+    /// a system sheet. A half-made category is finished or cancelled before the expense is saved.
+    private var header: some View {
+        HStack(spacing: Tokens.Space.sheetButtonGap) {
+            Button { close(.cancelled) } label: {
+                headerSymbol("xmark", ink: Tokens.Ink.primary)
+            }
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: Circle())
+            .accessibilityLabel("Close")
+            Spacer(minLength: 0)
+            if let session {
+                // A `Menu`, not a `confirmationDialog`: the dialog ran its button's action only
+                // once its closing transition had finished, a second after it had visibly gone
+                // (measured), and it couldn't be dismissed while opening.
+                Menu {
+                    Section {
+                        deleteButtons(for: session)
+                    } header: {
+                        Text("\(deleteTitle(for: session)) \(deleteMessage(for: session))")
+                    }
+                } label: {
+                    headerSymbol("trash", ink: Tokens.Ink.destructive)
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: Circle())
+                .accessibilityLabel("Delete")
+            }
+            confirm
+        }
+        .padding(.horizontal, Tokens.Space.sheetButtonInset)
+        .padding(.top, Tokens.Space.sheetButtonInset)
+        .padding(.bottom, Tokens.Space.sheetHeaderBottom)
+    }
+
+    /// ✓: the system's prominent checkmark, grey while there's nothing to save, and a menu of
+    /// "this charge or future charges" when a save has to ask.
+    @ViewBuilder
+    private var confirm: some View {
+        let glass = Glass.regular.tint(canSave ? Tokens.Ink.accent : Tokens.Surface.confirmDisabled).interactive(canSave)
+        if asksScope {
+            // A `Menu` for the same reason as trash.
+            Menu {
+                scopeButtons
+            } label: {
+                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .glassEffect(glass, in: Circle())
+            .accessibilityLabel("Save")
+        } else {
+            Button(action: save) {
+                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+            }
+            // Not `.plain`, which dims a disabled label: the system's disabled ✓ keeps it white
+            // on grey glass.
+            .buttonStyle(UndimmedButtonStyle())
+            .glassEffect(glass, in: Circle())
+            .disabled(!canSave)
+            .accessibilityLabel("Save")
+        }
+    }
+
+    private func headerSymbol(_ name: String, ink: Color) -> some View {
+        Image(systemName: name)
+            .font(Tokens.Text.floatingSymbol)
+            // Fixed, as toolbar symbols are: the circle doesn't grow with the text.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            .foregroundStyle(ink)
+            .frame(width: Tokens.Size.floatingButton, height: Tokens.Size.floatingButton)
+            .contentShape(Circle())
+    }
+
     private var card: some View {
         EditorCard(
             draft: draft,
@@ -166,12 +191,12 @@ struct ExpenseEditor: View {
             nameFocus: $nameFocused,
             category: selectedCategory,
             progress: progress,
-            // Nothing on a filing card is open: the pockets show only to receive it.
-            focused: filing == nil ? focusedPart : nil,
+            focused: focusedPart,
             today: today,
             onTap: open,
             onNameSubmit: submitName
         )
+        .sensoryFeedback(.impact(weight: .medium), trigger: picks)
         .submitLabel(afterName == nil ? .done : .next)
     }
 
@@ -219,12 +244,10 @@ struct ExpenseEditor: View {
         case .repeat:
             RepeatWheel(draft: $draft)
         case .category:
-            PocketGrid(
-                pockets: pockets,
+            CategoryGrid(
+                categories: categories.sorted { $0.sortOrder < $1.sortOrder },
                 selection: draft.categoryID,
-                draftName: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
-                filing: filing,
                 onPick: pick,
                 onNew: { panel = .newCategory }
             )
@@ -234,6 +257,11 @@ struct ExpenseEditor: View {
     }
 
     // MARK: State
+
+    /// Everything under the card, as the prototype's picker takes; never less than the other panels.
+    private var gridHeight: CGFloat {
+        max(Tokens.Size.editorPanel, viewportHeight - cardHeight - Tokens.Space.section)
+    }
 
     private var progress: CardProgress {
         CardProgress(draft: draft, categoryExists: selectedCategory != nil, isMakingCategory: panel == .newCategory)
@@ -251,7 +279,7 @@ struct ExpenseEditor: View {
     }
 
     /// The keyboard covers the editor at standard sizes. It can't while a category is made, where
-    /// the row has to sit directly above the emoji keyboard, or at accessibility sizes, where it
+    /// the symbols take the keypad's place and the name's keyboard pushes the sheet up, or at accessibility sizes, where it
     /// would cover the name field.
     private var keyboardCovers: Bool {
         !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
@@ -279,23 +307,13 @@ struct ExpenseEditor: View {
         )
     }
 
-    /// The pockets in the Settings order, without the bill being edited peeking out of its own.
-    private var pockets: [PocketContent] {
-        let editing = savedSeries
-            ?? session.flatMap { session in expenses.first { $0.id == session.expenseID }?.seriesKey }
-        return PocketContents.make(
-            categories: categories, expenses: expenses, excluding: editing, today: today, calendar: calendar
-        )
-    }
-
-    /// Dresses the card in the category: its colour crossfades and its emoji drops in.
+    /// Puts the bill in the category: the card's colour crossfades to it in one quick fade.
     private func pick(_ id: UUID) {
-        withAnimation(.easeInOut(duration: Tokens.Motion.pick)) {
-            draft.categoryID = id
-        }
+        picks += 1
+        withAnimation(.easeInOut(duration: Tokens.Motion.categoryFade)) { draft.categoryID = id }
     }
 
-    /// A category made in the editor dresses the card at once, and the pockets come back.
+    /// A category made in the editor is picked at once, and the grid comes back.
     private func create(_ category: ExpenseCategory) {
         modelContext.insert(category)
         do {
@@ -345,10 +363,9 @@ struct ExpenseEditor: View {
             category: category
         )
         modelContext.insert(expense)
-        savedSeries = expense.seriesKey
         do {
             try modelContext.save()
-            file(into: category.id)
+            close(.saved(expenseID: expense.id, date: draft.date))
         } catch {
             Self.logger.error("Saving an expense failed: \(error)")
         }
@@ -465,70 +482,34 @@ struct ExpenseEditor: View {
         return formatter.string(from: date)
     }
 
-    /// A saved edit files the card, as adding does.
+    /// A saved edit closes the sheet.
     private func edit(_ session: EditSession, _ operation: (Expense, ExpenseCategory) throws -> Void) {
         guard let category = selectedCategory, let expense = fetchExpense(session.expenseID) else { return }
-        performEdit({ try operation(expense, category) }, then: { file(into: category.id) })
+        performEdit({ try operation(expense, category) }, then: .saved(expenseID: expense.id, date: draft.date))
     }
 
-    /// Deleting closes the sheet directly; saving passes `then` to file the card instead.
-    private func performEdit(_ operation: () throws -> Void, then finish: (() -> Void)? = nil) {
+    /// Runs an edit, then closes as `close` says: a delete by default, a save when one passes it.
+    private func performEdit(_ operation: () throws -> Void, then close: EditorClose = .deleted) {
         do {
             try operation()
-            if let finish { finish() } else { dismiss() }
+            self.close(close)
         } catch {
             Self.logger.error("Editing an expense failed: \(error)")
         }
     }
 
-    // MARK: Filing
+    // MARK: Closing
 
-    /// After a save has gone through: the pockets show with the target scrolled into view, the
-    /// card shrinks into it, the pocket bounces, and the sheet closes. Reduce Motion fades the card
-    /// instead. See "The pockets are the category picker" in `docs/DESIGN.md`.
-    private func file(into categoryID: UUID) {
-        nameFocused = false
-        panel = .category
-        filing = categoryID
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(Tokens.Motion.fileSettle))
-            if reduceMotion {
-                withAnimation(.easeOut(duration: Tokens.Motion.fileFade)) { isCardGone = true }
-                try? await Task.sleep(for: .seconds(Tokens.Motion.fileFade))
-            } else {
-                withAnimation(Tokens.Motion.fileCurve) { isFlying = true }
-                try? await Task.sleep(for: .seconds(Tokens.Motion.file))
-                isCardGone = true
-                try? await Task.sleep(for: .seconds(Tokens.Motion.fileHold - Tokens.Motion.file))
-            }
-            close()
-        }
-    }
-
-    /// Closes the sheet once, whether filing finished or a tap cut it short.
-    private func close() {
+    /// Closes the sheet once: ✓ pressed twice is ignored.
+    private func close(_ how: EditorClose) {
         guard !isClosing else { return }
         isClosing = true
-        dismiss()
+        nameFocused = false
+        onClose(how)
     }
 
     private func fetchExpense(_ id: UUID) -> Expense? {
         (try? modelContext.fetch(FetchDescriptor<Expense>()))?.first { $0.id == id }
-    }
-}
-
-/// Shrinks the card, as one picture, from where it sits to where it lands in its pocket.
-private struct Filing: ViewModifier {
-    let from: CGRect
-    let to: CGRect?
-
-    /// One view either way, so the change animates rather than swapping views.
-    func body(content: Content) -> some View {
-        let lands = to != nil && from.width > 0
-        let target = to ?? from
-        content
-            .scaleEffect(lands ? target.width / from.width : 1)
-            .offset(x: lands ? target.midX - from.midX : 0, y: lands ? target.midY - from.midY : 0)
     }
 }
 
@@ -543,7 +524,8 @@ private func previewContainer() -> (ModelContainer, ExpenseCategory) {
 }
 
 #Preview("Empty") {
-    ExpenseEditor(today: Date())
+    ExpenseEditor(today: Date(), onClose: { _ in })
+        .drawnGround()
         .modelContainer(previewContainer().0)
 }
 
@@ -557,17 +539,20 @@ private func previewContainer() -> (ModelContainer, ExpenseCategory) {
     draft.date = calendar.date(byAdding: .day, value: 12, to: calendar.startOfDay(for: today))!
     draft.paymentCount = 12
     draft.categoryID = category.id
-    return ExpenseEditor(today: today, draft: draft)
+    return ExpenseEditor(today: today, draft: draft, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
 }
 
 #Preview("Repeat panel") {
-    ExpenseEditor(today: Date(), panel: .repeat)
+    ExpenseEditor(today: Date(), panel: .repeat, onClose: { _ in })
+        .drawnGround()
         .modelContainer(previewContainer().0)
 }
 
 #Preview("Date panel") {
-    ExpenseEditor(today: Date(), panel: .date)
+    ExpenseEditor(today: Date(), panel: .date, onClose: { _ in })
+        .drawnGround()
         .modelContainer(previewContainer().0)
 }
 
@@ -577,7 +562,8 @@ private func previewContainer() -> (ModelContainer, ExpenseCategory) {
     draft.press(.digit(9))
     draft.name = "Sofa"
     draft.categoryID = category.id
-    return ExpenseEditor(today: Date(), draft: draft)
+    return ExpenseEditor(today: Date(), draft: draft, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
         .dynamicTypeSize(.accessibility3)
 }
@@ -598,7 +584,8 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
 #Preview("Editing a charge") {
     let (container, category) = previewContainer()
     let session = previewEditSession(monthsAgo: 0, in: container, category: category)
-    return ExpenseEditor(today: Date(), session: session)
+    return ExpenseEditor(today: Date(), session: session, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
 }
 
@@ -607,15 +594,24 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
     let session = previewEditSession(monthsAgo: 3, in: container, category: category)
     var draft = session.draft
     draft.digits = "75"
-    return ExpenseEditor(today: Date(), draft: draft, session: session)
+    return ExpenseEditor(today: Date(), draft: draft, session: session, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
 }
 
 #Preview("Editing, dark, accessibility size") {
     let (container, category) = previewContainer()
     let session = previewEditSession(monthsAgo: 0, in: container, category: category)
-    return ExpenseEditor(today: Date(), session: session)
+    return ExpenseEditor(today: Date(), session: session, onClose: { _ in })
+        .drawnGround()
         .modelContainer(container)
         .preferredColorScheme(.dark)
         .dynamicTypeSize(.accessibility3)
+}
+
+/// A button that draws its label as it is, enabled or not; its glass answers the press.
+private struct UndimmedButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
 }

@@ -18,15 +18,15 @@ import Testing
     }
 
     static func info(_ name: String, _ emoji: String) -> CategoryInfo {
-        CategoryInfo(id: UUID(), emoji: emoji, name: name, colour: .blue)
+        CategoryInfo(id: UUID(), picture: .emoji(emoji), name: name, colour: .blue)
     }
 
     static func lane(_ category: CategoryInfo?, amounts: [Decimal]) -> CategoryLane {
         let dots = amounts.enumerated().map { index, amount in
             LaneDot(
                 entry: TimelineEntry(
-                    id: "\(index)", expenseID: UUID(), scheduledDate: today, name: "Bill", emoji: category?.emoji,
-                    date: today, amount: amount, state: .charged, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false
+                    id: "\(index)", expenseID: UUID(), scheduledDate: today, name: "Bill", picture: category?.picture ?? .none, colour: category?.colour,
+                    date: today, amount: amount, state: .charged, endDate: nil, endHasPassed: false, isExtra: false, startsRecord: false, isYearly: false
                 ),
                 day: 15
             )
@@ -53,37 +53,28 @@ import Testing
         #expect(text == "Jan 22")
     }
 
-    // MARK: quietLine
+    // MARK: quietNext
 
-    @Test func quietLineJoinsCategoriesWithTheirNext() {
-        let quiet = [
-            QuietCategory(category: Self.info("Books", "📗"), next: Self.date(2026, 11, 3)),
-            QuietCategory(category: Self.info("Travel", "✈️"), next: Self.date(2027, 1, 12)),
-        ]
-        let line = CategoryFormatting.quietLine(quiet, month: "September", calendar: Self.calendar, locale: Self.us)
-        #expect(line == "Nothing in September: 📗 next Nov 3 · ✈️ next Jan 12")
+    @Test func quietNextNamesTheDate() {
+        let item = QuietCategory(category: Self.info("Books", "📗"), next: Self.date(2026, 11, 3))
+        #expect(CategoryFormatting.quietNext(item, calendar: Self.calendar, locale: Self.us) == "next Nov 3")
     }
 
-    @Test func quietLineShowsAnEmojiAloneWithNoNext() {
-        let quiet = [QuietCategory(category: Self.info("Books", "📗"), next: nil)]
-        let line = CategoryFormatting.quietLine(quiet, month: "September", calendar: Self.calendar, locale: Self.us)
-        #expect(line == "Nothing in September: 📗")
-    }
-
-    @Test func quietLineIsNilWhenNothingIsQuiet() {
-        #expect(CategoryFormatting.quietLine([], month: "September", calendar: Self.calendar, locale: Self.us) == nil)
+    @Test func quietNextIsEmptyWithNoNext() {
+        let item = QuietCategory(category: Self.info("Books", "📗"), next: nil)
+        #expect(CategoryFormatting.quietNext(item, calendar: Self.calendar, locale: Self.us) == "")
     }
 
     // MARK: Lane text
 
     @Test func focusLabelIsTheFigureWithoutItsTotal() {
         let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950])
-        #expect(CategoryFormatting.focusLabel(lane) == "🏠 Home")
+        #expect(CategoryFormatting.focusLabel(lane) == "Home")
     }
 
-    @Test func focusFigureReadsEmojiNameAndTotal() {
+    @Test func focusFigureReadsNameAndTotal() {
         let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950, 241, 68])
-        #expect(CategoryFormatting.focusFigure(lane, locale: Self.euro) == "🏠 Home €1,259")
+        #expect(CategoryFormatting.focusFigure(lane, locale: Self.euro) == "Home €1,259")
     }
 
     @Test func laneLabelCountsCharges() {
@@ -93,10 +84,10 @@ import Testing
         #expect(CategoryFormatting.laneLabel(one, locale: Self.euro) == "Car, 120 euros out, 1 charge")
     }
 
-    @Test func laneTextInDollars() {
+    @Test func laneTextInEurosOnAUSRegion() {
         let lane = Self.lane(Self.info("Home", "🏠"), amounts: [950, 309])
-        #expect(CategoryFormatting.focusFigure(lane, locale: Self.us) == "🏠 Home $1,259")
-        #expect(CategoryFormatting.laneLabel(lane, locale: Self.us) == "Home, 1,259 US dollars out, 2 charges")
+        #expect(CategoryFormatting.focusFigure(lane, locale: Self.us) == "Home \u{20AC}1,259")
+        #expect(CategoryFormatting.laneLabel(lane, locale: Self.us) == "Home, 1,259 euros out, 2 charges")
     }
 
     @Test func anUncategorisedLaneIsNamedNoCategory() {

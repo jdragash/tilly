@@ -7,7 +7,7 @@ import SwiftUI
 struct CategoryReadout: View {
     let date: Date
     let charges: [TimelineEntry]
-    let emojiOf: (TimelineEntry) -> String?
+    let pictureOf: (TimelineEntry) -> CategoryPicture
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
@@ -20,7 +20,7 @@ struct CategoryReadout: View {
                 .padding(.bottom, Tokens.Space.readoutDateBottom)
             ForEach(charges) { charge in
                 HStack(spacing: Tokens.Space.readoutGap) {
-                    Text(emojiOf(charge) ?? "")
+                    CategoryPictureView(picture: pictureOf(charge), colour: charge.colour, size: Tokens.Size.pictureReadout)
                         .fixedSize()
                     // The name gives way, truncating; the amount never wraps or shortens.
                     Text(charge.name)
@@ -54,8 +54,8 @@ struct CategoryReadout: View {
 struct CategoryReadoutPlacement: Equatable {
     let date: Date
     let charges: [TimelineEntry]
-    /// Each charge's emoji, by `TimelineEntry.id`.
-    let emojis: [String: String]
+    /// Each charge's picture, by `TimelineEntry.id`.
+    let pictures: [String: CategoryPicture]
     /// The line's x in the category view, which fills the shell.
     let lineX: CGFloat
 }
@@ -80,7 +80,7 @@ struct CategoryReadoutLayer: View {
                 let x = min(max(placement.lineX - size.width / 2, Tokens.Space.gutter),
                             proxy.size.width - Tokens.Space.gutter - size.width)
                 let y = Tokens.Space.readoutTop
-                CategoryReadout(date: placement.date, charges: placement.charges, emojiOf: { placement.emojis[$0.id] })
+                CategoryReadout(date: placement.date, charges: placement.charges, pictureOf: { placement.pictures[$0.id] ?? .none })
                     .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
                     // Unplaced until it has been measured once, rather than a frame in the wrong place.
                     .opacity(size == .zero ? 0 : 1)
