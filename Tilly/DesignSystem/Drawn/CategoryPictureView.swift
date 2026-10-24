@@ -55,8 +55,7 @@ struct CategoryPictureView: View {
         let reach = CGFloat(amount) * 2
         let scale = round ? Tokens.Drawn.roundSymbolScale : Tokens.Drawn.symbolScale
         let weight: Font.Weight = round ? Tokens.Drawn.roundSymbolWeight : .regular
-        return Image(systemName: name)
-            .font(.system(size: size * scale, weight: weight))
+        return glyph(name, size: size * scale, weight: weight)
             .foregroundStyle(ink)
             .distortionEffect(
                 ShaderLibrary.roughen(
@@ -74,6 +73,23 @@ struct CategoryPictureView: View {
                 }
             }
             .accessibilityHidden(true)
+    }
+
+    /// The symbol at `side`. In the round picture it is fitted whole inside a `side` square, as the
+    /// prototype's glyphs fill their box, so a wide symbol (a game controller) is no larger than a
+    /// tall one (a bolt); in the rounded well it is set at `side` as type.
+    @ViewBuilder
+    private func glyph(_ name: String, size side: CGFloat, weight: Font.Weight) -> some View {
+        if round {
+            Image(systemName: name)
+                .resizable()
+                .fontWeight(weight)
+                .scaledToFit()
+                .frame(width: side, height: side)
+        } else {
+            Image(systemName: name)
+                .font(.system(size: side, weight: weight))
+        }
     }
 
     /// The prototype's blob: a roughened circle `roundWashInset` of the side inside the square, its
@@ -95,7 +111,7 @@ struct CategoryPictureView: View {
         .mask {
             Image(uiImage: Grain.speckle)
                 .resizable(resizingMode: .tile)
-                .interpolation(.none)
+                .interpolation(.medium)
         }
     }
 

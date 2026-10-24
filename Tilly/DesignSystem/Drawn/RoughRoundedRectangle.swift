@@ -7,6 +7,9 @@ nonisolated struct RoughRoundedRectangle: Shape {
     var cornerRadii: RectangleCornerRadii
     var seed: UInt64
     var wobble: CGFloat = Tokens.Drawn.edgeWobble
+    /// How fast the wobble varies, in cycles per pt: the prototype's paper filter is slow, its wash
+    /// filter quicker.
+    var frequency: CGFloat = Tokens.Drawn.edgeFrequency
     /// Drawn this far inside the rect, so a stroke of twice this ends on its bounds.
     var inset: CGFloat = 0
 
@@ -20,7 +23,7 @@ nonisolated struct RoughRoundedRectangle: Shape {
     }()
 
     func path(in rect: CGRect) -> Path {
-        let key = "\(seed)|\(rect.origin.x),\(rect.origin.y),\(rect.width),\(rect.height)|\(cornerRadii.topLeading),\(cornerRadii.bottomLeading),\(cornerRadii.bottomTrailing),\(cornerRadii.topTrailing)|\(wobble)|\(inset)" as NSString
+        let key = "\(seed)|\(rect.origin.x),\(rect.origin.y),\(rect.width),\(rect.height)|\(cornerRadii.topLeading),\(cornerRadii.bottomLeading),\(cornerRadii.bottomTrailing),\(cornerRadii.topTrailing)|\(wobble)|\(frequency)|\(inset)" as NSString
         if let hit = Self.cache.object(forKey: key) { return hit.path }
         let made = makePath(in: rect)
         Self.cache.setObject(PathBox(made), forKey: key)
@@ -32,7 +35,7 @@ nonisolated struct RoughRoundedRectangle: Shape {
         guard outline.count > 1 else { return Path() }
 
         // `edgeFrequency` is cycles per pt, as the prototype's filter has it; the noise wants radians.
-        let slowRate = Double(Tokens.Drawn.edgeFrequency) * 2 * .pi
+        let slowRate = Double(frequency) * 2 * .pi
         let slow = (x: SmoothNoise(seed: seed &* 31 &+ 7, frequency: slowRate),
                     y: SmoothNoise(seed: seed &* 17 &+ 5, frequency: slowRate))
         let fine = (x: SmoothNoise(seed: seed &* 13 &+ 3, frequency: Tokens.Drawn.roughEdgeFrequency),

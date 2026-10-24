@@ -363,6 +363,17 @@ before landing.
     Roughened at 1.3pt (`sfR`'s displacement on a glyph drawn at about its own size), where the
     rounded well's 1.8 bent the arcs; the blob's edge is softened by a 0.7pt blur, as `washF`'s
     displacement scatters it rather than ruling a line.
+  - The glyph is fitted whole in a square 55% of the picture (`resizable().scaledToFit()` at
+    semibold), not set as type: SF Symbols differ in width, and a game controller at 17pt ran 24pt
+    across where the prototype's spans 19. Measured ink at 3x, rows: controller 19.0 × 11.7 against
+    19.7 × 12.0, wifi 19.0 × 13.0 against 18.7 × 14.7. The wash's speckle is a point across and
+    soft (`speckleScale` 1, medium interpolation), as `washF`'s grain is, not the screen's pixel.
+- **Editor card, after Jake's review:** a picked category is a 34pt round picture in the 46pt slot,
+  white on a 0.35 white wash, with no tile and no pencil; the open ring is 2pt white, 4pt outside,
+  radius 16.
+- **Picker chalk:** cards bend as `paperBigF` bends them (2.5pt at most, slowly), against the rows'
+  tuned 0.6; the strip's edge is ragged at 1.6pt and 0.07 cycles per pt (`washF`), and its speckle
+  is the wash's.
   - Badge: 17pt, its edges 5pt past the picture's. Its glyphs are the prototype's own paths
     (`BadgeGlyph`), on a 12-unit grid in an 11pt box, stroked 1.5 units with round caps and joins;
     SF Symbols' `arrow.clockwise` read heavier and wider. The repeat arc is SVG's `A3.6 3.6 0 1 1`

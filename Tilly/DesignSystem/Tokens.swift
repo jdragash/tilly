@@ -74,9 +74,6 @@ enum Tokens {
         static let cardAmountTracking: CGFloat = -0.026
         static let cardName: Font = .title2.weight(.semibold)
         static let cardWhen: Font = .footnote.weight(.semibold)
-        /// The pencil badge on a chosen category's tile: a fixed 10pt glyph in a fixed 16pt
-        /// circle, from the prototype.
-        static let cardBadge: Font = .system(size: 10, weight: .semibold)
     }
 
     enum Stroke {
@@ -192,8 +189,6 @@ enum Tokens {
         static let card: Color = Color(.quaternarySystemFill)
         /// A chip that isn't picked: the prototype's 14% and 32%, which the secondary fill is.
         static let chip: Color = Color(.secondarySystemFill)
-        /// The pencil badge's ground: white in light, the prototype's #2C2C2E in dark.
-        static let cardBadge: Color = Color(.tertiarySystemBackground)
         /// Behind the editor's sheet: the system's dimming, 16% black (the prototype's too).
         static let scrim: Color = .black.opacity(0.16)
         /// The editor's ✓ while there's nothing to save, as the system draws a disabled one.
@@ -226,6 +221,8 @@ enum Tokens {
         /// The top of `New`'s plus, its 32pt line set from there; from the prototype.
         static let pickerPlusTop: CGFloat = 10
         static let pickerRingOutset: CGFloat = 4
+        /// The ring round the card's category slot, outside it; from the prototype.
+        static let cardTileRingOutset: CGFloat = 4
         static let gutter: CGFloat = 20
         static let section: CGFloat = 16
         static let gap: CGFloat = 12
@@ -492,11 +489,10 @@ enum Tokens {
         static let cardAspect: CGFloat = 1.586
         /// The card's amount, before Dynamic Type scales it; from the prototype's L.
         static let cardAmount: CGFloat = 60
-        /// The category's tile on the card, and the pencil badge on its corner, which sits
-        /// `cardBadgeOverhang` outside it. From the prototype.
+        /// The category's slot on the card, and the picture in it once picked, 34pt of 46; from
+        /// the prototype's `.tile`.
         static let cardCategoryTile: CGFloat = 46
-        static let cardBadge: CGFloat = 16
-        static let cardBadgeOverhang: CGFloat = 5
+        static let cardTilePictureRatio: CGFloat = 34 / 46
         /// The caret after the card's amount. The prototype sizes it from the font: 0.82em tall,
         /// 0.055em wide (never under `caretMinWidth`), 0.04em from the text. Here it's drawn from
         /// the laid-out line, about 1.2em tall in SF, so it follows the amount as it shrinks.
@@ -569,10 +565,6 @@ enum Tokens {
         static let cardColour: Color = .black.opacity(0.16)
         static let cardRadius: CGFloat = 14
         static let cardY: CGFloat = 12
-        /// Under the pencil badge: the prototype's 0 1 2 at 14% black.
-        static let badgeColour: Color = .black.opacity(0.14)
-        static let badgeRadius: CGFloat = 1
-        static let badgeY: CGFloat = 1
         /// Under a charged row's badge: the prototype's 0 1 2 at 12% black.
         static let rowBadgeColour: Color = .black.opacity(0.12)
         static let rowBadgeRadius: CGFloat = 1
@@ -603,6 +595,8 @@ enum Tokens {
         static let sheet: CGFloat = 38
         /// The category's tile on the editor's card: 0.28 of its side, from the prototype.
         static let cardCategoryTile: CGFloat = Size.cardCategoryTile * 0.28
+        /// The white ring round the category's slot while the categories are open; from the prototype.
+        static let cardTileRing: CGFloat = 16
         /// The name's dashed field, and the ring round an open date or repeat; from the prototype.
         static let cardField: CGFloat = 9
         static let cardFocus: CGFloat = 6
@@ -689,8 +683,8 @@ extension Tokens {
         static let grainAlpha: UInt8 = 9
         static let grainSeed: UInt64 = 77
         static let speckleSeed: UInt64 = 11
-        /// Speckle pixels per point: the prototype's filter speckles at its 3x screen's pixel.
-        static let speckleScale: CGFloat = 3
+        /// Speckle pixels per point: the prototype's `washF` grain is about a point across, softly.
+        static let speckleScale: CGFloat = 1
 
         /// An edge's displacement (pt: the most it moves, a typical point moving about half that), how
         /// fast it varies (cycles per pt), and the pt between sampled points. The prototype's filter
@@ -734,11 +728,20 @@ extension Tokens {
         static let roundWashEdgeRatio: CGFloat = 0.42 * 0.09
         static let roundWashEdgeMin: CGFloat = 0.8
         static let roundWashEdgeBlur: CGFloat = 0.7
+        /// A picker card's edge, as the prototype's `paperBigF` bends it: displacement 5, so at most
+        /// 2.5pt, slowly. The timeline's rows keep the tuned `edgeWobble`.
+        static let pickerCardWobble: CGFloat = 2.5
+        /// A picker card's colour strip, ragged as the prototype's `washF` makes it: displacement 3.2,
+        /// at 0.07 cycles per pt.
+        static let stripWobble: CGFloat = 1.6
+        static let stripFrequency: CGFloat = 0.07
         /// The round picture's symbol is roughened as the prototype's `sfR` filter does: a 1.3pt
         /// displacement, against the rounded well's tunable `roughAmount`.
         static let roundRoughAmount: Float = 1.3
-        static let roundSymbolScale: CGFloat = 0.5
-        static let roundSymbolWeight: Font.Weight = .regular
+        /// The round picture's glyph is fitted whole in a square this fraction of the side: measured
+        /// from the prototype at 3x, its glyphs span about 19pt of a 34pt picture and 20–21 of 36.
+        static let roundSymbolScale: CGFloat = 0.55
+        static let roundSymbolWeight: Font.Weight = .semibold
 
         /// A symbol roughened as it draws: the noise's frequency (per pt) and how far it moves a pixel.
         static let roughFrequency: Float = 0.32

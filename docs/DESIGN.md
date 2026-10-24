@@ -195,7 +195,8 @@ Save is the system's prominent checkmark top right. The input area under the car
 height, so the card never moves.
 
 Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed picture tile. A pencil
-after the date, repeat and category means it's filled in and yours to change. A caret blinks after the
+after the date and repeat means it's filled in and yours to change. A picked category is its picture,
+a white symbol on a faint round wash, with a white ring round it while the categories are open. A caret blinks after the
 amount on the keypad. Once it's in, the next part still needed, other than the one being typed,
 breathes: a slow pulse on its dashes. At accessibility sizes the parts stack, full width, and the
 sheet scrolls.

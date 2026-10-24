@@ -51,7 +51,7 @@ struct CategoryGrid: View {
     private func card(_ category: ExpenseCategory) -> some View {
         let seed = stableSeed(category.id.uuidString)
         let colour = category.colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured
-        let shape = RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed)
+        let shape = RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, wobble: Tokens.Drawn.pickerCardWobble)
         return VStack(spacing: 0) {
             CategoryPictureView(
                 picture: CategoryPicture(category), colour: category.colour,
@@ -71,16 +71,19 @@ struct CategoryGrid: View {
         // As tall as the row, so a row's cards line up when one name needs more room.
         .frame(maxWidth: .infinity, minHeight: Tokens.Size.pickerCard, maxHeight: .infinity)
         .background {
-            PaperCard(cornerRadii: cornerRadii, seed: seed)
+            PaperCard(cornerRadii: cornerRadii, seed: seed, wobble: Tokens.Drawn.pickerCardWobble)
                 .overlay(alignment: .bottom) {
                     // A wash, speckled as the prototype's `washF` speckles it.
-                    RoughRoundedRectangle(cornerRadii: RectangleCornerRadii(), seed: seed)
+                    RoughRoundedRectangle(
+                        cornerRadii: RectangleCornerRadii(), seed: seed,
+                        wobble: Tokens.Drawn.stripWobble, frequency: Tokens.Drawn.stripFrequency
+                    )
                         .fill(colour.opacity(Tokens.Opacity.pickerStrip))
                         .frame(height: Tokens.Size.pickerStrip)
                         .mask {
                             Image(uiImage: Grain.speckle)
                                 .resizable(resizingMode: .tile)
-                                .interpolation(.none)
+                                .interpolation(.medium)
                         }
                 }
                 .clipShape(shape)

@@ -268,7 +268,9 @@ struct EditorCard: View {
         .accessibilityAddTraits(isOpen ? .isSelected : [])
     }
 
-    /// Dashed until a category is chosen, then its emoji with the pencil on its corner.
+    /// Dashed until a category is chosen, then its picture: a white symbol on a faint round wash,
+    /// with no tile and no pencil, as the prototype's. While the categories are open, a white ring
+    /// stands round the slot.
     private var categoryTile: some View {
         let isMissing = progress.isMissing(.category)
         let isOpen = focused == .category
@@ -281,8 +283,9 @@ struct EditorCard: View {
                         .breathing(progress.breathing(focused: focused) == .category)
                 } else if let category {
                     CategoryPictureView(
-                        picture: CategoryPicture(category), colour: category.colour, size: tileSize,
-                        onCard: true, place: .editor
+                        picture: CategoryPicture(category), colour: category.colour,
+                        size: tileSize * Tokens.Size.cardTilePictureRatio,
+                        onCard: true, round: true, place: .editor
                     )
                     .id(category.id)
                 }
@@ -290,12 +293,10 @@ struct EditorCard: View {
             .frame(width: tileSize, height: tileSize)
             .overlay {
                 if isOpen {
-                    tile.stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
-                        .padding(-Tokens.Stroke.cardFocus)
+                    RoundedRectangle(cornerRadius: Tokens.Radius.cardTileRing, style: .continuous)
+                        .stroke(Tokens.Ink.onCard, lineWidth: Tokens.Stroke.cardFocus)
+                        .padding(-Tokens.Space.cardTileRingOutset)
                 }
-            }
-            .overlay(alignment: .bottomTrailing) {
-                if !isMissing { badge }
             }
             .contentShape(tile)
         }
@@ -309,18 +310,6 @@ struct EditorCard: View {
     private var pencil: some View {
         Image(systemName: "pencil")
             .foregroundStyle(Tokens.Ink.onCardSoft)
-            .accessibilityHidden(true)
-    }
-
-    /// The pencil, small, on a chosen category's tile.
-    private var badge: some View {
-        Image(systemName: "pencil")
-            .font(Tokens.Text.cardBadge)
-            .foregroundStyle(Tokens.Ink.secondary)
-            .frame(width: Tokens.Size.cardBadge, height: Tokens.Size.cardBadge)
-            .background(Tokens.Surface.cardBadge, in: Circle())
-            .shadow(color: Tokens.Shadow.badgeColour, radius: Tokens.Shadow.badgeRadius, y: Tokens.Shadow.badgeY)
-            .offset(x: Tokens.Size.cardBadgeOverhang, y: Tokens.Size.cardBadgeOverhang)
             .accessibilityHidden(true)
     }
 }

@@ -55,9 +55,10 @@ struct DottedOutline: View {
 struct PaperCard: View {
     let cornerRadii: RectangleCornerRadii
     let seed: UInt64
+    var wobble: CGFloat = Tokens.Drawn.edgeWobble
 
     var body: some View {
-        RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed)
+        RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, wobble: wobble)
             .fill(Tokens.Drawn.paperCard)
             .accessibilityHidden(true)
     }
