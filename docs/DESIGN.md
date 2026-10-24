@@ -13,9 +13,10 @@ are in `PROJECT.md`, the principles behind them in `TASTE.md`, and the evidence 
 | **Time** | upcoming / charged | Weight: secondary vs. full |
 | **Certainty** | estimated / known | *Not rendered in v1.* Returns with variable bills |
 
-An upcoming row sits back: its card a dotted outline in its colour on the paper, name, date, picture
-and amount at secondary weight. A charged row is its card, washed solid in its colour, at full weight. A skipped row withdraws further and strikes its amount through: listed,
-visibly not counted, and marking no calendar. Nothing in v1 skips a charge. A charge dated today is
+An upcoming row sits back: a faint dashed outline on the paper, name and amount at secondary weight,
+the picture a little faded. A charged row is a solid paper card at full weight. Colour lives only
+in the picture. A skipped row withdraws further and strikes its amount through: listed, visibly not
+counted, and marking no calendar. Nothing in v1 skips a charge. A charge dated today is
 charged; one with no amount shows an em dash and adds nothing. Certainty, when it returns, gets its
 own channel, a mark beside the amount, never lightness. The grammar holds wherever a date or amount
 appears: the editor's date button shows a calendar with a clock for a date still to come.
@@ -26,9 +27,8 @@ appears: the editor's date button shows a calendar with a clock for a date still
 
 Tilly, Drawn: paper with a faint grain under everything, sheets included; colour laid down as a wash
 with a rough edge that blooms; SF Pro Rounded, and no handwriting. A category's picture is a symbol,
-roughened, in its colour on a faint wash, or white on its own card. On the editor's card it boils,
-three drawings swapped eight times a second, still under Reduce Motion; everywhere else it holds
-still. A category made before symbols shows its emoji until one is picked. The glass stays stock.
+roughened, in its colour on a faint wash, or white on its own card. Every picture boils, three
+drawings swapped eight times a second, still under Reduce Motion, unless boil is turned off. A category made before symbols shows its emoji until one is picked. The glass stays stock.
 
 ---
 
@@ -100,13 +100,20 @@ history clears it.
 
 ## The timeline
 
-The calendar's closest level, a Wallet stack: each row is its bill's card, with the picture, then
-the name over its date, then the amount along the card's top. A card is tucked 12pt under the next,
-so only its top corners are rounded; the last in a month is whole. A bill that ends adds its last month to the date, `Fri 18 · ends
-05/27`, or `ended 08/26` once that payment is today or past. Nothing else joins that line. Every
-charge is its own row, carrying its own date: no day heading or day total. Rows descend by date, a
-day's charges by amount, ties by name. No separator between rows, and no `TODAY` badge: space and
-the change of weight do that work.
+The calendar's closest level, dashed and solid: each row a card 58pt tall with 6pt between, inset
+12pt from the screen's edges, drawn like a category card in the picker. The picture leads, then the
+name over its date, then the amount. Rows read; they don't look like buttons, though tapping one
+opens it. Every charge is its own row, carrying its own date: no day heading or day total. Rows
+descend by date, a day's charges by amount, ties by name.
+
+The picture carries a small badge at its lower right: ↻ for a bill that repeats, an arrow to a bar
+for one with a last payment. The date reads as a person would say it: `24 Oct`, and `Yesterday ·
+20 Oct`, `Today · 24 Oct`, `Tomorrow · 25 Oct` near today. A yearly bill adds an outlined `Yearly`
+tag. A bill that ends adds `ends this month` or `ends next month`, further off `ends 05/27`, and on
+its last charge `Last payment`. Nothing else joins that line.
+
+In the current month a hand-drawn squiggle, `Today, 24 Oct` at its middle, runs between the last
+row to come and the first charged one. It is the only divider: no rules between rows.
 
 ### The month header
 
@@ -119,8 +126,7 @@ one, and in two digits, `September ’27`; VoiceOver hears it in full.
 The header pins while its rows scroll under it, beneath the top row of back button and glass pair,
 and hands off when the next arrives. Its ground is opaque, the page's own paper, so content passing
 beneath is hidden rather than tinted; glass is for things that float over content. It keeps its full
-size when pinned: condensing would make the month you're *in* the same shape as one you could
-*open*. A hairline appears under it only while pinned, because a rule means something is being
+size when pinned, so the month you're *in* never looks like one you could *open*. A hairline appears under it only while pinned, because a rule means something is being
 closed. Behind the status bar the page's own background runs opaque and full width, so a header
 handing off beneath it is hidden: a scrim or a blur won't do.
 
@@ -182,11 +188,11 @@ bill opens its next charge in the editor, an ended one its last.
 
 ### The card is the input
 
-Adding a bill opens a Wallet card at the top of the sheet, washed in the category's colour, or grey
-until it has one, with white type. The amount is top left and largest, the date and repeat top
-right on two small lines, the name bottom left, the category's picture bottom right. Close is top
-left, and Save is the system's prominent checkmark top right. The input area under the card keeps
-the keypad's height, so the card never moves.
+Adding a bill opens a sheet with a card at its top, washed in the category's colour, or grey until
+it has one, with white type. The amount is top left and largest, the date and repeat top right on
+two small lines, the name bottom left, the category's picture bottom right. Close is top left, and
+Save is the system's prominent checkmark top right. The input area under the card keeps the keypad's
+height, so the card never moves.
 
 Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed picture tile. A pencil
 after the date, repeat and category means it's filled in and yours to change. A caret blinks after the
@@ -207,37 +213,31 @@ as today and the repeat as monthly. The row leads with the picture and the name.
 - **Repeat:** one wheel, `Every 1 month`, with an end column that rests on `no end` and rolls into
   payment counts, the only way to set an end. Then the label is `05/27` behind a one-way arrow,
   and `Last payment Sep 30, 2027` shows under the wheel.
-- **Category, or the card's background:** the hand. Nothing stacks a second sheet.
+- **Category, or the card's background:** the picker. Nothing stacks a second sheet.
 
-### The hand is the category picker
+### The picker is a grid of category cards
 
-The categories are a fan of small cards, in the Settings order, each its colour, picture and name,
-with a dotted `New` last. They deal up from below when the hand opens. Pressing a card lifts it and
-tilts its neighbours aside; letting go on it plays it: it flies onto the card's picture tile and
-shrinks into it, the colour floods out across the card from the tile, the picture stamps, and the
-card dips. A crowded hand tightens, then scrolls sideways.
+Four across, in the Settings order, each a small paper card: the picture on its wash, the name under
+it in two lines at most, and a strip of its colour along the bottom. A dashed `New` comes last. One
+tap applies a category: a ring marks it, and the card's colour fades in, quickly, with no flight.
+The grid scrolls when the categories outgrow the keypad's height, and its type caps at `xxxLarge`.
 
 `New` opens Tilly's symbols in the keypad's place, searchable by word, under a picture slot, a name
-field and the eight colours, the next unused one chosen. Return makes the category and plays it.
+field and the eight colours, the next unused one chosen. Return makes the category and applies it.
 With none yet, `New` is the only card, and it breathes once the amount and name are in.
 
-### The card lands in the timeline
+### Saving puts the row in place
 
-On ✓ the bill is saved at once. The sheet's contents fade and it drops away from under the card,
-which turns over in place to its back, the bill as the stack draws it, rests a beat, and drops into
-its row as the rows below open for it. The month's figure rolls to its new total. A row off screen
-is brought into view behind the sheet before the card leaves. A charged bill has nothing to turn
-over to and drops straight in. Over the calendar's month or year, the sheet drops and the charge
-drops into its day. A tap during a landing finishes it. Reduce Motion fades the sheet and the row.
+On ✓ the bill is saved at once. Behind the sheet the list brings the row into view if it's off
+screen, the sheet slides away, and the row is marked with a tint that fades. The month's figure
+changes to its new total. Over the calendar's month or year, the charge drops into its day.
 
 ### Opening a charge edits it
 
-Tapping a row lifts its card into the sheet's place as the sheet rises behind it, its place in the
-stack left open. One still to come arrives as its outline and turns over to the solid card; a
-charged one fills with its colour as it arrives. The card is filled in for that charge, keypad up.
-The date is the charge's own, where it landed if it was moved; a moved charge shows only there,
-with no trace at the old date. ✓ waits for a change, and a red trash button sits left of it. ✓ or
-✕ lands the card back in its row as a new one lands; deleting closes the sheet and the row goes.
+Tapping a row opens the sheet over the list, the card filled in for that charge, keypad up. The
+date is the charge's own, where it landed if it was moved; a moved charge shows only there, with no
+trace at the old date. ✓ waits for a change, and a red trash button sits left of it. ✓ or ✕ slides
+the sheet away and marks the row as a new one is marked; deleting closes the sheet and the row goes.
 
 ### This charge, or future charges
 

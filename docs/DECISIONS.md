@@ -157,28 +157,30 @@ arrows; dragging reads charges one at a time. Chosen from ten directions and a w
 Two charges on one day are two rows, each with its date. The timeline has no day groups.
 - **Rejected — grouping a day under a heading with a day total:** the list changes shape, and rows inside lose their dates.
 
-## The timeline is a Wallet stack of the bills' own cards
-**Decided:** 2026-10-18
-Each row is its bill's card, tucked under the next: washed solid in its colour once charged, a
-dotted outline in its colour while still to come. Chosen in the combined prototype from four looks.
-- **Rejected — a card chip in the well, colour nowhere else (recommended at the time):** Jake took the stack.
-- **Rejected — dashed outlines for what's to come, solid cards for what's charged, as separate rows:** the stack reads as one wallet.
-- **Rejected — rounded corners on a tucked card:** the stack stopped reading as a stack.
-- **Revisit when:** the stack costs a scroll its frames, or a row's tucked edge hides what it says.
+## The timeline is dashed and solid, rows drawn like category cards
+**Decided:** 2026-10-24
+A charged bill is a solid paper card, one to come a faint dashed outline; the colour lives only in
+the picture. Dates read as words near today, a squiggle marks today, and a badge on the picture says
+whether a bill repeats or ends. Chosen on the phone in `docs/prototypes/dashed-and-solid.html`.
+- **Rejected — the Wallet stack, every row a full-colour card (built 2026-10-18):** on the phone a list of coloured cards read as things to tap, and a bill is rarely edited once made. The colour drowned the amount.
+- **Rejected — a row drawn as a category card with a colour strip (recommended at the time), or colour only in a solid tile:** Jake kept the plain paper card with the picture on its wash.
+- **Rejected — a colour line down a row's edge:** redundant once the picture carries the colour.
+- **Rejected — weekday dates (`Tue 20`) and numeric ends (`ends 05/27`) everywhere:** mechanical. Words near today, a date further off.
+- **Rejected — Today and Tomorrow as coloured badges:** tried in several styles; Jake chose plain words.
+- **Revisit when:** All bills becomes folders, which reuses the row.
 
-## Adding a bill is a card you complete, a hand of categories dresses it, and it lands in the timeline
-**Decided:** 2026-10-16, the hand and the landing 2026-10-18
+## Adding a bill is a card you complete, and a grid of category cards dresses it
+**Decided:** 2026-10-16, the picker and the motion 2026-10-24
 The sheet is a card whose missing parts are dashed, and the input for whichever part you tap opens
-in the keypad's place. The category is played onto the card from a fanned hand, and ✓ turns the
-card over to its back and drops it into its row in the timeline. Opening a row flips its card back
-into the sheet. Chosen from canvas rounds, `docs/prototypes/edit-revisit-card.html` and
-`docs/prototypes/combined.html`.
+in the keypad's place. The category is one tap on a grid of category cards, and the card's colour
+fades in. On ✓ the sheet slides away and the row is marked in place. Chosen from canvas rounds,
+`docs/prototypes/edit-revisit-card.html`, then on the phone in `dashed-and-solid.html`.
 - **Rejected — a form that leads, one step at a time, or the bill as a sentence:** each version still read as filling out a form, and a next button that moves leaves nothing clear to press.
-- **Rejected — pockets the card files into on ✓ (built in v0.6.0):** the bill ended in a pocket, away from the timeline where it lives. Once it lands in its row, pockets are a second home for it.
-- **Rejected — the card flipping and dropping as one motion:** too quick to see what happened. The turn and the drop each get their beat.
-- **Rejected — the card landing without a flip, or a reopened bill staying an outline:** the flip is what says the card and the row are one thing. A charged card never flips, since its row is already solid.
-- **Rejected — landings that slam, slide, zoom, highlight or ripple:** tried in the combined prototype; the card leading into its row read as the bill itself arriving.
-- **Revisit when:** All bills becomes folders, which reuses this flight.
+- **Rejected — pockets the card files into on ✓ (built in v0.6.0):** the bill ended in a pocket, away from the timeline where it lives.
+- **Rejected — a fanned hand of categories, played onto the card (built 2026-10-18):** at the phone's size with real categories the fan hid every name and most symbols. It was judged at desktop size.
+- **Rejected — the card flipping, flying and landing in its row (built 2026-10-18):** it made adding and opening a bill feel slow. Snappy beats a story here.
+- **Rejected — folders or a plain list as the picker:** folders leave no room for the name; a list stops looking like the rows it dresses.
+- **Revisit when:** a grid of four across can't hold someone's categories without scrolling past a screen.
 
 ## Editing a charge is Calendar's: edit first, then this charge or future ones
 **Decided:** 2026-09-22

@@ -6,7 +6,9 @@
   Questions it settles: which row the timeline draws (charged solid, still to come dashed), which
   category picker replaces the fanned hand, and how little motion is left when adding and opening a bill.
   Drawn at an iPhone 13 Pro's size, 390 × 844pt, with the categories typed into the Tune panel.
-  Direction chosen: not yet.
+  Direction chosen 2026-10-24: the defaults are Jake's picks. Charged rows are paper cards, rows to come a
+  faint dashed outline, both with the picture on its wash and a recurring or ends badge on it; dates read
+  "Yesterday · 20 Oct" and "24 Oct"; a squiggle reads "Today, 24 Oct"; a 4-across grid of category cards picks.
   Published: https://claude.ai/artifact/FAmDQPZAQ8RJWgVUpnTDAQ
   Brief: docs/briefs/dashed-and-solid/brief.md. The Drawn code is docs/prototypes/combined.html's.
 
@@ -337,8 +339,8 @@ const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker
 /* ---------- state, kept in this browser only ---------- */
 const KEY="tilly-dashed-and-solid";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
-  recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"tile",uLine:"off",uPic:"bare",uEdge:"faint",today2:"squiggle",todayLabel:"word",
-  badge:"tint",badgeCol:"day",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"word"};
+  recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
+  badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
