@@ -31,7 +31,7 @@ your proposal leans on.**
 | `docs/TASTE.md` | How choices get made. Distilled principles, ≤ 40. |
 | `docs/DESIGN.md` | Current visual and interaction rules, present tense. |
 | `docs/DECISIONS.md` | Costly-to-reverse choices and the tempting options that lost. Replaced in place. |
-| `docs/ROADMAP.md` | What's next, and short reasons for deferral. `observations.md` is Jake's raw testing checklist: tick items off in the change that fixes them. |
+| `docs/ROADMAP.md` | What's next, and short reasons for deferral. `observations.md` is Jake's testing checklist: move items to Done in the change that fixes them. |
 | `docs/INSPIRATION.md` | Dime and competitor analysis, the evidence base. |
 | `docs/briefs/<slug>/brief.md` | Scope for a piece of work. |
 | `docs/plans/<slug>.md` | Implementation step specs. Lessons extracted, then deleted once shipped. |
