@@ -27,8 +27,6 @@ enum Tokens {
         static let todayDivider: Font = .footnote.weight(.semibold)
         /// The `Yearly` tag after a row's date; from the prototype.
         static let tag: Font = .caption2.bold()
-        /// The symbol in a row's badge, at a fixed size as the badge is.
-        static let rowBadge: Font = .system(size: Size.rowBadgeGlyph, weight: .bold)
         static let body: Font = .body
         static let emptyTitle: Font = .title2.weight(.semibold)
         static let rowEmoji: Font = .title2
@@ -108,6 +106,8 @@ enum Tokens {
         static let tag: CGFloat = 1.2
         static let badgeRing: CGFloat = 1.5
         static let badgeHairline: CGFloat = 1
+        /// A badge glyph's stroke, as a fraction of its box: the prototype's 1.5 units of 12.
+        static let badgeGlyph: CGFloat = 1.5 / 12
         /// The today divider's waves; from the prototype.
         static let squiggle: CGFloat = 1.3
     }
@@ -384,9 +384,6 @@ enum Tokens {
         static let rowPicture: CGFloat = 34
         static let rowBadge: CGFloat = 17
         static let rowBadgeSymbol: CGFloat = 11
-        /// The badge's SF Symbol, sized to match the prototype's glyph, which spans about 7 of its
-        /// 11pt box at a 1.4pt stroke.
-        static let rowBadgeGlyph: CGFloat = 9
         /// One wave of the today divider's squiggle, and its height; from the prototype.
         static let squigglePeriod: CGFloat = 12
         static let squiggle: CGFloat = 6

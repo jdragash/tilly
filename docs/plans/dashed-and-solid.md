@@ -360,16 +360,18 @@ before landing.
     (0.24 × 0.72), edge at 0.24 × 0.85 and 0.42 × 0.09 of the side wide, speckled by `washF`
     (`Grain.speckle`, a fine pixel kept at 1.62 − 1.6 × noise). The symbol is half the side at
     regular weight (the prototype's 2-unit outline over a 24-unit glyph in a 72% box).
-  - Badge: 17pt, its edges 5pt past the picture's; the symbol at 9pt bold reads as the prototype's
-    1.5-unit stroke in an 11pt box. Charged: paperCard, a 1.5pt page-paper ring, 0 1 2 at 12% black.
+  - Badge: 17pt, its edges 5pt past the picture's. Its glyphs are the prototype's own paths
+    (`BadgeGlyph`), on a 12-unit grid in an 11pt box, stroked 1.5 units with round caps and joins;
+    SF Symbols' `arrow.clockwise` read heavier and wider. The repeat arc is SVG's `A3.6 3.6 0 1 1`
+    from (9.6, 6.4) to (8.4, 3.3): centre (6.02, 6.00), 6.3° to 311.3°, drawn as a polyline. Charged: paperCard, a 1.5pt page-paper ring, 0 1 2 at 12% black.
     Still to come: page paper and a 1pt hairline.
   - Charged card: 0 1 1.5 at 9% black, light mode only. Picker card: 0 1 2 at 10%, light only.
   - Yearly tag: 16pt tall (1.5pt above and below), 6pt across, 4pt after the date, 6pt before " · ".
   - Picker strip: 7pt shown (the 4pt band starts above the card's 3pt edge), a rough, speckled wash
     at 0.92. `New`'s plus is a light 32pt "+" set as text from 10pt down, not the symbol.
   - Today divider: 24pt at the sides (`.tdl`), not the 20pt gutter.
-  - Kept as SF Symbols: the badge glyphs and the category pictures, whose outline stand-ins in the
-    prototype only approximate them. 12pt bold names read a touch lighter than the prototype's in
+  - Kept as SF Symbols: the category pictures, whose outline stand-ins in the prototype only
+    approximate them. 12pt bold names read a touch lighter than the prototype's in
     Safari; bold is the prototype's 700, kept.
 
 ## If a step is wrong
