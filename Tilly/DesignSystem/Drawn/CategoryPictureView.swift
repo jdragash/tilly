@@ -8,6 +8,10 @@ struct CategoryPictureView: View {
     let colour: CategoryColour?
     let size: CGFloat
     var onCard: Bool = false
+    /// The prototype's `catPic`: a round, roughened wash a little inside the square and a finer,
+    /// smaller symbol. The timeline's rows and the category picker draw it; elsewhere keeps the
+    /// rounded well.
+    var round: Bool = false
     /// Three drawings swapped every `Tokens.Motion.boilStep`, off the shared `BoilClock`; held on the
     /// first under Reduce Motion, or when a picture is told not to.
     var boils: Bool = true
@@ -48,8 +52,10 @@ struct CategoryPictureView: View {
         let ink = onCard ? Tokens.Ink.onCard : (colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured)
         let wash = onCard ? Tokens.Drawn.onCardWash : Tokens.Drawn.washWell
         let reach = CGFloat(Tokens.Drawn.roughAmount) * 2
+        let scale = round ? Tokens.Drawn.roundSymbolScale : Tokens.Drawn.symbolScale
+        let weight: Font.Weight = round ? Tokens.Drawn.roundSymbolWeight : .regular
         return Image(systemName: name)
-            .font(.system(size: size * Tokens.Drawn.symbolScale, weight: .regular))
+            .font(.system(size: size * scale, weight: weight))
             .foregroundStyle(ink)
             .distortionEffect(
                 ShaderLibrary.roughen(
@@ -58,11 +64,42 @@ struct CategoryPictureView: View {
                 maxSampleOffset: CGSize(width: reach, height: reach)
             )
             .frame(width: size, height: size)
-            .background(
-                ink.opacity(wash),
-                in: RoundedRectangle(cornerRadius: size * Tokens.Drawn.wellRadius, style: .continuous)
-            )
+            .background {
+                if round {
+                    roundWash(ink: ink, opacity: wash)
+                } else {
+                    RoundedRectangle(cornerRadius: size * Tokens.Drawn.wellRadius, style: .continuous)
+                        .fill(ink.opacity(wash))
+                }
+            }
             .accessibilityHidden(true)
+    }
+
+    /// The prototype's blob: a roughened circle `roundWashInset` of the side inside the square, its
+    /// fill at `washWell × washFill` and its edge at `washWell × washEdge`.
+    private func roundWash(ink: Color, opacity: Double) -> some View {
+        let diameter = size * (1 - 2 * Tokens.Drawn.roundWashInset)
+        let radii = RectangleCornerRadii(
+            topLeading: diameter / 2, bottomLeading: diameter / 2, bottomTrailing: diameter / 2, topTrailing: diameter / 2
+        )
+        let edge = max(Tokens.Drawn.roundWashEdgeMin, size * Tokens.Drawn.roundWashEdgeRatio)
+        let shape = RoughRoundedRectangle(cornerRadii: radii, seed: Self.washSeed(picture), inset: edge / 2)
+        return ZStack {
+            shape.fill(ink.opacity(opacity * Tokens.Drawn.washFill))
+            shape.stroke(ink.opacity(opacity * Tokens.Drawn.washEdge), lineWidth: edge)
+        }
+        .frame(width: diameter, height: diameter)
+        .mask {
+            Image(uiImage: Grain.speckle)
+                .resizable(resizingMode: .tile)
+                .interpolation(.none)
+        }
+    }
+
+    /// From the picture, so a category's wash keeps one edge wherever it's drawn.
+    private static func washSeed(_ picture: CategoryPicture) -> UInt64 {
+        if case .symbol(let name) = picture { return stableSeed(name) }
+        return 1
     }
 }
 

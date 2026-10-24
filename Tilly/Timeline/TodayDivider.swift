@@ -17,7 +17,7 @@ struct TodayDivider: View {
                 .fixedSize()
             wave
         }
-        .padding(.horizontal, Tokens.Space.gutter)
+        .padding(.horizontal, Tokens.Space.dividerSide)
         .padding(.vertical, Tokens.Space.dividerVertical)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(TimelineFormatting.spokenTodayDivider(today, calendar: calendar, locale: locale))

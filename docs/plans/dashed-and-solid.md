@@ -347,7 +347,30 @@ before landing.
   `accessibility3` the system breaks long words ("Stream-ing").
 - **Step 5: a pick fades the card over 0.15–0.17s**, measured from a recording (`categoryFade` 0.16).
   The editor keeps its medium impact on a pick.
-- **Step 5: the grid scrolls inside the 340pt panel**; fourteen categories and `New` make four rows.
+- **Step 5: the grid takes everything under the card**, as the prototype's `#picker` does (`inset:
+  0`, padding 6 22): cards 22pt in from the screen and 6pt under the panel's top. Fourteen
+  categories and `New` make four rows with room to spare on an iPhone 13 Pro.
+- **Steps 3–5, matched 1:1 after Jake's review.** The first pass followed this plan where it
+  paraphrased the prototype and missed: the picture's round wash, the badge's size and weight, the
+  charged card's shadow, the strip's wash. Compare by cropping the same element from the
+  prototype and the Simulator at 3x, and render the prototype in the Simulator's Safari (it needs a
+  viewport meta locally): desktop Chromium draws text heavier than iOS and misleads on weight.
+  The prototype's values, now in `Tokens`:
+  - Picture (`catPic`): a round blob 8% of the side in from each edge, fill at washWell × washFill
+    (0.24 × 0.72), edge at 0.24 × 0.85 and 0.42 × 0.09 of the side wide, speckled by `washF`
+    (`Grain.speckle`, a fine pixel kept at 1.62 − 1.6 × noise). The symbol is half the side at
+    regular weight (the prototype's 2-unit outline over a 24-unit glyph in a 72% box).
+  - Badge: 17pt, its edges 5pt past the picture's; the symbol at 9pt bold reads as the prototype's
+    1.5-unit stroke in an 11pt box. Charged: paperCard, a 1.5pt page-paper ring, 0 1 2 at 12% black.
+    Still to come: page paper and a 1pt hairline.
+  - Charged card: 0 1 1.5 at 9% black, light mode only. Picker card: 0 1 2 at 10%, light only.
+  - Yearly tag: 16pt tall (1.5pt above and below), 6pt across, 4pt after the date, 6pt before " · ".
+  - Picker strip: 7pt shown (the 4pt band starts above the card's 3pt edge), a rough, speckled wash
+    at 0.92. `New`'s plus is a light 32pt "+" set as text from 10pt down, not the symbol.
+  - Today divider: 24pt at the sides (`.tdl`), not the 20pt gutter.
+  - Kept as SF Symbols: the badge glyphs and the category pictures, whose outline stand-ins in the
+    prototype only approximate them. 12pt bold names read a touch lighter than the prototype's in
+    Safari; bold is the prototype's 700, kept.
 
 ## If a step is wrong
 

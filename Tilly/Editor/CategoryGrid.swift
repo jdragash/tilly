@@ -33,6 +33,7 @@ struct CategoryGrid: View {
             }
             // Room for the picked card's ring, which sits outside the card.
             .padding(Tokens.Space.pickerRingOutset)
+            .padding(.top, Tokens.Space.pickerTop - Tokens.Space.pickerRingOutset)
         }
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
@@ -54,7 +55,7 @@ struct CategoryGrid: View {
         return VStack(spacing: 0) {
             CategoryPictureView(
                 picture: CategoryPicture(category), colour: category.colour,
-                size: Tokens.Size.pickerPicture, place: .editor
+                size: Tokens.Size.pickerPicture, round: true, place: .editor
             )
             .padding(.top, Tokens.Space.pickerPictureTop)
             Spacer(minLength: Tokens.Space.pickerNameTop)
@@ -72,7 +73,15 @@ struct CategoryGrid: View {
         .background {
             PaperCard(cornerRadii: cornerRadii, seed: seed)
                 .overlay(alignment: .bottom) {
-                    Rectangle().fill(colour).frame(height: Tokens.Size.pickerStrip)
+                    // A wash, speckled as the prototype's `washF` speckles it.
+                    RoughRoundedRectangle(cornerRadii: RectangleCornerRadii(), seed: seed)
+                        .fill(colour.opacity(Tokens.Opacity.pickerStrip))
+                        .frame(height: Tokens.Size.pickerStrip)
+                        .mask {
+                            Image(uiImage: Grain.speckle)
+                                .resizable(resizingMode: .tile)
+                                .interpolation(.none)
+                        }
                 }
                 .clipShape(shape)
                 .shadow(
@@ -96,9 +105,11 @@ struct CategoryGrid: View {
             .strokeBorder(Tokens.Drawn.ink2, style: Tokens.Stroke.pickerNew)
             .frame(minHeight: Tokens.Size.pickerCard, maxHeight: .infinity)
             .overlay(alignment: .top) {
-                Image(systemName: "plus")
+                // A light "+" set as text, as the prototype's is, not the heavier symbol.
+                Text(verbatim: "+")
                     .font(Tokens.Text.pickerPlus)
-                    .padding(.top, Tokens.Space.pickerPictureTop)
+                    .frame(height: Tokens.Size.pickerPlus)
+                    .padding(.top, Tokens.Space.pickerPlusTop)
             }
             .overlay(alignment: .bottom) {
                 Text("New")

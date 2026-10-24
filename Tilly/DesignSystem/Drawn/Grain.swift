@@ -31,6 +31,32 @@ enum Grain {
         }
         return image.map { UIImage(cgImage: $0, scale: 1, orientation: .up) } ?? UIImage()
     }()
+
+    /// A mask that speckles a wash, as the prototype's `washF` does: a fine pixel each kept at
+    /// `1.62 − 1.6 × noise`, so about two in five stay whole and the rest thin out toward clear.
+    static let speckle: UIImage = {
+        let side = Int(Tokens.Drawn.grainTile)
+        var generator = SeededGenerator(seed: Tokens.Drawn.speckleSeed)
+        var bytes = [UInt8](repeating: 0, count: side * side * 4)
+        for pixel in 0..<(side * side) {
+            let alpha = min(1, max(0, 1.62 - 1.6 * generator.unit()))
+            let value = UInt8(alpha * 255)
+            bytes[pixel * 4] = value
+            bytes[pixel * 4 + 1] = value
+            bytes[pixel * 4 + 2] = value
+            bytes[pixel * 4 + 3] = value
+        }
+        let provider = CGDataProvider(data: Data(bytes) as CFData)
+        let image = provider.flatMap {
+            CGImage(
+                width: side, height: side, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: side * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                provider: $0, decode: nil, shouldInterpolate: false, intent: .defaultIntent
+            )
+        }
+        return image.map { UIImage(cgImage: $0, scale: Tokens.Drawn.speckleScale, orientation: .up) } ?? UIImage()
+    }()
 }
 
 extension View {

@@ -46,6 +46,7 @@ struct OccurrenceRow: View {
     }
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
 
@@ -111,6 +112,11 @@ struct OccurrenceRow: View {
             switch entry.state {
             case .charged:
                 PaperCard(cornerRadii: cornerRadii, seed: seed)
+                    // The prototype's light-mode drop shadow; none in dark.
+                    .shadow(
+                        color: colorScheme == .light ? Tokens.Shadow.rowCardColour : .clear,
+                        radius: Tokens.Shadow.rowCardRadius, y: Tokens.Shadow.rowCardY
+                    )
             case .upcoming:
                 DashedOutline(cornerRadii: cornerRadii, seed: seed)
             case .skipped:
@@ -140,7 +146,7 @@ struct OccurrenceRow: View {
 
     /// The category's picture on its wash, in a square of `size`, with the badge at its lower right.
     private func picture(size: CGFloat) -> some View {
-        CategoryPictureView(picture: entry.picture, colour: entry.colour, size: size)
+        CategoryPictureView(picture: entry.picture, colour: entry.colour, size: size, round: true)
             .frame(width: size, height: size)
             // Still to come, the picture sits back with its ink.
             .opacity(isCharged ? 1 : Tokens.Opacity.upcomingPicture)
@@ -168,32 +174,34 @@ struct OccurrenceRow: View {
             .truncationMode(.tail)
     }
 
-    /// "Today · 24 Oct", a `Yearly` tag when yearly, then " · " and how the bill ends. At an
-    /// accessibility size the end takes a line of its own when the three don't fit on one.
+    /// "Today · 24 Oct", a `Yearly` tag when yearly, then " · " and how the bill ends, spaced as the
+    /// prototype's line is: one line of text, or the tag a space after the date with
+    /// `tagTrailing` after it. At an accessibility size the end takes a line of its own when it
+    /// doesn't fit.
     @ViewBuilder
     private var dateLine: some View {
         let end = TimelineFormatting.endLine(for: entry, today: today, calendar: calendar, locale: locale)
-        let date = HStack(spacing: Tokens.Space.tagLeading) {
-            Text(TimelineFormatting.rowDate(entry.date, today: today, calendar: calendar, locale: locale))
-            if entry.isYearly { YearlyTag() }
-        }
+        let date = TimelineFormatting.rowDate(entry.date, today: today, calendar: calendar, locale: locale)
+        let tail = end.map { " \u{00B7} \($0)" } ?? ""
         Group {
-            if dynamicTypeSize.isAccessibilitySize, let end {
+            if entry.isYearly {
+                HStack(spacing: 0) {
+                    Text(date)
+                    YearlyTag()
+                        .padding(.leading, Tokens.Space.tagLeading)
+                        .padding(.trailing, end == nil ? 0 : Tokens.Space.tagTrailing)
+                    if let end { Text("\u{00B7} \(end)") }
+                }
+            } else if dynamicTypeSize.isAccessibilitySize, let end {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: Tokens.Space.tagLeading) {
-                        date
-                        Text("\u{00B7} \(end)")
-                    }
+                    Text(date + tail)
                     VStack(alignment: .leading, spacing: 0) {
-                        date
+                        Text(date)
                         Text(end)
                     }
                 }
             } else {
-                HStack(spacing: Tokens.Space.tagLeading) {
-                    date
-                    if let end { Text("\u{00B7} \(end)") }
-                }
+                Text(date + tail)
             }
         }
         .font(Tokens.Text.caption)

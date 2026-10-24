@@ -33,6 +33,7 @@ struct ExpenseEditor: View {
     @State private var panel: EditorPanel
     @FocusState private var nameFocused: Bool
     @State private var viewportHeight: CGFloat = 0
+    @State private var cardHeight: CGFloat = 0
     @State private var isClosing = false
     /// Counts picks, for the pick's haptic.
     @State private var picks = 0
@@ -63,6 +64,7 @@ struct ExpenseEditor: View {
                 VStack(spacing: Tokens.Space.section) {
                     card
                         .padding(.horizontal, Tokens.Space.editorCardInset)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
                     Spacer(minLength: 0)
                     // A new category takes the panel's place, above its keyboard. At accessibility
                     // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
@@ -74,12 +76,18 @@ struct ExpenseEditor: View {
                             // above it moves, and hides so it can't show above a shorter keyboard.
                             panelArea
                                 .frame(maxWidth: .infinity)
-                                .frame(height: Tokens.Size.editorPanel)
+                                // The category grid takes everything under the card, as the
+                                // prototype's picker does; every other panel keeps its height.
+                                .frame(height: panel == .category ? gridHeight : Tokens.Size.editorPanel)
                                 .opacity(nameFocused ? 0 : 1)
                                 .accessibilityHidden(nameFocused)
                         }
                     }
-                    .padding(.horizontal, Tokens.Space.gutter)
+                    // The grid pads itself by its ring's room, so its cards sit `pickerSide` in.
+                    .padding(
+                        .horizontal,
+                        panel == .category ? Tokens.Space.pickerSide - Tokens.Space.pickerRingOutset : Tokens.Space.gutter
+                    )
                     .opacity(sheetContents)
                 }
                 .frame(minHeight: viewportHeight)
@@ -249,6 +257,11 @@ struct ExpenseEditor: View {
     }
 
     // MARK: State
+
+    /// Everything under the card, as the prototype's picker takes; never less than the other panels.
+    private var gridHeight: CGFloat {
+        max(Tokens.Size.editorPanel, viewportHeight - cardHeight - Tokens.Space.section)
+    }
 
     private var progress: CardProgress {
         CardProgress(draft: draft, categoryExists: selectedCategory != nil, isMakingCategory: panel == .newCategory)

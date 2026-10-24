@@ -5,7 +5,7 @@ enum Tokens {
     enum Text {
         /// A picker card's name, 12pt bold, and the light plus on `New`; from the prototype.
         static let pickerName: Font = .caption.bold()
-        static let pickerPlus: Font = .largeTitle.weight(.light)
+        static let pickerPlus: Font = .system(size: Size.pickerPlus, weight: .light)
         /// The face the whole app is set in: SF Pro Rounded, through `.fontDesign` at the root.
         static let design: Font.Design = .rounded
         static let monthName: Font = .title3.weight(.semibold)
@@ -28,7 +28,7 @@ enum Tokens {
         /// The `Yearly` tag after a row's date; from the prototype.
         static let tag: Font = .caption2.bold()
         /// The symbol in a row's badge, at a fixed size as the badge is.
-        static let rowBadge: Font = .system(size: Size.rowBadgeSymbol, weight: .semibold)
+        static let rowBadge: Font = .system(size: Size.rowBadgeGlyph, weight: .bold)
         static let body: Font = .body
         static let emptyTitle: Font = .title2.weight(.semibold)
         static let rowEmoji: Font = .title2
@@ -138,6 +138,8 @@ enum Tokens {
         static let upcomingIcon: Double = 0.55
         /// A timeline row's picture while still to come; from the prototype.
         static let upcomingPicture: Double = 0.8
+        /// A picker card's colour strip, a wash at the prototype's 0.92.
+        static let pickerStrip: Double = 0.92
         /// The today divider's waves; from the prototype.
         static let squiggle: Double = 0.5
         /// The category view's today line; from the prototype.
@@ -211,12 +213,18 @@ enum Tokens {
         /// The picker's cards, both ways; a card's picture from its top, its name from its bottom,
         /// and the ring outside the picked card. From the prototype.
         static let pickerGap: CGFloat = 10
+        /// The grid's cards in from the screen's sides, and its top under the panel's; from the
+        /// prototype's `#picker` padding.
+        static let pickerSide: CGFloat = 22
+        static let pickerTop: CGFloat = 6
         static let pickerPictureTop: CGFloat = 14
         static let pickerNameBottom: CGFloat = 12
         static let pickerNameSide: CGFloat = 5
         /// The least room between a picker card's picture and its name, where a large text size
         /// grows the card.
         static let pickerNameTop: CGFloat = 4
+        /// The top of `New`'s plus, its 32pt line set from there; from the prototype.
+        static let pickerPlusTop: CGFloat = 10
         static let pickerRingOutset: CGFloat = 4
         static let gutter: CGFloat = 20
         static let section: CGFloat = 16
@@ -349,9 +357,14 @@ enum Tokens {
         /// Across inside the `Yearly` tag, and before it on the date's line.
         static let tagHorizontal: CGFloat = 6
         static let tagLeading: CGFloat = 4
-        /// Above and below the today divider, and between its label and its waves; from the prototype.
+        static let tagTrailing: CGFloat = 6
+        /// Above and below inside the tag, so it stands 16pt tall as the prototype's does.
+        static let tagVertical: CGFloat = 1.5
+        /// Above and below the today divider, between its label and its waves, and at its sides; from
+        /// the prototype's `.tdl`.
         static let dividerVertical: CGFloat = 8
         static let dividerGap: CGFloat = 12
+        static let dividerSide: CGFloat = 24
         /// The clear space under a month's last row.
         static let stackMonthBottom: CGFloat = 14
     }
@@ -362,13 +375,18 @@ enum Tokens {
         static let pickerColumns = 4
         static let pickerCard: CGFloat = 98
         static let pickerPicture: CGFloat = 36
-        static let pickerStrip: CGFloat = 4
+        static let pickerPlus: CGFloat = 32
+        /// The strip shows 7pt: the prototype's 4pt band starts the card's 3pt edge above that.
+        static let pickerStrip: CGFloat = 7
         /// A timeline row, its card `Space.rowGap / 2` in from its top and bottom; from the prototype.
         static let row: CGFloat = 64
         /// A row's picture, its badge and the badge's symbol; from the prototype.
         static let rowPicture: CGFloat = 34
         static let rowBadge: CGFloat = 17
         static let rowBadgeSymbol: CGFloat = 11
+        /// The badge's SF Symbol, sized to match the prototype's glyph, which spans about 7 of its
+        /// 11pt box at a 1.4pt stroke.
+        static let rowBadgeGlyph: CGFloat = 9
         /// One wave of the today divider's squiggle, and its height; from the prototype.
         static let squigglePeriod: CGFloat = 12
         static let squiggle: CGFloat = 6
@@ -562,6 +580,10 @@ enum Tokens {
         static let rowBadgeColour: Color = .black.opacity(0.12)
         static let rowBadgeRadius: CGFloat = 1
         static let rowBadgeY: CGFloat = 1
+        /// Under a charged row's card, light mode only: the prototype's 0 1 1.5 at 9% black.
+        static let rowCardColour: Color = .black.opacity(0.09)
+        static let rowCardRadius: CGFloat = 0.75
+        static let rowCardY: CGFloat = 1
         /// Along a charged card's top in the timeline's stack, falling on the card above: the
         /// prototype's 0 -1 2.5 at 16% black.
         static let stackColour: Color = .black.opacity(0.16)
@@ -669,6 +691,9 @@ extension Tokens {
         static let grainTile: CGFloat = 160
         static let grainAlpha: UInt8 = 9
         static let grainSeed: UInt64 = 77
+        static let speckleSeed: UInt64 = 11
+        /// Speckle pixels per point: the prototype's filter speckles at its 3x screen's pixel.
+        static let speckleScale: CGFloat = 3
 
         /// An edge's displacement (pt: the most it moves, a typical point moving about half that), how
         /// fast it varies (cycles per pt), and the pt between sampled points. The prototype's filter
@@ -704,6 +729,15 @@ extension Tokens {
         static let symbolScale: CGFloat = 0.58
         static let emojiScale: CGFloat = 0.7
         static let wellRadius: CGFloat = 0.28
+        /// The prototype's round picture (`catPic`): the wash's blob sits this fraction of the side in
+        /// from each edge, its edge as wide as `edgeRatio` of the side but no thinner than `edgeMin`;
+        /// the symbol is smaller and finer than in the rounded well. Matched to the prototype by eye
+        /// at 3x, since its glyphs are outline stand-ins for SF Symbols.
+        static let roundWashInset: CGFloat = 0.08
+        static let roundWashEdgeRatio: CGFloat = 0.42 * 0.09
+        static let roundWashEdgeMin: CGFloat = 0.8
+        static let roundSymbolScale: CGFloat = 0.5
+        static let roundSymbolWeight: Font.Weight = .regular
 
         /// A symbol roughened as it draws: the noise's frequency (per pt) and how far it moves a pixel.
         static let roughFrequency: Float = 0.32
