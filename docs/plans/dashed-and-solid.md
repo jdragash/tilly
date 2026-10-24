@@ -360,6 +360,9 @@ before landing.
     (0.24 × 0.72), edge at 0.24 × 0.85 and 0.42 × 0.09 of the side wide, speckled by `washF`
     (`Grain.speckle`, a fine pixel kept at 1.62 − 1.6 × noise). The symbol is half the side at
     regular weight (the prototype's 2-unit outline over a 24-unit glyph in a 72% box).
+    Roughened at 1.3pt (`sfR`'s displacement on a glyph drawn at about its own size), where the
+    rounded well's 1.8 bent the arcs; the blob's edge is softened by a 0.7pt blur, as `washF`'s
+    displacement scatters it rather than ruling a line.
   - Badge: 17pt, its edges 5pt past the picture's. Its glyphs are the prototype's own paths
     (`BadgeGlyph`), on a 12-unit grid in an 11pt box, stroked 1.5 units with round caps and joins;
     SF Symbols' `arrow.clockwise` read heavier and wider. The repeat arc is SVG's `A3.6 3.6 0 1 1`

@@ -51,7 +51,8 @@ struct CategoryPictureView: View {
     private func symbol(_ name: String, seed: Float) -> some View {
         let ink = onCard ? Tokens.Ink.onCard : (colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured)
         let wash = onCard ? Tokens.Drawn.onCardWash : Tokens.Drawn.washWell
-        let reach = CGFloat(Tokens.Drawn.roughAmount) * 2
+        let amount = round ? Tokens.Drawn.roundRoughAmount : Tokens.Drawn.roughAmount
+        let reach = CGFloat(amount) * 2
         let scale = round ? Tokens.Drawn.roundSymbolScale : Tokens.Drawn.symbolScale
         let weight: Font.Weight = round ? Tokens.Drawn.roundSymbolWeight : .regular
         return Image(systemName: name)
@@ -59,7 +60,7 @@ struct CategoryPictureView: View {
             .foregroundStyle(ink)
             .distortionEffect(
                 ShaderLibrary.roughen(
-                    .float(Tokens.Drawn.roughFrequency), .float(Tokens.Drawn.roughAmount), .float(seed)
+                    .float(Tokens.Drawn.roughFrequency), .float(amount), .float(seed)
                 ),
                 maxSampleOffset: CGSize(width: reach, height: reach)
             )
@@ -86,7 +87,9 @@ struct CategoryPictureView: View {
         let shape = RoughRoundedRectangle(cornerRadii: radii, seed: Self.washSeed(picture), inset: edge / 2)
         return ZStack {
             shape.fill(ink.opacity(opacity * Tokens.Drawn.washFill))
+            // Softened, as the prototype's displacement scatters its edge rather than ruling it.
             shape.stroke(ink.opacity(opacity * Tokens.Drawn.washEdge), lineWidth: edge)
+                .blur(radius: Tokens.Drawn.roundWashEdgeBlur)
         }
         .frame(width: diameter, height: diameter)
         .mask {

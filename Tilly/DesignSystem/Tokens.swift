@@ -733,6 +733,10 @@ extension Tokens {
         static let roundWashInset: CGFloat = 0.08
         static let roundWashEdgeRatio: CGFloat = 0.42 * 0.09
         static let roundWashEdgeMin: CGFloat = 0.8
+        static let roundWashEdgeBlur: CGFloat = 0.7
+        /// The round picture's symbol is roughened as the prototype's `sfR` filter does: a 1.3pt
+        /// displacement, against the rounded well's tunable `roughAmount`.
+        static let roundRoughAmount: Float = 1.3
         static let roundSymbolScale: CGFloat = 0.5
         static let roundSymbolWeight: Font.Weight = .regular
 
