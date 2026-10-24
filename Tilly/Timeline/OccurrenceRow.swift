@@ -29,6 +29,8 @@ extension OccurrenceState {
 /// carries its own date.
 struct OccurrenceRow: View {
     let entry: TimelineEntry
+    /// Near dates read as words, and ends count months, from here.
+    let today: Date
     /// Picked out by a calendar tap on its day, then faded: `Tokens.Motion.dayMark`.
     var isMarked = false
     /// The month's last card is whole; every other one is tucked under the next.
@@ -94,7 +96,7 @@ struct OccurrenceRow: View {
         .clipShape(RowHeightClip(fraction: heightFraction))
         .opacity(showsCard ? 1 : 0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: entry, calendar: calendar, locale: locale))
+        .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: entry, today: today, calendar: calendar, locale: locale))
     }
 
     private var standardLayout: some View {
@@ -202,7 +204,14 @@ struct OccurrenceRow: View {
     }
 
     private var dateText: some View {
-        Text(TimelineFormatting.dateLine(for: entry, calendar: calendar, locale: locale))
+        Text(
+            [
+                TimelineFormatting.rowDate(entry.date, today: today, calendar: calendar, locale: locale),
+                TimelineFormatting.endLine(for: entry, today: today, calendar: calendar, locale: locale)
+            ]
+            .compactMap(\.self)
+            .joined(separator: " \u{00B7} ")
+        )
             .font(Tokens.Text.caption)
             .foregroundStyle(isCharged ? Tokens.Ink.onStackSoft : entry.state.secondaryInk)
     }

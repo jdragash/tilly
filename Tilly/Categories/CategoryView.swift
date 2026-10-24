@@ -181,7 +181,7 @@ struct CategoryView: View {
         .font(Tokens.Text.nextRow)
         .padding(.vertical, Tokens.Space.nextRowVertical)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: next.entry, calendar: calendar, locale: locale))
+        .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: next.entry, today: today, calendar: calendar, locale: locale))
     }
 
     // MARK: Data

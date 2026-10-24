@@ -22,6 +22,12 @@ struct TimelineEntry: Identifiable, Equatable, Sendable {
     let endHasPassed: Bool // endDate is today or earlier
     let isExtra: Bool // the rule doesn't charge in every calendar month
     let startsRecord: Bool // scheduledDate is its record's anchor: a new bill, or a price change
+    let isYearly: Bool // the rule repeats in years: the row carries a `Yearly` tag
+}
+
+extension TimelineEntry {
+    /// This charge is the bill's last: its rule's date is the series' end.
+    var isLastPayment: Bool { endDate == scheduledDate }
 }
 
 struct MonthSection: Identifiable, Equatable, Sendable {

@@ -118,6 +118,16 @@ import TillyCore
         #expect(section.entries.first?.scheduledDate == scheduled)
     }
 
+    @Test func aYearlyRuleMarksItsEntries() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2026, 1, 10), unit: .year)])
+        #expect(section.entries.first?.isYearly == true)
+    }
+
+    @Test func aMonthlyRuleIsNotYearly() {
+        let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10))])
+        #expect(section.entries.first?.isYearly == false)
+    }
+
     @Test func anEndOnTodayHasPassed() {
         let section = Self.month([Self.expense(anchoredOn: Self.date(2027, 1, 10), seriesEndDate: Self.today)])
         #expect(section.entries.first?.endHasPassed == true)

@@ -21,6 +21,7 @@ enum TimelineBuilder {
         var entries: [TimelineEntry] = []
         for expense in expenses {
             let isExtra = !expense.snapshot.rule.chargesEveryMonth
+            let isYearly = expense.snapshot.rule.unit == .year
             if extrasOnly && !isExtra { continue }
             let anchorDay = calendar.startOfDay(for: expense.snapshot.rule.anchorDate)
             let occurrences = RecurrenceEngine.occurrences(
@@ -50,7 +51,8 @@ enum TimelineBuilder {
                     endDate: endDate,
                     endHasPassed: endHasPassed,
                     isExtra: isExtra,
-                    startsRecord: scheduledDay == anchorDay
+                    startsRecord: scheduledDay == anchorDay,
+                    isYearly: isYearly
                 ))
             }
         }

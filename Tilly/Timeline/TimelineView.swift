@@ -432,6 +432,7 @@ struct TimelineView: View {
                         Section {
                             MonthSectionView(
                                 section: monthSection,
+                                today: today,
                                 showsFirstWeekLine: monthSection.isCurrent && !monthSection.hasChargedEntry,
                                 markedDay: markedDay,
                                 hold: hold,

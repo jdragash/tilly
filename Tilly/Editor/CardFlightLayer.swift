@@ -153,7 +153,7 @@ private struct FlyingCard: View, Animatable {
             }
             FlightFace(isBack: true, flips: flight.flips, opacity: faces.back) {
                 OccurrenceRow(
-                    entry: flight.entry, isLast: flight.isLast,
+                    entry: flight.entry, today: Date(), isLast: flight.isLast,
                     morph: CardFlight.morph(at: travel), tucksUnder: flight.isLast, cardHeight: box.height
                 )
                 .frame(width: box.width, height: box.height, alignment: .top)

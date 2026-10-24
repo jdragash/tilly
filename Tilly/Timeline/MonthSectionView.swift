@@ -5,6 +5,7 @@ import SwiftUI
 /// only ever draws an expanded month's content.
 struct MonthSectionView: View {
     let section: MonthSection
+    let today: Date
     let showsFirstWeekLine: Bool
     /// The day a calendar tap opened, its rows marked until the mark fades.
     var markedDay: Date?
@@ -33,7 +34,7 @@ struct MonthSectionView: View {
                     // On the label, not the button: a plain button hit-tests its label's
                     // shape, so outside it the gap between name and amount stays dead.
                     OccurrenceRow(
-                        entry: entry, isMarked: entry.date == markedDay,
+                        entry: entry, today: today, isMarked: entry.date == markedDay,
                         isLast: index == section.entries.count - 1,
                         heightFraction: held?.height ?? 1, showsCard: held?.showsCard ?? true,
                         onFullFrame: held == nil ? nil : { onHeldRowFrame(entry.id, $0) }

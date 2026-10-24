@@ -253,7 +253,7 @@ struct LanesView: View {
             .opacity(scrubDay == nil || onLine ? 1 : Tokens.Opacity.offLineDot)
             .zIndex(onLine ? 1 : 0)
             .accessibilityElement()
-            .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: dot.entry, calendar: calendar, locale: locale))
+            .accessibilityLabel(TimelineFormatting.accessibilityLabel(for: dot.entry, today: today, calendar: calendar, locale: locale))
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { onOpen(dot.entry) }
     }

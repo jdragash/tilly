@@ -23,7 +23,7 @@ import Testing
         TimelineEntry(
             id: "\(name)\(day)", expenseID: UUID(), scheduledDate: date(2027, month, day), name: name, picture: .none, colour: nil,
             date: date(2027, month, day), amount: amount, state: state, endDate: nil, endHasPassed: false,
-            isExtra: false, startsRecord: false
+            isExtra: false, startsRecord: false, isYearly: false
         )
     }
 
