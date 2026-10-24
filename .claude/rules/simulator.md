@@ -35,11 +35,12 @@ Tooling that cost time, on the iPhone 17 simulator, iOS 27.
 - **Sample scenarios reseed on every launch**, so "survives relaunch" can't be seen in one. Cover
   it with a test that reopens an on-disk store.
 
+- **`simctl ui … appearance` and `content_size` reach a running app only after a relaunch.**
+
 ## Keyboards
 
 - **Measuring the editor needs the on-screen keyboard.** With the hardware keyboard connected, no
   keyboard shows and the amount centres in the full height. Jake leaves it off on purpose.
-- The emoji keyboard shows a one-time skin-tone tip on first use, over the grid.
 
 ## Gestures and screenshots
 
@@ -48,8 +49,7 @@ Tooling that cost time, on the iPhone 17 simulator, iOS 27.
   alongside a `touch_path` whose last points hold 1000ms each.
 - **The Simulator tool's own screenshot lags about a second behind a tap**, and its taps land
   about a second late; `simctl io booted screenshot` doesn't lag.
-- To see an animation, slow its token (0.38s → 3s) and capture with `simctl` in a background loop
-  started just before the tap.
+- To see an animation, slow its token (0.38s → 3s) and capture with `simctl` in a loop.
 
 ## Motion and unbuilt views
 

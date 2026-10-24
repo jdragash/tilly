@@ -19,19 +19,16 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
 
 - **`EditorSheet` matches the system sheet it replaced:** the card measured 132.00 global in both,
   under every panel. At an accessibility size, making a category scrolls it up (117.00 → 115.67 now).
-- **Read the card's frame in `EditorSheetSpace`, which moves with the sheet;** elsewhere it reports
-  every frame of the sheet's travel. Its slot shrinks by the keyboard: measure the drop from the
-  ground, which ignores it, or a closing sheet stops halfway.
+- **A frame read inside the moving sheet includes its travel, every frame.** The sheet's slot
+  shrinks by the keyboard (812 → 484pt): measure the drop from its ground, which ignores it, or a
+  closing sheet stops halfway.
+- **A drag starting on a key or a picker card belongs to that control**; from the grabber, the
+  header, the card or bare ground it moves the sheet. A drag down arrives as `request` going nil
+  with no `EditorClose`, so every close refreshes from `onChange(of: editor)`.
+- **The category grid takes everything under the card**, sized from the card's measured height.
+  Letting it grow with `layoutPriority` squashed the card instead.
 - **A shape's fill eats the taps of a button in its `.background`.** The card's background button
   is an overlay over the fill and under the parts.
-
-## Filing the card
-
-- **The card files as one picture, by a measured scale and offset, not `matchedGeometryEffect`.**
-  Matching frames re-lays the card out at pocket size, so its type stays full size and clips. The
-  target pocket reports where the card lands through `FilingTargetKey`.
-- **A modifier that returns different views for "flying" and "resting" doesn't animate**; it swaps
-  views. Keep one view and vary its values.
 
 ## Pickers and menus
 
