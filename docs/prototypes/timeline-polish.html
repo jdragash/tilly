@@ -15,7 +15,7 @@
 <style>
 /* A phone at real size on a quiet ground, with the tuning beside it (or in a drawer, on a phone). */
 :root{
-  --page:#D9D8D3; --paper:#EFEEEA; --paperCard:#F7F6F2; --ink:#1C1B19; --ink2:#8A8883;
+  --page:#D9D8D3; --paper:#EFEEEA; --paperCard:#F7F6F2; --ink:#1C1B19; --ink2:#8A8883; --inkMid:#57554F; --dgreen:#4A8C70;
   --hair:rgba(28,27,25,.12); --accent:#2A78D6; --glass:rgba(247,246,242,.74); --glassedge:rgba(0,0,0,.08);
   --panel:#EAE9E4; --panelfg:#1C1B19; --ctl:#EFEEEA; --cardbg:#FFFFFF; --key:#E7E6E1; --mark:rgba(42,120,214,.14);
   --round:ui-rounded,"SF Pro Rounded","Nunito",-apple-system,"Helvetica Neue",sans-serif;
@@ -24,7 +24,7 @@
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --page:#0D0D0C; --panel:#161513; --panelfg:#F2F1EE; --ctl:#363531; --cardbg:#24231F; color-scheme:dark } }
 :root[data-theme="dark"]{ --page:#0D0D0C; --panel:#161513; --panelfg:#F2F1EE; --ctl:#363531; --cardbg:#24231F; color-scheme:dark }
 html.dark{
-  --page:#0D0D0C; --paper:#1D1C1A; --paperCard:#2B2A27; --ink:#F2F1EE; --ink2:#8D8B86;
+  --page:#0D0D0C; --paper:#1D1C1A; --paperCard:#2B2A27; --ink:#F2F1EE; --ink2:#8D8B86; --inkMid:#B4B2AC; --dgreen:#7DBF9F;
   --hair:rgba(242,241,238,.16); --accent:#0A84FF; --glass:rgba(43,42,39,.74); --glassedge:rgba(255,255,255,.1);
   --panel:#161513; --panelfg:#F2F1EE; --ctl:#363531; --cardbg:#24231F; --key:#2B2A27; --mark:rgba(10,132,255,.2); color-scheme:dark;
 }
@@ -127,7 +127,7 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .ddood.oncard{margin:2px 12px 12px;padding:0}.ddood .dbg{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);max-width:none}
 .ddood>*:not(.dbg):not(.dwashbg){position:relative}
 .ddood.on-note{transform:rotate(-1.2deg)}.ddood .dbg.note{position:absolute;max-width:none}
-.ddood .dwashbg{position:absolute;left:50%;top:-6px;transform:translateX(-50%);max-width:none}.ddood .dpi{display:block;margin-bottom:8px}.ddood .dt{font-size:17px;line-height:22px}.dpic .dpi{display:block;margin-bottom:8px}
+.ddood .dwashbg{position:absolute;left:50%;top:-6px;transform:translateX(-50%);max-width:none}.ddood .dpi{display:block;margin-bottom:8px}.ddood .dt{font-size:17px;line-height:22px;font-weight:var(--dwt,700)}.ddood.ink-mid .dt{color:var(--inkMid)}.ddood.ink-soft .dt{color:var(--ink2)}.ddood.ink-faint .dt{color:var(--ink2);opacity:.75}.ddood.ink-green .dt{color:var(--dgreen)}.dpic .dpi{display:block;margin-bottom:8px}
 .dexhale>*:not(.dbg){position:relative}.dexhale .dmark.big{margin-bottom:6px}
 .dtally{padding:8px 24px 14px}.dtally .dsub{padding:0}
 .dots{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-bottom:8px}
@@ -377,7 +377,7 @@ const KEY="tilly-timeline-polish-4";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  pretend:"after",done:"doodle",doodle:"random",doneOn:"paper",doneLine:"quiet",doneSub:"none",doneTitle:"all",doneInfo:"month",doneHead:"done",jump:"today"};
+  pretend:"after",done:"doodle",doodle:"random",doneOn:"paper",doneLine:"quiet",doneInk:"ink",doneWt:"700",doneSub:"none",doneTitle:"all",doneInfo:"month",doneHead:"done",jump:"today"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -648,7 +648,7 @@ function doneBlock(mo,occ){
     const keys=Object.keys(DOODLES), k=S.doodle==="random"?keys[((mo.y*12+mo.m)*7)%keys.length]:S.doodle;
     const pic=doodleImg(k,150,112), on=S.doneOn, boxed=!["paper","wash"].includes(on), h=112+8+22+(sb?20:0)+(on==="note"?44:34);
     const bg=on==="card"?softCard(W,h,GREEN(),.07,.14):on==="frame"?frameBg(W,h):on==="note"?noteBg(W-60,h):on==="torn"?tornBg(W,h):on==="wash"?washBg():"";
-    return `<div class="dn ddood on-${on}${boxed?" oncard":""}" style="${boxed?`height:${h}px`:""}">${bg}${pic}<div class="dt">${line}</div>${sb?`<div class="dsub">${sb}</div>`:""}</div>`;
+    return `<div class="dn ddood on-${on}${boxed?" oncard":""} ink-${S.doneInk}" style="${boxed?`height:${h}px;`:""}--dwt:${S.doneWt}">${bg}${pic}<div class="dt">${line}</div>${sb?`<div class="dsub">${sb}</div>`:""}</div>`;
   }
   switch(S.done){
     case "soft": return `<div class="dn dexhale">${softCard(W,136,GREEN(),.09,.18)}<span class="dmark big">${drawnCheck(40)}</span><div class="dt">${title}</div>${sub}</div>`;
@@ -939,6 +939,8 @@ function panelHTML(){
     tcard("End of the month","When every charge this month has gone out.",
       fld("Pretend it's",chips("pretend",[["today","Today"],["after","The day of the last charge"]]),"The ending shows once the month's last charge has gone out, not only on its last day.")+
       fld("Doodle",chips("doodle",[["random","A different one each month"],...Object.keys(DOODLES).map(k=>[k,DOODLE_NAMES[k]])]))+
+      fld("Text colour",chips("doneInk",[["ink","Ink"],["mid","Dark grey"],["soft","Soft grey"],["faint","Fainter grey"],["green","Muted green"]]))+
+      fld("Weight",chips("doneWt",[["400","Regular"],["500","Medium"],["600","Semibold"],["700","Bold"]]))+
       fld("Sits",chips("doneOn",[["paper","On the paper"],["wash","On a soft wash"],["card","On a soft card"],["frame","In a crayon frame"],["note","On a sticky note"],["torn","On a torn-off sheet"]]))
       )+
     `<details class="decided"><summary>Already decided</summary>`+
