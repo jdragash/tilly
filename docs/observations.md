@@ -12,5 +12,7 @@ fixed, tick it and move it to Done in the same change.
 - [ ] Suggest a category's symbol while typing its name. Start with a keyword-to-symbol list plus
   on-device word similarity (`NLEmbedding`); Apple's on-device model as an optional extra.
 - [ ] Let the edit/create sheet drag down from anywhere on it, not just the top handle.
+- [ ] When every charge this month is done, the timeline still shows the plain Today line above
+  them, which looks awkward. Design a fuller, positive ending instead, like "All done this month".
 
 ## Done
