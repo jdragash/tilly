@@ -90,7 +90,8 @@ figures read `+€351 on top` or `Nothing on top`. Switching holds the month bei
 ### Getting back
 
 The month button names the current month, `September`, and stays in its level. Over the days it
-scrolls back, with a duration that scales with distance, even mid-flick; over a month it pages back
+scrolls back to today, the Today line in the middle of what shows of the list, or to the month's top
+before anything is charged, with a duration that scales with distance, even mid-flick; over a month it pages back
 to this one; over the year, which already starts now, it isn't there. It stays as it is while you're
 already there, like Calendar's Today. VoiceOver reads "Back to September". It is a system glass
 button at Calendar's size, weight and place, 28pt in from the screen's edges, and the last line of

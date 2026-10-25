@@ -10,9 +10,6 @@ move it to Done in the same change.
    on-device word similarity (`NLEmbedding`); Apple's on-device model as an optional extra.
 6. [ ] When every charge this month is done, the timeline still shows the plain Today line above
    them, which looks awkward. Design a fuller, positive ending instead, like "All done this month".
-7. [ ] The bottom-left button jumps to the current month. Now that there's a Today line, it should
-   jump to today instead, scrolling so the Today line sits in the middle of the screen.
-
 ## Done
 
 1. [x] Past charges don't treat all bills alike. A bill with an end date shows its charges in the
@@ -21,3 +18,5 @@ move it to Done in the same change.
    whatever its start date says?
    *Decided 2026-10-25: its first charge decides; the editor's date says `First charge`.*
 5. [x] Let the edit/create sheet drag down from anywhere on it, not just the top handle.
+7. [x] The bottom-left button jumps to the current month. Now that there's a Today line, it should
+   jump to today instead, scrolling so the Today line sits in the middle of the screen.

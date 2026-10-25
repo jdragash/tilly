@@ -31,6 +31,13 @@ struct MonthSectionView: View {
                 // Before the day's scroll marker, so a calendar tap on today lands on the row.
                 if index == todayDividerIndex {
                     TodayDivider(today: today)
+                        .id(TodayDivider.scrollID)
+                        .onGeometryChange(for: CGRect.self) { proxy in
+                            proxy.frame(in: .named(TimelineSpace.name))
+                        } action: { frame in
+                            onRowFrame(TodayDivider.scrollID, frame)
+                        }
+                        .onDisappear { onRowFrame(TodayDivider.scrollID, nil) }
                 }
                 // A day's first row carries the day's scroll target: zero high, so the
                 // target's top is the row's top and landing on it needs no row height.
