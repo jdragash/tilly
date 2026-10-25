@@ -127,6 +127,8 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .ddood.oncard{margin:2px 12px 12px;padding:0}.ddood .dbg{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);max-width:none}
 .ddood>*:not(.dbg):not(.dwashbg){position:relative}
 .ddood.on-note{transform:rotate(-1.2deg)}.ddood .dbg.note{position:absolute;max-width:none}
+.dboil{position:relative;display:block}.dboil>img{position:absolute;inset:0;width:100%;height:100%;opacity:0}.dboil>img:first-child{opacity:1}
+.dboil.boiling.gentle>img{animation-duration:.75s}.dboil.boiling.gentle>img:nth-child(2){animation-delay:-.25s}.dboil.boiling.gentle>img:nth-child(3){animation-delay:-.5s}
 .ddood .dwashbg{position:absolute;left:50%;top:-6px;transform:translateX(-50%);max-width:none}.ddood .dpi{display:block;margin-bottom:8px}.ddood .dt{font-size:17px;line-height:22px;font-weight:var(--dwt,700)}.ddood.ink-mid .dt{color:var(--inkMid)}.ddood.ink-soft .dt{color:var(--ink2)}.ddood.ink-faint .dt{color:var(--ink2);opacity:.75}.ddood.ink-green .dt{color:var(--dgreen)}.dpic .dpi{display:block;margin-bottom:8px}
 .dexhale>*:not(.dbg){position:relative}.dexhale .dmark.big{margin-bottom:6px}
 .dtally{padding:8px 24px 14px}.dtally .dsub{padding:0}
@@ -377,7 +379,7 @@ const KEY="tilly-timeline-polish-4";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  pretend:"after",done:"doodle",doodle:"random",doneOn:"paper",doneLine:"quiet",doneInk:"ink",doneWt:"700",doneSub:"none",doneTitle:"all",doneInfo:"month",doneHead:"done",jump:"today"};
+  pretend:"after",done:"doodle",doodle:"random",doneOn:"paper",doneLine:"quiet",doneInk:"ink",doneWt:"700",doodleBoil:"icons",doneSub:"none",doneTitle:"all",doneInfo:"month",doneHead:"done",jump:"today"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -414,6 +416,7 @@ const FILT={
   washBigF:`<filter id="washBigF" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="${DT.edgeFreq}" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="${DT.edgeWobble}" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency="${DT.bloomFreq}" numOctaves="2" seed="13" result="b"/><feColorMatrix in="b" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ${DT.bloom} 0 0 0 ${1-DT.bloom/2}" result="ba"/><feComposite in="d" in2="ba" operator="in"/></filter>`,
   crayonF:'<filter id="crayonF" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="1.3" numOctaves="2" seed="7" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 0 0 0 1.85" result="ga"/><feComposite in="SourceGraphic" in2="ga" operator="in" result="c"/><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="1" seed="2" result="n"/><feDisplacementMap in="c" in2="n" scale="1.8" xChannelSelector="R" yChannelSelector="G"/></filter>',
   paperBigF:`<filter id="paperBigF" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="${DT.edgeFreq}" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="${DT.edgeWobble}" xChannelSelector="R" yChannelSelector="G"/></filter>`};
+[1,2].forEach(k=>FILT["crayonF"+k]=FILT.crayonF.replace('id="crayonF"',`id="crayonF${k}"`).replace('seed="7"',`seed="${7+k*13}"`).replace('seed="2"',`seed="${2+k*5}"`));
 [1,2,3].forEach(k=>FILT["sfR"+k]=`<filter id="sfR${k}" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".32" numOctaves="2" seed="${k*9}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.3" xChannelSelector="R" yChannelSelector="G"/></filter>`);
 const imgCache=new Map();
 function svgUrl(w,h,vb,body,ids){
@@ -672,11 +675,11 @@ const GREEN=()=>PAL[2][S.dark?1:0];
 /* =====================================================================================================
    CRAYON DOODLES: a little library, one picked per month. Drawn twice with a waxy grain, filled by scribbling.
    ===================================================================================================== */
-let clipN=0;
+let clipN=0, SO=0; /* SO shifts every seed, so each boil frame is drawn afresh */
 const CC=i=>PAL[i][S.dark?1:0], CINK=()=>S.dark?"#cfccc5":"#3a3834";
 function cr(d,col,w,seed,op){ w=w||2.4; op=op??.9;
-  return [seed||1,(seed||1)+40].map((sd,i)=>`<path d="${rough(d,{amp:.55,freq:.7,step:1.2,seed:sd})}" fill="none" stroke="${col}" stroke-width="${i?w*.7:w}" stroke-opacity="${i?op*.6:op}" stroke-linecap="round" stroke-linejoin="round"/>`).join(""); }
-function scrib(d,box,col,seed,gap,op){ const [x,y,w,h]=box, id="cl"+(++clipN), g=gap||3.4, r=prng(seed||3); let z=`M${x-h} ${y+h}`, up=true;
+  return [(seed||1)+SO,(seed||1)+40+SO].map((sd,i)=>`<path d="${rough(d,{amp:.55,freq:.7,step:1.2,seed:sd})}" fill="none" stroke="${col}" stroke-width="${i?w*.7:w}" stroke-opacity="${i?op*.6:op}" stroke-linecap="round" stroke-linejoin="round"/>`).join(""); }
+function scrib(d,box,col,seed,gap,op){ const [x,y,w,h]=box, id="cl"+(++clipN), g=gap||3.4, r=prng((seed||3)+SO); let z=`M${x-h} ${y+h}`, up=true;
   for(let t=-h;t<=w+h;t+=g){ const j=(r()-.5)*1.4; z+=up?` L${(x+t+h*.75+j).toFixed(1)} ${y-2}`:` L${(x+t+j).toFixed(1)} ${y+h+2}`; up=!up; }
   return `<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})"><path d="${z}" fill="none" stroke="${col}" stroke-width="2.2" stroke-opacity="${op??.5}" stroke-linecap="round" stroke-linejoin="round"/></g>`; }
 const DOODLES={
@@ -734,7 +737,10 @@ function tornBg(w,h){ const P=6, r=prng(9); let top=`M${P} ${P+3}`; for(let x=0;
   return `<img class="dbg" style="height:${h+12}px" src="${svgUrl(w+12,h+12,`0 0 ${w+12} ${h+12}`,`<path d="${d}" fill="#000" fill-opacity=".07" transform="translate(0 1.5)"/><path d="${d}" fill="${paper}"/>`)}" alt="">`; }
 function washBg(){ const g=GREEN(), W=190, H=130;
   return `<img class="dwashbg" style="width:${W}px;height:${H}px" src="${svgUrl(W,H,`0 0 ${W} ${H}`,`<path d="${blob(W/2,H/2,52,14,.1)}" transform="translate(${W/2} ${H/2}) scale(1.45 1) translate(${-W/2} ${-H/2})" fill="${g}" fill-opacity=".14" filter="url(#washF)"/>`,["washF"])}" alt="">`; }
-function doodleImg(k,w,h){ return `<img class="dpi" style="width:${w}px;height:${h}px" src="${svgUrl(w,h,"0 0 120 90",`<g filter="url(#crayonF)">${DOODLES[k]()}</g>`,["crayonF"])}" alt="">`; }
+function doodleImg(k,w,h){
+  const frame=(so,i)=>{ SO=so; const id=i?"crayonF"+i:"crayonF", src=svgUrl(w,h,"0 0 120 90",`<g filter="url(#${id})">${DOODLES[k]()}</g>`,[id]); SO=0; return `<img src="${src}" alt="">`; };
+  const b=S.doodleBoil, on=b!=="off"&&S.boil!=="off";
+  return `<span class="dpi dboil${on?" boiling":""}${b==="gentle"?" gentle":""}" style="width:${w}px;height:${h}px">${on?[0,100,200].map(frame).join(""):frame(0,0)}</span>`; }
 function softCard(w,h,hex,op,edge){ return `<img class="dbg" style="height:${h+12}px" src="${cardSrc(w,h,{wash:hex,washOp:op,edgeOp:edge,r:18})}" alt="">`; }
 /* little calm pictures for the month's end: drawn, washed, still */
 const inkC=()=>S.dark?"#8D8B86":"#8A8883";
@@ -939,6 +945,7 @@ function panelHTML(){
     tcard("End of the month","When every charge this month has gone out.",
       fld("Pretend it's",chips("pretend",[["today","Today"],["after","The day of the last charge"]]),"The ending shows once the month's last charge has gone out, not only on its last day.")+
       fld("Doodle",chips("doodle",[["random","A different one each month"],...Object.keys(DOODLES).map(k=>[k,DOODLE_NAMES[k]])]))+
+      fld("Doodle boils",chips("doodleBoil",[["off","Still"],["gentle","Gently"],["icons","Like the icons"]]),"Follows the prototype\u2019s Boil switch, so it stays still when that\u2019s off.")+
       fld("Text colour",chips("doneInk",[["ink","Ink"],["mid","Dark grey"],["soft","Soft grey"],["faint","Fainter grey"],["green","Muted green"]]))+
       fld("Weight",chips("doneWt",[["400","Regular"],["500","Medium"],["600","Semibold"],["700","Bold"]]))+
       fld("Sits",chips("doneOn",[["paper","On the paper"],["wash","On a soft wash"],["card","On a soft card"],["frame","In a crayon frame"],["note","On a sticky note"],["torn","On a torn-off sheet"]]))
