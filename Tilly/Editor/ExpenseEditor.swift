@@ -238,9 +238,19 @@ struct ExpenseEditor: View {
         case .keypad:
             Keypad { draft.press($0) }
         case .date:
-            DatePicker("Date", selection: dateBinding, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
+            // A new bill's date is its first charge: the charges since fill in, and nothing
+            // before it shows. Editing a charge moves only that charge, so it stays "Date".
+            VStack(spacing: 0) {
+                if session == nil {
+                    Text("First charge")
+                        .font(Tokens.Text.caption)
+                        .foregroundStyle(Tokens.Ink.secondary)
+                        .accessibilityHidden(true)
+                }
+                DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+            }
         case .repeat:
             RepeatWheel(draft: $draft)
         case .category:
