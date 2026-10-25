@@ -8,7 +8,6 @@ move it to Done in the same change.
 3. [ ] Fine-tune creating a category.
 4. [ ] Suggest a category's symbol while typing its name. Start with a keyword-to-symbol list plus
    on-device word similarity (`NLEmbedding`); Apple's on-device model as an optional extra.
-5. [ ] Let the edit/create sheet drag down from anywhere on it, not just the top handle.
 6. [ ] When every charge this month is done, the timeline still shows the plain Today line above
    them, which looks awkward. Design a fuller, positive ending instead, like "All done this month".
 7. [ ] The bottom-left button jumps to the current month. Now that there's a Today line, it should
@@ -21,3 +20,4 @@ move it to Done in the same change.
    Which is right: what a bill *would* have charged, only what it charged since it was entered, or
    whatever its start date says?
    *Decided 2026-10-25: its first charge decides; the editor's date says `First charge`.*
+5. [x] Let the edit/create sheet drag down from anywhere on it, not just the top handle.

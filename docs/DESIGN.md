@@ -193,8 +193,8 @@ Settings.
 
 Adding a bill opens a sheet with a card at its top, washed in the category's colour, or grey until
 it has one, with white type. The amount is top left and largest, the date and repeat top right on
-two small lines, the name bottom left, the category's picture bottom right. Close is top left, and
-Save is the system's prominent checkmark top right. The input area under the card keeps the keypad's
+two small lines, the name bottom left, the category's picture bottom right. Close is top left, or a
+drag down from anywhere but a wheel or a scrolled list, and Save is the system's prominent checkmark. The input area under the card keeps the keypad's
 height, so the card never moves.
 
 Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed picture tile. A pencil

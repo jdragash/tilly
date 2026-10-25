@@ -53,6 +53,11 @@ struct EditorSheet<Content: View>: View {
     /// Bumped by every open and close, so a close finishing after a fresh open leaves it alone.
     @State private var generation = 0
     @State private var isDragging = false
+    /// The drag under way didn't start as a downward drag, or started where the sheet mustn't move:
+    /// it's left to what's beneath it until the finger lifts.
+    @State private var isDragRefused = false
+    @State private var exclusions: [CGRect] = []
+    @State private var touch = EditorSheetTouch()
     /// The sheet's height at rest, measured where the travel doesn't reach.
     @State private var restHeight: CGFloat = 0
     /// The sheet's drawn height, its top to the screen's bottom, behind the keyboard too.
@@ -104,6 +109,7 @@ struct EditorSheet<Content: View>: View {
     private func sheet(_ shown: EditorRequest) -> some View {
         content(shown)
             .id(shown.id)
+            .environment(\.editorSheetTouch, touch)
             .environment(\.editorSheetContents, contents)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
@@ -118,9 +124,13 @@ struct EditorSheet<Content: View>: View {
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { sheetHeight = $0 }
             }
             .overlay(alignment: .top) { grabber }
+            .environment(\.editorSheetDragging, isDragging)
+            .onPreferenceChange(EditorDragExclusionKey.self) { exclusions = $0 }
             .offset(y: travel)
             .opacity(opacity)
-            .gesture(drag)
+            // Alongside the keys, cards and scroll views, not over them: their taps still land, and
+            // a drag moves the sheet only once it's clearly heading down.
+            .simultaneousGesture(drag)
             .accessibilityAddTraits(.isModal)
             .accessibilityAction(.escape) { request = nil }
     }
@@ -134,18 +144,32 @@ struct EditorSheet<Content: View>: View {
             .accessibilityHidden(true)
     }
 
-    /// Down closes it once past a quarter of its height or flung past half; short of that it springs
-    /// back. Up, it gives a little. Global, because the sheet moves under the finger.
+    /// From anywhere on the sheet. Down closes it once past a quarter of its height or flung past
+    /// half; short of that it springs back. Up, it gives a little. A drag that begins sideways or
+    /// upward, or on a wheel or a scrolled list, is refused. Global, because the sheet moves under
+    /// the finger.
     private var drag: some Gesture {
         DragGesture(minimumDistance: Tokens.Space.sheetDragSlop, coordinateSpace: .global)
             .onChanged { value in
-                guard request != nil else { return }
+                guard request != nil, !isDragRefused else { return }
+                if !isDragging {
+                    let down = value.translation.height
+                    let isDownward = down > 0 && down > abs(value.translation.width)
+                    let isExcluded = exclusions.contains { $0.contains(value.startLocation) }
+                    guard isDownward, !isExcluded else {
+                        isDragRefused = true
+                        return
+                    }
+                    touch.began()
+                }
                 isDragging = true
                 let down = value.translation.height
                 travel = down >= 0 ? down : down * Tokens.Motion.sheetDragResistance
             }
             .onEnded { value in
+                isDragRefused = false
                 guard isDragging else { return }
+                touch.ended()
                 isDragging = false
                 let height = max(1, offDistance)
                 let closes = value.translation.height > height * Tokens.Motion.sheetDragCloses
