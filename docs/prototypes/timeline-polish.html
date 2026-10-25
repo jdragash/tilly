@@ -116,7 +116,13 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .dsl{position:relative;height:34px;margin-bottom:6px;display:flex;align-items:center;justify-content:center}
 .dsl>img{position:absolute;left:0;top:2px}.dsl .dmark{width:30px;height:30px}
 .dexhale{position:relative;margin:2px 12px 12px;height:136px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0}
-.dexhale .dbg{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);height:148px;max-width:none}
+.dexhale .dbg,.drow .dbg,.dpic .dbg{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);max-width:none}
+.dwhisper{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:6px 24px 14px;font-size:13px;line-height:18px;color:var(--ink2)}
+.dwhisper .dwt{font-weight:700;color:var(--ink)}.dwhisper .dwi::before{content:"· ";}
+.drow{position:relative;margin:2px 12px 12px;height:64px;display:flex;align-items:center;gap:12px;padding:0 14px;text-align:left}
+.drow>*:not(.dbg){position:relative}.drow .dsub{padding:0}
+.dpic{position:relative;margin:2px 12px 12px;height:176px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0}
+.dpic>*:not(.dbg){position:relative}.dpic .dpi{display:block;margin-bottom:8px}
 .dexhale>*:not(.dbg){position:relative}.dexhale .dmark.big{margin-bottom:6px}
 .dtally{padding:8px 24px 14px}.dtally .dsub{padding:0}
 .dots{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-bottom:8px}
@@ -362,11 +368,11 @@ const $=id=>document.getElementById(id);
 const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker=$("picker"), keypad=$("keypad");
 
 /* ---------- state, kept in this browser only ---------- */
-const KEY="tilly-timeline-polish";
+const KEY="tilly-timeline-polish-2";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  pretend:"last",done:"ring",doneTitle:"done",doneInfo:"sum",doneHead:"done",jump:"today"};
+  pretend:"after",done:"soft",doneTitle:"all",doneInfo:"month",doneHead:"done",jump:"today"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -506,6 +512,9 @@ const ENDING0=[["Phone plan",2,24,26,0],["Bike loan",7,33,11,1],["Sofa, 12 payme
 let cats=[], bills=[], nextId=1;
 const now=new Date(); let TODAY;
 function setToday(){ TODAY = S.pretend==="last" ? new Date(now.getFullYear(),now.getMonth()+1,0) : new Date(now.getFullYear(),now.getMonth(),now.getDate()); }
+/* "after": today becomes the day of the month's last charge, which may be well before its last day */
+function afterLast(){ if(S.pretend!=="after") return; const o=occurrences(TODAY.getFullYear(),TODAY.getMonth());
+  const last=o.reduce((m,x)=>x.date>m?x.date:m,TODAY); TODAY=new Date(last); }
 setToday();
 function parseCustom(t){
   return t.split(/\n|,/).map(s=>s.trim()).filter(Boolean).slice(0,40).map((s,i)=>{
@@ -619,10 +628,20 @@ function nextCharge(){
 function doneBlock(mo,occ){
   const M=MN[mo.m], n=nextCharge(), total=money(occ.reduce((t,o)=>t+Math.round(o.b.amount),0)), count=occ.length;
   const until=n?(nearWord(n.date)==="Tomorrow"?"Nothing more until tomorrow":`Nothing more until ${n.date.getDate()} ${MS[n.date.getMonth()]}`):"Nothing more is due";
-  const info={none:"",sum:`${count} bills · ${total}`,until,both:`${count} bills · ${total}<br>${until}`}[S.doneInfo];
-  const title={done:`${M}’s done`,all:`All done for ${M}`,thats:`That’s ${M}`,settled:`${M}, all gone out`}[S.doneTitle];
+  const nm=MN[(mo.m+1)%12], dateUntil=n?`${n.date.getDate()} ${MS[n.date.getMonth()]}`:"";
+  const info={none:"",month:"Nothing more until next month",until,rest:n?`Rest easy until ${dateUntil}`:"Rest easy",quiet:n?`Quiet until ${dateUntil}`:"All quiet",
+    sum:`${count} bills · ${total}`,both:`${count} bills · ${total}<br>${until}`}[S.doneInfo]??"";
+  const title={done:`${M}’s done`,all:`All done for ${M}`,set:`You’re all set for ${M}`,care:`${M}’s taken care of`,thats:`That’s ${M}`,settled:`${M}, all gone out`}[S.doneTitle];
   const sub=info?`<div class="dsub">${info}</div>`:"";
+  const W=Math.round(list.clientWidth||390)-24;
   switch(S.done){
+    case "soft": return `<div class="dn dexhale">${softCard(W,136,GREEN(),.09,.18)}<span class="dmark big">${drawnCheck(40)}</span><div class="dt">${title}</div>${sub}</div>`;
+    case "whisper": return `<div class="dn dwhisper"><span class="dmark">${drawnCheck(18)}</span><span class="dwt">${title}</span>${info?`<span class="dwi">${info.replace("<br>"," · ")}</span>`:""}</div>`;
+    case "row": return `<div class="dn drow">${softCard(W,64,GREEN(),.08,0)}<span class="dmark">${washDot(36)}${drawnCheck(22)}</span><div class="drt"><div class="dt">${title}</div>${sub}</div></div>`;
+    case "horizon": return `<div class="dn dpic">${softCard(W,176,PAL[3][S.dark?1:0],.08,.14)}${horizonSvg(W-40,74)}<div class="dt">${title}</div>${sub}</div>`;
+    case "sea": return `<div class="dn dpic">${softCard(W,176,PAL[0][S.dark?1:0],.07,.14)}${seaSvg(W-40,74)}<div class="dt">${title}</div>${sub}</div>`;
+    case "night": return `<div class="dn dpic">${softCard(W,176,PAL[6][S.dark?1:0],.08,.14)}${nightSvg(W-40,74)}<div class="dt">${title}</div>${sub}</div>`;
+    case "sprout": return `<div class="dn dpic">${softCard(W,176,GREEN(),.08,.14)}${sproutSvg(W-40,74)}<div class="dt">${title}</div>${sub}</div>`;
     case "check": return `<div class="dn dcheck"><span class="dmark">${washDot(44)}${drawnCheck(26)}</span><div><div class="dt">${title}</div>${sub}</div></div>`;
     case "ring": return `<div class="dn dring"><span class="dmark big">${ringSvg(occ,60)}${drawnCheck(26)}</span><div class="dt">${title}</div>${sub}</div>`;
     case "settle": return `<div class="dn dsettle">${settleSvg()}<div class="dt">${title}</div>${sub}</div>`;
@@ -634,6 +653,29 @@ function doneBlock(mo,occ){
   }
 }
 const GREEN=()=>PAL[2][S.dark?1:0];
+function softCard(w,h,hex,op,edge){ return `<img class="dbg" style="height:${h+12}px" src="${cardSrc(w,h,{wash:hex,washOp:op,edgeOp:edge,r:18})}" alt="">`; }
+/* little calm pictures for the month's end: drawn, washed, still */
+const inkC=()=>S.dark?"#8D8B86":"#8A8883";
+function picImg(w,h,body){ return `<img class="dpi" style="width:${w}px;height:${h}px" src="${svgUrl(w,h,`0 0 ${w} ${h}`,body,["washF"])}" alt="">`; }
+function horizonSvg(w,h){ const sun=PAL[3][S.dark?1:0], cx=w/2, hy=h-18;
+  const disc=`<path d="${blob(cx,hy,26,4,.05)}" fill="${sun}" fill-opacity=".38" filter="url(#washF)"/>`;
+  const line=`<path d="${rough(`M${cx-120} ${hy} L${cx+120} ${hy}`,{amp:.5,step:2,seed:3})}" stroke="${inkC()}" stroke-opacity=".55" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+  const low=`<path d="${rough(`M${cx-70} ${hy+9} L${cx+70} ${hy+9} M${cx-34} ${hy+16} L${cx+34} ${hy+16}`,{amp:.5,step:2,seed:8})}" stroke="${inkC()}" stroke-opacity=".3" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
+  return picImg(w,h,`<clipPath id="hz"><rect x="0" y="0" width="${w}" height="${hy}"/></clipPath><g clip-path="url(#hz)">${disc}</g>${line}${low}`); }
+function seaSvg(w,h){ const blue=PAL[0][S.dark?1:0], cx=w/2; let body=`<path d="${blob(cx+70,20,11,6,.05)}" fill="${PAL[3][S.dark?1:0]}" fill-opacity=".4" filter="url(#washF)"/>`;
+  [[34,4,.6,150],[48,3,.42,120],[60,2,.26,86]].forEach(([y,a,o,half],i)=>{ let d=`M${cx-half} ${y}`;
+    for(let x=-half;x<=half;x+=2) d+=` L${cx+x} ${(y+a*Math.sin(x/22*Math.PI)).toFixed(2)}`;
+    body+=`<path d="${rough(d,{amp:.3,step:2,seed:i+2})}" stroke="${blue}" stroke-opacity="${o}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`; });
+  return picImg(w,h,body); }
+function nightSvg(w,h){ const moon=PAL[3][S.dark?1:0], ind=PAL[6][S.dark?1:0], cx=w/2, cy=36;
+  const cres=`<mask id="mk"><rect width="${w}" height="${h}" fill="#fff"/><circle cx="${cx+10}" cy="${cy-7}" r="21" fill="#000"/></mask><path mask="url(#mk)" d="${blob(cx,cy,25,9,.03)}" fill="${moon}" fill-opacity=".55" filter="url(#washF)"/>`;
+  const star=(x,y,r)=>`<path d="${rough(`M${x-r} ${y} L${x+r} ${y} M${x} ${y-r} L${x} ${y+r}`,{amp:.2,step:1,seed:x|0})}" stroke="${ind}" stroke-opacity=".55" stroke-width="1.4" stroke-linecap="round"/>`;
+  return picImg(w,h,cres+star(cx-62,22,4)+star(cx+58,14,3)+star(cx+78,48,3.5)+star(cx-40,56,2.5)); }
+function sproutSvg(w,h){ const g=GREEN(), cx=w/2, by=h-14;
+  const stem=`<path d="${rough(`M${cx} ${by} C${cx} ${by-18} ${cx-2} ${by-34} ${cx+1} ${by-46}`,{amp:.3,step:1.5,seed:4})}" stroke="${g}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  const leaf=(sx,dir,s)=>`<path d="M${cx} ${sx} C${cx+dir*8*s} ${sx-14*s} ${cx+dir*26*s} ${sx-14*s} ${cx+dir*30*s} ${sx-4*s} C${cx+dir*22*s} ${sx+6*s} ${cx+dir*8*s} ${sx+4*s} ${cx} ${sx}Z" fill="${g}" fill-opacity=".38" stroke="${g}" stroke-opacity=".55" stroke-width="1.2" filter="url(#washF)"/>`;
+  const ground=`<path d="${rough(`M${cx-60} ${by} L${cx+60} ${by}`,{amp:.5,step:2,seed:7})}" stroke="${inkC()}" stroke-opacity=".45" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
+  return picImg(w,h,stem+leaf(by-30,-1,1)+leaf(by-42,1,.85)+ground); }
 /* a hand-drawn check that boils, three roughened drawings as the pictures do */
 function drawnCheck(px){
   const d="M5.5 12.6 L9.8 16.8 L18.6 7.4", hex=GREEN();
@@ -813,11 +855,11 @@ function panelHTML(){
     `<pre class="setup" hidden></pre>`+
     `<h2>New</h2>`+
     tcard("End of the month","When every charge this month has gone out.",
-      fld("Pretend it's",chips("pretend",[["today","Today"],["last","The month's last day"]]))+
-      fld("Ending",chips("done",[["ring","A ring that closes"],["check","A check, calm"],["settle","The line settles"],["exhale","A soft green card"],["tally","A dot per bill"],["stamp","A stamp"],["quiet","One quiet line"],["squiggle","Today line, as built"]]))+
-      fld("Words",chips("doneTitle",[["done","October’s done"],["all","All done for October"],["thats","That’s October"],["settled","October, all gone out"]]))+
-      fld("Underneath",chips("doneInfo",[["none","Nothing"],["sum","Bill count and total"],["until","When the next charge is"],["both","Both"]]))+
-      fld("Month figure",chips("doneHead",[["left","€0 left"],["done","All €… gone out"]])))+
+      fld("Pretend it's",chips("pretend",[["today","Today"],["after","The day of the last charge"]]),"The ending shows once the month's last charge has gone out, not only on its last day.")+
+      fld("Subtle",chips("done",[["soft","Soft green card"],["row","Like a bill row"],["whisper","One line"]]))+
+      fld("Pictures",chips("done",[["horizon","Sun on the horizon"],["sea","Calm water"],["night","Moon and stars"],["sprout","A sprout"]]))+
+      fld("Words",chips("doneTitle",[["all","All done for October"],["set","You’re all set for October"],["care","October’s taken care of"],["done","October’s done"]]))+
+      fld("Underneath",chips("doneInfo",[["month","Nothing more until next month"],["until","Nothing more until 1 Nov"],["rest","Rest easy until 1 Nov"],["quiet","Quiet until 1 Nov"],["none","Nothing"]])))+
     `<details class="decided"><summary>Already decided</summary>`+
     `<h2>Timeline</h2>`+
     tcard("Charged rows","Bills whose date has passed, below Today.",
@@ -885,14 +927,14 @@ $("panel").addEventListener("click",onPanel); $("drawerBody").addEventListener("
 $("tuneBtn").addEventListener("click",()=>$("drawer").classList.add("open"));
 $("dclose").addEventListener("click",()=>$("drawer").classList.remove("open"));
 function apply(k){
-  if(k==="pretend"){ setToday(); loadData(); }
+  if(k==="pretend"){ setToday(); loadData(); afterLast(); }
   document.documentElement.classList.toggle("dark",S.dark);
   phone.classList.toggle("mq",S.motion==="quick");
   renderPanel();
   if(!["picker","across","motion"].includes(k)) renderList(!!k);
   if(sheet.classList.contains("open")){ if(sheet.dataset.panel==="picker") renderPicker(); renderCard(true); }
 }
-function rebuild(){ closeSheet(); loadData(); apply(); }
+function rebuild(){ closeSheet(); setToday(); loadData(); afterLast(); apply(); }
 
 /* ---------- the phone at its real size, scaled down only to fit ---------- */
 function fit(){
@@ -903,5 +945,5 @@ function fit(){
 }
 addEventListener("resize",()=>{ fit(); if(sheet.classList.contains("open")){ layoutSheet(); } });
 
-makeGrain(); fit(); loadData(); apply();
+makeGrain(); fit(); loadData(); afterLast(); apply();
 </script>
