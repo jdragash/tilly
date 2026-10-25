@@ -5,6 +5,10 @@ import SwiftUI
 struct TodayDivider: View {
     let today: Date
 
+    /// The divider's scroll target and its key among the reported frames: the month button lands it
+    /// in the middle of the list.
+    static let scrollID = "today-divider"
+
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
 

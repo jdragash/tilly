@@ -513,6 +513,8 @@ enum Tokens {
         static let returnPointsPerSecond: CGFloat = 3000
         static let returnDurationMin: TimeInterval = 0.35
         static let returnDurationMax: TimeInterval = 0.9
+        /// A beat after a return's glide before the next step reads where it landed.
+        static let returnSettle: TimeInterval = 0.06
         /// The dots settling onto and off the dragging line; from the prototype.
         static let scrub: TimeInterval = 0.12
         /// A tapped day's rows fading from marked, once the timeline has landed on them.

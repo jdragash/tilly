@@ -1045,6 +1045,7 @@ struct TimelineView: View {
     private func returnToResting() {
         guard let window, let scrollProxy else { return }
         let duration = returnDuration
+        let hasDivider = section(for: window.current).hasChargedEntry
         isProgrammaticScroll = true
         // A tap lands while the list is still flying, and an animated `scrollTo` issued then
         // loses to the deceleration already in flight — measured: the phase stayed
@@ -1054,24 +1055,65 @@ struct TimelineView: View {
         isScrollHalted = true
         DispatchQueue.main.async {
             isScrollHalted = false
+            // Near enough that the divider is laid out: one glide to it. Otherwise the month first,
+            // since a lazy list resolves only ids it has laid out, and then on to the divider once
+            // the month's glide is over: two animated scrolls a turn apart fight.
+            if hasDivider, let divider = rowFrames.frames[TodayDivider.scrollID] {
+                withAnimation(.easeInOut(duration: duration)) {
+                    scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
+                }
+                settleReturn(after: duration, atMonthTop: false)
+                return
+            }
             withAnimation(.easeInOut(duration: duration)) {
                 scrollProxy.scrollTo(window.current.id, anchor: .top)
             }
+            guard hasDivider else {
+                settleReturn(after: duration, atMonthTop: true)
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration + Tokens.Motion.returnSettle) {
+                guard let divider = rowFrames.frames[TodayDivider.scrollID] else {
+                    settleReturn(after: 0, atMonthTop: true)
+                    return
+                }
+                let onward = Tokens.Motion.returnDurationMin
+                withAnimation(.easeInOut(duration: onward)) {
+                    scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
+                }
+                settleReturn(after: onward, atMonthTop: false)
+            }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.06) {
+    }
+
+    /// The anchor that puts the divider's centre in the middle of what shows of the list: between
+    /// the pinned header's bottom and the top of the bottom row's clearance. `scrollTo` lands a
+    /// target's point at fraction `f` on the container's point at `f`, the container net of its
+    /// bottom margin, so a target `h` high centred at `m` needs `f = (m − h/2) / (C − h)`.
+    private func dividerAnchor(height: CGFloat, in month: MonthKey) -> UnitPoint {
+        let container = containerHeight
+        let middle = ((headerHeights[month] ?? 0) + container) / 2
+        let room = container - height
+        let fraction = room > 0 ? min(1, max(0, (middle - height / 2) / room)) : 0
+        return UnitPoint(x: 0.5, y: fraction)
+    }
+
+    /// Once the return's glide is over: the app's own scroll ends, and the place is saved.
+    private func settleReturn(after delay: TimeInterval, atMonthTop: Bool) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay + Tokens.Motion.returnSettle) {
             isProgrammaticScroll = false
-            // The reader is now at the resting position by construction, so `scrollOffset`
-            // *is* `restingContentOffset`. Saying so is not belt-and-braces: the cache is
-            // normally written as `scrollOffset + frame.minY` from two geometry callbacks
+            // At the month's top the reader is at the resting position by construction, so
+            // `scrollOffset` *is* `restingContentOffset`. Saying so is not belt-and-braces: the
+            // cache is normally written as `scrollOffset + frame.minY` from two geometry callbacks
             // that arrive independently, and during an animated scroll they are sampled at
-            // different instants — measured on device leaving the cache 702, 493 and 0.2
-            // points wrong across three otherwise identical returns, and the next return's
-            // duration is read from it.
-            restingContentOffset = scrollOffset
+            // different instants — measured on device leaving the cache 702, 493 and 0.2 points
+            // wrong across three otherwise identical returns, and the next return's duration is
+            // read from it. At the divider it isn't, so the cache is left to the header.
+            if atMonthTop { restingContentOffset = scrollOffset }
             // And save it. The scroll-idle save is suppressed while this view's own scroll is
             // in flight, and a fling cut short by this tap never settled to save either — so
             // without this the saved place is wherever the fling was heading, and a relaunch
-            // returns there rather than to the month just landed on.
+            // returns there rather than to the place just landed on.
             if hasRestoredPlace { saveCurrentPlace() }
         }
     }
