@@ -85,6 +85,7 @@ The list stops at the oldest occurrence the rules generate, with a line saying s
 between there and today aren't listed. Safe because bills are entered for their *next* occurrence.
 - **Rejected — start at the install date:** hides a renewal someone deliberately backdated, and needs a stored date plus a migration.
 - **Rejected — list empty months at €0:** claims to know what a month cost.
+- **Rejected — every bill running back as far as the list goes, or only since the day it was entered (2026-10-25):** the first invents charges the app was never told about; the second hides a bill started in the past on purpose. A bill's own first charge decides, and the editor names that date `First charge`.
 
 ## Your place survives a relaunch, to the month rather than the row
 **Decided:** 2026-09-09

@@ -210,7 +210,9 @@ as today and the repeat as monthly. The row leads with the picture and the name.
 
 - **Amount:** the keypad, up when the sheet opens.
 - **Name:** the keyboard. Return says `next` and goes to what's still missing, or `done`.
-- **Date:** a calendar. `Oct 31`, never a year, with a clock for a date still to come.
+- **Date:** a calendar. `Oct 31`, never a year, with a clock for a date still to come. For a new
+  bill it's the first charge, and the calendar says so: `First charge`. A date in the past fills in
+  the charges since; the bill shows nothing before it.
 - **Repeat:** one wheel, `Every 1 month`, with an end column that rests on `no end` and rolls into
   payment counts, the only way to set an end. Then the label is `05/27` behind a one-way arrow,
   and `Last payment Sep 30, 2027` shows under the wheel.
