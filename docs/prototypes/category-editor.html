@@ -7,7 +7,8 @@
   its symbol is suggested from its name (observations 2, 3 and 4).
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, sheet, card and grid are
   dashed-and-solid.html's, as shipped in v0.7.0.
-  Deleting a category deletes its bills, after a warning (Jake, 2026-10-25).
+  Deleting a category deletes its bills, after a warning (Jake, 2026-10-25). Tune shows only the open choices.
+  Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
 -->
@@ -1005,17 +1006,15 @@ function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class=
 const fld=(label,body,note)=>`<div class="fld"><div class="fl">${label}</div>${body}${note?`<p class="desc">${note}</p>`:""}</div>`;
 const tcard=(title,sub,body)=>`<section class="tc"><div class="ch">${title}</div>${sub?`<div class="cs">${sub}</div>`:""}${body}</section>`;
 function panelHTML(){
-  return `<div class="ptop"><div><h1>The category editor</h1><p class="lead">iPhone 13 Pro size. Make one: + then the card's picture tile, then New. Change or delete one: hold a card in the grid, or open Settings (the gear).</p></div>`+
+  return `<div class="ptop"><div><h1>The category editor</h1><p class="lead">Only the choices still open. Make one: + then the card's picture tile, then New. Change or delete one: hold a card in the grid, or the gear for Settings.</p></div>`+
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
-    `<p class="lead">Try names like Gym, Netflix, Rugby, Uber, Dog, Kindle, Barber or Council tax. The first guess comes from the keyword list or, failing that, from words close to it.</p>`+
-    `<h2>Making a category</h2>`+
-    tcard("Seeing it as you make it","",optHTML("preview"))+
+    `<h2>Open choices</h2>`+
+    tcard("Seeing it as you make it","Try names like Gym, Netflix, Rugby, Uber or Barber.",optHTML("preview"))+
     tcard("The guessed symbol","",optHTML("guess"))+
     tcard("Finishing","In the bill editor. From Settings it's a sheet of its own, with ✕ and ✓.",optHTML("buttons"))+
-    `<h2>Changing and deleting</h2>`+
     tcard("Finding Edit in the grid","",optHTML("findEdit"))+
-    `<h2>Prototype</h2>`+
+    `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
       fld("Motion",chips("motion",[["none","None"],["quick","Quick"]])))+
     tcard("Your categories","One per line, in your order. Kept in this browser only, never in the repo.",
@@ -1028,7 +1027,7 @@ function panelHTML(){
     `<li>Settings doesn't drag to reorder here. The app already does.</li>`+
     `<li>Edges, washes and grain are SVG filters; the glass is a blur, not Liquid Glass; sheets, menus and alerts are CSS, not the system's.</li>`+
     `<li>The type is SF Pro Rounded on an iPhone and Nunito elsewhere. No Dynamic Type.</li>`+
-    `<li>What you make, change or delete lasts until you reload or reset.</li></ul></details>`;
+    `<li>What you make, change or delete lasts until you reload or reset.</li></ul></details></details>`;
 }
 function renderPanel(){ const h=panelHTML(); $("panel").innerHTML=h; $("drawerBody").innerHTML=h; }
 function onPanel(e){
@@ -1036,7 +1035,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(Object.keys(DEFAULTS).map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["preview","guess","buttons","findEdit"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
