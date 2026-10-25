@@ -14,5 +14,7 @@ fixed, tick it and move it to Done in the same change.
 - [ ] Let the edit/create sheet drag down from anywhere on it, not just the top handle.
 - [ ] When every charge this month is done, the timeline still shows the plain Today line above
   them, which looks awkward. Design a fuller, positive ending instead, like "All done this month".
+- [ ] The bottom-left button jumps to the current month. Now that there's a Today line, it should
+  jump to today instead, scrolling so the Today line sits in the middle of the screen.
 
 ## Done
