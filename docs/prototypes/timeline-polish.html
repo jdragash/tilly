@@ -945,6 +945,7 @@ function panelHTML(){
     tcard("End of the month","When every charge this month has gone out.",
       fld("Pretend it's",chips("pretend",[["today","Today"],["after","The day of the last charge"]]),"The ending shows once the month's last charge has gone out, not only on its last day.")+
       fld("Doodle",chips("doodle",[["random","A different one each month"],...Object.keys(DOODLES).map(k=>[k,DOODLE_NAMES[k]])]))+
+      fld("Boil",chips("boil",[["off","Off"],["editor","Editor\u2019s card only"],["all","Everywhere, icons too"]]))+
       fld("Doodle boils",chips("doodleBoil",[["off","Still"],["gentle","Gently"],["icons","Like the icons"]]),"Follows the prototype\u2019s Boil switch, so it stays still when that\u2019s off.")+
       fld("Text colour",chips("doneInk",[["ink","Ink"],["mid","Dark grey"],["soft","Soft grey"],["faint","Fainter grey"],["green","Muted green"]]))+
       fld("Weight",chips("doneWt",[["400","Regular"],["500","Medium"],["600","Semibold"],["700","Bold"]]))+
@@ -983,7 +984,7 @@ function panelHTML(){
       optHTML("picker")+(S.picker==="grid"?fld("Cards across",chips("across",[[3,"3"],[4,"4"]])):""))+
     tcard("Motion","",fld("Sheet and card",chips("motion",[["none","None"],["quick","Quick"]]),"Quick: a stock sheet slide and a 0.16s colour fade. No flips, no flight."))+
     `<h2>Prototype</h2>`+
-    tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]])))+
+    tcard("Look","",fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]])))+
     tcard("Your categories","One per line, in your order. Kept in this browser only, never in the repo.",
       `<textarea id="catsIn" spellcheck="false" placeholder="Home\nEnergy\nStreaming">${esc(S.custom?S.customText:"")}</textarea>`+
       `<div class="btns"><button class="pri" id="catsApply">Use these</button><button id="catsReset">Example set</button></div>`+
