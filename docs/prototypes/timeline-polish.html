@@ -125,7 +125,9 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .dpic>*:not(.dbg){position:relative}
 .ddood{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 24px 18px}
 .ddood.oncard{margin:2px 12px 12px;padding:0}.ddood .dbg{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);max-width:none}
-.ddood>*:not(.dbg){position:relative}.ddood .dpi{display:block;margin-bottom:8px}.ddood .dt{font-size:17px;line-height:22px}.dpic .dpi{display:block;margin-bottom:8px}
+.ddood>*:not(.dbg):not(.dwashbg){position:relative}
+.ddood.on-note{transform:rotate(-1.2deg)}.ddood .dbg.note{position:absolute;max-width:none}
+.ddood .dwashbg{position:absolute;left:50%;top:-6px;transform:translateX(-50%);max-width:none}.ddood .dpi{display:block;margin-bottom:8px}.ddood .dt{font-size:17px;line-height:22px}.dpic .dpi{display:block;margin-bottom:8px}
 .dexhale>*:not(.dbg){position:relative}.dexhale .dmark.big{margin-bottom:6px}
 .dtally{padding:8px 24px 14px}.dtally .dsub{padding:0}
 .dots{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-bottom:8px}
@@ -371,11 +373,11 @@ const $=id=>document.getElementById(id);
 const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker=$("picker"), keypad=$("keypad");
 
 /* ---------- state, kept in this browser only ---------- */
-const KEY="tilly-timeline-polish-3";
+const KEY="tilly-timeline-polish-4";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  pretend:"after",done:"doodle",doodle:"random",doneOn:"paper",doneLine:"month",doneSub:"none",doneTitle:"all",doneInfo:"month",doneHead:"done",jump:"today"};
+  pretend:"after",done:"doodle",doodle:"random",doneOn:"paper",doneLine:"quiet",doneSub:"none",doneTitle:"all",doneInfo:"month",doneHead:"done",jump:"today"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -644,8 +646,9 @@ function doneBlock(mo,occ){
       quiet:`All quiet until ${nM}`,date:`Nothing more until ${nd}`,feet:`Feet up until ${nM}`}[S.doneLine];
     const sb={none:"",went:`${total} went out in ${M}`,all:`All ${count} of ${M}’s bills have gone out`}[S.doneSub];
     const keys=Object.keys(DOODLES), k=S.doodle==="random"?keys[((mo.y*12+mo.m)*7)%keys.length]:S.doodle;
-    const pic=doodleImg(k,150,112), h=112+8+22+(sb?20:0)+34;
-    return `<div class="dn ddood${S.doneOn==="card"?" oncard":""}" style="${S.doneOn==="card"?`height:${h}px`:""}">${S.doneOn==="card"?softCard(W,h,GREEN(),.07,.14):""}${pic}<div class="dt">${line}</div>${sb?`<div class="dsub">${sb}</div>`:""}</div>`;
+    const pic=doodleImg(k,150,112), on=S.doneOn, boxed=!["paper","wash"].includes(on), h=112+8+22+(sb?20:0)+(on==="note"?44:34);
+    const bg=on==="card"?softCard(W,h,GREEN(),.07,.14):on==="frame"?frameBg(W,h):on==="note"?noteBg(W-60,h):on==="torn"?tornBg(W,h):on==="wash"?washBg():"";
+    return `<div class="dn ddood on-${on}${boxed?" oncard":""}" style="${boxed?`height:${h}px`:""}">${bg}${pic}<div class="dt">${line}</div>${sb?`<div class="dsub">${sb}</div>`:""}</div>`;
   }
   switch(S.done){
     case "soft": return `<div class="dn dexhale">${softCard(W,136,GREEN(),.09,.18)}<span class="dmark big">${drawnCheck(40)}</span><div class="dt">${title}</div>${sub}</div>`;
@@ -685,34 +688,52 @@ const DOODLES={
   tea:()=>{ const b=CC(0), cup="M36 40 L80 40 L80 52 Q80 72 58 72 Q36 72 36 52 Z", heart="M58 62 C49 55 51 47 58 52 C65 47 67 55 58 62Z";
     return scrib(cup,[36,40,44,32],b,4)+cr(cup,b,2.6,3)+cr("M80 45 Q93 45 91 55 Q89 63 79 61",b,2.4,5)+cr("M24 77 Q58 87 92 77",b,2.6,6)+
       scrib(heart,[49,47,18,15],CC(4),7,2.4,.75)+cr(heart,CC(4),1.8,8)+cr("M50 34 Q45 28 50 22 Q55 16 50 10 M64 34 Q59 28 64 22 Q69 16 64 10",CINK(),1.8,9,.4); },
-  hammock:()=>{ const h="M20 46 Q60 80 100 46 Q60 62 20 46Z";
-    return cr("M20 83 L20 34 M100 83 L100 34",CC(1),3,2)+cr("M20 34 Q10 26 5 31 M20 34 Q14 22 20 17 M20 34 Q28 24 35 28 M100 34 Q90 24 85 28 M100 34 Q106 22 100 17 M100 34 Q110 26 115 31",CC(2),2.6,3)+
-      scrib(h,[20,46,80,24],CC(3),4,3,.6)+cr(h,CC(3),2.4,5)+cr("M6 84 L114 84",CINK(),1.6,6,.35)+cr("M84 14 L89 14 L84 19 L89 19",CC(6),1.8,7); },
-  boat:()=>{ const hull="M32 58 L88 58 L78 68 L42 68 Z", sail="M62 55 L62 22 L84 55 Z";
-    return scrib(sail,[62,22,22,33],CC(3),3,3,.6)+cr(sail,CC(3),2.3,2)+scrib(hull,[32,58,56,10],CC(7),5,3,.6)+cr(hull,CC(7),2.5,4)+cr("M60 58 L60 20 M60 20 L68 23 L60 26",CINK(),1.8,6)+
-      cr("M8 72 Q16 66 24 72 Q32 78 40 72 Q48 66 56 72 Q64 78 72 72 Q80 66 88 72 Q96 78 104 72 Q108 69 112 71",CC(0),2.4,7)+cr("M22 82 Q30 78 38 82 Q46 86 54 82 M66 82 Q74 78 82 82 Q90 86 98 82",CC(0),1.8,8,.5); },
-  cat:()=>{ const o=CC(1), body="M28 66 Q28 42 58 42 Q88 42 88 62 Q88 76 60 76 Q28 76 28 66Z", head="M70 60 A14 12 0 1 0 98 60 A14 12 0 1 0 70 60Z";
-    return scrib(body,[28,42,60,34],o,3)+cr(body,o,2.6,2)+cr("M30 68 Q18 82 40 81 Q60 80 70 74",o,2.6,4)+scrib(head,[70,48,28,24],o,5)+cr(head,o,2.4,6)+cr("M74 52 L76 41 L83 49 M89 49 L96 41 L97 53",o,2.4,7)+
-      cr("M77 60 Q80 63 83 60 M87 60 Q90 63 93 60",CINK(),1.8,8)+cr("M100 30 L106 30 L100 36 L106 36 M108 19 L112 19 L108 23 L112 23",CC(6),1.9,9)+cr("M16 84 L104 84",CINK(),1.6,10,.35); },
   kite:()=>{ const k="M78 10 L94 28 L78 50 L62 28 Z";
     return cr("M16 36 Q15 27 24 29 Q28 20 37 26 Q46 26 43 36 Z",CC(0),2,2,.55)+scrib(k,[62,10,32,40],CC(7),3,3,.6)+cr(k,CC(7),2.5,4)+cr("M78 10 L78 50 M62 28 L94 28",CC(7),1.6,5,.6)+
       cr("M78 50 Q62 62 50 72 Q40 80 26 84",CINK(),1.4,6,.5)+cr("M78 50 Q73 60 80 66 Q87 72 80 82",CINK(),1.4,7,.5)+cr("M74 58 L84 63 L84 56 L74 61Z M75 72 L85 77 L85 70 L75 75Z",CC(3),2,8); },
-  snail:()=>{ const sh="M42 58 A20 20 0 1 0 82 58 A20 20 0 1 0 42 58Z";
-    return cr("M24 80 Q60 76 92 80 Q104 81 104 70 Q103 62 96 64 L90 73",CC(2),2.6,2)+scrib("M24 80 Q60 76 92 80 Q104 81 104 70 Q103 62 96 64 L90 73 Z",[24,62,80,20],CC(2),3,2.8,.5)+
-      scrib(sh,[42,38,40,40],CC(4),4)+cr(sh,CC(4),2.6,5)+cr("M62 58 Q66 54 66 60 Q64 66 58 64 Q52 60 56 52 Q62 44 70 50 Q78 58 72 68",CC(4),2,6)+
-      cr("M100 64 L104 52 M97 64 L94 52",CC(2),2,7)+cr("M104 51 L104.6 51.6 M94 51 L94.6 51.6",CINK(),3.4,8)+cr("M12 84 L108 84",CINK(),1.6,9,.35); },
-  plant:()=>{ const pot="M46 60 L74 60 L70 82 L50 82 Z", lv="M60 50 Q44 46 40 34 Q54 34 60 46 Z M60 40 Q76 36 80 22 Q66 24 60 36 Z M60 28 Q55 18 60 9 Q65 18 60 28 Z";
-    return scrib(pot,[46,60,28,22],CC(1),3)+cr(pot,CC(1),2.6,2)+cr("M42 60 L78 60",CC(1),3,3)+cr("M60 60 Q61 44 60 28",CC(2),2.4,4)+scrib(lv,[40,9,40,41],CC(2),5,2.8,.55)+cr(lv,CC(2),2.2,6)+
-      cr("M55 70 Q60 75 65 70",CINK(),1.8,7)+cr("M54 66 L54.5 66.5 M66 66 L66.5 66.5",CINK(),2.6,8); },
-  sun:()=>{ const a=CC(3), c="M38 46 A22 22 0 1 0 82 46 A22 22 0 1 0 38 46Z"; let rays="";
-    for(let i=0;i<10;i++){ const t=i/10*6.283+.2; rays+=`M${(60+Math.cos(t)*28).toFixed(1)} ${(46+Math.sin(t)*28).toFixed(1)} L${(60+Math.cos(t)*36).toFixed(1)} ${(46+Math.sin(t)*36).toFixed(1)} `; }
-    const lens="M45 41 L58 41 Q58 51 51.5 51 Q45 51 45 41Z M62 41 L75 41 Q75 51 68.5 51 Q62 51 62 41Z";
-    return scrib(c,[38,24,44,44],a,3,3.2,.55)+cr(c,a,2.6,2)+cr(rays,a,2.4,4)+scrib(lens,[45,41,30,10],CINK(),5,2,.8)+cr(lens+" M58 42 L62 42",CINK(),1.8,6)+cr("M52 58 Q60 64 68 58",CINK(),1.9,7); },
-  balloon:()=>{ const env="M60 8 Q86 8 86 34 Q86 50 68 62 L52 62 Q34 50 34 34 Q34 8 60 8Z", bk="M53 72 L67 72 L66 82 L54 82 Z";
-    return cr("M8 74 Q8 66 16 68 Q20 60 28 66 Q34 66 32 74 Z M92 32 Q92 26 98 27 Q102 22 108 27 Q114 27 112 32Z",CC(0),1.9,2,.5)+scrib(env,[34,8,52,54],CC(7),3,3.2,.5)+cr(env,CC(7),2.6,4)+
-      cr("M60 8 Q48 30 54 62 M60 8 Q72 30 66 62",CC(3),2.4,5)+cr("M53 62 L55 72 M67 62 L65 72",CINK(),1.5,6,.6)+scrib(bk,[53,72,14,10],CC(1),7,2.4,.6)+cr(bk,CC(1),2.2,8); }
+  wallet:()=>{ const bl=CC(0), bed="M14 62 L106 62 L106 72 L14 72 Z", blanket="M44 62 Q44 50 56 50 L100 50 Q106 50 106 56 L106 62 Z", w="M30 44 L52 44 L52 60 L30 60 Z", pil="M24 58 Q22 48 34 48 Q48 48 46 58 Q36 63 24 58Z";
+    return cr("M14 72 L14 40 Q14 34 21 34 Q28 34 28 40 L28 62 M16 72 L16 80 M104 72 L104 80",CC(1),2.6,2)+scrib(bed,[14,62,92,10],CC(1),3,3,.35)+cr(bed,CC(1),2.2,4)+cr(pil,CINK(),1.6,5,.4)+
+      scrib(w,[30,44,22,16],CC(2),6,2.6,.6)+cr(w,CC(2),2.3,7)+cr("M30 49 L52 49",CC(2),1.8,8)+cr("M34 54 Q36 56 38 54 M43 54 Q45 56 47 54",CINK(),1.6,9)+
+      cr("M29 45 Q37 28 53 44 M53 44 Q60 36 64 44",CC(7),2.2,10)+scrib("M29 45 Q37 28 53 44 Z",[29,32,24,13],CC(7),11,2.4,.55)+cr("M64 46 L64.6 46.6",CC(7),4.5,12)+
+      scrib(blanket,[44,50,62,12],bl,13,3,.5)+cr(blanket,bl,2.4,14)+cr("M60 52 L60 61 M76 51 L76 61 M92 51 L92 61",bl,1.4,15,.5)+cr("M70 30 L76 30 L70 36 L76 36 M80 20 L84 20 L80 24 L84 24",CC(6),1.8,16); },
+  coin:()=>{ const ring="M26 64 A34 12 0 1 0 94 64 A34 12 0 1 0 26 64Z", hole="M46 64 A14 4.5 0 1 0 74 64 A14 4.5 0 1 0 46 64Z", c="M47 46 A13 13 0 1 0 73 46 A13 13 0 1 0 47 46Z", lens="M51 43 L58 43 Q58 49 54.5 49 Q51 49 51 43Z M62 43 L69 43 Q69 49 65.5 49 Q62 49 62 43Z";
+    return cr("M8 76 Q16 72 24 76 Q32 80 40 76 M80 76 Q88 72 96 76 Q104 80 112 76 M30 84 Q38 80 46 84 M70 84 Q78 80 86 84",CC(0),2,2,.6)+scrib(ring,[26,52,68,24],CC(4),3,3.2,.55)+cr(ring,CC(4),2.5,4)+cr(hole,CC(4),2,5)+
+      cr("M38 56 L36 72 M82 56 L84 72 M60 52 L60 54",CC(7),2.4,6,.7)+scrib(c,[47,33,26,26],CC(3),7,3,.55)+cr(c,CC(3),2.4,8)+scrib(lens,[51,43,18,6],CINK(),9,1.8,.85)+cr(lens+" M58 44 L62 44",CINK(),1.5,10)+cr("M55 53 Q60 56 65 53",CINK(),1.6,11)+
+      cr("M48 52 L40 58 M72 52 L80 58",CC(3),2.4,12)+cr("M96 18 L96 34 M90 22 Q96 12 102 22 Z",CC(7),1.8,13)+scrib("M90 22 Q96 12 102 22 Z",[90,14,12,8],CC(7),14,2,.6); },
+  toast:()=>{ const t="M34 76 L34 44 Q26 40 30 32 Q36 24 60 26 Q84 24 90 32 Q94 40 86 44 L86 76 Z", b="M30 58 L90 54 L92 74 L28 76 Z";
+    return scrib(t,[26,24,68,52],CC(3),3,3,.5)+cr(t,CC(1),2.6,2)+cr("M46 44 Q49 47 52 44 M68 44 Q71 47 74 44",CINK(),1.7,4)+cr("M43 50 L44 50.6 M76 50 L77 50.6",CC(4),3.4,5,.7)+
+      scrib(b,[28,54,64,22],CC(3),6,2.4,.75)+cr(b,CC(3),2.2,7)+cr("M36 62 L42 62 M70 60 L80 59",CINK(),1.2,8,.3)+cr("M18 80 L102 80",CINK(),1.6,9,.35)+cr("M96 26 L102 26 L96 32 L102 32 M104 16 L108 16 L104 20 L108 20",CC(6),1.8,10); },
+  duck:()=>{ const tub="M16 54 L104 54 Q104 78 80 78 L40 78 Q16 78 16 54Z", body="M46 54 Q44 42 58 44 Q72 42 74 54", head="M50 34 A8 8 0 1 0 66 34 A8 8 0 1 0 50 34Z";
+    let bub=""; [[28,50,6],[38,46,5],[82,48,6],[93,49,4],[88,39,3],[24,40,3],[72,30,2.5]].forEach(([x,y,r])=>bub+=`M${x-r} ${y} A${r} ${r} 0 1 0 ${x+r} ${y} A${r} ${r} 0 1 0 ${x-r} ${y}Z `);
+    return scrib(head,[50,26,16,16],CC(3),3,2.6,.6)+cr(head,CC(3),2.2,2)+scrib(body+" Z",[44,42,30,12],CC(3),4,2.6,.6)+cr(body,CC(3),2.4,5)+cr("M65 33 L73 35 L65 38",CC(1),2.2,6)+cr("M55 33 Q57 35 59 33",CINK(),1.5,7)+
+      scrib(tub,[16,54,88,24],CC(0),8,3.2,.45)+cr(tub,CC(0),2.6,9)+cr("M30 78 L26 85 M90 78 L94 85",CC(0),2.4,10)+cr(bub,CC(4),1.4,11,.55)+cr("M98 54 L98 40 Q98 36 102 36",CINK(),1.6,12,.5); },
+  bee:()=>{ const ctr="M50 46 A10 10 0 1 0 70 46 A10 10 0 1 0 50 46Z"; let pet="";
+    for(let i=0;i<6;i++){ const a=i/6*6.283-.3, x=60+Math.cos(a)*16, y=46+Math.sin(a)*16; pet+=`M${(x-8).toFixed(1)} ${y.toFixed(1)} A8 8 0 1 0 ${(x+8).toFixed(1)} ${y.toFixed(1)} A8 8 0 1 0 ${(x-8).toFixed(1)} ${y.toFixed(1)}Z `; }
+    const bee="M52 42 Q52 34 62 34 Q72 34 72 42 Q72 48 62 48 Q52 48 52 42Z";
+    return cr("M60 62 Q58 74 60 86 M59 76 Q48 70 44 76 Q52 80 59 78",CC(2),2.4,2)+scrib(pet,[34,20,52,52],CC(4),3,3,.45)+cr(pet,CC(4),2,4)+scrib(ctr,[50,36,20,20],CC(1),5,2.6,.4)+
+      scrib(bee,[52,34,20,14],CC(3),6,2.2,.8)+cr(bee,CC(3),2,7)+cr("M58 35 L58 47 M64 34 L64 48",CINK(),1.8,8,.75)+cr("M56 34 Q50 24 58 26 Q62 28 60 34 M62 34 Q64 22 71 26 Q72 30 66 34",CC(0),1.4,9,.6)+cr("M67 41 Q69 43 71 41",CINK(),1.3,10)+cr("M80 18 L86 18 L80 24 L86 24 M90 8 L94 8 L90 12 L94 12",CC(6),1.8,11); },
+  frog:()=>{ const pad="M24 70 A36 9 0 1 0 96 70 L60 70 Z M60 70 L96 70 A36 9 0 0 0 24 70", body="M42 68 Q40 44 60 44 Q80 44 78 68 Z", e1="M45 42 A7 7 0 1 0 59 42 A7 7 0 1 0 45 42Z", e2="M61 42 A7 7 0 1 0 75 42 A7 7 0 1 0 61 42Z";
+    return cr("M8 78 Q20 74 32 78 M88 78 Q100 74 112 78",CC(0),1.8,2,.55)+scrib("M24 70 A36 9 0 1 0 96 70 A36 9 0 1 0 24 70Z",[24,61,72,18],CC(5),3,3,.35)+cr("M24 70 A36 9 0 1 0 96 70 A36 9 0 1 0 24 70Z M60 70 L74 63",CC(5),2,4,.7)+
+      scrib(body,[40,44,40,24],CC(2),5,3,.55)+cr(body,CC(2),2.5,6)+scrib(e1+e2,[45,35,30,14],CC(2),7,2.6,.55)+cr(e1+e2,CC(2),2.2,8)+cr("M48 43 Q52 45 56 43 M64 43 Q68 45 72 43 M54 54 Q60 58 66 54",CINK(),1.6,9)+
+      cr("M40 68 Q50 60 60 68 Q70 60 80 68 M44 58 Q36 62 40 68 M76 58 Q84 62 80 68",CC(2),2.2,10)+cr("M52 28 Q56 24 60 28 Q64 24 68 28",CC(4),1.4,11,.5); },
+  sloth:()=>{ const body="M44 36 Q42 62 60 64 Q78 62 76 36 Q60 30 44 36Z", face="M50 48 A10 8 0 1 0 70 48 A10 8 0 1 0 50 48Z";
+    return cr("M6 24 Q60 16 114 26",CC(1),3,2)+cr("M24 22 Q20 12 28 10 Q30 18 24 22 M92 23 Q98 12 104 16 Q100 22 92 23",CC(2),2,3)+scrib("M24 22 Q20 12 28 10 Q30 18 24 22Z M92 23 Q98 12 104 16 Q100 22 92 23Z",[20,10,84,14],CC(2),4,2,.5)+
+      cr("M48 36 Q44 28 46 21 M72 36 Q76 28 74 21 M48 58 Q34 40 38 22 M72 58 Q86 40 82 22",CC(1),2.6,5,.8)+scrib(body,[42,30,36,34],CC(1),6,3,.45)+cr(body,CC(1),2.5,7)+
+      scrib(face,[50,40,20,16],CC(3),8,2.2,.35)+cr(face,CC(3),1.6,9,.6)+cr("M53 47 Q56 50 59 47 M61 47 Q64 50 67 47 M57 53 Q60 55 63 53",CINK(),1.5,10)+cr("M86 44 L92 44 L86 50 L92 50 M96 34 L100 34 L96 38 L100 38",CC(6),1.8,11); }
 };
-const DOODLE_NAMES={piggy:"Sleepy piggy bank",tea:"Cup of tea",hammock:"Hammock",boat:"Paper boat",cat:"Napping cat",kite:"Kite",snail:"Snail",plant:"Pot plant",sun:"Sun in shades",balloon:"Hot air balloon"};
+const DOODLE_NAMES={piggy:"Sleepy piggy bank",tea:"Cup of tea",kite:"Kite",wallet:"Wallet tucked in",coin:"Coin on a pool ring",toast:"Toast under butter",duck:"Duck in a bubble bath",bee:"Bee asleep in a flower",frog:"Frog meditating",sloth:"Sloth napping"};
+/* what the doodle sits on */
+function frameBg(w,h){ const P=6, d=`M${P+4} ${P+2} L${w+P-3} ${P+5} L${w+P-1} ${h+P-4} L${P+2} ${h+P-1} Z`;
+  return `<img class="dbg" style="height:${h+12}px" src="${svgUrl(w+12,h+12,`0 0 ${w+12} ${h+12}`,`<g filter="url(#crayonF)">${cr(d,CINK(),1.8,21,.35)}</g>`,["crayonF"])}" alt="">`; }
+function noteBg(w,h){ const P=10, y=PAL[3][0], body=`<path d="${rough(`M${P} ${P} L${w+P} ${P} L${w+P} ${h+P-6} Q${w+P-30} ${h+P-2} ${w+P-60} ${h+P} L${P} ${h+P} Z`,{amp:.5,step:3,seed:5})}" fill="${S.dark?"#4a4330":"#fbf0c8"}" filter="url(#paperBigF)"/>`+
+    `<rect x="${w/2-22+P}" y="${P-7}" width="44" height="15" rx="2" fill="${S.dark?"#ffffff":"#ffffff"}" fill-opacity="${S.dark?.18:.55}" stroke="${S.dark?"#fff":"#000"}" stroke-opacity=".06" transform="rotate(-4 ${w/2+P} ${P})"/>`;
+  return `<img class="dbg note" style="height:${h+20}px;width:${w+20}px;left:calc(50% - ${(w+20)/2}px);top:-10px" src="${svgUrl(w+20,h+20,`0 0 ${w+20} ${h+20}`,body,["paperBigF"])}" alt="">`; }
+function tornBg(w,h){ const P=6, r=prng(9); let top=`M${P} ${P+3}`; for(let x=0;x<=w;x+=6) top+=` L${P+x} ${(P+2+r()*3.2).toFixed(1)}`;
+  let bot=""; for(let x=w;x>=0;x-=6) bot+=` L${P+x} ${(P+h-3+r()*3.2).toFixed(1)}`;
+  const d=top+bot+" Z", paper=S.dark?"#2e2d2a":"#fbfaf6";
+  return `<img class="dbg" style="height:${h+12}px" src="${svgUrl(w+12,h+12,`0 0 ${w+12} ${h+12}`,`<path d="${d}" fill="#000" fill-opacity=".07" transform="translate(0 1.5)"/><path d="${d}" fill="${paper}"/>`)}" alt="">`; }
+function washBg(){ const g=GREEN(), W=190, H=130;
+  return `<img class="dwashbg" style="width:${W}px;height:${H}px" src="${svgUrl(W,H,`0 0 ${W} ${H}`,`<path d="${blob(W/2,H/2,52,14,.1)}" transform="translate(${W/2} ${H/2}) scale(1.45 1) translate(${-W/2} ${-H/2})" fill="${g}" fill-opacity=".14" filter="url(#washF)"/>`,["washF"])}" alt="">`; }
 function doodleImg(k,w,h){ return `<img class="dpi" style="width:${w}px;height:${h}px" src="${svgUrl(w,h,"0 0 120 90",`<g filter="url(#crayonF)">${DOODLES[k]()}</g>`,["crayonF"])}" alt="">`; }
 function softCard(w,h,hex,op,edge){ return `<img class="dbg" style="height:${h+12}px" src="${cardSrc(w,h,{wash:hex,washOp:op,edgeOp:edge,r:18})}" alt="">`; }
 /* little calm pictures for the month's end: drawn, washed, still */
@@ -918,9 +939,8 @@ function panelHTML(){
     tcard("End of the month","When every charge this month has gone out.",
       fld("Pretend it's",chips("pretend",[["today","Today"],["after","The day of the last charge"]]),"The ending shows once the month's last charge has gone out, not only on its last day.")+
       fld("Doodle",chips("doodle",[["random","A different one each month"],...Object.keys(DOODLES).map(k=>[k,DOODLE_NAMES[k]])]))+
-      fld("Sits",chips("doneOn",[["paper","On the paper"],["card","On a soft card"]]))+
-      fld("Main line",chips("doneLine",[["month","Nothing more until November"],["leaves","Nothing else goes out until November"],["clear","You’re clear until November"],["quiet","All quiet until November"],["feet","Feet up until November"],["date","Nothing more until 1 Nov"]]))+
-      fld("Small line",chips("doneSub",[["none","Nothing"],["went","€1,476 went out in October"],["all","All 20 of October’s bills have gone out"]])))+
+      fld("Sits",chips("doneOn",[["paper","On the paper"],["wash","On a soft wash"],["card","On a soft card"],["frame","In a crayon frame"],["note","On a sticky note"],["torn","On a torn-off sheet"]]))
+      )+
     `<details class="decided"><summary>Already decided</summary>`+
     `<h2>Timeline</h2>`+
     tcard("Charged rows","Bills whose date has passed, below Today.",
