@@ -23,6 +23,7 @@ struct ExpenseEditor: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.editorSheetContents) private var sheetContents
+    @Environment(\.editorSheetTouch) private var sheetTouch
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -93,6 +94,7 @@ struct ExpenseEditor: View {
                 .frame(minHeight: viewportHeight)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .editorSheetScroll()
             .ignoresSafeArea(.keyboard, edges: keyboardCovers ? .bottom : [])
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
                 viewportHeight = height
@@ -113,7 +115,7 @@ struct ExpenseEditor: View {
     /// a system sheet. A half-made category is finished or cancelled before the expense is saved.
     private var header: some View {
         HStack(spacing: Tokens.Space.sheetButtonGap) {
-            Button { close(.cancelled) } label: {
+            Button { if sheetTouch.allowsTap { close(.cancelled) } } label: {
                 headerSymbol("xmark", ink: Tokens.Ink.primary)
             }
             .buttonStyle(.plain)
@@ -162,7 +164,7 @@ struct ExpenseEditor: View {
             .glassEffect(glass, in: Circle())
             .accessibilityLabel("Save")
         } else {
-            Button(action: save) {
+            Button { if sheetTouch.allowsTap { save() } } label: {
                 headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
             }
             // Not `.plain`, which dims a disabled label: the system's disabled ✓ keeps it white
@@ -193,7 +195,7 @@ struct ExpenseEditor: View {
             progress: progress,
             focused: focusedPart,
             today: today,
-            onTap: open,
+            onTap: { part in if sheetTouch.allowsTap { open(part) } },
             onNameSubmit: submitName
         )
         .sensoryFeedback(.impact(weight: .medium), trigger: picks)
@@ -236,7 +238,7 @@ struct ExpenseEditor: View {
     private var panelArea: some View {
         switch panel {
         case .keypad:
-            Keypad { draft.press($0) }
+            Keypad { key in if sheetTouch.allowsTap { draft.press(key) } }
         case .date:
             // A new bill's date is its first charge: the charges since fill in, and nothing
             // before it shows. Editing a charge moves only that charge, so it stays "Date".
@@ -258,8 +260,8 @@ struct ExpenseEditor: View {
                 categories: categories.sorted { $0.sortOrder < $1.sortOrder },
                 selection: draft.categoryID,
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
-                onPick: pick,
-                onNew: { panel = .newCategory }
+                onPick: { id in if sheetTouch.allowsTap { pick(id) } },
+                onNew: { if sheetTouch.allowsTap { panel = .newCategory } }
             )
         case .newCategory:
             EmptyView()
@@ -270,7 +272,8 @@ struct ExpenseEditor: View {
 
     /// Everything under the card, as the prototype's picker takes; never less than the other panels.
     private var gridHeight: CGFloat {
-        max(Tokens.Size.editorPanel, viewportHeight - cardHeight - Tokens.Space.section)
+        // Two gaps: the card's stack spaces the card, the spacer and the panel apart.
+        max(Tokens.Size.editorPanel, viewportHeight - cardHeight - 2 * Tokens.Space.section)
     }
 
     private var progress: CardProgress {

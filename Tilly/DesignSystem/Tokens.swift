@@ -326,6 +326,8 @@ enum Tokens {
         static let grabberTop: CGFloat = 5
         /// How far a finger moves before it drags the sheet rather than tapping what's on it.
         static let sheetDragSlop: CGFloat = 10
+        /// A scroll offset within this of the top counts as at the top.
+        static let frameAtRest: CGFloat = 0.5
         /// Below its rest, the sheet is off the screen by this much more than its own height: the
         /// home indicator's band, before the sheet has measured itself.
         static let sheetOffMargin: CGFloat = 60
@@ -553,6 +555,8 @@ enum Tokens {
         static let sheetFlingCloses: CGFloat = 0.5
         /// Dragged up, the sheet gives this fraction of the finger's travel. A tuning value.
         static let sheetDragResistance: CGFloat = 0.1
+        /// After a drag moves the sheet, a button's action this soon is the finger lifting, not a tap.
+        static let sheetDragTapGrace: TimeInterval = 0.3
     }
 
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is

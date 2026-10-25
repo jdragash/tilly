@@ -22,9 +22,11 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
 - **A frame read inside the moving sheet includes its travel, every frame.** The sheet's slot
   shrinks by the keyboard (812 → 484pt): measure the drop from its ground, which ignores it, or a
   closing sheet stops halfway.
-- **A drag starting on a key or a picker card belongs to that control**; from the grabber, the
-  header, the card or bare ground it moves the sheet. A drag down arrives as `request` going nil
-  with no `EditorClose`, so every close refreshes from `onChange(of: editor)`.
+- **The sheet's drag is simultaneous, so it moves from anywhere**, refused if it starts sideways or
+  upward, on a wheel, or on a scroll view away from its top (`editorDragExcluded`). The key or card
+  it starts on stays under the finger, so its button fires on the lift: `allowsHitTesting(false)`
+  mid-drag didn't cancel it, so actions check `EditorSheetTouch.allowsTap`. A drag down arrives as
+  `request` going nil with no `EditorClose`; every close refreshes from `onChange(of: editor)`.
 - **The category grid takes everything under the card**, sized from the card's measured height.
   Letting it grow with `layoutPriority` squashed the card instead.
 - **A shape's fill eats the taps of a button in its `.background`.** The card's background button

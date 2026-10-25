@@ -40,6 +40,8 @@ struct RepeatWheel: View {
                 .frame(maxWidth: .infinity)
                 .accessibilityLabel("Ends after")
             }
+            // A wheel turns under a vertical drag; it never moves the sheet.
+            .editorDragExcluded()
             Text(draft.lastPaymentCaption(calendar: calendar, locale: locale) ?? " ")
                 .font(Tokens.Text.caption)
                 .foregroundStyle(Tokens.Ink.secondary)

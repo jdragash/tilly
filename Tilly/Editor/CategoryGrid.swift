@@ -37,6 +37,7 @@ struct CategoryGrid: View {
         }
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
+        .editorSheetScroll()
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 

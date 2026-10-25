@@ -42,6 +42,7 @@ struct SymbolPicker: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .editorSheetScroll()
         }
     }
 
