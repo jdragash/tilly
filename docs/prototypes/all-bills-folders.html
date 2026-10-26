@@ -436,6 +436,20 @@ html:not(.dark) .cfd>.fimg{filter:drop-shadow(0 -1px 3px rgba(0,0,0,.12))}
 html:not(.dark) .cfb>.fimg{filter:drop-shadow(0 -1px 2px rgba(0,0,0,.1))}
 .cfb>span{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .cfb>span.a{flex:none;font-variant-numeric:tabular-nums}
+/* plain: the category card with its bills */
+.cc{position:relative;margin:0 0 14px}
+html:not(.dark) .cc>.fimg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
+.cch{position:relative;display:flex;align-items:center;gap:11px;width:100%;height:58px;padding:0 12px 0 14px;text-align:left}
+.cch .grp-pic{width:34px;height:34px;flex:none}
+.cch .tn{flex:1;min-width:0;font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cch .tt{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.cgo{width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink2);font:600 17px/25px var(--text);text-align:center;flex:none}
+.ccr{position:relative;display:flex;align-items:center;gap:10px;width:calc(100% - 32px);height:52px;margin:0 16px;text-align:left;
+  box-shadow:inset 0 .5px 0 var(--hair)}
+.ccr .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.ccr .n{font-size:16px;line-height:21px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccr .s{font-size:13px;line-height:17px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccr .a{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 .mq .enter{animation:enter .2s cubic-bezier(.2,.8,.2,1)}
 @keyframes enter{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 .bnew{display:flex;align-items:center;gap:10px;width:100%;height:52px;border:2px dashed var(--ink2);border-radius:16px;color:var(--ink2);
@@ -611,7 +625,7 @@ const KEY="tilly-all-bills-folders-3";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"grid",edit:"front",ix:"index",period:"m"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"grid",layout:"pockets",ix:"index",period:"m"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -1244,6 +1258,15 @@ function gridColumns(groups,cw){
   groups.forEach(g=>{ const k=h[1]<h[0]?1:0; col[k].push(gridPocket(g,cw)); h[k]+=32+g.bs.length*24+60+14; });
   return `<div class="fg">${col.map(c=>`<div class="fgc">${c.join("")}</div>`).join("")}</div>`;
 }
+// Plain: a category card per category, as the grid draws it (paper, its picture on the wash, a strip of colour along the bottom),
+// its header naming it with the total and a › for its sheet, and every bill listed under it
+function catCard(g,W){
+  const n=g.bs.length, H=58+n*52+12, nm=esc(cats[g.i].name);
+  return `<div class="cc" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{fill:DT.paperCard[md()],strip:{side:"bottom",col:colHex(cats[g.i].col),w:5},r:14})}" alt="">`+
+    `<button class="cch" data-ci="${g.i}" aria-label="Change ${nm}"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span><span class="tn">${nm}</span>`+
+    `<span class="tt">${money(g.total)}</span><span class="cgo">›</span></button>`+
+    g.bs.map(b=>`<button class="ccr" data-bid="${b.id}"><span class="t"><span class="n">${esc(b.name)}</span><span class="s">${aheadLine(b)}</span></span><span class="a">${money(figure(b))}</span></button>`).join("")+`</div>`;
+}
 // a card file: each category a coloured divider with a tab, its bills filed behind it, a strip of each showing
 function cardFile(groups,W){
   const fam=getComputedStyle(phone).fontFamily; let html=`<div class="cf">`;
@@ -1269,7 +1292,8 @@ function renderBills(anim){
     html=`<div class="enter" style="padding-top:6px">${openFolder(g,W)}</div>`; }
   else {
     html=`<div class="bt">All bills</div><div class="bsub">${sum}</div>`;
-    if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="${anim?"enter":""}">${gridColumns(groups,cw)}</div>`; }
+    if(S.layout==="card") html+=groups.map(g=>catCard(g,W)).join("");
+    else if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="${anim?"enter":""}">${gridColumns(groups,cw)}</div>`; }
     else if(S.fold==="file") html+=cardFile(groups,W);
     else html+=groups.map(g=>S.fold==="pocket"?pocket(g,W):openFolder(g,W)).join("");
     html+=`<button class="bnew" data-new="1"><span style="font-size:24px;font-weight:300">+</span> New Category</button>`;
@@ -1312,6 +1336,8 @@ function toast(t){ const p=$("toast"); p.textContent=t; p.style.opacity=1; clear
    TUNE
    ===================================================================================================== */
 const OPT={
+  layout:[["pockets","Pockets","Pockets two across, as tall as their bills, in columns that needn't match. A margin along each top holds the total and a › for the category's sheet; the rest opens it to its folder."],
+          ["card","Category cards","Plainer, like All bills was: one category card per category, full width, its header with the picture, name, total and a › for its sheet, and every bill listed under it with what's ahead. Nothing to open."]],
   ix:[["index","Index cards","White cards with the name over a rule in the category's colour, and faint lines under it.","recommended"],
       ["paper","Paper cards","The timeline's plain paper cards, as round one drew them."]]
 };
@@ -1320,11 +1346,11 @@ function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class=
 const fld=(label,body,note)=>`<div class="fld"><div class="fl">${label}</div>${body}${note?`<p class="desc">${note}</p>`:""}</div>`;
 const tcard=(title,sub,body)=>`<section class="tc"><div class="ch">${title}</div>${sub?`<div class="cs">${sub}</div>`:""}${body}</section>`;
 function panelHTML(){
-  return `<div class="ptop"><div><h1>All bills as folders</h1><p class="lead">The sheet opens by itself; ✕ then the list button bottom right brings it back. A pocket opens to its folder and its › opens the category's sheet; a bill opens its next charge.</p></div>`+
+  return `<div class="ptop"><div><h1>All bills as folders</h1><p class="lead">The sheet opens by itself; ✕ then the list button bottom right brings it back. A › opens the category's sheet; a bill opens its next charge.</p></div>`+
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
-    tcard("The bills drawn as","Pockets are as tall as their bills now, in two columns that needn't match. Try Monthly and Yearly at the top too.",optHTML("ix"))+
+    tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("layout"))+(S.layout==="pockets"?tcard("The bills in a pocket, drawn as","",optHTML("ix")):"")+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
       fld("Motion",chips("motion",[["none","None"],["quick","Quick"]])))+
@@ -1346,7 +1372,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["layout","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
