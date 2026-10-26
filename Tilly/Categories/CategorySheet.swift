@@ -173,7 +173,9 @@ struct CategorySheet: View {
     private var nameField: some View {
         let full = Tokens.CategorySheet.nameSize(dynamicTypeSize)
         return TextField("Name", text: $name, axis: .vertical)
-            .font(Tokens.CategorySheet.nameFont(size: Tokens.CategorySheet.fittedNameSize(name, full: full)))
+            .font(Tokens.CategorySheet.nameFont(size: NameFit.size(
+                name, full: full, width: Tokens.CategorySheet.cardWidth - 2 * Tokens.CategorySheet.nameInset
+            )))
             .foregroundStyle(Tokens.Ink.primary)
             .multilineTextAlignment(.center)
             .lineLimit(2)

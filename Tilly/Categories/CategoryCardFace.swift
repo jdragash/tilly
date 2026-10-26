@@ -104,19 +104,23 @@ extension CategoryCardFace where Name == CategoryCardName {
     }
 }
 
-/// A card's name: two lines, then smaller down to `Tokens.Scale.cardName`, then cut.
+/// A card's name: two lines, then smaller down to `Tokens.Scale.cardName` (`NameFit`), then cut.
 struct CategoryCardName: View {
     let name: String
     var ink: Color = Tokens.Ink.primary
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var width: CGFloat = 0
 
     var body: some View {
+        let full = Tokens.Text.pickerNameSize(dynamicTypeSize)
         Text(name)
-            .font(Tokens.Text.pickerName(dynamicTypeSize))
+            .font(Tokens.Text.pickerName(size: NameFit.size(name, full: full, width: width)))
             .foregroundStyle(ink)
             .multilineTextAlignment(.center)
             .lineLimit(2)
             .minimumScaleFactor(Tokens.Scale.cardName)
+            .frame(maxWidth: .infinity)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
 }

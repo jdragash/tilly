@@ -5,9 +5,10 @@ enum Tokens {
     enum Text {
         /// A picker card's name, 13.5pt bold at the default text size, scaling as `caption` does;
         /// from the prototype. Pass the view's `dynamicTypeSize`, so a cap on it holds.
-        static func pickerName(_ dynamicTypeSize: DynamicTypeSize) -> Font {
-            .system(size: scaled(LayoutTuning.shared.layout.nameSize, as: .caption1, at: dynamicTypeSize), weight: .bold)
+        static func pickerNameSize(_ dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+            scaled(LayoutTuning.shared.layout.nameSize, as: .caption1, at: dynamicTypeSize)
         }
+        static func pickerName(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
 
         /// `size` at the default text size, scaled as `style` scales at `dynamicTypeSize`. A tuned
         /// point size keeps Dynamic Type this way: `Font.system(size:)` has no `relativeTo:`.
@@ -133,6 +134,8 @@ enum Tokens {
         static let headerMin: CGFloat = 0.8
         /// A category card's name, on any card: two lines, then this much smaller, then cut.
         static let cardName: CGFloat = 0.8
+        /// How far a name steps down at a time while it's fitted to its card.
+        static let nameFitStep: CGFloat = 0.5
         /// A lane's total, before it would run out of its column.
         static let laneTotalMin: CGFloat = 0.5
         /// A day's total, before it would run out of its column.

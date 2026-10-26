@@ -22,23 +22,6 @@ extension Tokens {
         }
         static func nameFont(size: CGFloat) -> Font { .system(size: size, weight: .bold, design: .rounded) }
 
-        /// The size the typed name takes: `full` while it fits two lines across the card, then
-        /// smaller, to `Scale.cardName` of it at least. A text field can't shrink its own text.
-        static func fittedNameSize(_ name: String, full: CGFloat) -> CGFloat {
-            let width = cardWidth - 2 * nameInset
-            var size = full
-            while size > full * Tokens.Scale.cardName {
-                let font = UIFont.systemFont(ofSize: size, weight: .bold)
-                let rounded = font.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: size) } ?? font
-                let height = (name as NSString).boundingRect(
-                    with: CGSize(width: width, height: .greatestFiniteMagnitude),
-                    options: .usesLineFragmentOrigin, attributes: [.font: rounded], context: nil
-                ).height
-                if height <= rounded.lineHeight * 2 + 1 { break }
-                size -= 0.5
-            }
-            return max(size, full * Tokens.Scale.cardName)
-        }
         static var nameBottom: CGFloat { l.sheetNameBottom }
         static var nameInset: CGFloat { l.sheetNameInset }
         /// The dashed outline while the card is empty.
