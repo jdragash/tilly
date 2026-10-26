@@ -6,6 +6,7 @@
   Question it settles: what All bills looks like when each category is a folder holding its bills,
   drawn in the dashed-and-solid look. Round two (same day) brings back the bill editor's old pocket picker
   (edit-revisit-card.html, combined.html) with the bills as index cards, and adds a card file.
+  All bills is read-only: categories are changed only in Settings, bills from the timeline (Jake, 2026-10-26).
   Jake chose the pockets two across (2026-10-26), each as tall as its bills in uneven columns, with a margin along
   its top holding the total and a › at the far right for the category's sheet.
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, editor and category sheet are
@@ -621,7 +622,6 @@ textarea#catsIn{width:100%;min-height:150px;border-radius:10px;border:0;backgrou
   <div class="sheet2" id="bsheet">
     <button class="hbtn" id="bClose" aria-label="Close" style="left:16px">✕</button>
     <button class="glass" id="bBack"><b>‹</b> All bills</button>
-    <div class="glass gpair" id="bActs"><button data-act="edit" aria-label="Edit category"></button><button data-act="del" aria-label="Delete category"></button></div>
     <div class="seg" id="seg"><button data-p="m">Monthly</button><button data-p="y">Yearly</button></div>
     <div class="sbody" id="bbody"></div>
   </div>
@@ -1249,9 +1249,9 @@ const tint=()=>S.dark?.3:.24;
 const ix=()=>S.ix!=="paper";
 // a bill's card: the timeline's paper card, or an index card with its name over a coloured rule
 const slipSrc=(w,h,ruleY,ci,r,step)=>ix()?cardSrc(w,h,{fill:DT.paperCard[md()],r:r??5,rule:{y:ruleY,col:colHex(cats[ci].col),step:step||15},pk:"ix"+ruleY}):cardSrc(w,h,{fill:DT.paperCard[md()],r:r??11});
-const billCard=(b,W)=>`<button class="bc${ix()?" ix":""}" data-bid="${b.id}"><img class="fimg" src="${ix()?slipSrc(W,58,31,b.cat,6,19):cardSrc(W,58,{fill:DT.paperCard[md()],r:12})}" alt="">`+
-  `<div class="t"><div class="n">${esc(b.name)}</div><div class="s">${aheadLine(b)}</div></div><div class="a">${money(figure(b))}</div></button>`;
-const tabText=g=>`<span class="grp-pic">${catPic(g.i,30,false,S.boil==="all")}</span><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span><span class="chev">›</span>`;
+const billCard=(b,W)=>`<div class="bc${ix()?" ix":""}"><img class="fimg" src="${ix()?slipSrc(W,58,31,b.cat,6,19):cardSrc(W,58,{fill:DT.paperCard[md()],r:12})}" alt="">`+
+  `<div class="t"><div class="n">${esc(b.name)}</div><div class="s">${aheadLine(b)}</div></div><div class="a">${money(figure(b))}</div></div>`;
+const tabText=g=>`<span class="grp-pic">${catPic(g.i,30,false,S.boil==="all")}</span><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span>`;
 const meas=document.createElement("span"); meas.style.cssText="position:absolute;visibility:hidden;white-space:pre;font-size:18px;left:0;top:0";
 function textW(t,wt){ if(!meas.parentNode) phone.appendChild(meas); meas.style.fontWeight=wt; meas.textContent=t; return meas.getBoundingClientRect().width/(phone.getBoundingClientRect().width/phone.offsetWidth||1); }
 function openFolder(g,W){
@@ -1259,7 +1259,7 @@ function openFolder(g,W){
   const nw=textW(cats[g.i].name,700), tw=textW(money(g.total),800);
   const tabW=Math.round(Math.min(W-34,10+30+9+nw+9+tw+9+12+14)), H=46+6+g.bs.length*64-6+8;
   return `<div class="fo" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{wash:colHex(cats[g.i].col),washOp:tint(),edgeOp:tint()+.12,path:folderPath(tabW,46),pk:"f"+tabW})}" alt="">`+
-    `<button class="tab" data-ci="${g.i}" style="width:${tabW}px" aria-label="Change ${esc(cats[g.i].name)}">${tabText(g)}</button>`+
+    `<div class="tab" style="width:${tabW}px">${tabText(g)}</div>`+
     `<div class="in">${g.bs.map(b=>billCard(b,W-16)).join("")}</div></div>`;
 }
 // a pocket's front: rounded on top like the picker's pockets, full colour
@@ -1277,7 +1277,7 @@ function pocket(g,W){
 function gridPocket(g,cw){
   const hex=colHex(cats[g.i].col), n=g.bs.length, lipH=56, step=24, slipH=34, mH=32, H=mH+n*step+lipH+4, nm=esc(cats[g.i].name);
   return `<div class="fc${ix()?" ix":""}" data-open="${g.i}" role="button" tabindex="0" style="height:${H}px" aria-label="Open ${nm}"><img class="fimg" src="${cardSrc(cw,H,{wash:hex,washOp:.42,edgeOp:.5,r:14})}" alt="">`+
-    `<button class="gm" data-ci="${g.i}" style="height:${mH}px" aria-label="Change ${nm}"><span class="tt">${money(g.total)}</span>${S.act==="pencil"?`<span class="gpen">${PEN}</span>`:S.act==="edit"?`<span class="cedit">Edit</span>`:`<span class="chev">›</span>`}</button>`+
+    `<span class="gm" style="height:${mH}px"><span class="tt">${money(g.total)}</span></span>`+
     g.bs.map((b,k)=>`<span class="sl" style="top:${mH+k*step}px;height:${slipH}px"><img class="fimg" src="${slipSrc(cw-16,slipH,21,g.i,ix()?4:8)}" alt="">`+
       `<span>${esc(b.name)}</span><span class="a">${money(figure(b))}</span></span>`).join("")+
     `<span class="lip bare" style="height:${lipH}px"><img class="fimg" src="${lipSrc(cw,lipH,hex)}" alt="">`+
@@ -1302,12 +1302,12 @@ function catCard(g,W,all,inside){
   const pct=all?Math.round(g.total/all*100):0;
   const bs=S.ccOrder==="soon"?g.bs.slice().sort((a,b)=>nextDate(a)-nextDate(b)||figure(b)-figure(a)):g.bs;
   const soon=b=>S.ccSoon==="mark"&&(nextDate(b)-TODAY)/864e5<7;
-  return `<div class="cc${S.ccLine==="left"?" ll":""}${S.ccDiv==="none"?" nodiv":""}" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{fill:DT.paperCard[md()],strip,r:14,pk:"cc"+S.ccLine+headH})}" alt="">`+
-    `<${inside?"div":"button"} class="cch" ${inside?"":S.act==="drill"?`data-open="${g.i}"`:`data-ci="${g.i}"`} style="height:${headH}px" aria-label="${S.act==="drill"?"Open":"Change"} ${nm}"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span>`+
+  return `<div data-cc="${g.i}" class="cc${S.ccLine==="left"?" ll":""}${S.ccDiv==="none"?" nodiv":""}" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{fill:DT.paperCard[md()],strip,r:14,pk:"cc"+S.ccLine+headH})}" alt="">`+
+    `<div class="cch" style="height:${headH}px"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span>`+
     `<span class="hc"><span class="tn">${nm}</span>${share?`<span class="shr"><i style="width:${Math.max(3,pct)}%;background:${hex}"></i></span>`:""}</span>`+
-    `<span class="hr"><span class="tt">${money(g.total)}</span>${share?`<span class="pc">${pct}%</span>`:""}</span>${inside?"":actMark()}</${inside?"div":"button"}>`+
-    bs.map(b=>`<button class="ccr${compact?" cp":""}" data-bid="${b.id}"><span class="t"><span class="n">${esc(b.name)}</span>${compact?"":`<span class="s${soon(b)?" soon":""}">${soon(b)?`<i style="background:${hex}"></i>`:""}${aheadLine(b)}</span>`}</span>`+
-      `${compact&&soon(b)?`<span class="sd" style="background:${hex}"></span>`:""}<span class="a">${money(figure(b))}</span></button>`).join("")+`</div>`;
+    `<span class="hr"><span class="tt">${money(g.total)}</span>${share?`<span class="pc">${pct}%</span>`:""}</span></div>`+
+    bs.map(b=>`<div class="ccr${compact?" cp":""}"><span class="t"><span class="n">${esc(b.name)}</span>${compact?"":`<span class="s${soon(b)?" soon":""}">${soon(b)?`<i style="background:${hex}"></i>`:""}${aheadLine(b)}</span>`}</span>`+
+      `${compact&&soon(b)?`<span class="sd" style="background:${hex}"></span>`:""}<span class="a">${money(figure(b))}</span></div>`).join("")+`</div>`;
 }
 // a card file: each category a coloured divider with a tab, its bills filed behind it, a strip of each showing
 function cardFile(groups,W){
@@ -1336,7 +1336,7 @@ function breakdown(groups){
 function renderBills(anim){
   const body=$("bbody"), W=Math.round(body.clientWidth||390)-32, groups=groupsOf();
   if(!groups.some(g=>g.i===openF)) openF=null;
-  $("bsheet").classList.toggle("inF",openF!=null); $("bsheet").classList.toggle("inC",openF!=null&&S.layout==="card"); $("bActs").dataset.ci=openF??"";
+  $("bsheet").classList.toggle("inF",openF!=null);
   $("seg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.p===per()));
   const sum=money(groups.reduce((t,g)=>t+g.total,0))+(per()==="m"?" a month":" a year");
   let html;
@@ -1349,7 +1349,6 @@ function renderBills(anim){
     else if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="${anim?"enter":""}">${gridColumns(groups,cw)}</div>`; }
     else if(S.fold==="file") html+=cardFile(groups,W);
     else html+=groups.map(g=>S.fold==="pocket"?pocket(g,W):openFolder(g,W)).join("");
-    html+=`<button class="bnew" data-new="1"><span style="font-size:24px;font-weight:300">+</span> New Category</button>`;
   }
   body.innerHTML=html;
 }
@@ -1357,18 +1356,15 @@ function openBills(){ openF=null; renderBills(); $("bsheet").classList.add("open
 $("billsB").addEventListener("click",openBills);
 $("bClose").addEventListener("click",()=>{ $("bsheet").classList.remove("open"); $("scrim").classList.remove("on"); });
 $("bBack").addEventListener("click",()=>{ openF=null; renderBills(true); });
-{ const a=$("bActs").querySelectorAll("button"); a[0].innerHTML=PEN; a[1].innerHTML=BIN; }
-$("bActs").addEventListener("click",e=>{ const b=e.target.closest("button"), ci=+$("bActs").dataset.ci; if(!b||isNaN(ci)) return;
-  if(b.dataset.act==="edit") openCat("bills",ci); else askDelete(ci); });
+
 $("seg").addEventListener("click",e=>{ const b=e.target.closest("[data-p]"); if(!b) return; S.period=b.dataset.p; save(); renderBills(); });
 $("bbody").addEventListener("click",e=>{
   const go=e.target.closest("[data-go]");
-  if(go){ const el=$("bbody").querySelector(`[data-ci="${go.dataset.go}"],[data-open="${go.dataset.go}"]`); const card=el&&(el.closest(".cc,.fc")||el);
+  if(go){ const el=$("bbody").querySelector(`[data-cc="${go.dataset.go}"],[data-open="${go.dataset.go}"]`); const card=el&&(el.closest(".cc,.fc")||el);
     if(card){ $("bbody").scrollTo({top:card.offsetTop-12,behavior:S.motion==="quick"?"smooth":"auto"}); card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash"); } return; }
-  const t=e.target.closest("[data-ci],[data-new],[data-bid],[data-open]"); if(!t) return;
-  if(t.dataset.open!=null){ openF=+t.dataset.open; renderBills(); $("bbody").scrollTop=0; return; }
-  if(t.dataset.bid){ const b=bills.find(x=>x.id===+t.dataset.bid); if(b) openEditor(b,nextDate(b)); return; }
-  openCat("bills",t.dataset.new?null:+t.dataset.ci);
+  // All bills is for reading: a pocket opens to its folder, and nothing here edits
+  const t=e.target.closest("[data-open]"); if(!t) return;
+  openF=+t.dataset.open; renderBills(); $("bbody").scrollTop=0;
 });
 function renderSettings(){
   $("sbody").innerHTML=`<div class="sec">Categories</div><div class="grp">`+
@@ -1395,8 +1391,8 @@ function toast(t){ const p=$("toast"); p.textContent=t; p.style.opacity=1; clear
    TUNE
    ===================================================================================================== */
 const OPT={
-  layout:[["pockets","Pockets","Pockets two across, as tall as their bills, in columns that needn't match. A margin along each top holds the total and the way to change the category; the rest opens it to its folder."],
-          ["card","Category cards","Plainer, like All bills was: one category card per category, full width, its header with the picture, name, total and the way to change it, and every bill listed under it with what's ahead. Nothing to open."]],
+  layout:[["pockets","Pockets","Pockets two across, as tall as their bills, in columns that needn't match. A margin along each top holds the total; tap a pocket to open it to its folder."],
+          ["card","Category cards","Plainer, like All bills was: one category card per category, full width, its header with the picture, name and total, and every bill listed under it with what's ahead. Nothing to open."]],
   act:[["pencil","A pencil","A pencil in a circle at the header's right: it says edit, and the bills stay in view. Tapping anywhere on the header opens the category's sheet.","recommended"],
        ["edit","Edit, in words","The word Edit in the accent colour, as Contacts and Mail put it. The plainest; it costs the most room."],
        ["chev","A ›","As before. On iOS a › means there's more of this to see, so it promises a page and opens a sheet."],
@@ -1409,12 +1405,11 @@ function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class=
 const fld=(label,body,note)=>`<div class="fld"><div class="fl">${label}</div>${body}${note?`<p class="desc">${note}</p>`:""}</div>`;
 const tcard=(title,sub,body)=>`<section class="tc"><div class="ch">${title}</div>${sub?`<div class="cs">${sub}</div>`:""}${body}</section>`;
 function panelHTML(){
-  return `<div class="ptop"><div><h1>All bills as folders</h1><p class="lead">The sheet opens by itself; ✕ then the list button bottom right brings it back. A › opens the category's sheet; a bill opens its next charge.</p></div>`+
+  return `<div class="ptop"><div><h1>All bills as folders</h1><p class="lead">The sheet opens by itself; ✕ then the list button bottom right brings it back. All bills is for reading: nothing in it edits. Categories change in Settings (the gear), bills from the timeline.</p></div>`+
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
     tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("layout"))+
-    tcard("Changing a category","",optHTML("act"))+
     tcard("The month, split by category","",fld("Under the total",chips("brk",[["off","Off"],["bar","Bar"],["key","Bar and key"]]),"One bar, a segment per category in its colour, costliest first. The key names the four biggest with their share. Tap a segment or a name to jump to its card."))+(S.layout==="pockets"?tcard("The bills in a pocket, drawn as","",optHTML("ix")):"")+
     (S.layout==="card"?tcard("Category cards","Each changes the cards as you tap it.",
       fld("Colour line",chips("ccLine",[["bottom","Bottom"],["left","Left edge"],["head","Washed header"],["none","None"]]),"Bottom matches the grid's category card. Left reads down the list; a washed header ties the colour to the name and total.")+
@@ -1444,7 +1439,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["layout","act","brk","ccLine","ccShare","ccRows","ccDiv","ccOrder","ccSoon","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["layout","brk","ccLine","ccShare","ccRows","ccDiv","ccOrder","ccSoon","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
