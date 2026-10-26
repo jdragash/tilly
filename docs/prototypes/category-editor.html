@@ -8,7 +8,7 @@
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, sheet, card and grid are
   dashed-and-solid.html's, as shipped in v0.7.0.
   Deleting a category deletes its bills, after a warning (Jake, 2026-10-25). Tune shows only the open choices.
-  The editor is its own sheet over the bill editor or Settings, laid out card, colour, symbols; the name is typed on the card, the symbol starts on a default that a guess replaces, and no row of suggestions (Jake, 2026-10-26).
+  The editor is its own sheet over the bill editor or Settings, laid out card and colour fixed, symbols scrolling under them; the name is typed on the card, the symbol starts on a default that a guess replaces, and no row of suggestions (Jake, 2026-10-26).
   Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
@@ -293,7 +293,12 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .symg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 .symg .ag{aspect-ratio:1}
 .nores{font:15px var(--text);color:var(--ink2);padding:6px 0 2px}
-#csheet.botpad #cpanel2{padding-bottom:calc(var(--sab) + 80px)}
+#csheet #cpanel2{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+#csheet #cprev,#csheet .sw{flex:none}
+.symscroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;
+  margin:8px -22px 0;padding:0 22px calc(var(--sab) + 24px);border-top:.5px solid var(--hair)}
+.symscroll::-webkit-scrollbar{display:none}
+#csheet.botpad .symscroll{padding-bottom:calc(var(--sab) + 80px)}
 
 /* the grid's own Edit, when tuned on, and a card's pencil while editing */
 .pgh{display:flex;justify-content:flex-end;margin:-4px 0 6px}
@@ -954,8 +959,8 @@ function mountCat(root,host){
   root.innerHTML=`<div id="cprev" class="ccard"><img class="gbg" alt=""><button class="cpic" data-act="pic" aria-label="Symbol"></button>`+
     `<label class="cnm"><span class="dash"></span><input class="nm2" type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" value="${esc(CE.name)}"></label></div>`+
     `<div class="sw">${PAL.map((p,k)=>`<button data-col="${k}" aria-label="Colour ${k+1}" style="--c:${colHex(k)}"><i style="background:${colHex(k)}"></i></button>`).join("")}</div>`+
-    head+`<div class="symbody"></div>`+
-    (edit?`<button class="cpdel" data-act="delete">Delete Category</button><div class="cpmeta">${nb?`${nb} bill${nb>1?"s":""} in ${esc(CE.name)}`:"No bills in it yet"}</div>`:"");
+    `<div class="symscroll">`+head+`<div class="symbody"></div>`+
+    (edit?`<button class="cpdel" data-act="delete">Delete Category</button><div class="cpmeta">${nb?`${nb} bill${nb>1?"s":""} in ${esc(CE.name)}`:"No bills in it yet"}</div>`:"")+`</div>`;
   const bot=$("botSearch"); bot.classList.toggle("on",S.search==="bottom"); $("csheet").classList.toggle("botpad",S.search==="bottom");
   bot.innerHTML=S.search==="bottom"?sfieldHTML():"";
   const input=root.querySelector(".nm2");
@@ -971,7 +976,7 @@ function mountCat(root,host){
     if(a==="clear"){ CE.q=""; refreshSearch(); return; }
     if(a==="open"){ CE.searching=true; renderIconHead(); const q=root.querySelector(".sq"); q&&q.focus(); return; }
     if(a==="close"){ CE.searching=false; CE.q=""; renderIconHead(); updateCat(); return; }
-    if(a==="pic"){ root.querySelector(".symbody").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+    if(a==="pic"){ root.querySelector(".symscroll").scrollTo({top:0,behavior:"smooth"}); return; }
     if(a==="delete") askDelete(CE.ci);
   };
   root.onclick=click; bot.onclick=click;
