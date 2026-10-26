@@ -179,13 +179,13 @@ html:not(.dark) .r.past .bg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.09))}
 .tile .dash{border-radius:13px}
 .tile.has .dash{display:none}
 .tile .ic{width:34px;height:34px}
-.tile.open::after{content:"";position:absolute;inset:-4px;border:2px solid #fff;border-radius:16px}
+.tile.open::after{content:"";position:absolute;inset:-4px;border:2px solid #fff;border-radius:17px}
 
 #inarea{position:absolute;left:0;right:0;top:310px;bottom:0}
 #keypad{position:absolute;left:22px;right:22px;bottom:calc(var(--sab) + 8px);display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .key{height:64px;border-radius:14px;font-size:26px;display:flex;align-items:center;justify-content:center;font-family:var(--text)}
 .key:active{background:var(--key)}
-#picker{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:6px 22px calc(var(--sab) + 24px);scrollbar-width:none;
+#picker{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:6px var(--gside,22px) calc(var(--sab) + 24px);scrollbar-width:none;
   overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #picker::-webkit-scrollbar{display:none}
 [data-panel="keypad"] #picker,[data-panel="picker"] #keypad{display:none}
@@ -198,7 +198,8 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .gc .gp{position:absolute;left:50%;top:var(--gpt);width:var(--gps);height:var(--gps);margin-left:calc(var(--gps) / -2)}
 .gc .gn{position:absolute;left:5px;right:5px;bottom:var(--gnb,12px);text-align:center;font-size:var(--gfs);line-height:1.18;font-weight:700;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
-.gc.on::after,.fd.on::after{content:"";position:absolute;inset:-4px;border:2.5px solid var(--accent);border-radius:14px;pointer-events:none}
+/* A ring round a rounded shape is concentric: its radius is the shape's plus the gap between them. */
+.gc.on::after,.fd.on::after{content:"";position:absolute;inset:-4px;border:2.5px solid var(--accent);border-radius:calc(var(--gr,10px) + 4px);pointer-events:none}
 .gc.new{border:2px dashed var(--ink2);color:var(--ink2)}
 .gc.new .plus{position:absolute;left:0;right:0;top:calc(var(--gpt) - 4px);text-align:center;font-size:32px;font-weight:300;line-height:1}
 
@@ -266,8 +267,9 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .sw button.on::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--c)}
 .allh{font-size:13px;font-weight:600;color:var(--ink2);margin:18px 0 8px;font-family:var(--text);text-transform:uppercase;letter-spacing:.04em}
 .allg{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-.ag{position:relative;aspect-ratio:1;border-radius:12px}
-.ag .ic{width:100%;height:100%}
+.ag{position:relative;aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.ag .ic{width:var(--gps,36px);height:var(--gps,36px)}
+.ag.on::after{left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:calc(var(--gps,36px) + 10px);height:calc(var(--gps,36px) + 10px);transform:translate(-50%,-50%);border-radius:50%!important}
 .cpdel{display:block;width:100%;margin:26px 0 6px;height:50px;border-radius:14px;background:var(--paperCard);color:#E5483B;
   font:600 17px var(--text);box-shadow:0 0 0 .5px var(--hair)}
 .cpmeta{font-size:13px;color:var(--ink2);text-align:center;margin:0 0 6px;font-family:var(--text)}
@@ -285,13 +287,16 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .sfield input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:17px var(--text);padding:0;-webkit-user-select:text;user-select:text}
 .sfield input::placeholder{color:var(--ink2)}
 .sfield .clr{width:18px;height:18px;border-radius:50%;background:var(--ink2);color:var(--paper);font:700 11px/18px var(--text);text-align:center;opacity:.7}
-.stick{position:sticky;top:0;z-index:3;background:var(--grain),var(--paper);padding:8px 0;margin:14px -22px 0;padding-left:22px;padding-right:22px}
+.stick{position:sticky;top:0;z-index:3;background:var(--grain),var(--paper);padding:10px var(--gut,22px) 8px;margin:0 calc(var(--gut,22px) * -1)}
+.stick .sfield{height:var(--sh,48px);border-radius:calc(var(--sh,48px) / 2)}
+.stick+.symbody{padding-top:2px}
 #botSearch{position:absolute;left:16px;right:16px;bottom:calc(var(--sab) + 6px);z-index:6;display:none;height:var(--sh,48px);border-radius:calc(var(--sh,48px) / 2);
   background:color-mix(in srgb,var(--paperCard) 92%,transparent);box-shadow:inset 0 0 0 .5px var(--glassedge),0 4px 18px rgba(0,0,0,.1)}
 #botSearch.on{display:flex}
 #botSearch .sfield{background:transparent;height:var(--sh,48px);padding:0 16px}
 .sech{font:600 var(--sechs,12px) var(--text);color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px}
 .sech:first-child{margin-top:4px}
+.symbody{padding-top:10px}
 .symg{display:grid;grid-template-columns:repeat(var(--symc,6),1fr);gap:var(--symg,10px)}
 .symg .ag{aspect-ratio:1}
 .nores{font:15px var(--text);color:var(--ink2);padding:6px 0 2px}
@@ -378,7 +383,7 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .sbody.pop{animation:popIn .3s cubic-bezier(.2,.8,.2,1)}
 @keyframes pushIn{from{transform:translateX(40%);opacity:0}to{transform:none;opacity:1}}
 @keyframes popIn{from{transform:translateX(-30%);opacity:0}to{transform:none;opacity:1}}
-.sgrid{padding:6px 0 0}
+.sgrid{padding:6px calc(var(--gside,22px) - 16px) 0}
 .gc .gbadge{position:absolute;left:50%;top:calc(var(--gpt) - 6px);margin-left:calc(var(--gps) / 2 - 9px);min-width:19px;height:19px;border-radius:10px;
   padding:0 5px;color:#fff;font:700 11.5px/19px var(--text);text-align:center;box-shadow:0 0 0 2px var(--paperCard)}
 .gc .gbadge.gpill{margin-left:calc(var(--gps) / 2 - 16px)}
@@ -406,12 +411,12 @@ html:not(.dark) .ccard>img.gbg{filter:drop-shadow(0 2px 5px rgba(0,0,0,.12))}
 .cpic.guess::after{content:"";position:absolute;right:-6px;top:-4px;width:17px;height:17px;border-radius:50%;background:var(--paperCard);
   box-shadow:0 0 0 1px var(--hair);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.6l1 3.4 3.4 1-3.4 1-1 3.4-1-3.4-3.4-1 3.4-1z' fill='%238A8883'/%3E%3C/svg%3E");
   background-size:12px;background-position:center;background-repeat:no-repeat}
-.cnm{position:absolute;left:10px;right:10px;bottom:var(--cnb,24px);height:40px;display:flex;align-items:center}
+.cnm{position:absolute;left:8px;right:8px;bottom:var(--cnb,24px);min-height:40px;display:flex;align-items:center}
 .cnm .dash{position:absolute;inset:0;border:2px dashed var(--ink2);border-radius:10px;opacity:.7;pointer-events:none}
 .cnm.has .dash{display:none}
-.cnm input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);font:700 20px var(--round);text-align:center;padding:0 6px;
-  -webkit-user-select:text;user-select:text}
-.cnm input::placeholder{color:var(--ink2);font-weight:600}
+.cnm textarea{display:block;width:100%;border:0;outline:0;background:transparent;color:var(--ink);font:700 20px/1.15 var(--round);text-align:center;
+  padding:6px 4px;resize:none;overflow:hidden;-webkit-user-select:text;user-select:text}
+.cnm textarea::placeholder{color:var(--ink2);font-weight:600}
 #cprev .gc{position:absolute;inset:0;--gh:147px;--gps:54px;--gpt:21px;--gfs:18px}
 #cprev .gc .gn{bottom:18px}
 #cprev.empty{border:2px dashed var(--ink2);border-radius:14px}
@@ -3256,9 +3261,10 @@ const KEY="tilly-category-editor";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",cardInfo:"cost",infoAt:"below"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"top",cardInfo:"cost",infoAt:"below"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
+S.search="top";   // settled: over the symbols, sticking
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 function systemDark(){ const t=document.documentElement.getAttribute("data-theme");
   return t ? t==="dark" : !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); }
@@ -3584,8 +3590,8 @@ $("okBtn").addEventListener("click",()=>{
 /* ---------- the picker: the grid of category cards ---------- */
 let gridEditing=false;
 // The layout's numbers, tuned live in DialKit's Layout panel; these are the starting values.
-const L={gh:98,ghf:112,gg:10,gr:10,gps:36,gpt:14,gfs:12,gnb:12,gnbf:27,gxs:11,gxb:11,gstrip:4,
-  cw:150,chh:184,cr:14,cstrip:5,cps:64,cpt:28,cns:20,cnb:24,ca:6,cb:22,gut:22,swd:22,symc:6,symg:10,sechs:12,sh:48};
+const L={gh:102,ghf:114,gg:8,gr:16,gps:36,gpt:16,gfs:13.5,gnb:16,gnbf:27,gxs:9,gxb:14,gstrip:3,gside:22,
+  cw:126,chh:164,cr:16,cstrip:6,cps:60,cpt:26,cns:18,cnb:24,ca:0,cb:16,gut:24,swd:26,symc:6,symg:8,sh:48};
 const gvars=()=>`--gh:${L.gh}px;--gps:${L.gps}px;--gpt:${L.gpt}px;--gfs:${L.gfs}px`;
 // info: {n, m, show} for a card in Settings, laid out where Tune puts it.
 function gridCard(c,i,cw,ch,on,info){
@@ -3610,8 +3616,9 @@ function gridCard(c,i,cw,ch,on,info){
     `<span class="gp">${picOf(c,ch>120?54:L.gps,false,S.boil==="all")}</span><span class="gn"${gnB?` style="bottom:${gnB}px"`:""}>${esc(c.name||"Name")}</span>`+extra+
     (gridEditing&&i!=null?`<span class="pen"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M8.2 1.8l2 2-6 6-2.6.6.6-2.6z"/></svg></span>`:"")+`</button>`;
 }
-function renderPicker(){
-  const W=picker.clientWidth-44||346, n=4, gap=L.gg, cw=Math.floor((W-gap*(n-1))/n), ch=L.gh;
+function renderPicker(){ renderPicker0(); picker.querySelectorAll(".gn").forEach(fitGridName); }
+function renderPicker0(){
+  const W=picker.clientWidth-2*L.gside||346, n=4, gap=L.gg, cw=Math.floor((W-gap*(n-1))/n), ch=L.gh;
   picker.innerHTML=(S.findEdit==="button"?`<div class="pgh"><button id="gEdit">${gridEditing?"Done":"Edit"}</button></div>`:"")+
     `<div class="pgrid${gridEditing?" editing":""}" style="grid-template-columns:repeat(${n},1fr);${gvars()}">`+
     cats.map((c,i)=>gridCard(c,i,cw,ch,!gridEditing&&bill.cat===i)).join("")+
@@ -3701,7 +3708,7 @@ function openCat(host,ci){
   const c=ci==null?null:cats[ci];
   CE={ci,host,name:c?c.name:"",glyph:c?c.glyph:"tag",picked:!!c,guessed:false,col:c?c.col%8:nextCol(),key:c?c.name:"new"+cats.length,orig:c?JSON.stringify([c.name,c.glyph,c.col%8]):null};
   (host==="bill"?sheet:host==="bills"?$("bsheet"):$("ssheet")).classList.add("back"); $("csheet").classList.add("open"); mountCat($("cpanel2"),host);
-  setTimeout(()=>{ const i=document.querySelector("#cpanel2 input"); if(i&&ci==null) i.focus({preventScroll:true}); },S.motion==="quick"?360:0);
+  setTimeout(()=>{ const i=document.querySelector("#cpanel2 .nm2"); if(i&&ci==null) i.focus({preventScroll:true}); },S.motion==="quick"?360:0);
 }
 function closeCat(){
   if(!CE) return; const host=CE.host; CE=null;
@@ -3727,7 +3734,7 @@ function mountCat(root,host){
   const head=S.search==="top"?`<div class="stick">${sfieldHTML()}</div>`:
     S.search==="icon"?`<div class="symh"></div>`:`<div style="height:14px"></div>`;
   root.innerHTML=`<div id="cprev" class="ccard"><img class="gbg" alt=""><button class="cpic" data-act="pic" aria-label="Symbol"></button>`+
-    `<label class="cnm"><span class="dash"></span><input class="nm2" type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" value="${esc(CE.name)}"></label></div>`+
+    `<label class="cnm"><span class="dash"></span><textarea class="nm2" rows="1" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" spellcheck="false">${esc(CE.name)}</textarea></label></div>`+
     `<div class="sw">${PAL.map((p,k)=>`<button data-col="${k}" aria-label="Colour ${k+1}" style="--c:${colHex(k)}"><i style="background:${colHex(k)}"></i></button>`).join("")}</div>`+
     `<div class="symscroll">`+head+`<div class="symbody"></div>`+
     `</div>`;
@@ -3735,7 +3742,7 @@ function mountCat(root,host){
   const bot=$("botSearch"); bot.classList.toggle("on",S.search==="bottom"); $("csheet").classList.toggle("botpad",S.search==="bottom");
   bot.innerHTML=S.search==="bottom"?sfieldHTML():"";
   const input=root.querySelector(".nm2");
-  input.addEventListener("input",()=>{ CE.name=input.value; if(!CE.picked){ const g=suggest(CE.name).best; CE.glyph=g||"tag"; CE.guessed=!!g; } updateCat(); });
+  input.addEventListener("input",()=>{ if(/\n/.test(input.value)) input.value=input.value.replace(/\n/g," "); CE.name=input.value; if(!CE.picked){ const g=suggest(CE.name).best; CE.glyph=g||"tag"; CE.guessed=!!g; } updateCat(); });
   input.addEventListener("keydown",e=>{ if(e.key!=="Enter") return; e.preventDefault(); if(ceDone()) saveCat(); else input.blur(); });
   if(S.search==="icon") renderIconHead();
   wireSearch(root); wireSearch(bot);
@@ -3766,11 +3773,17 @@ function wireSearch(el){
 }
 function refreshSearch(){ document.querySelectorAll("#csheet .sq").forEach(q=>{ q.value=CE.q; const c=q.parentNode.querySelector(".clr"); if(c&&!CE.q) c.remove(); }); updateCat(); }
 const measureCtx=document.createElement("canvas").getContext("2d");
-function fitName(i){ const fam=getComputedStyle(i).fontFamily; measureCtx.font=`700 ${L.cns}px ${fam}`;
-  const w=measureCtx.measureText(i.value||"Name").width, a=i.clientWidth-14; i.style.fontSize=(w>a?Math.max(12,L.cns*a/w):L.cns)+"px"; }
+// A name takes two lines, then shrinks a little, to 80%, then is cut: never one line shrunk to tiny.
+const NAME_FLOOR=.8;
+function fitName(t){ let size=L.cns; const lines=n=>Math.ceil(size*1.15*n+12);
+  t.style.fontSize=size+"px"; t.style.height="auto";
+  while(t.scrollHeight>lines(2)+1&&size>L.cns*NAME_FLOOR){ size-=.5; t.style.fontSize=size+"px"; }
+  t.style.height=Math.min(t.scrollHeight,lines(2))+"px"; }
+function fitGridName(el){ el.style.fontSize=""; const base=parseFloat(getComputedStyle(el).fontSize); let size=base;
+  while(el.scrollHeight>el.clientHeight+1&&size>base*NAME_FLOOR){ size-=.5; el.style.fontSize=size+"px"; } }
 const cellCache=new Map();
-function symCell(g){ const ck=g+"|"+CE.col+"|"+S.dark;
-  if(!cellCache.has(ck)) cellCache.set(ck,picOf({glyph:g,col:CE.col,key:g},48,false,false).replace(/(<span class="boil"><img[^>]*>)(<img[^>]*>){2}/,"$1"));
+function symCell(g){ const ck=g+"|"+CE.col+"|"+S.dark+"|"+L.gps;
+  if(!cellCache.has(ck)) cellCache.set(ck,picOf({glyph:g,col:CE.col,key:g},L.gps,false,false).replace(/(<span class="boil"><img[^>]*>)(<img[^>]*>){2}/,"$1"));
   return `<button class="ag${CE.glyph===g?" on":""}" data-g="${g}" aria-label="${g}">${cellCache.get(ck)}</button>`; }
 // Only what changed is redrawn: typing a name never rebuilds the symbols, so scrolling stays smooth.
 function updateCat(){
@@ -3782,11 +3795,11 @@ function updateCat(){
   const pic=cp.querySelector(".cpic"); pic.classList.add("has"); pic.classList.toggle("guess",CE.guessed);
   if(k.glyph!==CE.glyph||k.col!==CE.col||k.dark!==S.dark) pic.innerHTML=picOf(d,L.cps,false,S.boil!=="off");
   cp.querySelector(".cnm").classList.toggle("has",CE.name.length>0); fitName(cp.querySelector(".nm2"));
-  const gk=(CE.q||"")+"|"+CE.col+"|"+S.dark;
+  const gk=(CE.q||"")+"|"+CE.col+"|"+S.dark+"|"+L.gps;
   if(k.grid!==gk){
     const res=searchSymbols(CE.q||"");
-    root.querySelector(".symbody").innerHTML=res?`<div class="sech">${res.title==="Closest"?"No exact match. Closest":"Results"}</div><div class="symg">${res.list.map(symCell).join("")}</div>`:
-      SECTIONS.map(([t,gs])=>`<div class="sech">${t}</div><div class="symg">${gs.map(symCell).join("")}</div>`).join("");
+    root.querySelector(".symbody").innerHTML=res?(res.title==="Closest"?`<div class="nores">No exact match. Closest:</div>`:"")+`<div class="symg">${res.list.map(symCell).join("")}</div>`:
+      `<div class="symg">${SECTIONS.flatMap(([,gs])=>gs).map(symCell).join("")}</div>`;
     k.grid=gk;
   } else if(k.glyph!==CE.glyph) root.querySelectorAll(".symbody .ag").forEach(b=>b.classList.toggle("on",b.dataset.g===CE.glyph));
   Object.assign(k,{col:CE.col,glyph:CE.glyph,dark:S.dark});
@@ -3848,7 +3861,8 @@ function cardInfo(i){
 }
 function cardH(){ if(S.cardInfo==="none") return L.gh;
   return S.infoAt==="below"||(S.infoAt==="badge"&&S.cardInfo==="both")?L.ghf:S.infoAt==="strip"?L.gh+12:L.gh; }
-function renderSettings(){
+function renderSettings(){ renderSettings0(); $("sbody").querySelectorAll(".gn").forEach(fitGridName); }
+function renderSettings0(){
   const sb=$("sbody"), cl=$("sClose");
   $("s2t").textContent=setPage==="root"?"Settings":"Categories";
   $("sSort").style.display=setPage==="cats"?"flex":"none"; $("smenu").classList.remove("on");
@@ -3856,7 +3870,7 @@ function renderSettings(){
   sb.innerHTML=setPage==="root"?
     `<div class="grp"><button class="srow" data-go="cats"><span class="grp-pic stile" style="background:#5A6CE8">${GRIDICON}</span><span class="sn">Categories</span><span class="sc">${cats.length}</span><span class="chev">›</span></button></div>`+
     `<div class="sfoot">More settings join this list as they arrive.</div>`:
-    (()=>{ const W=(sb.clientWidth||390)-32, cw=Math.floor((W-3*L.gg)/4), ch=cardH();
+    (()=>{ const W=(sb.clientWidth||390)-2*L.gside, cw=Math.floor((W-3*L.gg)/4), ch=cardH();
       return `<div class="pgrid sgrid" style="grid-template-columns:repeat(4,1fr);${gvars()};--gh:${ch}px">`+
         cats.map((c,i)=>gridCard(c,i,cw,ch,false,cardInfo(i))).join("")+`<button class="gc new" data-new="1"><span class="plus">+</span><span class="gn">New</span></button></div>`; })()+
     `<div class="sfoot">Tap a category to change or delete it. Hold and drag to reorder.</div>`;
@@ -3936,7 +3950,6 @@ function panelHTML(){
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
-    tcard("Searching symbols","Try boxing, taxi, wine or dentist. Typing a name like Gym or Netflix guesses the card's symbol.",optHTML("search"))+
     tcard("Finding Edit in the grid","",optHTML("findEdit"))+
     tcard("Cards in Settings","What a category's card in Settings → Categories says, and where. The picker keeps name only.",optHTML("cardInfo")+(S.cardInfo!=="none"?`<div class="fl" style="margin:12px 0 6px">Where it sits</div>`+optHTML("infoAt"):""))+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
@@ -3960,7 +3973,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["search","findEdit","cardInfo","infoAt"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["findEdit","cardInfo","infoAt"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
@@ -3996,7 +4009,8 @@ addEventListener("resize",()=>{ fit(); if(sheet.classList.contains("open")){ lay
 
 /* ---------- Layout: DialKit's panel for the fine numbers; Tune keeps the named choices ---------- */
 function applyLayout(){
-  ["gg","gr","gnb","gxs","gxb","cw","chh","cps","cpt","cnb","ca","cb","gut","swd","symg","sechs","sh"].forEach(k=>phone.style.setProperty("--"+k,L[k]+"px"));
+  ["gg","gr","gnb","gxs","gxb","gside","gps","cw","chh","cps","cpt","cnb","ca","cb","gut","swd","symg","sh"].forEach(k=>phone.style.setProperty("--"+k,L[k]+"px"));
+  document.querySelectorAll(".gn").forEach(fitGridName);
   phone.style.setProperty("--symc",L.symc);
   if(sheet.classList.contains("open")&&sheet.dataset.panel==="picker") renderPicker();
   if($("ssheet").classList.contains("open")) renderSettings();
@@ -4005,20 +4019,21 @@ function applyLayout(){
 function startDials(){
   if(!window.DialKit) return;
   const kit=DialKit.createDialKit("Layout",{
-    "Grid card":{height:[98,80,130,1],"height with figure":[112,90,140,1],gap:[10,4,20,1],corner:[10,4,20,1],
-      picture:[36,24,56,1],"picture top":[14,4,30,1],"name size":[12,9,16,.5],"name from bottom":[12,4,24,1],
-      "name from bottom, with figure":[27,16,40,1],"figure size":[11,8,14,.5],"figure from bottom":[11,4,20,1],"colour strip":[4,0,10,.5]},
-    "Category sheet":{"card width":[150,110,200,1],"card height":[184,140,240,1],"card corner":[14,6,24,1],"colour strip":[5,0,12,.5],
-      picture:[64,40,96,1],"picture top":[28,10,50,1],"name size":[20,14,28,.5],"name from bottom":[24,10,50,1],
-      "card top margin":[6,0,30,1],"card bottom margin":[22,6,40,1],"side margin":[22,12,32,1],"colour dot":[22,16,32,1],
-      "symbols across":[6,4,8,1],"symbol gap":[10,4,20,1],"section title size":[12,10,16,.5],"search height":[48,36,60,1],_collapsed:true}
-  },{id:"tilly-layout",persist:true});
+    "Grid card":{height:[102,80,130,1],"height with figure":[114,90,140,1],gap:[8,4,20,1],corner:[16,4,20,1],
+      picture:[36,24,56,1],"picture top":[16,4,30,1],"name size":[13.5,9,16,.5],"name from bottom":[16,4,24,1],
+      "name from bottom, with figure":[27,16,40,1],"figure size":[9,8,14,.5],"figure from bottom":[14,4,20,1],"colour strip":[3,0,10,.5],
+      "side margin":[22,12,32,1]},
+    "Category sheet":{"card width":[126,110,200,1],"card height":[164,140,240,1],"card corner":[16,6,24,1],"colour strip":[6,0,12,.5],
+      picture:[60,40,96,1],"picture top":[26,10,50,1],"name size":[18,14,28,.5],"name from bottom":[24,10,50,1],
+      "card top margin":[0,0,30,1],"card bottom margin":[16,6,40,1],"side margin":[24,12,32,1],"colour dot":[26,16,32,1],
+      "symbols across":[6,4,8,1],"symbol gap":[8,4,20,1],"search height":[48,36,60,1],_collapsed:true}
+  },{id:"tilly-layout-2",persist:true});
   kit.subscribe(v=>{ const g=v["Grid card"], c=v["Category sheet"];
     Object.assign(L,{gh:g.height,ghf:g["height with figure"],gg:g.gap,gr:g.corner,gps:g.picture,gpt:g["picture top"],gfs:g["name size"],
-      gnb:g["name from bottom"],gnbf:g["name from bottom, with figure"],gxs:g["figure size"],gxb:g["figure from bottom"],gstrip:g["colour strip"],
+      gnb:g["name from bottom"],gnbf:g["name from bottom, with figure"],gxs:g["figure size"],gxb:g["figure from bottom"],gstrip:g["colour strip"],gside:g["side margin"],
       cw:c["card width"],chh:c["card height"],cr:c["card corner"],cstrip:c["colour strip"],cps:c.picture,cpt:c["picture top"],cns:c["name size"],
       cnb:c["name from bottom"],ca:c["card top margin"],cb:c["card bottom margin"],gut:c["side margin"],swd:c["colour dot"],symc:c["symbols across"],
-      symg:c["symbol gap"],sechs:c["section title size"],sh:c["search height"]});
+      symg:c["symbol gap"],sh:c["search height"]});
     applyLayout(); });
   DialKit.createDialRoot({position:"top-left",defaultOpen:innerWidth>=900});
 }

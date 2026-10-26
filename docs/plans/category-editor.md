@@ -11,7 +11,8 @@ from the prototype's CSS, never guessed. Observations 2, 3 and 4.
 - One sheet makes and changes a category. It slides over the bill editor or Settings; stacking is
   the system's (`.sheet` from a sheet). ✕ left; trash (changing only) and ✓ right.
 - Card and colours are fixed at the top; only the symbols scroll. The name is typed on the card.
-  No row of suggestions. Search is a capsule floating at the bottom.
+  No row of suggestions and no section titles: one long grid of symbols, with search sticking at
+  its top.
 - A new category starts on `tag`. While nothing is picked, a guess from the name replaces it and the
   picture carries a spark badge. Picking a symbol ends guessing for that sheet.
 - Deleting a category deletes its bills, all their charges and overrides, after one alert.
@@ -100,17 +101,20 @@ embedding can't load.
 **Files:** modified `Tokens.swift`; new `Tilly/DesignSystem/LayoutTuning.swift`; new
 `Tilly/Developer/CategoryDials.swift`; modified `TillyApp.swift`, `project.pbxproj` (the package).
 
-- New tokens, from the prototype: sheet card 150 × 184, radius 14, strip 5, picture 64 at 28 from the
-  top; name on the card inset 10, 24 from the bottom, 40 tall, `.rounded` bold 20 scaling to 12, a
-  2pt dashed outline radius 10 at 0.7 while empty; card 6 below the header, 22 above the colours,
-  light shadow 0.12 black, radius 5, y 2. Spark badge 17 round, `paperCard` with a hairline ring, a
-  `sparkle` at 12 in `ink2`, offset 6 right and 4 up. Swatches spread across the width: 28 targets,
-  22 dots, the ring 2pt at 3 outside; 10 above, 4 below. Gutter 22. Symbols six across, 10 apart, a
-  ring 2.5pt at 3 outside, radius 14; section titles 12 semibold, uppercase, tracking 0.6, 16 above
-  and 8 below (4 above the first); a 0.5 hairline above the scroll. Search capsule 48 tall, 16 from
-  the sides, 6 above the bottom safe area, `paperCard` at 0.92, edge 0.5, shadow 0.1, radius 18,
-  y 4; the scroll keeps 80 clear under it. Settings card 112 tall with its figure, the name 27 from
-  the bottom; the figure `.caption2` medium, `ink2`, 11 from the bottom, 4 in from the sides.
+- New tokens, from the prototype's Layout panel as Jake set it. Grid cards, the picker's and
+  Settings' alike: 102 tall, 114 with the figure; 8 apart; radius 16; 22 from the sheet's sides;
+  picture 36 at 16 from the top; name 13.5 bold, 16 from the bottom (27 with the figure); figure 9
+  medium, `ink2`, 14 from the bottom, 4 in from the sides; strip 3. The sheet's card 126 × 164,
+  radius 16, strip 6, picture 60 at 26 from the top; name `.rounded` bold 18, 24 from the bottom,
+  inset 8; a 2pt dashed outline radius 10 at 0.7 while empty; the card right under the header, 16
+  above the colours; light shadow 0.12 black, radius 5, y 2. Spark badge 17 round, `paperCard` with
+  a hairline ring, a `sparkle` at 12 in `ink2`, offset 6 right and 4 up. Swatches spread across the
+  width: 26 dots in 32 targets, the ring 2pt at 3 outside; 10 above, 4 below. Gutter 24. Symbols one
+  grid, six across, 8 apart, each drawn at the grid card's picture size (36) and centred in its
+  cell; the picked one ringed 2.5pt, 5 outside, round. A 0.5 hairline above the scroll. Search field
+  48 tall, radius 24, sticking at the top of the symbols on the ground, 10 above and 8 below.
+- A ring round a rounded shape is concentric: its radius is the shape's plus the gap (`DESIGN.md`,
+  the look). The picker's ring: 16 + 4 = 20, not today's 14.
   Settings' `Categories` tile 32, radius 8, `#5A6CE8`, white `square.grid.2x2`.
 - `LayoutTuning` (`@MainActor @Observable`, `.shared`) holds `CategoryLayout: Codable, Equatable`,
   the numbers above plus the picker grid's, defaulting to today's values. The tunable tokens read
@@ -132,8 +136,8 @@ slider in the inspector moves the sheet's card live.
 
 **Files:** new `Tilly/Categories/CategorySheet.swift`, `CategoryCardFace.swift`; new
 `Tilly/DesignSystem/SheetHeader.swift`, extracted from `ExpenseEditor`'s header row so both sheets
-share the glass circles; modified `SymbolPicker.swift` (becomes the sheet's grid: sections, six
-across, the bottom search, `No exact match. Closest` from `SymbolGuess.closest(limit: 6)`).
+share the glass circles; modified `SymbolPicker.swift` (becomes the sheet's grid: one grid, six
+across, the sticking search, `No exact match. Closest` from `SymbolGuess.closest(limit: 6)`).
 
 ```swift
 struct CategorySheet: View {
@@ -149,7 +153,9 @@ struct CategorySheet: View {
   A new category's name is focused once the sheet is up.
 - `CategoryCardFace` draws the sheet's card and the grid's card from one view at two sizes, so the
   Settings and picker cards stay the same drawing (`CategoryGrid.card` moves into it).
-- The name fits the card: one line, shrinking from 20 to 12 before it truncates.
+- A name, on any card, takes two lines, then shrinks to no less than 80%, then is cut:
+  `.lineLimit(2).minimumScaleFactor(0.8)`, which does exactly that. The sheet's field is a
+  two-line `TextField(axis: .vertical)` whose Return saves instead of breaking the line.
 - Tapping the card's picture scrolls the symbols to the top.
 - Trash shows the stock alert: title `Delete “Home”?`; message `Its bill goes too, past and future.
   This can’t be undone.`, `Its 3 bills go too…`, or `No bills use it.`; buttons `Delete Category

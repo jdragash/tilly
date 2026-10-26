@@ -29,6 +29,8 @@ Tilly, Drawn: paper with a faint grain under everything, sheets included; colour
 with a rough edge that blooms; SF Pro Rounded, and no handwriting. A category's picture is a symbol,
 roughened, in its colour on a faint wash, or white on its own card. Every picture boils, three
 drawings swapped eight times a second, still under Reduce Motion, unless boil is turned off. A category made before symbols shows its emoji until one is picked. The glass stays stock.
+A ring or outline round a rounded shape is concentric: its corner radius is the shape's plus the gap.
+A category's name takes two lines, then shrinks to 80% at most, then is cut, on every card.
 
 ---
 
@@ -231,14 +233,14 @@ the category sheet; Return or its ✓ makes the category and applies it. Holding
 
 The same sheet makes and changes one, sliding over the bill's or Settings, with ✕, a red trash button
 when changing, and ✓, which waits for a name and a change. Fixed at its top: the category's card,
-150 × 184, with the name typed on the card, dashed until there is one, then the eight colours, the
-next unused one chosen. Under them, Tilly's symbols scroll in sections, six across, with a search
-capsule floating at the bottom. A new category starts on a tag; while the name matches a symbol's
+126 × 164, with the name typed on the card, dashed until there is one, then the eight colours, the
+next unused one chosen. Under them, Tilly's symbols scroll as one long grid, six across, each the
+size of a grid card's picture, under a search field that sticks at their top. A new category starts on a tag; while the name matches a symbol's
 words or comes close to one, that symbol replaces it, marked with a spark, until one is picked.
 
 Deleting asks once, saying what goes with it: `Its 3 bills go too, past and future.` A category's
-bills go with it. Settings shows the categories as the picker's grid, each card with `€95/mo` under
-its name, and `New` last. Tap to change, hold and drag to reorder. Sort, top right, arranges the
+bills go with it. Settings shows the categories as the picker's grid, the same cards at the same margins, each with
+`€95/mo` under its name, and `New` last. Tap to change, hold and drag to reorder. Sort, top right, arranges the
 order once by colour, name, monthly cost or number of bills, with Undo, and the order then holds.
 
 ### Saving puts the row in place
