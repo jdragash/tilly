@@ -774,3 +774,12 @@ extension Tokens {
         }
     }
 }
+
+extension Tokens {
+    enum Guess {
+        /// How far a name's word may be from a catalogue word, by on-device word similarity, and
+        /// still count as that symbol. Lower is stricter. A tuning value; Jake tunes it by feel. This
+        /// model puts even close words near 1 (rugby to its nearest catalogue word is 1.05).
+        static let maxDistance: Double = 1.06
+    }
+}
