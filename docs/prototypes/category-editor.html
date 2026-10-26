@@ -344,7 +344,22 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .mq .sheet2{transition:transform .34s cubic-bezier(.2,.8,.2,1),visibility 0s .34s}
 .mq .sheet2.open{transition:transform .34s cubic-bezier(.2,.8,.2,1),visibility 0s}
 #csheet{z-index:30;top:calc(var(--sat) + 20px)}
-#sheet.open.back,#ssheet.open.back{transform:scale(.94) translateY(-6px);filter:brightness(.92)}
+#bbody{padding:0 16px 40px}
+.bt{font-size:34px;font-weight:800;letter-spacing:-.01em;margin:4px 4px 0}
+.bsub{font-size:15px;color:var(--ink2);margin:2px 4px 18px;font-family:var(--text)}
+.bg2{background:var(--key);border-radius:22px;padding:4px 16px 6px;margin:0 0 14px}
+.bgh{display:flex;align-items:center;gap:12px;width:100%;height:58px;text-align:left}
+.bgh .grp-pic{width:34px;height:34px;flex:none}
+.bgh .bn{flex:1;min-width:0;font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bgh .bta{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.bgh .chev{color:var(--ink2);opacity:.6;font:600 17px var(--text);margin-left:2px}
+.brow{display:flex;align-items:baseline;gap:8px;height:42px;border-top:.5px solid var(--hair);font-family:var(--text)}
+.brow .n{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .k{font-size:13px;color:var(--ink2);flex:1;white-space:nowrap}
+.brow .a{font-size:16px;font-variant-numeric:tabular-nums}
+.bnew{display:flex;align-items:center;gap:10px;width:100%;height:52px;border:2px dashed var(--ink2);border-radius:22px;color:var(--ink2);
+  justify-content:center;font-size:17px;font-weight:600;opacity:.8}
+#sheet.open.back,#ssheet.open.back,#bsheet.open.back{transform:scale(.94) translateY(-6px);filter:brightness(.92)}
 .s2t{position:absolute;left:0;right:0;top:26px;text-align:center;font:600 17px var(--text)}
 .sbody{position:absolute;left:0;right:0;top:76px;bottom:0;overflow-y:auto;padding:4px 16px 40px;scrollbar-width:none}
 .sbody::-webkit-scrollbar{display:none}
@@ -450,7 +465,7 @@ textarea#catsIn{width:100%;min-height:150px;border-radius:10px;border:0;backgrou
   <div id="list"></div>
   <button class="glass" id="monthB">October</button>
   <div class="glass cap">
-    <button aria-label="All bills"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg></button>
+    <button aria-label="All bills" id="billsB"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg></button>
     <button aria-label="Settings" id="gearB"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.6v2.2M10 15.2v2.2M2.6 10h2.2M15.2 10h2.2M4.8 4.8l1.5 1.5M13.7 13.7l1.5 1.5M4.8 15.2l1.5-1.5M13.7 6.3l1.5-1.5" stroke-linecap="round"/></svg></button>
   </div>
   <div id="scrim"></div>
@@ -478,6 +493,10 @@ textarea#catsIn{width:100%;min-height:150px;border-radius:10px;border:0;backgrou
     <button class="hbtn" id="sClose" aria-label="Close" style="left:16px">✕</button>
     <div class="s2t">Settings</div>
     <div class="sbody" id="sbody"></div>
+  </div>
+  <div class="sheet2" id="bsheet">
+    <button class="hbtn" id="bClose" aria-label="Close" style="left:16px">✕</button>
+    <div class="sbody" id="bbody"></div>
   </div>
   <div class="sheet2" id="csheet">
     <button class="hbtn" id="cX" aria-label="Cancel" style="left:16px">✕</button>
@@ -817,7 +836,8 @@ nameIn.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); 
 $("dateB").addEventListener("click",()=>{ const p=datePresets(), i=p.findIndex(d=>sameDay(d,bill.date)); bill.date=p[(i+1)%p.length]; renderCard(); });
 $("repB").addEventListener("click",()=>{ bill.every=bill.every==="y"?"m":"y"; renderCard(); });
 $("xBtn").addEventListener("click",closeSheet);
-$("scrim").addEventListener("click",()=>{ if($("ssheet").classList.contains("open")){ if(!CE){ $("ssheet").classList.remove("open"); $("scrim").classList.remove("on"); } } else closeSheet(); });
+$("scrim").addEventListener("click",()=>{ const o=["ssheet","bsheet"].find(id=>$(id).classList.contains("open"));
+  if(o){ if(!CE){ $(o).classList.remove("open"); $("scrim").classList.remove("on"); } } else closeSheet(); });
 $("okBtn").addEventListener("click",()=>{
   if(!complete()||!changed()) return;
   let b=editing; const d=bill.date;
@@ -930,13 +950,13 @@ const ceChanged=()=>CE.ci==null||CE.orig!==JSON.stringify([CE.name.trim(),CE.gly
 function openCat(host,ci){
   const c=ci==null?null:cats[ci];
   CE={ci,host,name:c?c.name:"",glyph:c?c.glyph:"tag",picked:!!c,guessed:false,col:c?c.col%8:nextCol(),key:c?c.name:"new"+cats.length,orig:c?JSON.stringify([c.name,c.glyph,c.col%8]):null};
-  (host==="bill"?sheet:$("ssheet")).classList.add("back"); $("csheet").classList.add("open"); mountCat($("cpanel2"),host);
+  (host==="bill"?sheet:host==="bills"?$("bsheet"):$("ssheet")).classList.add("back"); $("csheet").classList.add("open"); mountCat($("cpanel2"),host);
   setTimeout(()=>{ const i=document.querySelector("#cpanel2 input"); if(i&&ci==null) i.focus({preventScroll:true}); },S.motion==="quick"?360:0);
 }
 function closeCat(){
   if(!CE) return; const host=CE.host; CE=null;
-  $("csheet").classList.remove("open"); sheet.classList.remove("back"); $("ssheet").classList.remove("back"); document.activeElement&&document.activeElement.blur();
-  if(host==="bill"){ renderPicker(); renderCard(); } else renderSettings();
+  $("csheet").classList.remove("open"); [sheet,$("ssheet"),$("bsheet")].forEach(x=>x.classList.remove("back")); document.activeElement&&document.activeElement.blur();
+  if(host==="bill"){ renderPicker(); renderCard(); } else if(host==="bills") renderBills(); else renderSettings();
 }
 // The symbols in sections, and the words each answers to when searched.
 const SECTIONS=[["Home and bills",["home","bolt","drop","wifi","phone","wrench"]],["Fun",["tv","film","note","game","book","cloud"]],
@@ -1050,12 +1070,26 @@ $("aYes").addEventListener("click",()=>{
   if(CE) closeCat();
   if(editing&&!bills.includes(editing)) closeSheet();
   else if(sheet.classList.contains("open")){ if(sheet.dataset.panel==="picker") renderPicker(); renderCard(); }
-  if(host!=="bill") renderSettings();
+  if(host!=="bill"){ renderSettings(); renderBills(); }
   renderList(true);
   toast(n?`Deleted ${name} and ${n} bill${n>1?"s":""}`:`Deleted ${name}`);
 });
 
 /* ---------- Settings: the categories in your order; tap one to change or delete it ---------- */
+/* ---------- All bills: a category's header opens its sheet; New at the end ---------- */
+function endsShort(e){ return `ends ${String(e.getMonth()+1).padStart(2,"0")}/${String(e.getFullYear()).slice(2)}`; }
+function renderBills(){
+  const groups=cats.map((c,i)=>{ const bs=bills.filter(b=>b.cat===i&&b.every==="m"&&(!b.end||b.end>=TODAY)).sort((a,b)=>b.amount-a.amount);
+    return {i,bs,total:bs.reduce((t,b)=>t+Math.round(b.amount),0)}; }).filter(g=>g.bs.length).sort((a,b)=>b.total-a.total);
+  $("bbody").innerHTML=`<div class="bt">All bills</div><div class="bsub">${money(groups.reduce((t,g)=>t+g.total,0))} a month</div>`+
+    groups.map(g=>`<div class="bg2"><button class="bgh" data-ci="${g.i}" aria-label="Change ${esc(cats[g.i].name)}"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span>`+
+      `<span class="bn">${esc(cats[g.i].name)}</span><span class="bta">${money(g.total)}</span><span class="chev">›</span></button>`+
+      g.bs.map(b=>`<div class="brow"><span class="n">${esc(b.name)}</span><span class="k">${b.end?endsShort(b.end):"Monthly"}</span><span class="a">${money(b.amount)}</span></div>`).join("")+`</div>`).join("")+
+    `<button class="bnew" data-new="1"><span style="font-size:24px;font-weight:300">+</span> New Category</button>`;
+}
+$("billsB").addEventListener("click",()=>{ renderBills(); $("bsheet").classList.add("open"); $("scrim").classList.add("on"); });
+$("bClose").addEventListener("click",()=>{ $("bsheet").classList.remove("open"); $("scrim").classList.remove("on"); });
+$("bbody").addEventListener("click",e=>{ const h=e.target.closest(".bgh,.bnew"); if(!h) return; openCat("bills",h.dataset.new?null:+h.dataset.ci); });
 function renderSettings(){
   $("sbody").innerHTML=`<div class="sec">Categories</div><div class="grp">`+
     cats.map((c,i)=>{ const n=bills.filter(b=>b.cat===i).length;
@@ -1098,7 +1132,7 @@ function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class=
 const fld=(label,body,note)=>`<div class="fld"><div class="fl">${label}</div>${body}${note?`<p class="desc">${note}</p>`:""}</div>`;
 const tcard=(title,sub,body)=>`<section class="tc"><div class="ch">${title}</div>${sub?`<div class="cs">${sub}</div>`:""}${body}</section>`;
 function panelHTML(){
-  return `<div class="ptop"><div><h1>The category editor</h1><p class="lead">Only the choices still open. Make one: + then the card's picture tile, then New. Change or delete one: hold a card in the grid, or the gear for Settings.</p></div>`+
+  return `<div class="ptop"><div><h1>The category editor</h1><p class="lead">Only the choices still open. Make one: + then the card's picture tile, then New. Change or delete one: hold a card in the grid, tap a category header in All bills, or the gear for Settings.</p></div>`+
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
@@ -1114,7 +1148,7 @@ function panelHTML(){
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
     `<li>There are 28 stand-in symbols, drawn in SF Symbols' manner. The app has about 400 real ones, roughened.</li>`+
     `<li>The guesses come from a short keyword list and a second list standing in for on-device word similarity (NLEmbedding), which in the app finds far more.</li>`+
-    `<li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
+    `<li>All bills shows monthly bills only, without its Monthly/Yearly switch or filter chips; only the header tap is new.</li><li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
     `<li>Edges, washes and grain are SVG filters; the glass is a blur, not Liquid Glass; sheets, menus and alerts are CSS, not the system's.</li>`+
     `<li>The type is SF Pro Rounded on an iPhone and Nunito elsewhere. No Dynamic Type.</li>`+
     `<li>What you make, change or delete lasts until you reload or reset.</li></ul></details></details>`;
@@ -1148,7 +1182,7 @@ function apply(k){
   if($("ssheet").classList.contains("open")) renderSettings();
   if($("csheet").classList.contains("open")&&CE) mountCat($("cpanel2"),CE.host);
 }
-function rebuild(){ closeSheet(); ["ssheet","csheet"].forEach(id=>$(id).classList.remove("open","back")); $("scrim").classList.remove("on"); loadData(); apply(); }
+function rebuild(){ closeSheet(); ["ssheet","csheet","bsheet"].forEach(id=>$(id).classList.remove("open","back")); $("scrim").classList.remove("on"); loadData(); apply(); }
 
 /* ---------- the phone at its real size, scaled down only to fit ---------- */
 function fit(){
