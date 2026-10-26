@@ -16,7 +16,8 @@ final class ExpenseCategory {
     var colourRaw: String = ""
     var sortOrder: Int = 0
 
-    /// Nullify, not cascade: deleting a category must never delete the bills filed under it.
+    /// Nullify, not cascade: a stray delete never takes bills silently. Deleting a category goes
+    /// through `CategoryRemoval`, which deletes its bills first, after the alert says so.
     @Relationship(deleteRule: .nullify, inverse: \Expense.category)
     var expenses: [Expense]?
 
