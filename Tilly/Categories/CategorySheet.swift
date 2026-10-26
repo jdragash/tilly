@@ -28,9 +28,12 @@ struct CategorySheet: View {
     @State private var picked: Bool
     @State private var guessed = false
     @State private var scrollToTop = 0
-    @State private var askingDelete = false
+    @State private var deleting: ExpenseCategory?
     @FocusState private var nameFocused: Bool
     private let seed: UInt64
+    /// What the changed category was, read once: after a delete the sheet may draw once more, and
+    /// the deleted model can't be read.
+    private var original: (name: String, picture: CategoryPicture, colour: CategoryColour?)?
     private let searching: String
 
     /// `typed` and `searching` open the sheet part-way through, for previews.
@@ -57,6 +60,7 @@ struct CategorySheet: View {
             _name = State(initialValue: category.name)
             _picture = State(initialValue: CategoryPicture(category))
             _colour = State(initialValue: category.colour ?? CategoryColour.allCases[0])
+            original = (category.name, CategoryPicture(category), category.colour)
             _picked = State(initialValue: true)
             seed = stableSeed(category.id.uuidString)
         }
@@ -76,15 +80,15 @@ struct CategorySheet: View {
     /// A name, and something different from what was there.
     private var canSave: Bool {
         guard !trimmed.isEmpty else { return false }
-        guard let category = changing else { return true }
-        return trimmed != category.name || picture != CategoryPicture(category) || colour != category.colour
+        guard let original else { return true }
+        return trimmed != original.name || picture != original.picture || colour != original.colour
     }
 
     var body: some View {
         VStack(spacing: 0) {
             SheetHeader(title: changing == nil ? "New Category" : "Edit Category", closeLabel: "Cancel", onClose: { dismiss() }) {
                 if changing != nil {
-                    Button { askingDelete = true } label: {
+                    Button { deleting = changing } label: {
                         SheetHeaderSymbol(name: "trash", ink: Tokens.Ink.destructive)
                     }
                     .buttonStyle(.plain)
@@ -123,11 +127,9 @@ struct CategorySheet: View {
         .onAppear {
             if changing == nil { nameFocused = true }
         }
-        .alert(deleteTitle, isPresented: $askingDelete) {
-            Button(deleteButton, role: .destructive, action: delete)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(deleteMessage)
+        .categoryDeleteAlert(for: $deleting) { _ in
+            onDelete()
+            dismiss()
         }
     }
 
@@ -268,35 +270,6 @@ struct CategorySheet: View {
         try? modelContext.save()
         onSave(category)
         dismiss()
-    }
-
-    private func delete() {
-        guard let category = changing else { return }
-        try? CategoryRemoval.delete(category, context: modelContext)
-        onDelete()
-        dismiss()
-    }
-
-    // MARK: The alert
-
-    private var billCount: Int { changing.map(CategoryRemoval.billCount) ?? 0 }
-
-    private var deleteTitle: String { "Delete “\(changing?.name ?? trimmed)”?" }
-
-    private var deleteMessage: String {
-        switch billCount {
-        case 0: "No bills use it."
-        case 1: "Its bill goes too, past and future. This can’t be undone."
-        default: "Its \(billCount) bills go too, past and future. This can’t be undone."
-        }
-    }
-
-    private var deleteButton: String {
-        switch billCount {
-        case 0: "Delete Category"
-        case 1: "Delete Category and Bill"
-        default: "Delete Category and Bills"
-        }
     }
 }
 

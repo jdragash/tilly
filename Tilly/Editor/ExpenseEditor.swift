@@ -5,7 +5,7 @@ import os
 
 /// Which input fills the area under the card, in the keypad's place.
 enum EditorPanel: Equatable {
-    case keypad, date, `repeat`, category, newCategory
+    case keypad, date, `repeat`, category
 }
 
 /// The editor, in `EditorSheet` over the timeline, or a system sheet over All bills. The card is
@@ -35,6 +35,10 @@ struct ExpenseEditor: View {
     @State private var viewportHeight: CGFloat = 0
     @State private var cardHeight: CGFloat = 0
     @State private var isClosing = false
+    /// The category sheets and the delete alert, opened from the grid.
+    @State private var makingCategory = false
+    @State private var editingCategory: ExpenseCategory?
+    @State private var deletingCategory: ExpenseCategory?
     /// Counts picks, for the pick's haptic.
     @State private var picks = 0
 
@@ -66,12 +70,10 @@ struct ExpenseEditor: View {
                         .padding(.horizontal, Tokens.Space.editorCardInset)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
                     Spacer(minLength: 0)
-                    // A new category takes the panel's place, above its keyboard. At accessibility
-                    // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
+                    // At accessibility sizes the keyboard pushes the sheet up, so the panel goes
+                    // while a name is typed.
                     Group {
-                        if panel == .newCategory {
-                            NewCategoryRow(existing: categories, onCreate: create, onCancel: { panel = .category })
-                        } else if keyboardCovers || !nameFocused {
+                        if keyboardCovers || !nameFocused {
                             // Where the keyboard covers, the panel stays in the layout so nothing
                             // above it moves, and hides so it can't show above a shorter keyboard.
                             panelArea
@@ -104,12 +106,21 @@ struct ExpenseEditor: View {
         .onChange(of: nameFocused) { _, focused in
             if focused { panel = .keypad }
         }
+        .sheet(isPresented: $makingCategory) {
+            CategorySheet(
+                subject: .new(existing: categories), onSave: { pick($0.id) }, onDelete: {}
+            )
+        }
+        .sheet(item: $editingCategory) { category in
+            let id = category.id
+            CategorySheet(subject: .change(category), onSave: { _ in }, onDelete: { categoryDeleted(id) })
+        }
+        .categoryDeleteAlert(for: $deletingCategory, onDeleted: categoryDeleted)
     }
 
     // MARK: Pieces
 
-    /// ✕ top left; trash, when a charge is open, and ✓ top right. A half-made category is finished
-    /// or cancelled before the expense is saved.
+    /// ✕ top left; trash, when a charge is open, and ✓ top right.
     private var header: some View {
         SheetHeader(onClose: { close(.cancelled) }) {
             if let session {
@@ -228,10 +239,13 @@ struct ExpenseEditor: View {
                 selection: draft.categoryID,
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
                 onPick: pick,
-                onNew: { panel = .newCategory }
+                onNew: { makeCategory() },
+                onEdit: { category in
+                    nameFocused = false
+                    editingCategory = category
+                },
+                onDelete: { deletingCategory = $0 }
             )
-        case .newCategory:
-            EmptyView()
         }
     }
 
@@ -243,7 +257,7 @@ struct ExpenseEditor: View {
     }
 
     private var progress: CardProgress {
-        CardProgress(draft: draft, categoryExists: selectedCategory != nil, isMakingCategory: panel == .newCategory)
+        CardProgress(draft: draft, categoryExists: selectedCategory != nil)
     }
 
     /// The part whose input is open: the name while it's typed in, otherwise the panel's own part.
@@ -253,15 +267,14 @@ struct ExpenseEditor: View {
         case .keypad: return .amount
         case .date: return .date
         case .repeat: return .repeat
-        case .category, .newCategory: return .category
+        case .category: return .category
         }
     }
 
-    /// The keyboard covers the editor at standard sizes. It can't while a category is made, where
-    /// the symbols take the keypad's place and the name's keyboard pushes the sheet up, or at accessibility sizes, where it
+    /// The keyboard covers the editor at standard sizes. It can't at accessibility sizes, where it
     /// would cover the name field.
     private var keyboardCovers: Bool {
-        !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
+        !dynamicTypeSize.isAccessibilitySize
     }
 
     private var selectedCategory: ExpenseCategory? {
@@ -274,7 +287,6 @@ struct ExpenseEditor: View {
 
     /// ✓ waits for a change once there's a charge open — an untouched edit has nothing to save.
     private var canSave: Bool {
-        guard panel != .newCategory else { return false }
         guard session != nil else { return isValid }
         return isValid && draft.changes.any
     }
@@ -292,16 +304,16 @@ struct ExpenseEditor: View {
         withAnimation(.easeInOut(duration: Tokens.Motion.categoryFade)) { draft.categoryID = id }
     }
 
-    /// A category made in the editor is picked at once, and the grid comes back.
-    private func create(_ category: ExpenseCategory) {
-        modelContext.insert(category)
-        do {
-            try modelContext.save()
-        } catch {
-            Self.logger.error("Saving a category failed: \(error)")
-        }
-        pick(category.id)
-        panel = .category
+    private func makeCategory() {
+        nameFocused = false
+        makingCategory = true
+    }
+
+    /// A category was deleted, here or from its sheet, with its bills. The bill being made loses it
+    /// if it was picked; a charge open on a bill that went with it closes the editor.
+    private func categoryDeleted(_ id: UUID) {
+        if draft.categoryID == id { draft.categoryID = nil }
+        if let session, fetchExpense(session.expenseID) == nil { close(.deleted) }
     }
 
     /// Whether ✓ asks "this charge or future charges" rather than saving.

@@ -23,13 +23,11 @@ import TillyCore
     static func progress(
         digits: String = "",
         name: String = "",
-        categoryExists: Bool = false,
-        isMakingCategory: Bool = false
+        categoryExists: Bool = false
     ) -> CardProgress {
         CardProgress(
             draft: draft(digits: digits, name: name),
-            categoryExists: categoryExists,
-            isMakingCategory: isMakingCategory
+            categoryExists: categoryExists
         )
     }
 
@@ -56,7 +54,7 @@ import TillyCore
         )
         var draft = ExpenseDraft(editing: baseline)
         draft.digits = "0"
-        let progress = CardProgress(draft: draft, categoryExists: true, isMakingCategory: false)
+        let progress = CardProgress(draft: draft, categoryExists: true)
         #expect(!progress.isMissing(.amount))
     }
 
@@ -89,11 +87,6 @@ import TillyCore
         #expect(progress.next(after: nil) == nil)
     }
 
-    @Test func nextSkipsCategoryWhileMaking() {
-        let progress = Self.progress(name: "Rent", isMakingCategory: true)
-        #expect(progress.next(after: .name) == .amount)
-    }
-
     // MARK: Breathing
 
     @Test func nothingBreathesWithoutAnAmount() {
@@ -113,10 +106,5 @@ import TillyCore
     @Test func categoryBreathesLast() {
         let progress = Self.progress(digits: "12", name: "Rent")
         #expect(progress.breathing(focused: nil) == .category)
-    }
-
-    @Test func categoryDoesNotBreatheWhileMaking() {
-        let progress = Self.progress(digits: "12", name: "Rent", isMakingCategory: true)
-        #expect(progress.breathing(focused: nil) == nil)
     }
 }

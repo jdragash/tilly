@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The categories four across, in the Settings order, each a paper card, and a dashed `New` last.
-/// One tap picks; the picked card carries a ring. Scrolls when the cards outgrow the panel. See
+/// One tap picks; the picked card carries a ring; holding one offers Edit and Delete. Scrolls when the cards outgrow the panel. See
 /// "The picker is a grid of category cards" in `docs/DESIGN.md`.
 struct CategoryGrid: View {
     let categories: [ExpenseCategory]   // Settings order
@@ -9,7 +9,8 @@ struct CategoryGrid: View {
     let newBreathes: Bool
     let onPick: (UUID) -> Void
     let onNew: () -> Void
-
+    let onEdit: (ExpenseCategory) -> Void
+    let onDelete: (ExpenseCategory) -> Void
 
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: Tokens.Space.pickerGap), count: Tokens.Size.pickerColumns)
@@ -24,6 +25,10 @@ struct CategoryGrid: View {
                         .accessibilityLabel(category.name)
                         .accessibilityHint("Puts the bill in this category")
                         .accessibilityAddTraits(category.id == selection ? .isSelected : [])
+                        .contextMenu {
+                            Button { onEdit(category) } label: { Label("Edit", systemImage: "pencil") }
+                            Button(role: .destructive) { onDelete(category) } label: { Label("Delete", systemImage: "trash") }
+                        }
                 }
                 Button(action: onNew) { newCard }
                     .buttonStyle(.plain)

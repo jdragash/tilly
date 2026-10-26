@@ -366,7 +366,7 @@ private struct EditorCardPreview: View {
     @FocusState private var nameFocused: Bool
 
     var body: some View {
-        let progress = CardProgress(draft: draft, categoryExists: category != nil, isMakingCategory: false)
+        let progress = CardProgress(draft: draft, categoryExists: category != nil)
         EditorCard(
             draft: draft,
             name: $draft.name,
