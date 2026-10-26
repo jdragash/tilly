@@ -8,6 +8,7 @@
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, sheet, card and grid are
   dashed-and-solid.html's, as shipped in v0.7.0.
   Deleting a category deletes its bills, after a warning (Jake, 2026-10-25). Tune shows only the open choices.
+  The editor is its own sheet over the bill editor or Settings (Jake, 2026-10-26).
   Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
@@ -313,7 +314,7 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .mq .sheet2{transition:transform .34s cubic-bezier(.2,.8,.2,1),visibility 0s .34s}
 .mq .sheet2.open{transition:transform .34s cubic-bezier(.2,.8,.2,1),visibility 0s}
 #csheet{z-index:30;top:calc(var(--sat) + 20px)}
-#ssheet.back{transform:scale(.94) translateY(-6px);filter:brightness(.92)}
+#sheet.open.back,#ssheet.open.back{transform:scale(.94) translateY(-6px);filter:brightness(.92)}
 .s2t{position:absolute;left:0;right:0;top:26px;text-align:center;font:600 17px var(--text)}
 .sbody{position:absolute;left:0;right:0;top:76px;bottom:0;overflow-y:auto;padding:4px 16px 40px;scrollbar-width:none}
 .sbody::-webkit-scrollbar{display:none}
@@ -437,6 +438,7 @@ textarea#catsIn{width:100%;min-height:150px;border-radius:10px;border:0;backgrou
   <div class="sheet2" id="csheet">
     <button class="hbtn" id="cX" aria-label="Cancel" style="left:16px">✕</button>
     <button class="hbtn" id="cOk" aria-label="Save" style="right:16px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+    <div class="s2t" id="cTitle"></div>
     <div id="cprev"></div>
     <div id="cpanel2"></div>
   </div>
@@ -884,17 +886,17 @@ const ceChanged=()=>CE.ci==null||CE.orig!==JSON.stringify([CE.name.trim(),CE.gly
 function openCat(host,ci){
   const c=ci==null?null:cats[ci];
   CE={ci,host,name:c?c.name:"",glyph:c?c.glyph:null,picked:!!c,col:c?c.col%8:nextCol(),key:c?c.name:"new"+cats.length,orig:c?JSON.stringify([c.name,c.glyph,c.col%8]):null};
-  if(host==="bill") setPanel("cat");
-  else { $("ssheet").classList.add("back"); $("csheet").classList.add("open"); mountCat($("cpanel2"),"settings"); }
-  setTimeout(()=>{ const i=document.querySelector(host==="bill"?"#catp input":"#cpanel2 input"); if(i&&ci==null) i.focus({preventScroll:true}); },S.motion==="quick"?360:0);
+  (host==="bill"?sheet:$("ssheet")).classList.add("back"); $("csheet").classList.add("open"); mountCat($("cpanel2"),host);
+  setTimeout(()=>{ const i=document.querySelector("#cpanel2 input"); if(i&&ci==null) i.focus({preventScroll:true}); },S.motion==="quick"?360:0);
 }
 function closeCat(){
   if(!CE) return; const host=CE.host; CE=null;
-  if(host==="bill") setPanel("picker");
-  else { $("csheet").classList.remove("open"); $("ssheet").classList.remove("back"); document.activeElement&&document.activeElement.blur(); renderSettings(); }
+  $("csheet").classList.remove("open"); sheet.classList.remove("back"); $("ssheet").classList.remove("back"); document.activeElement&&document.activeElement.blur();
+  if(host==="bill"){ renderPicker(); renderCard(); } else renderSettings();
 }
 function mountCat(root,host){
-  const edit=CE.ci!=null, header=host==="bill"&&S.buttons==="header", nb=edit?bills.filter(b=>b.cat===CE.ci).length:0;
+  const edit=CE.ci!=null, header=false, nb=edit?bills.filter(b=>b.cat===CE.ci).length:0;
+  $("cTitle").textContent=edit?"Edit Category":"New Category";
   root.innerHTML=(header?`<div class="cph"><button data-act="cancel">Cancel</button><span class="cpt">${edit?"Edit Category":"New Category"}</span><button class="add" data-act="save">${edit?"Done":"Add"}</button></div>`:"")+
     `<div class="cprow"><button class="slot" data-act="slot" aria-label="Symbol"></button>`+
     `<label class="cpname"><input type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" value="${esc(CE.name)}"></label></div>`+
@@ -919,8 +921,8 @@ function mountCat(root,host){
 }
 function updateCat(){
   if(!CE) return;
-  const root=CE.host==="bill"?$("catp"):$("cpanel2"), d=draftCat(), sg=suggest(CE.name), boil=S.boil!=="off";
-  const slot=root.querySelector(".slot"), grid=S.preview==="grid"&&CE.host==="bill";
+  const root=$("cpanel2"), d=draftCat(), sg=suggest(CE.name), boil=S.boil!=="off";
+  const slot=root.querySelector(".slot"), grid=false;
   slot.className="slot"+(grid?" gridprev":"")+(CE.glyph?"":" empty")+(CE.glyph&&!CE.picked?" guess":"");
   slot.innerHTML=grid?(CE.glyph||CE.name?gridCard(d,null,79,98,false):""):
     CE.glyph?picOf(d,48,false,boil):`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>`;
@@ -929,8 +931,7 @@ function updateCat(){
   root.querySelectorAll(".sw button").forEach(b=>b.classList.toggle("on",+b.dataset.col===CE.col));
   root.querySelectorAll(".ag").forEach(b=>{ const g=b.dataset.g; if(b.dataset.c!==String(CE.col)){ b.innerHTML=picOf({glyph:g,col:CE.col,key:g},44,false,false); b.dataset.c=CE.col; } b.classList.toggle("on",CE.glyph===g); });
   const add=root.querySelector("[data-act=save]"); if(add) add.disabled=!(ceDone()&&ceChanged());
-  if(CE.host==="bill") renderCard();
-  else { const cp=$("cprev"); cp.className=CE.glyph||CE.name?"":"empty"; cp.innerHTML=CE.glyph||CE.name?gridCard(d,null,118,147,false):"";
+  { const cp=$("cprev"); cp.className=CE.glyph||CE.name?"":"empty"; cp.innerHTML=CE.glyph||CE.name?gridCard(d,null,118,147,false):"";
     $("cOk").classList.toggle("ok",ceDone()&&ceChanged()); $("cOk").style.cssText=`right:16px;${ceDone()&&ceChanged()?"background:var(--accent);color:#fff":"color:var(--ink2);opacity:.55"}`; }
 }
 function saveCat(){
@@ -1010,9 +1011,7 @@ function panelHTML(){
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
-    tcard("Seeing it as you make it","Try names like Gym, Netflix, Rugby, Uber or Barber.",optHTML("preview"))+
-    tcard("The guessed symbol","",optHTML("guess"))+
-    tcard("Finishing","In the bill editor. From Settings it's a sheet of its own, with ✕ and ✓.",optHTML("buttons"))+
+    tcard("The guessed symbol","Try names like Gym, Netflix, Rugby, Uber or Barber.",optHTML("guess"))+
     tcard("Finding Edit in the grid","",optHTML("findEdit"))+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
@@ -1035,7 +1034,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["preview","guess","buttons","findEdit"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["guess","findEdit"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
@@ -1054,9 +1053,9 @@ function apply(k){
   phone.classList.toggle("mq",S.motion==="quick");
   renderPanel();
   if(!["preview","guess","buttons","findEdit","motion"].includes(k)) renderList(!!k);
-  if(sheet.classList.contains("open")){ if(sheet.dataset.panel==="picker") renderPicker(); if(sheet.dataset.panel==="cat"&&CE) mountCat($("catp"),"bill"); renderCard(true); }
+  if(sheet.classList.contains("open")){ if(sheet.dataset.panel==="picker") renderPicker(); renderCard(true); }
   if($("ssheet").classList.contains("open")) renderSettings();
-  if($("csheet").classList.contains("open")&&CE) mountCat($("cpanel2"),"settings");
+  if($("csheet").classList.contains("open")&&CE) mountCat($("cpanel2"),CE.host);
 }
 function rebuild(){ closeSheet(); ["ssheet","csheet"].forEach(id=>$(id).classList.remove("open","back")); $("scrim").classList.remove("on"); loadData(); apply(); }
 
