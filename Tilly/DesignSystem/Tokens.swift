@@ -3,8 +3,18 @@ import UIKit
 
 enum Tokens {
     enum Text {
-        /// A picker card's name, 12pt bold, and the light plus on `New`; from the prototype.
-        static let pickerName: Font = .caption.bold()
+        /// A picker card's name, 13.5pt bold at the default text size, scaling as `caption` does;
+        /// from the prototype. Pass the view's `dynamicTypeSize`, so a cap on it holds.
+        static func pickerName(_ dynamicTypeSize: DynamicTypeSize) -> Font {
+            .system(size: scaled(LayoutTuning.shared.layout.nameSize, as: .caption1, at: dynamicTypeSize), weight: .bold)
+        }
+
+        /// `size` at the default text size, scaled as `style` scales at `dynamicTypeSize`. A tuned
+        /// point size keeps Dynamic Type this way: `Font.system(size:)` has no `relativeTo:`.
+        static func scaled(_ size: CGFloat, as style: UIFont.TextStyle, at dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+            let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
+            return UIFontMetrics(forTextStyle: style).scaledValue(for: size, compatibleWith: traits)
+        }
         static let pickerPlus: Font = .system(size: Size.pickerPlus, weight: .light)
         /// The face the whole app is set in: SF Pro Rounded, through `.fontDesign` at the root.
         static let design: Font.Design = .rounded
@@ -136,7 +146,7 @@ enum Tokens {
         /// A timeline row's picture while still to come; from the prototype.
         static let upcomingPicture: Double = 0.8
         /// A picker card's colour strip, a wash at the prototype's 0.92.
-        static let pickerStrip: Double = 0.92
+        static var pickerStrip: Double { LayoutTuning.shared.layout.stripOpacity }
         /// The today divider's waves; from the prototype.
         static let squiggle: Double = 0.5
         /// The category view's today line; from the prototype.
@@ -207,14 +217,14 @@ enum Tokens {
     enum Space {
         /// The picker's cards, both ways; a card's picture from its top, its name from its bottom,
         /// and the ring outside the picked card. From the prototype.
-        static let pickerGap: CGFloat = 10
+        static var pickerGap: CGFloat { LayoutTuning.shared.layout.gap }
         /// The grid's cards in from the screen's sides, and its top under the panel's; from the
         /// prototype's `#picker` padding.
-        static let pickerSide: CGFloat = 22
-        static let pickerTop: CGFloat = 6
-        static let pickerPictureTop: CGFloat = 14
-        static let pickerNameBottom: CGFloat = 12
-        static let pickerNameSide: CGFloat = 5
+        static var pickerSide: CGFloat { LayoutTuning.shared.layout.side }
+        static var pickerTop: CGFloat { LayoutTuning.shared.layout.top }
+        static var pickerPictureTop: CGFloat { LayoutTuning.shared.layout.pictureTop }
+        static var pickerNameBottom: CGFloat { LayoutTuning.shared.layout.nameBottom }
+        static var pickerNameSide: CGFloat { LayoutTuning.shared.layout.nameSide }
         /// The least room between a picker card's picture and its name, where a large text size
         /// grows the card.
         static let pickerNameTop: CGFloat = 4
@@ -369,12 +379,12 @@ enum Tokens {
     enum Size {
         /// The category picker: cards across, a card's height, its picture and the colour strip
         /// along its bottom. From the prototype.
-        static let pickerColumns = 4
-        static let pickerCard: CGFloat = 98
-        static let pickerPicture: CGFloat = 36
+        static var pickerColumns: Int { LayoutTuning.shared.layout.columns }
+        static var pickerCard: CGFloat { LayoutTuning.shared.layout.cardHeight }
+        static var pickerPicture: CGFloat { LayoutTuning.shared.layout.pictureSize }
         static let pickerPlus: CGFloat = 32
-        /// The strip shows 7pt: the prototype's 4pt band starts the card's 3pt edge above that.
-        static let pickerStrip: CGFloat = 7
+        /// The strip along a picker card's bottom.
+        static var pickerStrip: CGFloat { LayoutTuning.shared.layout.stripHeight }
         /// A timeline row, its card `Space.rowGap / 2` in from its top and bottom; from the prototype.
         static let row: CGFloat = 64
         /// A row's picture, its badge and the badge's symbol; from the prototype.
@@ -559,9 +569,9 @@ enum Tokens {
     /// half the CSS blur.
     enum Shadow {
         /// A picker card's, in light mode only: the prototype's 0 1 2 at 10% black.
-        static let pickerCardColour: Color = .black.opacity(0.1)
-        static let pickerCardRadius: CGFloat = 1
-        static let pickerCardY: CGFloat = 1
+        static var pickerCardColour: Color { .black.opacity(LayoutTuning.shared.layout.shadowOpacity) }
+        static var pickerCardRadius: CGFloat { LayoutTuning.shared.layout.shadowRadius }
+        static var pickerCardY: CGFloat { LayoutTuning.shared.layout.shadowY }
         static let cardColour: Color = .black.opacity(0.16)
         static let cardRadius: CGFloat = 14
         static let cardY: CGFloat = 12
@@ -582,8 +592,9 @@ enum Tokens {
 
     enum Radius {
         /// A card in the category picker, and the ring round the picked one; from the prototype.
-        static let pickerCard: CGFloat = 10
-        static let pickerRing: CGFloat = 14
+        static var pickerCard: CGFloat { LayoutTuning.shared.layout.cornerRadius }
+        /// Concentric with the card it rings: the card's radius plus the gap.
+        static var pickerRing: CGFloat { pickerCard + Space.pickerRingOutset }
         static let icon: CGFloat = 10
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
@@ -730,7 +741,7 @@ extension Tokens {
         static let roundWashEdgeBlur: CGFloat = 0.7
         /// A picker card's edge, as the prototype's `paperBigF` bends it: displacement 5, so at most
         /// 2.5pt, slowly. The timeline's rows keep the tuned `edgeWobble`.
-        static let pickerCardWobble: CGFloat = 2.5
+        @MainActor static var pickerCardWobble: CGFloat { LayoutTuning.shared.layout.edgeWobble }
         /// A picker card's colour strip, ragged as the prototype's `washF` makes it: displacement 3.2,
         /// at 0.07 cycles per pt.
         static let stripWobble: CGFloat = 1.6
@@ -780,6 +791,6 @@ extension Tokens {
         /// How far a name's word may be from a catalogue word, by on-device word similarity, and
         /// still count as that symbol. Lower is stricter. A tuning value; Jake tunes it by feel. This
         /// model puts even close words near 1 (rugby to its nearest catalogue word is 1.05).
-        static let maxDistance: Double = 1.06
+        static var maxDistance: Double { LayoutTuning.shared.layout.guessDistance }
     }
 }

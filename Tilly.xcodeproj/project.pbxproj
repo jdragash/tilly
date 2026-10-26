@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1A0000000000000000000020 /* TillyCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000019 /* TillyCore */; };
+		1A0000000000000000000033 /* DialkitmacOS in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000031 /* DialkitmacOS */; };
+		1A0000000000000000000034 /* DialkitmacOSAgent in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000032 /* DialkitmacOSAgent */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,6 +38,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A0000000000000000000020 /* TillyCore in Frameworks */,
+				1A0000000000000000000033 /* DialkitmacOS in Frameworks */,
+				1A0000000000000000000034 /* DialkitmacOSAgent in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,6 +92,8 @@
 			name = Tilly;
 			packageProductDependencies = (
 				1A0000000000000000000019 /* TillyCore */,
+				1A0000000000000000000031 /* DialkitmacOS */,
+				1A0000000000000000000032 /* DialkitmacOSAgent */,
 			);
 			productName = Tilly;
 			productReference = 1A0000000000000000000006 /* Tilly.app */;
@@ -144,6 +150,7 @@
 			mainGroup = 1A0000000000000000000002;
 			packageReferences = (
 				1A0000000000000000000018 /* XCLocalSwiftPackageReference "Core" */,
+				1A0000000000000000000030 /* XCRemoteSwiftPackageReference "dialkit-macos" */,
 			);
 			productRefGroup = 1A0000000000000000000003 /* Products */;
 			projectDirPath = "";
@@ -454,10 +461,31 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		1A0000000000000000000030 /* XCRemoteSwiftPackageReference "dialkit-macos" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mikelikesdesign/dialkit-macos";
+			requirement = {
+				kind = revision;
+				revision = 352a31e4394c6e574f59df5aa1c306e5f2ff4f05;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		1A0000000000000000000019 /* TillyCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TillyCore;
+		};
+		1A0000000000000000000031 /* DialkitmacOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000000000000000000030 /* XCRemoteSwiftPackageReference "dialkit-macos" */;
+			productName = DialkitmacOS;
+		};
+		1A0000000000000000000032 /* DialkitmacOSAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000000000000000000030 /* XCRemoteSwiftPackageReference "dialkit-macos" */;
+			productName = DialkitmacOSAgent;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

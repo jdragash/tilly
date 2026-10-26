@@ -18,6 +18,13 @@ struct TillyApp: App {
     }()
     #endif
 
+    #if DEBUG
+    init() {
+        // The layout's dials, for DialKit's Mac inspector. See `CategoryDials`.
+        CategoryDials.shared.start()
+    }
+    #endif
+
     var body: some Scene {
         WindowGroup {
             #if DEBUG

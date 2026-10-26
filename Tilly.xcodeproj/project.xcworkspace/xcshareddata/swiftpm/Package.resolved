@@ -1,0 +1,14 @@
+{
+  "originHash" : "30316ad21bde78aa4d420e7cf9617e8aa1e80fa5020c2753808922802bd2efc7",
+  "pins" : [
+    {
+      "identity" : "dialkit-macos",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mikelikesdesign/dialkit-macos",
+      "state" : {
+        "revision" : "352a31e4394c6e574f59df5aa1c306e5f2ff4f05"
+      }
+    }
+  ],
+  "version" : 3
+}

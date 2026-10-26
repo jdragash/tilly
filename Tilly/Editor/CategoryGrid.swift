@@ -11,6 +11,7 @@ struct CategoryGrid: View {
     let onNew: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: Tokens.Space.pickerGap), count: Tokens.Size.pickerColumns)
@@ -60,7 +61,7 @@ struct CategoryGrid: View {
             .padding(.top, Tokens.Space.pickerPictureTop)
             Spacer(minLength: Tokens.Space.pickerNameTop)
             Text(category.name)
-                .font(Tokens.Text.pickerName)
+                .font(Tokens.Text.pickerName(dynamicTypeSize))
                 .foregroundStyle(Tokens.Ink.primary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -116,7 +117,7 @@ struct CategoryGrid: View {
             }
             .overlay(alignment: .bottom) {
                 Text("New")
-                    .font(Tokens.Text.pickerName)
+                    .font(Tokens.Text.pickerName(dynamicTypeSize))
                     .padding(.bottom, Tokens.Space.pickerNameBottom)
             }
             .foregroundStyle(Tokens.Drawn.ink2)
