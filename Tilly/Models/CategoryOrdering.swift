@@ -44,10 +44,96 @@ enum CategoryOrdering {
         renumber(reordered)
     }
 
+    /// Sorts once: rewrites `sortOrder` 0..<n to the chosen order and returns the order it replaced
+    /// (ids, by the old `sortOrder`), so Undo can `restore` it. Ties fall back to name, then to the
+    /// order they were already in. A category with no figures counts as none.
+    @discardableResult
+    static func arrange(
+        _ categories: [ExpenseCategory], by sort: CategorySort,
+        figures: [UUID: (bills: Int, monthly: Decimal)]
+    ) -> [UUID] {
+        let previous = categories.sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
+        let position = Dictionary(uniqueKeysWithValues: previous.enumerated().map { ($1.id, $0) })
+
+        // Orders by `key` ascending; a larger key ties to the name, then to the previous order.
+        func ordered(by key: (ExpenseCategory) -> Int) -> [ExpenseCategory] {
+            previous.sorted { lhs, rhs in
+                if key(lhs) != key(rhs) { return key(lhs) < key(rhs) }
+                let names = lhs.name.localizedStandardCompare(rhs.name)
+                if names != .orderedSame { return names == .orderedAscending }
+                return position[lhs.id]! < position[rhs.id]!
+            }
+        }
+
+        let arranged: [ExpenseCategory]
+        switch sort {
+        case .colour:
+            arranged = ordered { rainbowRank($0.colour) }
+        case .name:
+            arranged = ordered { _ in 0 }
+        case .monthlyCost:
+            // Whole units, so the key is an Int; the card totals are already whole.
+            arranged = ordered { -(NSDecimalNumber(decimal: figures[$0.id]?.monthly ?? 0).intValue) }
+        case .billCount:
+            arranged = ordered { -(figures[$0.id]?.bills ?? 0) }
+        }
+        renumber(arranged)
+        return previous.map(\.id)
+    }
+
+    /// Puts an order from `arrange` back. Ids that no longer name a category are skipped, and
+    /// categories the order doesn't mention follow it, in their current order.
+    static func restore(_ categories: [ExpenseCategory], order: [UUID]) {
+        let byID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
+        let named = order.compactMap { byID[$0] }
+        let mentioned = Set(named.map(\.id))
+        let rest = categories
+            .filter { !mentioned.contains($0.id) }
+            .sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
+        renumber(named + rest)
+    }
+
+    /// Red, orange, yellow, green, teal, blue, purple, pink; no colour last.
+    private static func rainbowRank(_ colour: CategoryColour?) -> Int {
+        switch colour {
+        case .red: 0
+        case .orange: 1
+        case .yellow: 2
+        case .green: 3
+        case .aqua: 4
+        case .blue: 5
+        case .violet: 6
+        case .magenta: 7
+        case nil: 8
+        }
+    }
+
     private static func renumber(_ ordered: [ExpenseCategory]) {
         // Only writes what changed, so a backfill over an ordered store leaves nothing dirty.
         for (index, category) in ordered.enumerated() where category.sortOrder != index {
             category.sortOrder = index
+        }
+    }
+}
+
+/// How Settings can arrange the categories, once.
+enum CategorySort: CaseIterable, Sendable {
+    case colour, name, monthlyCost, billCount
+
+    var title: String {
+        switch self {
+        case .colour: "Colour"
+        case .name: "Name"
+        case .monthlyCost: "Monthly cost"
+        case .billCount: "Number of bills"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .colour: "rainbow"
+        case .name: "A to Z"
+        case .monthlyCost, .billCount: "most first"
         }
     }
 }

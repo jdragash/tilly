@@ -26,6 +26,93 @@ import Testing
         categories.sorted { $0.sortOrder < $1.sortOrder }.map(\.name)
     }
 
+    // MARK: arrange and restore
+
+    static let noFigures: [UUID: (bills: Int, monthly: Decimal)] = [:]
+
+    @Test func colourSortsAsARainbow() throws {
+        let (_, made) = try Self.categories([
+            (name: "None", created: 0, order: 0, colour: ""),
+            (name: "Pink", created: 1, order: 1, colour: "magenta"),
+            (name: "Purple", created: 2, order: 2, colour: "violet"),
+            (name: "Blue", created: 3, order: 3, colour: "blue"),
+            (name: "Teal", created: 4, order: 4, colour: "aqua"),
+            (name: "Green", created: 5, order: 5, colour: "green"),
+            (name: "Yellow", created: 6, order: 6, colour: "yellow"),
+            (name: "Orange", created: 7, order: 7, colour: "orange"),
+            (name: "Red", created: 8, order: 8, colour: "red"),
+        ])
+        CategoryOrdering.arrange(made, by: .colour, figures: Self.noFigures)
+        #expect(Self.byOrder(made) == ["Red", "Orange", "Yellow", "Green", "Teal", "Blue", "Purple", "Pink", "None"])
+    }
+
+    @Test func nameSortsAToZ() throws {
+        let (_, made) = try Self.categories([
+            (name: "bills 10", created: 0, order: 0, colour: "blue"),
+            (name: "Zoo", created: 1, order: 1, colour: "blue"),
+            (name: "bills 2", created: 2, order: 2, colour: "blue"),
+            (name: "Apple", created: 3, order: 3, colour: "blue"),
+        ])
+        CategoryOrdering.arrange(made, by: .name, figures: Self.noFigures)
+        #expect(Self.byOrder(made) == ["Apple", "bills 2", "bills 10", "Zoo"])
+    }
+
+    @Test func costSortsMostFirst() throws {
+        let (_, made) = try Self.categories([
+            (name: "A", created: 0, order: 0, colour: "blue"),
+            (name: "B", created: 1, order: 1, colour: "blue"),
+            (name: "C", created: 2, order: 2, colour: "blue"),
+        ])
+        let figures = [made[0].id: (bills: 1, monthly: Decimal(10)), made[1].id: (bills: 1, monthly: Decimal(300))]
+        CategoryOrdering.arrange(made, by: .monthlyCost, figures: figures)
+        // C has no figures, so it costs nothing and goes last.
+        #expect(Self.byOrder(made) == ["B", "A", "C"])
+    }
+
+    @Test func countSortsMostFirst() throws {
+        let (_, made) = try Self.categories([
+            (name: "A", created: 0, order: 0, colour: "blue"),
+            (name: "B", created: 1, order: 1, colour: "blue"),
+            (name: "C", created: 2, order: 2, colour: "blue"),
+        ])
+        let figures = [
+            made[0].id: (bills: 1, monthly: Decimal(900)),
+            made[1].id: (bills: 4, monthly: Decimal(5)),
+            made[2].id: (bills: 2, monthly: Decimal(5)),
+        ]
+        CategoryOrdering.arrange(made, by: .billCount, figures: figures)
+        #expect(Self.byOrder(made) == ["B", "C", "A"])
+    }
+
+    @Test func tiesFallBackToName() throws {
+        let (_, made) = try Self.categories([
+            (name: "Mango", created: 0, order: 0, colour: "red"),
+            (name: "Cherry", created: 1, order: 1, colour: "red"),
+            (name: "Lime", created: 2, order: 2, colour: "green"),
+            (name: "Apple", created: 3, order: 3, colour: "red"),
+        ])
+        CategoryOrdering.arrange(made, by: .colour, figures: Self.noFigures)
+        #expect(Self.byOrder(made) == ["Apple", "Cherry", "Mango", "Lime"])
+
+        let same = Dictionary(uniqueKeysWithValues: made.map { ($0.id, (bills: 2, monthly: Decimal(50))) })
+        CategoryOrdering.arrange(made, by: .billCount, figures: same)
+        #expect(Self.byOrder(made) == ["Apple", "Cherry", "Lime", "Mango"])
+    }
+
+    @Test func restorePutsTheOrderBack() throws {
+        let (_, made) = try Self.categories([
+            (name: "C", created: 0, order: 0, colour: "blue"),
+            (name: "A", created: 1, order: 1, colour: "blue"),
+            (name: "B", created: 2, order: 2, colour: "blue"),
+        ])
+        let before = CategoryOrdering.arrange(made, by: .name, figures: Self.noFigures)
+        #expect(Self.byOrder(made) == ["A", "B", "C"])
+        #expect(before == [made[0].id, made[1].id, made[2].id])
+        CategoryOrdering.restore(made, order: before)
+        #expect(Self.byOrder(made) == ["C", "A", "B"])
+        #expect(made.map(\.sortOrder).sorted() == [0, 1, 2])
+    }
+
     // MARK: nextColour
 
     @Test func nextColourWithNoneUsedIsBlue() {
