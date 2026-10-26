@@ -377,6 +377,13 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 @keyframes pushIn{from{transform:translateX(40%);opacity:0}to{transform:none;opacity:1}}
 @keyframes popIn{from{transform:translateX(-30%);opacity:0}to{transform:none;opacity:1}}
 .sgrid{padding:6px 0 0}
+.gc .gbadge{position:absolute;left:50%;top:calc(var(--gpt) - 6px);margin-left:calc(var(--gps) / 2 - 9px);min-width:19px;height:19px;border-radius:10px;
+  padding:0 5px;color:#fff;font:700 11.5px/19px var(--text);text-align:center;box-shadow:0 0 0 2px var(--paperCard)}
+.gc .gbadge.gpill{margin-left:calc(var(--gps) / 2 - 16px)}
+.gc .gcorner{position:absolute;top:7px;font:600 11px/13px var(--text);color:var(--ink2)}
+.gc .gcorner.cl{left:8px} .gc .gcorner.cr{right:8px}
+.gc .gstrip{position:absolute;left:3px;right:3px;bottom:4px;height:15px;text-align:center;font:700 10.5px/15px var(--text);color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 2px rgba(0,0,0,.15)}
 .gc .gx{position:absolute;left:4px;right:4px;bottom:11px;text-align:center;font:500 11px/13px var(--text);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #smenu{position:absolute;right:16px;top:66px;width:250px;border-radius:14px;background:var(--glass);-webkit-backdrop-filter:blur(30px) saturate(1.6);
   backdrop-filter:blur(30px) saturate(1.6);box-shadow:inset 0 0 0 .5px var(--glassedge),0 12px 40px rgba(0,0,0,.18);overflow:hidden;font-family:var(--text);z-index:8;display:none}
@@ -545,7 +552,7 @@ const KEY="tilly-category-editor";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",cardInfo:"cost"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",cardInfo:"cost",infoAt:"below"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -872,9 +879,27 @@ $("okBtn").addEventListener("click",()=>{
 
 /* ---------- the picker: the grid of category cards ---------- */
 let gridEditing=false;
+// info: {n, m, show} for a card in Settings, laid out where Tune puts it.
 function gridCard(c,i,cw,ch,on,info){
-  return `<button class="gc${on?" on":""}"${i==null?"":` data-ci="${i}"`}><img class="gbg" src="${cardSrc(cw,ch,{fill:DT.paperCard[md()],strip:{side:"bottom",col:colHex(c.col),w:4},r:10})}" alt="">`+
-    `<span class="gp">${picOf(c,ch>100?54:36,false,S.boil==="all")}</span><span class="gn"${info?` style="bottom:27px"`:""}>${esc(c.name||"Name")}</span>`+(info?`<span class="gx">${info}</span>`:"")+
+  const hex=colHex(c.col), at=S.infoAt; let extra="", gnB=null, stripW=4;
+  if(info){
+    const {n,m,show}=info, cnt=show!=="cost", cost=show!=="count";
+    const nb=`${n} bill${n===1?"":"s"}`, mc=n?money(m):"€0";
+    const line=show==="count"?nb:show==="cost"?(n?`${mc} a month`:"No bills"):(n?`${nb} · ${mc}`:"No bills");
+    if(at==="below"){ extra=`<span class="gx">${line}</span>`; gnB=27; }
+    else if(at==="badge"){
+      if(cnt) extra+=`<span class="gbadge" style="background:${hex}">${n}</span>`;
+      else extra+=`<span class="gbadge gpill" style="background:${hex}">${mc}</span>`;
+      if(cnt&&cost){ extra+=`<span class="gx">${n?mc+" a month":"No bills"}</span>`; gnB=27; }
+    }
+    else if(at==="corner"){
+      if(cnt) extra+=`<span class="gcorner ${cost?"cl":"cr"}">${n}</span>`;
+      if(cost) extra+=`<span class="gcorner cr">${mc}</span>`;
+    }
+    else if(at==="strip"){ stripW=17; extra=`<span class="gstrip">${line}</span>`; gnB=25; }
+  }
+  return `<button class="gc${on?" on":""}"${i==null?"":` data-ci="${i}"`}><img class="gbg" src="${cardSrc(cw,ch,{fill:DT.paperCard[md()],strip:{side:"bottom",col:hex,w:stripW},r:10})}" alt="">`+
+    `<span class="gp">${picOf(c,ch>120?54:36,false,S.boil==="all")}</span><span class="gn"${gnB?` style="bottom:${gnB}px"`:""}>${esc(c.name||"Name")}</span>`+extra+
     (gridEditing&&i!=null?`<span class="pen"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M8.2 1.8l2 2-6 6-2.6.6.6-2.6z"/></svg></span>`:"")+`</button>`;
 }
 function renderPicker(){
@@ -1110,10 +1135,11 @@ let setPage="root";
 const GRIDICON=`<svg viewBox="0 0 20 20" fill="#fff"><rect x="3.5" y="3.5" width="5.6" height="5.6" rx="1.4"/><rect x="10.9" y="3.5" width="5.6" height="5.6" rx="1.4"/><rect x="3.5" y="10.9" width="5.6" height="5.6" rx="1.4"/><rect x="10.9" y="10.9" width="5.6" height="5.6" rx="1.4"/></svg>`;
 // What a card in Settings says under its name, besides the name.
 function cardInfo(i){
-  if(S.cardInfo==="none") return "";
-  const n=bills.filter(b=>b.cat===i).length, m=Math.round(monthly(i)), nb=`${n} bill${n===1?"":"s"}`, mc=n?`${money(m)} a month`:"";
-  return S.cardInfo==="count"?nb:S.cardInfo==="cost"?(mc||"No bills"):(n?`${nb} · ${money(m)}`:"No bills");
+  if(S.cardInfo==="none") return null;
+  return {n:bills.filter(b=>b.cat===i).length, m:Math.round(monthly(i)), show:S.cardInfo};
 }
+function cardH(){ if(S.cardInfo==="none") return 98;
+  return S.infoAt==="below"||(S.infoAt==="badge"&&S.cardInfo==="both")?112:S.infoAt==="strip"?110:98; }
 function renderSettings(){
   const sb=$("sbody"), cl=$("sClose");
   $("s2t").textContent=setPage==="root"?"Settings":"Categories";
@@ -1122,7 +1148,7 @@ function renderSettings(){
   sb.innerHTML=setPage==="root"?
     `<div class="grp"><button class="srow" data-go="cats"><span class="grp-pic stile" style="background:#5A6CE8">${GRIDICON}</span><span class="sn">Categories</span><span class="sc">${cats.length}</span><span class="chev">›</span></button></div>`+
     `<div class="sfoot">More settings join this list as they arrive.</div>`:
-    (()=>{ const W=(sb.clientWidth||390)-32, cw=Math.floor((W-30)/4), ch=S.cardInfo==="none"?98:112;
+    (()=>{ const W=(sb.clientWidth||390)-32, cw=Math.floor((W-30)/4), ch=cardH();
       return `<div class="pgrid sgrid" style="grid-template-columns:repeat(4,1fr);--gh:${ch}px;--gps:36px;--gpt:14px;--gfs:12px">`+
         cats.map((c,i)=>gridCard(c,i,cw,ch,false,cardInfo(i))).join("")+`<button class="gc new" data-new="1"><span class="plus">+</span><span class="gn">New</span></button></div>`; })()+
     `<div class="sfoot">Tap a category to change or delete it. Hold and drag to reorder.</div>`;
@@ -1186,6 +1212,10 @@ const OPT={
             ["count","Number of bills","\"3 bills\" under the name."],
             ["cost","Monthly cost","\"€64 a month\" under the name: what the category costs you, the figure people check most.","recommended"],
             ["both","Both","\"3 bills · €64\" under the name."]],
+  infoAt:[["below","Under the name","A quiet line under the name, as built now.","recommended"],
+          ["badge","Badge on the picture","A count sits on the picture like an app badge, in the category's colour; with cost alone it's a small price pill."],
+          ["corner","In the corners","Small figures in the card's top corners: the count left, the cost right. The middle stays as the picker draws it."],
+          ["strip","In the colour strip","The colour strip along the bottom grows into a band carrying the figures in white."]],
   findEdit:[["press","Long-press a card","Hold a card in the grid for Edit and Delete, a stock menu. Settings is the place you can see.","recommended"],
             ["button","Long-press, and an Edit button","Adds Edit over the grid: the cards jiggle and tapping one opens it, like the Home Screen."]]
 };
@@ -1200,7 +1230,7 @@ function panelHTML(){
     `<h2>Open choices</h2>`+
     tcard("Searching symbols","Try boxing, taxi, wine or dentist. Typing a name like Gym or Netflix guesses the card's symbol.",optHTML("search"))+
     tcard("Finding Edit in the grid","",optHTML("findEdit"))+
-    tcard("Cards in Settings","Under each category's name in Settings → Categories. The picker keeps name only.",optHTML("cardInfo"))+
+    tcard("Cards in Settings","What a category's card in Settings → Categories says, and where. The picker keeps name only.",optHTML("cardInfo")+(S.cardInfo!=="none"?`<div class="fl" style="margin:12px 0 6px">Where it sits</div>`+optHTML("infoAt"):""))+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
       fld("Motion",chips("motion",[["none","None"],["quick","Quick"]])))+
@@ -1222,7 +1252,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["search","findEdit","cardInfo"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["search","findEdit","cardInfo","infoAt"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
