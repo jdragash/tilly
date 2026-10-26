@@ -8,7 +8,7 @@
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, sheet, card and grid are
   dashed-and-solid.html's, as shipped in v0.7.0.
   Deleting a category deletes its bills, after a warning (Jake, 2026-10-25). Tune shows only the open choices.
-  The editor is its own sheet over the bill editor or Settings, laid out card, name, colour, symbols (Jake, 2026-10-26).
+  The editor is its own sheet over the bill editor or Settings, laid out card, colour, symbols; the name is typed on the card, and no row of suggestions (Jake, 2026-10-26).
   Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
@@ -354,7 +354,21 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .srow.addrow{color:var(--accent)}
 .srow.addrow .plus{width:32px;text-align:center;font-size:26px;font-weight:300}
 .sfoot{font:13px/1.35 var(--text);color:var(--ink2);margin:7px 16px 0}
-#cprev{position:relative;width:118px;height:147px;margin:6px auto 22px}
+#cprev{position:relative;width:150px;height:184px;margin:6px auto 22px}
+.ccard>img.gbg{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);height:calc(100% + 12px);max-width:none;pointer-events:none}
+html:not(.dark) .ccard>img.gbg{filter:drop-shadow(0 2px 5px rgba(0,0,0,.12))}
+.cpic{position:absolute;left:50%;top:28px;width:64px;height:64px;margin-left:-32px;border-radius:50%;border:2px dashed var(--ink2);opacity:.8}
+.cpic.has{border:0;opacity:1}
+.cpic .ic{width:64px;height:64px}
+.cpic.guess::after{content:"";position:absolute;right:-6px;top:-4px;width:17px;height:17px;border-radius:50%;background:var(--paperCard);
+  box-shadow:0 0 0 1px var(--hair);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 1.6l1 3.4 3.4 1-3.4 1-1 3.4-1-3.4-3.4-1 3.4-1z' fill='%238A8883'/%3E%3C/svg%3E");
+  background-size:12px;background-position:center;background-repeat:no-repeat}
+.cnm{position:absolute;left:10px;right:10px;bottom:24px;height:40px;display:flex;align-items:center}
+.cnm .dash{position:absolute;inset:0;border:2px dashed var(--ink2);border-radius:10px;opacity:.7;pointer-events:none}
+.cnm.has .dash{display:none}
+.cnm input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);font:700 20px var(--round);text-align:center;padding:0 6px;
+  -webkit-user-select:text;user-select:text}
+.cnm input::placeholder{color:var(--ink2);font-weight:600}
 #cprev .gc{position:absolute;inset:0;--gh:147px;--gps:54px;--gpt:21px;--gfs:18px}
 #cprev .gc .gn{bottom:18px}
 #cprev.empty{border:2px dashed var(--ink2);border-radius:14px}
@@ -937,15 +951,15 @@ function mountCat(root,host){
   $("cTitle").textContent=edit?"Edit Category":"New Category";
   const head=S.search==="top"?`<div class="stick">${sfieldHTML()}</div>`:
     S.search==="icon"?`<div class="symh"></div>`:`<div style="height:14px"></div>`;
-  root.innerHTML=`<div id="cprev"></div>`+
-    `<label class="cpname wide"><input class="nm2" type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" value="${esc(CE.name)}"></label>`+
+  root.innerHTML=`<div id="cprev" class="ccard"><img class="gbg" alt=""><button class="cpic" data-act="pic" aria-label="Symbol"></button>`+
+    `<label class="cnm"><span class="dash"></span><input class="nm2" type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" value="${esc(CE.name)}"></label></div>`+
     `<div class="sw">${PAL.map((p,k)=>`<button data-col="${k}" aria-label="Colour ${k+1}" style="--c:${colHex(k)}"><i style="background:${colHex(k)}"></i></button>`).join("")}</div>`+
     head+`<div class="symbody"></div>`+
     (edit?`<button class="cpdel" data-act="delete">Delete Category</button><div class="cpmeta">${nb?`${nb} bill${nb>1?"s":""} in ${esc(CE.name)}`:"No bills in it yet"}</div>`:"");
   const bot=$("botSearch"); bot.classList.toggle("on",S.search==="bottom"); $("csheet").classList.toggle("botpad",S.search==="bottom");
   bot.innerHTML=S.search==="bottom"?sfieldHTML():"";
   const input=root.querySelector(".nm2");
-  input.addEventListener("input",()=>{ CE.name=input.value; if(!CE.picked&&S.guess==="fill") CE.glyph=suggest(CE.name).best; updateCat(); });
+  input.addEventListener("input",()=>{ CE.name=input.value; if(!CE.picked) CE.glyph=suggest(CE.name).best; updateCat(); });
   input.addEventListener("keydown",e=>{ if(e.key!=="Enter") return; e.preventDefault(); if(ceDone()) saveCat(); else input.blur(); });
   if(S.search==="icon") renderIconHead();
   wireSearch(root); wireSearch(bot);
@@ -957,6 +971,7 @@ function mountCat(root,host){
     if(a==="clear"){ CE.q=""; refreshSearch(); return; }
     if(a==="open"){ CE.searching=true; renderIconHead(); const q=root.querySelector(".sq"); q&&q.focus(); return; }
     if(a==="close"){ CE.searching=false; CE.q=""; renderIconHead(); updateCat(); return; }
+    if(a==="pic"){ root.querySelector(".symbody").scrollIntoView({behavior:"smooth",block:"start"}); return; }
     if(a==="delete") askDelete(CE.ci);
   };
   root.onclick=click; bot.onclick=click;
@@ -974,18 +989,22 @@ function wireSearch(el){
   q.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); q.blur(); } });
 }
 function refreshSearch(){ document.querySelectorAll("#csheet .sq").forEach(q=>{ q.value=CE.q; const c=q.parentNode.querySelector(".clr"); if(c&&!CE.q) c.remove(); }); updateCat(); }
+const measureCtx=document.createElement("canvas").getContext("2d");
+function fitName(i){ const fam=getComputedStyle(i).fontFamily; measureCtx.font=`700 20px ${fam}`;
+  const w=measureCtx.measureText(i.value||"Name").width, a=i.clientWidth-14; i.style.fontSize=(w>a?Math.max(12,20*a/w):20)+"px"; }
 function symCell(g){ return `<button class="ag${CE.glyph===g?" on":""}" data-g="${g}" aria-label="${g}">${picOf({glyph:g,col:CE.col,key:g},48,false,false)}</button>`; }
 function updateCat(){
   if(!CE) return;
   const root=$("cpanel2"), d=draftCat();
-  const cp=root.querySelector("#cprev"); cp.className=CE.glyph||CE.name?"":"empty"; cp.innerHTML=CE.glyph||CE.name?gridCard(d,null,118,147,false):"";
-  if(cp.firstChild&&CE.glyph&&!CE.picked) cp.firstChild.insertAdjacentHTML("beforeend",`<span class="slot guess" style="position:absolute;right:6px;top:6px;width:0;height:0"></span>`);
+  const cp=root.querySelector("#cprev");
+  cp.querySelector(".gbg").src=cardSrc(150,184,{fill:DT.paperCard[md()],strip:{side:"bottom",col:colHex(CE.col),w:5},r:14});
+  const pic=cp.querySelector(".cpic"); pic.classList.toggle("has",!!CE.glyph); pic.classList.toggle("guess",!!CE.glyph&&!CE.picked);
+  pic.innerHTML=CE.glyph?picOf(d,64,false,S.boil!=="off"):"";
+  cp.querySelector(".cnm").classList.toggle("has",CE.name.length>0); fitName(cp.querySelector(".nm2"));
   root.querySelectorAll(".sw button").forEach(b=>b.classList.toggle("on",+b.dataset.col===CE.col));
   const res=searchSymbols(CE.q||""); let html="";
   if(res){ html=`<div class="sech">${res.title==="Closest"?"No exact match. Closest":"Results"}</div><div class="symg">${res.list.map(symCell).join("")}</div>`; }
   else {
-    const sg=suggest(CE.name);
-    if(sg.list.length) html+=`<div class="sech">Suggested for “${esc(CE.name.trim())}”</div><div class="symg">${sg.list.map(symCell).join("")}</div>`;
     html+=SECTIONS.map(([t,gs])=>`<div class="sech">${t}</div><div class="symg">${gs.map(symCell).join("")}</div>`).join("");
   }
   root.querySelector(".symbody").innerHTML=html;
@@ -1072,8 +1091,7 @@ function panelHTML(){
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
-    tcard("Searching symbols","Try boxing, taxi, wine or dentist.",optHTML("search"))+
-    tcard("The guessed symbol","Try names like Gym, Netflix, Rugby, Uber or Barber.",optHTML("guess"))+
+    tcard("Searching symbols","Try boxing, taxi, wine or dentist. Typing a name like Gym or Netflix guesses the card's symbol.",optHTML("search"))+
     tcard("Finding Edit in the grid","",optHTML("findEdit"))+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
@@ -1096,7 +1114,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["search","guess","findEdit"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["search","findEdit"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
