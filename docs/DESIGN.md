@@ -179,7 +179,9 @@ A sheet from the list button, read only: a quick check of every bill and what it
 Yearly sits top right, kept across launches; Monthly is a bill's year over twelve. `All bills` sits
 over `€1,552 a month`. Each category is a paper card, costliest first, as the grid draws it: its
 picture on the wash, name and total in a 58pt header, a strip of its colour along the bottom, and
-its bills under hairlines, 44pt rows of name and figure, costliest first. Ended bills wait behind
+its bills under hairlines, 44pt rows, costliest first: the name, then in grey on the same line what's
+actually charged when the figure isn't (`€640 yearly`) and an end (`ends next month`, `ends 12/26`),
+then the figure. Ended bills wait behind
 `2 ended bills` under the cards. Nothing opens: bills change from the timeline, categories in
 Settings.
 

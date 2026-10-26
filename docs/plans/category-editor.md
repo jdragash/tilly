@@ -211,10 +211,13 @@ hairlines, costliest first) and carried into `category-editor.html`'s All bills.
 - Each card: paper, radius 14, a 5pt colour strip along the bottom, light shadow 0.1 black, radius 2,
   y 1; header 58 tall, 14 in on the left and 12 on the right, the picture 34 on its wash, 11 to the
   name (18 bold, one line, cut), the total 19 heavy; rows 44 tall, 16 in from the card's sides,
-  name 16 semibold, figure 16 semibold tabular, a 0.5 hairline above each; 12 under the last row;
+  name 16 semibold, then 10 on, `.footnote` (13) in `ink2` on the same line, one line, cut: the
+  charge when the figure isn't it (`€640 yearly`, `€35 monthly` in Yearly) and an end (`ends this
+  month`, `ends next month`, else `ends 12/26`), joined by ` · `; figure 16 semibold tabular; a
+  0.5 hairline above each; 12 under the last row;
   cards 14 apart, 16 from the sheet's sides.
 - The title `All bills`, 34 heavy, over `€1,552 a month` or `a year`, 15 in `ink2`. Monthly /
-  Yearly a segmented control top right, 32 tall. The chips and each row's second line go.
+  Yearly a segmented control top right, 32 tall. The category chips and each row's second line go.
 
 **Done when:** the suite is green, `AllBillsBuilderTests` unchanged, and the sheet matches the
 prototype in light and dark, compared as crops at the same scale.

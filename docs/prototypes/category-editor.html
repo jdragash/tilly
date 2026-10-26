@@ -359,7 +359,8 @@ html:not(.dark) .cc>.fimg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .cch .tt{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
 .ccr{position:relative;display:flex;align-items:center;gap:10px;width:calc(100% - 32px);height:44px;margin:0 16px;text-align:left;
   box-shadow:inset 0 .5px 0 var(--hair)}
-.ccr .n{flex:1;min-width:0;font-size:16px;line-height:21px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccr .n{flex:0 1 auto;min-width:0;font-size:16px;line-height:21px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccr .k{flex:1 1 0;min-width:0;font:13px var(--text);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ccr .a{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 
 /* Settings, and the category's own sheet from it */
@@ -3873,7 +3874,15 @@ function catCard(g,W){
   const H=58+g.bs.length*44+12, hex=colHex(cats[g.i].col);
   return `<div class="cc" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{fill:DT.paperCard[md()],strip:{side:"bottom",col:hex,w:5},r:14})}" alt="">`+
     `<div class="cch"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span></div>`+
-    g.bs.map(b=>`<div class="ccr"><span class="n">${esc(b.name)}</span><span class="a">${money(figure(b))}</span></div>`).join("")+`</div>`;
+    g.bs.map(b=>`<div class="ccr"><span class="n">${esc(b.name)}</span><span class="k">${detail(b)}</span><span class="a">${money(figure(b))}</span></div>`).join("")+`</div>`;
+}
+// On the name's line, in grey: what's actually charged when the figure isn't, and when a bill ends.
+function detail(b){
+  const parts=[];
+  if(per()==="m"&&b.every==="y") parts.push(`${money(b.amount)} yearly`);
+  if(per()==="y"&&b.every==="m") parts.push(`${money(b.amount)} monthly`);
+  if(b.end){ const n=monthsTo(b.end); parts.push(n===0?"ends this month":n===1?"ends next month":endsShort(b.end)); }
+  return parts.join(" · ");
 }
 function renderBills(){
   const body=$("bbody"), W=Math.round(body.clientWidth||390)-32, groups=groupsOf();
