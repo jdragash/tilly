@@ -96,8 +96,7 @@ his life aren't, and an example of a banned disclosure is itself a disclosure.
 
 ## Code
 
-- Swift 6, SwiftUI, SwiftData. iOS 27, iPhone and portrait only. No third-party dependencies in what ships.
-  Dev tools in Debug builds only are fine: DialKit tunes `Tokens` values live in the Simulator.
+- Swift 6, SwiftUI, SwiftData. iOS 27, iPhone and portrait only. No third-party dependencies in what ships; Debug-only dev tools (DialKit) are fine.
 - **Swift Testing** (`@Test`, `#expect`), not XCTest.
 - SwiftData models stay CloudKit-compatible. More in `.claude/rules/` (views and tokens, controls, engine).
 - **Building a pinned or scroll-anchored list anywhere?** Read `.claude/rules/swiftui-scrolling.md`.
