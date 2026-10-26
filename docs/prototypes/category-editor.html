@@ -377,6 +377,12 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 @keyframes pushIn{from{transform:translateX(40%);opacity:0}to{transform:none;opacity:1}}
 @keyframes popIn{from{transform:translateX(-30%);opacity:0}to{transform:none;opacity:1}}
 .sgrid{padding:6px 0 0}
+#smenu{position:absolute;right:16px;top:66px;width:250px;border-radius:14px;background:var(--glass);-webkit-backdrop-filter:blur(30px) saturate(1.6);
+  backdrop-filter:blur(30px) saturate(1.6);box-shadow:inset 0 0 0 .5px var(--glassedge),0 12px 40px rgba(0,0,0,.18);overflow:hidden;font-family:var(--text);z-index:8;display:none}
+#smenu.on{display:block}
+#smenu .mh{font-size:13px;color:var(--ink2);padding:10px 16px 6px}
+#smenu button{display:flex;width:100%;align-items:center;justify-content:space-between;height:44px;padding:0 16px;font-size:17px;border-top:.5px solid var(--hair)}
+#smenu button span{font-size:13px;color:var(--ink2)}
 .srow .chev{color:var(--ink2);opacity:.6;font:600 17px var(--text)}
 .srow.addrow{color:var(--accent)}
 .srow.addrow .plus{width:32px;text-align:center;font-size:26px;font-weight:300}
@@ -498,6 +504,8 @@ textarea#catsIn{width:100%;min-height:150px;border-radius:10px;border:0;backgrou
   </div>
   <div class="sheet2" id="ssheet">
     <button class="hbtn" id="sClose" aria-label="Close" style="left:16px">✕</button>
+    <button class="hbtn" id="sSort" aria-label="Sort" style="right:16px;display:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M6.5 15.5v-11M3.8 7.2l2.7-2.7 2.7 2.7M13.5 4.5v11M10.8 12.8l2.7 2.7 2.7-2.7"/></svg></button>
+    <div id="smenu"></div>
     <div class="s2t" id="s2t">Settings</div>
     <div class="sbody" id="sbody"></div>
   </div>
@@ -1102,6 +1110,7 @@ const GRIDICON=`<svg viewBox="0 0 20 20" fill="#fff"><rect x="3.5" y="3.5" width
 function renderSettings(){
   const sb=$("sbody"), cl=$("sClose");
   $("s2t").textContent=setPage==="root"?"Settings":"Categories";
+  $("sSort").style.display=setPage==="cats"?"flex":"none"; $("smenu").classList.remove("on");
   cl.innerHTML=setPage==="root"?"✕":"‹"; cl.setAttribute("aria-label",setPage==="root"?"Close":"Settings"); cl.style.fontSize=setPage==="root"?"":"28px";
   sb.innerHTML=setPage==="root"?
     `<div class="grp"><button class="srow" data-go="cats"><span class="grp-pic stile" style="background:#5A6CE8">${GRIDICON}</span><span class="sn">Categories</span><span class="sc">${cats.length}</span><span class="chev">›</span></button></div>`+
@@ -1111,6 +1120,31 @@ function renderSettings(){
         cats.map((c,i)=>gridCard(c,i,cw,98,false)).join("")+`<button class="gc new" data-new="1"><span class="plus">+</span><span class="gn">New</span></button></div>`; })()+
     `<div class="sfoot">Tap a category to change or delete it. Hold and drag to reorder.</div>`;
 }
+/* Sorting arranges your order once, then it holds as your own: it never re-sorts as bills change. */
+const HUE=[7,1,3,5,2,0,6,4];   // red, orange, yellow, green, teal, blue, purple, pink
+const monthly=i=>bills.filter(b=>b.cat===i).reduce((t,b)=>t+(b.every==="y"?b.amount/12:b.amount),0);
+const SORTS=[["colour","Colour","rainbow",(a,b)=>HUE.indexOf(cats[a].col%8)-HUE.indexOf(cats[b].col%8)],
+  ["name","Name","A to Z",()=>0],
+  ["cost","Monthly cost","most first",(a,b)=>monthly(b)-monthly(a)],
+  ["count","Number of bills","most first",(a,b)=>bills.filter(x=>x.cat===b).length-bills.filter(x=>x.cat===a).length]];
+let undoOrder=null;
+function reorder(order){   // order: old indices in their new places
+  const map=new Map(order.map((old,k)=>[old,k]));
+  cats=order.map(i=>cats[i]); bills.forEach(b=>b.cat=map.get(b.cat)); if(bill&&bill.cat!=null) bill.cat=map.get(bill.cat);
+}
+function sortCats(key){
+  const s=SORTS.find(x=>x[0]===key), idx=cats.map((_,i)=>i);
+  idx.sort((a,b)=>s[3](a,b)||cats[a].name.localeCompare(cats[b].name));
+  undoOrder=idx.map((_,k)=>idx.indexOf(k));   // to put each back
+  reorder(idx); renderSettings(); renderList(true);
+  const p=$("toast"); p.innerHTML=`Sorted by ${s[1].toLowerCase()} · <u style="pointer-events:auto;cursor:pointer" id="undoSort">Undo</u>`; p.style.opacity=1; p.style.pointerEvents="auto";
+  clearTimeout(toastT); toastT=setTimeout(()=>{ p.style.opacity=0; p.style.pointerEvents="none"; },4000);
+  $("undoSort").onclick=()=>{ if(undoOrder){ reorder(undoOrder); undoOrder=null; renderSettings(); renderList(true); } p.style.opacity=0; p.style.pointerEvents="none"; };
+}
+$("sSort").addEventListener("click",()=>{ const m=$("smenu");
+  m.innerHTML=`<div class="mh">Arrange once, then drag as you like</div>`+SORTS.map(x=>`<button data-sort="${x[0]}">${x[1]}<span>${x[2]}</span></button>`).join("");
+  m.classList.toggle("on"); });
+$("smenu").addEventListener("click",e=>{ const b=e.target.closest("[data-sort]"); if(!b) return; $("smenu").classList.remove("on"); sortCats(b.dataset.sort); });
 function goSettings(page){ setPage=page; const sb=$("sbody"); sb.classList.remove("push","pop"); void sb.offsetWidth; renderSettings();
   if(S.motion==="quick") sb.classList.add(page==="root"?"pop":"push"); sb.scrollTop=0; }
 $("gearB").addEventListener("click",()=>{ setPage="root"; renderSettings(); $("ssheet").classList.add("open"); $("scrim").classList.add("on"); });
@@ -1165,7 +1199,7 @@ function panelHTML(){
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
     `<li>There are 28 stand-in symbols, drawn in SF Symbols' manner. The app has about 400 real ones, roughened.</li>`+
     `<li>The guesses come from a short keyword list and a second list standing in for on-device word similarity (NLEmbedding), which in the app finds far more.</li>`+
-    `<li>All bills shows monthly bills only, without its Monthly/Yearly switch or filter chips. It is read only.</li><li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
+    `<li>All bills shows monthly bills only, without its Monthly/Yearly switch or filter chips. It is read only.</li><li>A sort rewrites your order here; dragging to reorder after it works in the app, not here.</li><li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
     `<li>Edges, washes and grain are SVG filters; the glass is a blur, not Liquid Glass; sheets, menus and alerts are CSS, not the system's.</li>`+
     `<li>The type is SF Pro Rounded on an iPhone and Nunito elsewhere. No Dynamic Type.</li>`+
     `<li>What you make, change or delete lasts until you reload or reset.</li></ul></details></details>`;
