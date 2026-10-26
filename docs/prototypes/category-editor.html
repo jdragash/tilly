@@ -885,12 +885,12 @@ function gridCard(c,i,cw,ch,on,info){
   if(info){
     const {n,m,show}=info, cnt=show!=="cost", cost=show!=="count";
     const nb=`${n} bill${n===1?"":"s"}`, mc=n?money(m):"€0";
-    const line=show==="count"?nb:show==="cost"?(n?`${mc} a month`:"No bills"):(n?`${nb} · ${mc}`:"No bills");
+    const line=show==="count"?nb:show==="cost"?(n?`${mc}/mo`:"No bills"):(n?`${nb} · ${mc}`:"No bills");
     if(at==="below"){ extra=`<span class="gx">${line}</span>`; gnB=27; }
     else if(at==="badge"){
       if(cnt) extra+=`<span class="gbadge" style="background:${hex}">${n}</span>`;
       else extra+=`<span class="gbadge gpill" style="background:${hex}">${mc}</span>`;
-      if(cnt&&cost){ extra+=`<span class="gx">${n?mc+" a month":"No bills"}</span>`; gnB=27; }
+      if(cnt&&cost){ extra+=`<span class="gx">${n?mc+"/mo":"No bills"}</span>`; gnB=27; }
     }
     else if(at==="corner"){
       if(cnt) extra+=`<span class="gcorner ${cost?"cl":"cr"}">${n}</span>`;
@@ -1210,7 +1210,7 @@ const OPT={
            ["return","Return key, as built","Return on the name keyboard makes it; the category tile on the card backs out."]],
   cardInfo:[["none","Name only","The card as the picker draws it: picture and name."],
             ["count","Number of bills","\"3 bills\" under the name."],
-            ["cost","Monthly cost","\"€64 a month\" under the name: what the category costs you, the figure people check most.","recommended"],
+            ["cost","Monthly cost","\"€64/mo\" under the name: what the category costs you, the figure people check most.","recommended"],
             ["both","Both","\"3 bills · €64\" under the name."]],
   infoAt:[["below","Under the name","A quiet line under the name, as built now.","recommended"],
           ["badge","Badge on the picture","A count sits on the picture like an app badge, in the category's colour; with cost alone it's a small price pill."],
