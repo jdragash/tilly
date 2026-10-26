@@ -8,7 +8,7 @@
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, sheet, card and grid are
   dashed-and-solid.html's, as shipped in v0.7.0.
   Deleting a category deletes its bills, after a warning (Jake, 2026-10-25). Tune shows only the open choices.
-  The editor is its own sheet over the bill editor or Settings, laid out card, colour, symbols; the name is typed on the card, and no row of suggestions (Jake, 2026-10-26).
+  The editor is its own sheet over the bill editor or Settings, laid out card, colour, symbols; the name is typed on the card, the symbol starts on a default that a guess replaces, and no row of suggestions (Jake, 2026-10-26).
   Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
@@ -285,7 +285,7 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .sfield .clr{width:18px;height:18px;border-radius:50%;background:var(--ink2);color:var(--paper);font:700 11px/18px var(--text);text-align:center;opacity:.7}
 .stick{position:sticky;top:0;z-index:3;background:var(--grain),var(--paper);padding:8px 0;margin:14px -22px 0;padding-left:22px;padding-right:22px}
 #botSearch{position:absolute;left:16px;right:16px;bottom:calc(var(--sab) + 6px);z-index:6;display:none;height:48px;border-radius:24px;
-  background:var(--glass);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:inset 0 0 0 .5px var(--glassedge),0 4px 18px rgba(0,0,0,.1)}
+  background:color-mix(in srgb,var(--paperCard) 92%,transparent);box-shadow:inset 0 0 0 .5px var(--glassedge),0 4px 18px rgba(0,0,0,.1)}
 #botSearch.on{display:flex}
 #botSearch .sfield{background:transparent;height:48px;padding:0 16px}
 .sech{font:600 12px var(--text);color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px}
@@ -372,7 +372,7 @@ html:not(.dark) .ccard>img.gbg{filter:drop-shadow(0 2px 5px rgba(0,0,0,.12))}
 #cprev .gc{position:absolute;inset:0;--gh:147px;--gps:54px;--gpt:21px;--gfs:18px}
 #cprev .gc .gn{bottom:18px}
 #cprev.empty{border:2px dashed var(--ink2);border-radius:14px}
-#cpanel2{position:absolute;left:0;right:0;top:70px;bottom:0;overflow-y:auto;padding:0 22px calc(var(--sab) + 24px);scrollbar-width:none}
+#cpanel2{position:absolute;left:0;right:0;top:70px;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 22px calc(var(--sab) + 24px);scrollbar-width:none}
 #cpanel2::-webkit-scrollbar{display:none}
 
 /* ---------- the tuning ---------- */
@@ -924,7 +924,7 @@ const ceDone=()=>CE&&CE.name.trim().length>0&&!!CE.glyph;
 const ceChanged=()=>CE.ci==null||CE.orig!==JSON.stringify([CE.name.trim(),CE.glyph,CE.col]);
 function openCat(host,ci){
   const c=ci==null?null:cats[ci];
-  CE={ci,host,name:c?c.name:"",glyph:c?c.glyph:null,picked:!!c,col:c?c.col%8:nextCol(),key:c?c.name:"new"+cats.length,orig:c?JSON.stringify([c.name,c.glyph,c.col%8]):null};
+  CE={ci,host,name:c?c.name:"",glyph:c?c.glyph:"tag",picked:!!c,guessed:false,col:c?c.col%8:nextCol(),key:c?c.name:"new"+cats.length,orig:c?JSON.stringify([c.name,c.glyph,c.col%8]):null};
   (host==="bill"?sheet:$("ssheet")).classList.add("back"); $("csheet").classList.add("open"); mountCat($("cpanel2"),host);
   setTimeout(()=>{ const i=document.querySelector("#cpanel2 input"); if(i&&ci==null) i.focus({preventScroll:true}); },S.motion==="quick"?360:0);
 }
@@ -959,13 +959,13 @@ function mountCat(root,host){
   const bot=$("botSearch"); bot.classList.toggle("on",S.search==="bottom"); $("csheet").classList.toggle("botpad",S.search==="bottom");
   bot.innerHTML=S.search==="bottom"?sfieldHTML():"";
   const input=root.querySelector(".nm2");
-  input.addEventListener("input",()=>{ CE.name=input.value; if(!CE.picked) CE.glyph=suggest(CE.name).best; updateCat(); });
+  input.addEventListener("input",()=>{ CE.name=input.value; if(!CE.picked){ const g=suggest(CE.name).best; CE.glyph=g||"tag"; CE.guessed=!!g; } updateCat(); });
   input.addEventListener("keydown",e=>{ if(e.key!=="Enter") return; e.preventDefault(); if(ceDone()) saveCat(); else input.blur(); });
   if(S.search==="icon") renderIconHead();
   wireSearch(root); wireSearch(bot);
   const click=e=>{
     const b=e.target.closest("button"); if(!b) return;
-    if(b.dataset.g){ CE.glyph=b.dataset.g; CE.picked=true; updateCat(); return; }
+    if(b.dataset.g){ CE.glyph=b.dataset.g; CE.picked=true; CE.guessed=false; updateCat(); return; }
     if(b.dataset.col){ CE.col=+b.dataset.col; updateCat(); return; }
     const a=b.dataset.act;
     if(a==="clear"){ CE.q=""; refreshSearch(); return; }
@@ -992,22 +992,28 @@ function refreshSearch(){ document.querySelectorAll("#csheet .sq").forEach(q=>{ 
 const measureCtx=document.createElement("canvas").getContext("2d");
 function fitName(i){ const fam=getComputedStyle(i).fontFamily; measureCtx.font=`700 20px ${fam}`;
   const w=measureCtx.measureText(i.value||"Name").width, a=i.clientWidth-14; i.style.fontSize=(w>a?Math.max(12,20*a/w):20)+"px"; }
-function symCell(g){ return `<button class="ag${CE.glyph===g?" on":""}" data-g="${g}" aria-label="${g}">${picOf({glyph:g,col:CE.col,key:g},48,false,false)}</button>`; }
+const cellCache=new Map();
+function symCell(g){ const ck=g+"|"+CE.col+"|"+S.dark;
+  if(!cellCache.has(ck)) cellCache.set(ck,picOf({glyph:g,col:CE.col,key:g},48,false,false).replace(/(<span class="boil"><img[^>]*>)(<img[^>]*>){2}/,"$1"));
+  return `<button class="ag${CE.glyph===g?" on":""}" data-g="${g}" aria-label="${g}">${cellCache.get(ck)}</button>`; }
+// Only what changed is redrawn: typing a name never rebuilds the symbols, so scrolling stays smooth.
 function updateCat(){
   if(!CE) return;
-  const root=$("cpanel2"), d=draftCat();
-  const cp=root.querySelector("#cprev");
-  cp.querySelector(".gbg").src=cardSrc(150,184,{fill:DT.paperCard[md()],strip:{side:"bottom",col:colHex(CE.col),w:5},r:14});
-  const pic=cp.querySelector(".cpic"); pic.classList.toggle("has",!!CE.glyph); pic.classList.toggle("guess",!!CE.glyph&&!CE.picked);
-  pic.innerHTML=CE.glyph?picOf(d,64,false,S.boil!=="off"):"";
+  const root=$("cpanel2"), d=draftCat(), k=CE._k||(CE._k={}), cp=root.querySelector("#cprev");
+  if(k.col!==CE.col||k.dark!==S.dark){
+    cp.querySelector(".gbg").src=cardSrc(150,184,{fill:DT.paperCard[md()],strip:{side:"bottom",col:colHex(CE.col),w:5},r:14});
+    root.querySelectorAll(".sw button").forEach(b=>b.classList.toggle("on",+b.dataset.col===CE.col)); }
+  const pic=cp.querySelector(".cpic"); pic.classList.add("has"); pic.classList.toggle("guess",CE.guessed);
+  if(k.glyph!==CE.glyph||k.col!==CE.col||k.dark!==S.dark) pic.innerHTML=picOf(d,64,false,S.boil!=="off");
   cp.querySelector(".cnm").classList.toggle("has",CE.name.length>0); fitName(cp.querySelector(".nm2"));
-  root.querySelectorAll(".sw button").forEach(b=>b.classList.toggle("on",+b.dataset.col===CE.col));
-  const res=searchSymbols(CE.q||""); let html="";
-  if(res){ html=`<div class="sech">${res.title==="Closest"?"No exact match. Closest":"Results"}</div><div class="symg">${res.list.map(symCell).join("")}</div>`; }
-  else {
-    html+=SECTIONS.map(([t,gs])=>`<div class="sech">${t}</div><div class="symg">${gs.map(symCell).join("")}</div>`).join("");
-  }
-  root.querySelector(".symbody").innerHTML=html;
+  const gk=(CE.q||"")+"|"+CE.col+"|"+S.dark;
+  if(k.grid!==gk){
+    const res=searchSymbols(CE.q||"");
+    root.querySelector(".symbody").innerHTML=res?`<div class="sech">${res.title==="Closest"?"No exact match. Closest":"Results"}</div><div class="symg">${res.list.map(symCell).join("")}</div>`:
+      SECTIONS.map(([t,gs])=>`<div class="sech">${t}</div><div class="symg">${gs.map(symCell).join("")}</div>`).join("");
+    k.grid=gk;
+  } else if(k.glyph!==CE.glyph) root.querySelectorAll(".symbody .ag").forEach(b=>b.classList.toggle("on",b.dataset.g===CE.glyph));
+  Object.assign(k,{col:CE.col,glyph:CE.glyph,dark:S.dark});
   const ok=ceDone()&&ceChanged();
   $("cOk").style.cssText=`right:16px;${ok?"background:var(--accent);color:#fff":"color:var(--ink2);opacity:.55"}`;
 }
@@ -1103,7 +1109,7 @@ function panelHTML(){
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
     `<li>There are 28 stand-in symbols, drawn in SF Symbols' manner. The app has about 400 real ones, roughened.</li>`+
     `<li>The guesses come from a short keyword list and a second list standing in for on-device word similarity (NLEmbedding), which in the app finds far more.</li>`+
-    `<li>Settings doesn't drag to reorder here. The app already does.</li>`+
+    `<li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
     `<li>Edges, washes and grain are SVG filters; the glass is a blur, not Liquid Glass; sheets, menus and alerts are CSS, not the system's.</li>`+
     `<li>The type is SF Pro Rounded on an iPhone and Nunito elsewhere. No Dynamic Type.</li>`+
     `<li>What you make, change or delete lasts until you reload or reset.</li></ul></details></details>`;
