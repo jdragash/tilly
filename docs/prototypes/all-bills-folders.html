@@ -450,6 +450,17 @@ html:not(.dark) .cc>.fimg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .ccr .n{font-size:16px;line-height:21px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ccr .s{font-size:13px;line-height:17px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ccr .a{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.cc.ll .cch{padding-left:20px} .cc.ll .ccr{margin-left:22px;width:calc(100% - 38px)}
+.cc.nodiv .ccr{box-shadow:none}
+.cch .hc{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.cch .hr{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.cch .pc{font:600 12px var(--text);color:var(--ink2);font-variant-numeric:tabular-nums}
+.shr{display:block;height:4px;border-radius:2px;background:color-mix(in srgb,var(--ink) 9%,transparent);overflow:hidden;margin-right:8px}
+.shr i{display:block;height:100%;border-radius:2px}
+.ccr.cp{height:44px}
+.ccr .s.soon{color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px}
+.ccr .s.soon i{width:6px;height:6px;border-radius:50%;flex:none}
+.ccr .sd{width:7px;height:7px;border-radius:50%;flex:none}
 .mq .enter{animation:enter .2s cubic-bezier(.2,.8,.2,1)}
 @keyframes enter{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 .bnew{display:flex;align-items:center;gap:10px;width:100%;height:52px;border:2px dashed var(--ink2);border-radius:16px;color:var(--ink2);
@@ -625,7 +636,7 @@ const KEY="tilly-all-bills-folders-3";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"grid",layout:"pockets",ix:"index",period:"m"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"grid",layout:"pockets",ccLine:"bottom",ccShare:"off",ccRows:"full",ccDiv:"hair",ccOrder:"cost",ccSoon:"plain",ix:"index",period:"m"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -689,6 +700,7 @@ function cardSrc(w,h,o){
     if(!ids.includes("paperBigF")) ids.push("paperBigF"); ids.push("washBigF"); }
   if(o.strip){ const s=o.strip, sw2=s.w||5; let rect;
     if(s.side==="left") rect=`<rect x="-4" y="-4" width="${sw2+4}" height="${h+8}"/>`;
+    else if(s.side==="top") rect=`<rect x="-4" y="-4" width="${w+8}" height="${sw2+4}"/>`;
     else if(s.side==="bottom") rect=`<rect x="-4" y="${h-sw-sw2}" width="${w+8}" height="${sw2+8}"/>`;
     else rect=`<rect x="5" y="14" width="3" height="${h-28}" rx="1.5"/>`;
     body+=`<clipPath id="cl"><path ${tr} d="${rp}"/></clipPath><g clip-path="url(#cl)"><g transform="translate(${P} ${P})" fill="${s.col}" fill-opacity="${s.op??.92}" filter="url(#washF)">${rect}</g></g>`;
@@ -1260,12 +1272,19 @@ function gridColumns(groups,cw){
 }
 // Plain: a category card per category, as the grid draws it (paper, its picture on the wash, a strip of colour along the bottom),
 // its header naming it with the total and a › for its sheet, and every bill listed under it
-function catCard(g,W){
-  const n=g.bs.length, H=58+n*52+12, nm=esc(cats[g.i].name);
-  return `<div class="cc" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{fill:DT.paperCard[md()],strip:{side:"bottom",col:colHex(cats[g.i].col),w:5},r:14})}" alt="">`+
-    `<button class="cch" data-ci="${g.i}" aria-label="Change ${nm}"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span><span class="tn">${nm}</span>`+
-    `<span class="tt">${money(g.total)}</span><span class="cgo">›</span></button>`+
-    g.bs.map(b=>`<button class="ccr" data-bid="${b.id}"><span class="t"><span class="n">${esc(b.name)}</span><span class="s">${aheadLine(b)}</span></span><span class="a">${money(figure(b))}</span></button>`).join("")+`</div>`;
+function catCard(g,W,all){
+  const compact=S.ccRows==="compact", rowH=compact?44:52, share=S.ccShare==="bar", headH=share?70:58, n=g.bs.length, nm=esc(cats[g.i].name), hex=colHex(cats[g.i].col);
+  const H=headH+n*rowH+(S.ccLine==="bottom"?12:8);
+  const strip=S.ccLine==="bottom"?{side:"bottom",col:hex,w:5}:S.ccLine==="left"?{side:"left",col:hex,w:6}:S.ccLine==="head"?{side:"top",col:hex,w:headH,op:.14}:null;
+  const pct=all?Math.round(g.total/all*100):0;
+  const bs=S.ccOrder==="soon"?g.bs.slice().sort((a,b)=>nextDate(a)-nextDate(b)||figure(b)-figure(a)):g.bs;
+  const soon=b=>S.ccSoon==="mark"&&(nextDate(b)-TODAY)/864e5<7;
+  return `<div class="cc${S.ccLine==="left"?" ll":""}${S.ccDiv==="none"?" nodiv":""}" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{fill:DT.paperCard[md()],strip,r:14,pk:"cc"+S.ccLine+headH})}" alt="">`+
+    `<button class="cch" data-ci="${g.i}" style="height:${headH}px" aria-label="Change ${nm}"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span>`+
+    `<span class="hc"><span class="tn">${nm}</span>${share?`<span class="shr"><i style="width:${Math.max(3,pct)}%;background:${hex}"></i></span>`:""}</span>`+
+    `<span class="hr"><span class="tt">${money(g.total)}</span>${share?`<span class="pc">${pct}%</span>`:""}</span><span class="cgo">›</span></button>`+
+    bs.map(b=>`<button class="ccr${compact?" cp":""}" data-bid="${b.id}"><span class="t"><span class="n">${esc(b.name)}</span>${compact?"":`<span class="s${soon(b)?" soon":""}">${soon(b)?`<i style="background:${hex}"></i>`:""}${aheadLine(b)}</span>`}</span>`+
+      `${compact&&soon(b)?`<span class="sd" style="background:${hex}"></span>`:""}<span class="a">${money(figure(b))}</span></button>`).join("")+`</div>`;
 }
 // a card file: each category a coloured divider with a tab, its bills filed behind it, a strip of each showing
 function cardFile(groups,W){
@@ -1292,7 +1311,7 @@ function renderBills(anim){
     html=`<div class="enter" style="padding-top:6px">${openFolder(g,W)}</div>`; }
   else {
     html=`<div class="bt">All bills</div><div class="bsub">${sum}</div>`;
-    if(S.layout==="card") html+=groups.map(g=>catCard(g,W)).join("");
+    if(S.layout==="card"){ const all=groups.reduce((t,g)=>t+g.total,0); html+=groups.map(g=>catCard(g,W,all)).join(""); }
     else if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="${anim?"enter":""}">${gridColumns(groups,cw)}</div>`; }
     else if(S.fold==="file") html+=cardFile(groups,W);
     else html+=groups.map(g=>S.fold==="pocket"?pocket(g,W):openFolder(g,W)).join("");
@@ -1351,6 +1370,13 @@ function panelHTML(){
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
     tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("layout"))+(S.layout==="pockets"?tcard("The bills in a pocket, drawn as","",optHTML("ix")):"")+
+    (S.layout==="card"?tcard("Category cards","Each changes the cards as you tap it.",
+      fld("Colour line",chips("ccLine",[["bottom","Bottom"],["left","Left edge"],["head","Washed header"],["none","None"]]),"Bottom matches the grid's category card. Left reads down the list; a washed header ties the colour to the name and total.")+
+      fld("Share of the month",chips("ccShare",[["off","Off"],["bar","Bar"]]),"A bar under the name, in its colour, and its percentage under the total: which category is the big one, at a glance.")+
+      fld("Each bill",chips("ccRows",[["full","Name and what's ahead"],["compact","Name only"]]),"Name only is shorter: more categories on a screen, less to read.")+
+      fld("Between bills",chips("ccDiv",[["hair","Hairlines"],["none","Nothing"]]),"Without lines, the spacing alone groups them, and the card reads calmer.")+
+      fld("Order in a card",chips("ccOrder",[["cost","Costliest first"],["soon","Soonest first"]]),"Soonest first answers what's coming; costliest first, where the money goes.")+
+      fld("Due within a week",chips("ccSoon",[["plain","Plain"],["mark","Marked"]]),"Marked: a dot in its colour and its date in ink, so what's due soon stands out.")):"")+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
       fld("Motion",chips("motion",[["none","None"],["quick","Quick"]])))+
@@ -1372,7 +1398,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["layout","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["layout","ccLine","ccShare","ccRows","ccDiv","ccOrder","ccSoon","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
