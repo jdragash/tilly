@@ -175,14 +175,13 @@ colour, one of eight, shows here, on the year and on the timeline's cards.
 
 ## All bills
 
-A sheet from the list button: every bill once, however many charges it has. Monthly / Yearly at the
-top, kept across launches; Monthly is a bill's year over twelve, so a yearly bill reads as its share
-of a month. The title, `All bills` or the picked category, sits over `€1,563 a month`; chips pick
-out one category. Each category is a card with its total, costliest first, and its bills costliest
-first: the name, a line saying what's actually charged when the figure isn't (`€640 yearly`) and
-what's ahead (`€25 until Nov 10`, `from Oct 18`, `ends 12/26`), and the figure. No bill counts.
-Ended bills wait behind `2 ended bills` under the cards, each with what it cost in all. Tapping a
-bill opens its next charge in the editor, an ended one its last.
+A sheet from the list button, read only: a quick check of every bill and what it costs. Monthly /
+Yearly sits top right, kept across launches; Monthly is a bill's year over twelve. `All bills` sits
+over `€1,552 a month`. Each category is a paper card, costliest first, as the grid draws it: its
+picture on the wash, name and total in a 58pt header, a strip of its colour along the bottom, and
+its bills under hairlines, 44pt rows of name and figure, costliest first. Ended bills wait behind
+`2 ended bills` under the cards. Nothing opens: bills change from the timeline, categories in
+Settings.
 
 ---
 

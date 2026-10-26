@@ -13,6 +13,8 @@
   its Copy button hands them back. DialKit 2.0.2 by Josh Puckett, MIT, loaded from jsDelivr with its styles inlined.
   Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
+  All bills (2026-10-26): settled in all-bills-folders.html and carried here: read only, a paper card per category, costliest
+  first, its bills by name and figure, Monthly/Yearly at the top right.
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
 -->
 <style>
@@ -343,6 +345,22 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 #alert .abtn{display:block;width:100%;height:46px;border-radius:23px;font-size:17px;font-weight:600;background:var(--key)}
 #alert .abtn+.abtn{margin-top:8px}
 #alert .abtn.red{background:#E5483B;color:#fff}
+
+/* All bills: read only, a paper card per category with its bills (settled 2026-10-26 in all-bills-folders.html) */
+.fimg{position:absolute;left:-6px;top:-6px;width:calc(100% + 12px);height:calc(100% + 12px);max-width:none;pointer-events:none}
+.seg{position:absolute;right:16px;top:22px;z-index:6;display:flex;height:32px;padding:2px;border-radius:9px;background:var(--key);font:600 13px var(--text)}
+.seg button{padding:0 13px;border-radius:7px;color:var(--ink)}
+.seg button.on{background:var(--paperCard);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px var(--hair)}
+.cc{position:relative;margin:0 0 14px}
+html:not(.dark) .cc>.fimg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
+.cch{position:relative;display:flex;align-items:center;gap:11px;width:100%;height:58px;padding:0 12px 0 14px;text-align:left}
+.cch .grp-pic{width:34px;height:34px;flex:none}
+.cch .tn{flex:1;min-width:0;font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cch .tt{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.ccr{position:relative;display:flex;align-items:center;gap:10px;width:calc(100% - 32px);height:44px;margin:0 16px;text-align:left;
+  box-shadow:inset 0 .5px 0 var(--hair)}
+.ccr .n{flex:1;min-width:0;font-size:16px;line-height:21px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccr .a{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 
 /* Settings, and the category's own sheet from it */
 .sheet2{position:absolute;left:0;right:0;bottom:0;top:calc(var(--sat) + 10px);background:var(--grain),var(--paper);color:var(--ink);
@@ -3227,6 +3245,7 @@ textarea#catsIn{width:100%;min-height:150px;border-radius:10px;border:0;backgrou
   </div>
   <div class="sheet2" id="bsheet">
     <button class="hbtn" id="bClose" aria-label="Close" style="left:16px">✕</button>
+    <div class="seg" id="seg"><button data-p="m">Monthly</button><button data-p="y">Yearly</button></div>
     <div class="sbody" id="bbody"></div>
   </div>
   <div class="sheet2" id="csheet">
@@ -3261,7 +3280,7 @@ const KEY="tilly-category-editor";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"top",cardInfo:"cost",infoAt:"below"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"top",period:"m",cardInfo:"cost",infoAt:"below"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 S.search="top";   // settled: over the symbols, sticking
@@ -3842,14 +3861,27 @@ $("aYes").addEventListener("click",()=>{
 /* ---------- Settings: the categories in your order; tap one to change or delete it ---------- */
 /* ---------- All bills: read only, a quick check of bills and totals ---------- */
 function endsShort(e){ return `ends ${String(e.getMonth()+1).padStart(2,"0")}/${String(e.getFullYear()).slice(2)}`; }
-function renderBills(){
-  const groups=cats.map((c,i)=>{ const bs=bills.filter(b=>b.cat===i&&b.every==="m"&&(!b.end||b.end>=TODAY)).sort((a,b)=>b.amount-a.amount);
-    return {i,bs,total:bs.reduce((t,b)=>t+Math.round(b.amount),0)}; }).filter(g=>g.bs.length).sort((a,b)=>b.total-a.total);
-  $("bbody").innerHTML=`<div class="bt">All bills</div><div class="bsub">${money(groups.reduce((t,g)=>t+g.total,0))} a month</div>`+
-    groups.map(g=>`<div class="bg2"><div class="bgh"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span>`+
-      `<span class="bn">${esc(cats[g.i].name)}</span><span class="bta">${money(g.total)}</span></div>`+
-      g.bs.map(b=>`<div class="brow"><span class="n">${esc(b.name)}</span><span class="k">${b.end?endsShort(b.end):"Monthly"}</span><span class="a">${money(b.amount)}</span></div>`).join("")+`</div>`).join("");
+const per=()=>S.period==="y"?"y":"m";
+// A bill's figure for the period: in Monthly a yearly bill is a twelfth of itself, in Yearly a monthly one twelve times.
+function figure(b){ return Math.round(per()==="m"?(b.every==="y"?b.amount/12:b.amount):(b.every==="y"?b.amount:b.amount*12)); }
+function groupsOf(){
+  return cats.map((c,i)=>{ const bs=bills.filter(b=>b.cat===i&&(!b.end||b.end>=TODAY)).sort((a,b)=>figure(b)-figure(a)||a.name.localeCompare(b.name));
+    return {i,bs,total:bs.reduce((t,b)=>t+figure(b),0)}; }).filter(g=>g.bs.length).sort((a,b)=>b.total-a.total);
 }
+// A category's card, as the grid draws it: paper, its picture on the wash, the name and total over its bills, a strip of colour.
+function catCard(g,W){
+  const H=58+g.bs.length*44+12, hex=colHex(cats[g.i].col);
+  return `<div class="cc" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{fill:DT.paperCard[md()],strip:{side:"bottom",col:hex,w:5},r:14})}" alt="">`+
+    `<div class="cch"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span></div>`+
+    g.bs.map(b=>`<div class="ccr"><span class="n">${esc(b.name)}</span><span class="a">${money(figure(b))}</span></div>`).join("")+`</div>`;
+}
+function renderBills(){
+  const body=$("bbody"), W=Math.round(body.clientWidth||390)-32, groups=groupsOf();
+  $("seg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.p===per()));
+  body.innerHTML=`<div class="bt">All bills</div><div class="bsub">${money(groups.reduce((t,g)=>t+g.total,0))}${per()==="m"?" a month":" a year"}</div>`+
+    groups.map(g=>catCard(g,W)).join("");
+}
+$("seg").addEventListener("click",e=>{ const b=e.target.closest("[data-p]"); if(!b) return; S.period=b.dataset.p; save(); renderBills(); });
 $("billsB").addEventListener("click",()=>{ renderBills(); $("bsheet").classList.add("open"); $("scrim").classList.add("on"); });
 $("bClose").addEventListener("click",()=>{ $("bsheet").classList.remove("open"); $("scrim").classList.remove("on"); });
 let setPage="root";
@@ -3962,7 +3994,7 @@ function panelHTML(){
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
     `<li>There are 28 stand-in symbols, drawn in SF Symbols' manner. The app has about 400 real ones, roughened.</li>`+
     `<li>The guesses come from a short keyword list and a second list standing in for on-device word similarity (NLEmbedding), which in the app finds far more.</li>`+
-    `<li>All bills shows monthly bills only, without its Monthly/Yearly switch or filter chips. It is read only.</li><li>A sort rewrites your order here; dragging to reorder after it works in the app, not here.</li><li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
+    `<li>All bills leaves out ended bills; the app lists them under the cards.</li><li>A sort rewrites your order here; dragging to reorder after it works in the app, not here.</li><li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
     `<li>Edges, washes and grain are SVG filters; the glass is a blur, not Liquid Glass; sheets, menus and alerts are CSS, not the system's.</li>`+
     `<li>The type is SF Pro Rounded on an iPhone and Nunito elsewhere. No Dynamic Type.</li>`+
     `<li>What you make, change or delete lasts until you reload or reset.</li></ul></details></details>`;

@@ -26,7 +26,7 @@ from the prototype's CSS, never guessed. Observations 2, 3 and 4.
 
 ## Model routing
 
-Steps 1–4 and 6 are Sonnet's. Steps 5 and 7 are Opus's: a fixed header over a scrolling grid with a
+Steps 1–4, 6 and 8 are Sonnet's. Steps 5 and 7 are Opus's: a fixed header over a scrolling grid with a
 floating search, and drag-to-reorder in a grid, both stay green with the geometry broken.
 
 ## Steps
@@ -200,6 +200,24 @@ edit it, delete one with bills and see its rows leave the timeline.
 
 **Done when:** in the Simulator, light and dark and at an accessibility size: open Categories, sort
 by each key and undo, drag a card to a new place and see the picker's order follow.
+
+### Step 8 — All bills as category cards
+
+**Files:** modified `Tilly/Bills/AllBillsSheet.swift`, `BillCardView.swift`; `AllBillsBuilder` keeps
+its shape. Settled in `docs/prototypes/all-bills-folders.html` (Tune: layout `card`, rows `compact`,
+hairlines, costliest first) and carried into `category-editor.html`'s All bills.
+
+- Read only: rows don't open the editor, and nothing opens a category.
+- Each card: paper, radius 14, a 5pt colour strip along the bottom, light shadow 0.1 black, radius 2,
+  y 1; header 58 tall, 14 in on the left and 12 on the right, the picture 34 on its wash, 11 to the
+  name (18 bold, one line, cut), the total 19 heavy; rows 44 tall, 16 in from the card's sides,
+  name 16 semibold, figure 16 semibold tabular, a 0.5 hairline above each; 12 under the last row;
+  cards 14 apart, 16 from the sheet's sides.
+- The title `All bills`, 34 heavy, over `€1,552 a month` or `a year`, 15 in `ink2`. Monthly /
+  Yearly a segmented control top right, 32 tall. The chips and each row's second line go.
+
+**Done when:** the suite is green, `AllBillsBuilderTests` unchanged, and the sheet matches the
+prototype in light and dark, compared as crops at the same scale.
 
 ## Landing
 
