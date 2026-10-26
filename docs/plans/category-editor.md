@@ -55,7 +55,7 @@ enum CategoryRemoval {
 tests in `CategoryOrderingTests`, new `CategoryFiguresTests`.
 
 - `CategoryFigures.figures(_ inputs: [BillInput], categories: [CategoryInfo], today:, calendar:) ->
-  [UUID: (bills: Int, monthly: Decimal)]` from `AllBillsBuilder.bills(… period: .monthly)`: a
+  [UUID: (bills: Int, monthly: Decimal)]` from `AllBillsBuilder.bills(… period: .month)`: a
   category's running rows and its card total. A category with none is `(0, 0)`.
 - `enum CategorySort: CaseIterable { case colour, name, monthlyCost, billCount }` with `title`
   (`Colour`, `Name`, `Monthly cost`, `Number of bills`) and `detail` (`rainbow`, `A to Z`,
@@ -89,8 +89,8 @@ enum SymbolGuess {
    catalogue's names (`tv`, `music.note`, `icloud`, `gamecontroller`, `book`, `fork.knife`,
    `dumbbell`, `car`). First match in catalogue order wins.
 2. **Similarity:** `NLEmbedding.wordEmbedding(for: .english)`, loaded once. For each word of the name,
-   the catalogue word with the smallest `distance` under `Tokens.Guess.maxDistance` (start at 0.85;
-   Jake tunes it). nil when the embedding isn't available.
+   the catalogue word with the smallest `distance` under `Tokens.Guess.maxDistance` (1.06: Apple's English
+   embedding puts even close words near 1.0; Jake tunes it). nil when the embedding isn't available.
 
 **Done when:** `netflixIsTV`, `electricityIsBolt`, `rentIsHouse`, `emptyIsNil`, `gibberishIsNil`,
 `caseAndAccentsFold` pass, and `rugbyIsSport` passes or is skipped with `.enabled(if:)` when the
