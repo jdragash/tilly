@@ -8,7 +8,7 @@
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, sheet, card and grid are
   dashed-and-solid.html's, as shipped in v0.7.0.
   Deleting a category deletes its bills, after a warning (Jake, 2026-10-25). Tune shows only the open choices.
-  The editor is its own sheet over the bill editor or Settings (Jake, 2026-10-26).
+  The editor is its own sheet over the bill editor or Settings, laid out card, name, colour, symbols (Jake, 2026-10-26).
   Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
@@ -270,6 +270,31 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
   font:600 17px var(--text);box-shadow:0 0 0 .5px var(--hair)}
 .cpmeta{font-size:13px;color:var(--ink2);text-align:center;margin:0 0 6px;font-family:var(--text)}
 
+/* the cleaned-up sheet: card, name, colour, then the symbols with a search */
+.cpname.wide{height:50px;border-radius:14px;padding:0 16px}
+.cpname.wide input{font-size:19px;text-align:center}
+.symh{display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px;min-height:28px}
+.symh .allh{margin:0}
+.symh .mag{width:36px;height:28px;display:flex;align-items:center;justify-content:flex-end;color:var(--ink2)}
+.symh .mag svg{width:19px;height:19px}
+.symh .done{font:17px var(--text);color:var(--accent);padding:4px 0 4px 12px;flex:none}
+.sfield{display:flex;align-items:center;gap:8px;height:40px;border-radius:20px;background:var(--key);padding:0 12px;color:var(--ink2);flex:1;min-width:0}
+.sfield svg{width:17px;height:17px;flex:none}
+.sfield input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:17px var(--text);padding:0;-webkit-user-select:text;user-select:text}
+.sfield input::placeholder{color:var(--ink2)}
+.sfield .clr{width:18px;height:18px;border-radius:50%;background:var(--ink2);color:var(--paper);font:700 11px/18px var(--text);text-align:center;opacity:.7}
+.stick{position:sticky;top:0;z-index:3;background:var(--grain),var(--paper);padding:8px 0;margin:14px -22px 0;padding-left:22px;padding-right:22px}
+#botSearch{position:absolute;left:16px;right:16px;bottom:calc(var(--sab) + 6px);z-index:6;display:none;height:48px;border-radius:24px;
+  background:var(--glass);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:inset 0 0 0 .5px var(--glassedge),0 4px 18px rgba(0,0,0,.1)}
+#botSearch.on{display:flex}
+#botSearch .sfield{background:transparent;height:48px;padding:0 16px}
+.sech{font:600 12px var(--text);color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px}
+.sech:first-child{margin-top:4px}
+.symg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.symg .ag{aspect-ratio:1}
+.nores{font:15px var(--text);color:var(--ink2);padding:6px 0 2px}
+#csheet.botpad #cpanel2{padding-bottom:calc(var(--sab) + 80px)}
+
 /* the grid's own Edit, when tuned on, and a card's pencil while editing */
 .pgh{display:flex;justify-content:flex-end;margin:-4px 0 6px}
 .pgh button{font:17px var(--text);color:var(--accent);padding:6px 0}
@@ -329,11 +354,11 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .srow.addrow{color:var(--accent)}
 .srow.addrow .plus{width:32px;text-align:center;font-size:26px;font-weight:300}
 .sfoot{font:13px/1.35 var(--text);color:var(--ink2);margin:7px 16px 0}
-#cprev{position:absolute;left:50%;top:70px;width:118px;height:147px;margin-left:-59px}
+#cprev{position:relative;width:118px;height:147px;margin:6px auto 22px}
 #cprev .gc{position:absolute;inset:0;--gh:147px;--gps:54px;--gpt:21px;--gfs:18px}
 #cprev .gc .gn{bottom:18px}
 #cprev.empty{border:2px dashed var(--ink2);border-radius:14px}
-#cpanel2{position:absolute;left:0;right:0;top:240px;bottom:0;overflow-y:auto;padding:0 22px calc(var(--sab) + 24px);scrollbar-width:none}
+#cpanel2{position:absolute;left:0;right:0;top:70px;bottom:0;overflow-y:auto;padding:0 22px calc(var(--sab) + 24px);scrollbar-width:none}
 #cpanel2::-webkit-scrollbar{display:none}
 
 /* ---------- the tuning ---------- */
@@ -439,8 +464,8 @@ textarea#catsIn{width:100%;min-height:150px;border-radius:10px;border:0;backgrou
     <button class="hbtn" id="cX" aria-label="Cancel" style="left:16px">✕</button>
     <button class="hbtn" id="cOk" aria-label="Save" style="right:16px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M4 10.5l4 4 8-9"/></svg></button>
     <div class="s2t" id="cTitle"></div>
-    <div id="cprev"></div>
     <div id="cpanel2"></div>
+    <div id="botSearch"></div>
   </div>
   <div id="ctx"><div class="bd"></div><div class="lift"></div><div class="menu">
     <button data-m="edit">Edit<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M13.6 3.6l2.8 2.8-9 9-3.6.8.8-3.6z"/></svg></button>
@@ -465,7 +490,7 @@ const KEY="tilly-category-editor";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -894,45 +919,78 @@ function closeCat(){
   $("csheet").classList.remove("open"); sheet.classList.remove("back"); $("ssheet").classList.remove("back"); document.activeElement&&document.activeElement.blur();
   if(host==="bill"){ renderPicker(); renderCard(); } else renderSettings();
 }
+// The symbols in sections, and the words each answers to when searched.
+const SECTIONS=[["Home and bills",["home","bolt","drop","wifi","phone","wrench"]],["Fun",["tv","film","note","game","book","cloud"]],
+  ["Everyday",["heart","dumbbell","paw","smile","shirt","leaf"]],["Money and travel",["car","plane","shield","bank","work","tag"]],["Food and shopping",["cup","food","cart","gift"]]];
+const GWORDS={}; ALL_GLYPHS.forEach(g=>GWORDS[g]=[g]);
+KEYWORDS.concat(SIMILAR).forEach(([g,re])=>re.split("|").forEach(w=>GWORDS[g].push(w)));
+function searchSymbols(q){
+  const toks=q.toLowerCase().split(/\s+/).filter(Boolean); if(!toks.length) return null;
+  const hits=ALL_GLYPHS.filter(g=>toks.some(t=>GWORDS[g].some(w=>w.startsWith(t)||(w.length>=3&&t.startsWith(w)))));
+  return hits.length?{title:"Results",list:hits}:{title:"Closest",list:suggest(q).list};
+}
+const MAG=`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8.6" cy="8.6" r="5.4"/><path d="M12.6 12.6l4.4 4.4"/></svg>`;
+const sfieldHTML=()=>`<label class="sfield">${MAG}<input class="sq" type="text" placeholder="Search symbols" autocomplete="off" enterkeyhint="search" value="${esc(CE.q||"")}">${CE.q?`<button class="clr" data-act="clear" aria-label="Clear">✕</button>`:""}</label>`;
 function mountCat(root,host){
-  const edit=CE.ci!=null, header=false, nb=edit?bills.filter(b=>b.cat===CE.ci).length:0;
+  const edit=CE.ci!=null, nb=edit?bills.filter(b=>b.cat===CE.ci).length:0;
+  CE.q=CE.q||""; CE.searching=CE.searching||false;
   $("cTitle").textContent=edit?"Edit Category":"New Category";
-  root.innerHTML=(header?`<div class="cph"><button data-act="cancel">Cancel</button><span class="cpt">${edit?"Edit Category":"New Category"}</span><button class="add" data-act="save">${edit?"Done":"Add"}</button></div>`:"")+
-    `<div class="cprow"><button class="slot" data-act="slot" aria-label="Symbol"></button>`+
-    `<label class="cpname"><input type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" value="${esc(CE.name)}"></label></div>`+
-    `<div class="sugg"></div>`+
+  const head=S.search==="top"?`<div class="stick">${sfieldHTML()}</div>`:
+    S.search==="icon"?`<div class="symh"></div>`:`<div style="height:14px"></div>`;
+  root.innerHTML=`<div id="cprev"></div>`+
+    `<label class="cpname wide"><input class="nm2" type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="28" value="${esc(CE.name)}"></label>`+
     `<div class="sw">${PAL.map((p,k)=>`<button data-col="${k}" aria-label="Colour ${k+1}" style="--c:${colHex(k)}"><i style="background:${colHex(k)}"></i></button>`).join("")}</div>`+
-    `<div class="allh">All symbols</div><div class="allg">${ALL_GLYPHS.map(g=>`<button class="ag" data-g="${g}" aria-label="${g}"></button>`).join("")}</div>`+
+    head+`<div class="symbody"></div>`+
     (edit?`<button class="cpdel" data-act="delete">Delete Category</button><div class="cpmeta">${nb?`${nb} bill${nb>1?"s":""} in ${esc(CE.name)}`:"No bills in it yet"}</div>`:"");
-  const input=root.querySelector("input");
+  const bot=$("botSearch"); bot.classList.toggle("on",S.search==="bottom"); $("csheet").classList.toggle("botpad",S.search==="bottom");
+  bot.innerHTML=S.search==="bottom"?sfieldHTML():"";
+  const input=root.querySelector(".nm2");
   input.addEventListener("input",()=>{ CE.name=input.value; if(!CE.picked&&S.guess==="fill") CE.glyph=suggest(CE.name).best; updateCat(); });
-  input.addEventListener("keydown",e=>{ if(e.key!=="Enter") return; e.preventDefault();
-    if(ceDone()) saveCat(); else if(!CE.glyph){ input.blur(); root.querySelector(".allh").scrollIntoView({behavior:"smooth",block:"start"}); } });
-  root.onclick=e=>{
+  input.addEventListener("keydown",e=>{ if(e.key!=="Enter") return; e.preventDefault(); if(ceDone()) saveCat(); else input.blur(); });
+  if(S.search==="icon") renderIconHead();
+  wireSearch(root); wireSearch(bot);
+  const click=e=>{
     const b=e.target.closest("button"); if(!b) return;
     if(b.dataset.g){ CE.glyph=b.dataset.g; CE.picked=true; updateCat(); return; }
     if(b.dataset.col){ CE.col=+b.dataset.col; updateCat(); return; }
     const a=b.dataset.act;
-    if(a==="cancel") closeCat(); else if(a==="save"){ if(ceDone()&&ceChanged()) saveCat(); }
-    else if(a==="slot"){ input.blur(); root.querySelector(".allh").scrollIntoView({behavior:"smooth",block:"start"}); }
-    else if(a==="delete") askDelete(CE.ci);
+    if(a==="clear"){ CE.q=""; refreshSearch(); return; }
+    if(a==="open"){ CE.searching=true; renderIconHead(); const q=root.querySelector(".sq"); q&&q.focus(); return; }
+    if(a==="close"){ CE.searching=false; CE.q=""; renderIconHead(); updateCat(); return; }
+    if(a==="delete") askDelete(CE.ci);
   };
+  root.onclick=click; bot.onclick=click;
   updateCat();
 }
+function renderIconHead(){
+  const h=$("cpanel2").querySelector(".symh"); if(!h) return;
+  h.innerHTML=CE.searching?sfieldHTML()+`<button class="done" data-act="close">Cancel</button>`:`<div class="allh">Symbols</div><button class="mag" data-act="open" aria-label="Search symbols">${MAG}</button>`;
+  wireSearch(h);
+}
+function wireSearch(el){
+  const q=el.querySelector(".sq"); if(!q||q.dataset.w) return; q.dataset.w=1;
+  q.addEventListener("input",()=>{ CE.q=q.value; updateCat(); const c=q.parentNode.querySelector(".clr");
+    if(!!c!==!!CE.q){ if(CE.q){ const x=document.createElement("button"); x.className="clr"; x.dataset.act="clear"; x.textContent="✕"; q.after(x); } else c.remove(); } });
+  q.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); q.blur(); } });
+}
+function refreshSearch(){ document.querySelectorAll("#csheet .sq").forEach(q=>{ q.value=CE.q; const c=q.parentNode.querySelector(".clr"); if(c&&!CE.q) c.remove(); }); updateCat(); }
+function symCell(g){ return `<button class="ag${CE.glyph===g?" on":""}" data-g="${g}" aria-label="${g}">${picOf({glyph:g,col:CE.col,key:g},48,false,false)}</button>`; }
 function updateCat(){
   if(!CE) return;
-  const root=$("cpanel2"), d=draftCat(), sg=suggest(CE.name), boil=S.boil!=="off";
-  const slot=root.querySelector(".slot"), grid=false;
-  slot.className="slot"+(grid?" gridprev":"")+(CE.glyph?"":" empty")+(CE.glyph&&!CE.picked?" guess":"");
-  slot.innerHTML=grid?(CE.glyph||CE.name?gridCard(d,null,79,98,false):""):
-    CE.glyph?picOf(d,48,false,boil):`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>`;
-  root.querySelector(".sugg").innerHTML=sg.list.length?sg.list.map(g=>`<button class="sg${CE.glyph===g?" on":""}" data-g="${g}" aria-label="${g}">${picOf({glyph:g,col:CE.col,key:g},44,false,false)}</button>`).join(""):
-    `<span class="hint">${CE.ci==null?"Type a name and Tilly suggests a symbol.":""}</span>`;
+  const root=$("cpanel2"), d=draftCat();
+  const cp=root.querySelector("#cprev"); cp.className=CE.glyph||CE.name?"":"empty"; cp.innerHTML=CE.glyph||CE.name?gridCard(d,null,118,147,false):"";
+  if(cp.firstChild&&CE.glyph&&!CE.picked) cp.firstChild.insertAdjacentHTML("beforeend",`<span class="slot guess" style="position:absolute;right:6px;top:6px;width:0;height:0"></span>`);
   root.querySelectorAll(".sw button").forEach(b=>b.classList.toggle("on",+b.dataset.col===CE.col));
-  root.querySelectorAll(".ag").forEach(b=>{ const g=b.dataset.g; if(b.dataset.c!==String(CE.col)){ b.innerHTML=picOf({glyph:g,col:CE.col,key:g},44,false,false); b.dataset.c=CE.col; } b.classList.toggle("on",CE.glyph===g); });
-  const add=root.querySelector("[data-act=save]"); if(add) add.disabled=!(ceDone()&&ceChanged());
-  { const cp=$("cprev"); cp.className=CE.glyph||CE.name?"":"empty"; cp.innerHTML=CE.glyph||CE.name?gridCard(d,null,118,147,false):"";
-    $("cOk").classList.toggle("ok",ceDone()&&ceChanged()); $("cOk").style.cssText=`right:16px;${ceDone()&&ceChanged()?"background:var(--accent);color:#fff":"color:var(--ink2);opacity:.55"}`; }
+  const res=searchSymbols(CE.q||""); let html="";
+  if(res){ html=`<div class="sech">${res.title==="Closest"?"No exact match. Closest":"Results"}</div><div class="symg">${res.list.map(symCell).join("")}</div>`; }
+  else {
+    const sg=suggest(CE.name);
+    if(sg.list.length) html+=`<div class="sech">Suggested for “${esc(CE.name.trim())}”</div><div class="symg">${sg.list.map(symCell).join("")}</div>`;
+    html+=SECTIONS.map(([t,gs])=>`<div class="sech">${t}</div><div class="symg">${gs.map(symCell).join("")}</div>`).join("");
+  }
+  root.querySelector(".symbody").innerHTML=html;
+  const ok=ceDone()&&ceChanged();
+  $("cOk").style.cssText=`right:16px;${ok?"background:var(--accent);color:#fff":"color:var(--ink2);opacity:.55"}`;
 }
 function saveCat(){
   const c={name:CE.name.trim(),glyph:CE.glyph,col:CE.col}, host=CE.host, isNew=CE.ci==null;
@@ -995,8 +1053,11 @@ function toast(t){ const p=$("toast"); p.textContent=t; p.style.opacity=1; clear
 const OPT={
   preview:[["card","On the bill card","The card above takes the category's colour and the tile its symbol as you make it, so you see it on the bill it's for.","recommended"],
            ["grid","As its grid card","A grid card at its real size beside the name, in place of the picture slot, so you see exactly what lands in the grid."]],
-  guess:[["fill","Fills the picture","The best match goes into the picture as you type, marked with a spark until you choose one yourself. The other guesses sit under the name.","recommended"],
-         ["offer","Only suggests","The guesses sit under the name and the picture stays empty until you tap one."]],
+  search:[["bottom","At the bottom, in glass","A search field floating at the bottom of the sheet, as iOS 26 puts search, where your thumb is. It rides above the keyboard while you type.","recommended"],
+          ["top","Over the symbols, sticking","A search field under the Symbols heading that sticks to the top as you scroll through them."],
+          ["icon","Behind a magnifier","Just the Symbols heading at rest, with a magnifier beside it. Tap it and the heading becomes the search field."]],
+  guess:[["fill","Fills the picture","The best match goes into the card as you type, marked with a spark until you choose one yourself. The other guesses lead the symbols.","recommended"],
+         ["offer","Only suggests","The guesses lead the symbols and the card stays empty until you tap one."]],
   buttons:[["header","Cancel and Add over it","A stock Cancel and Add over the panel, so there's a clear way to finish and to back out.","recommended"],
            ["return","Return key, as built","Return on the name keyboard makes it; the category tile on the card backs out."]],
   findEdit:[["press","Long-press a card","Hold a card in the grid for Edit and Delete, a stock menu. Settings is the place you can see.","recommended"],
@@ -1011,6 +1072,7 @@ function panelHTML(){
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
+    tcard("Searching symbols","Try boxing, taxi, wine or dentist.",optHTML("search"))+
     tcard("The guessed symbol","Try names like Gym, Netflix, Rugby, Uber or Barber.",optHTML("guess"))+
     tcard("Finding Edit in the grid","",optHTML("findEdit"))+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
@@ -1034,7 +1096,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["guess","findEdit"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["search","guess","findEdit"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
