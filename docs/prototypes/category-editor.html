@@ -7,7 +7,7 @@
   its symbol is suggested from its name (observations 2, 3 and 4).
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, sheet, card and grid are
   dashed-and-solid.html's, as shipped in v0.7.0.
-  Deleting a category deletes its bills, after a warning, from a trash button beside ✓ (Jake, 2026-10-25/26). Settings lists Categories as a row that opens the list. Tune shows only the open choices.
+  Deleting a category deletes its bills, after a warning, from a trash button beside ✓ (Jake, 2026-10-25/26). Settings lists Categories as a row that opens them as the picker's grid of cards. All bills is read only. Tune shows only the open choices.
   The editor is its own sheet over the bill editor or Settings, laid out card and colour fixed, symbols scrolling under them; the name is typed on the card, the symbol starts on a default that a guess replaces, and no row of suggestions (Jake, 2026-10-26).
   Published: https://claude.ai/artifact/2EC1pCub3rTtLWs2WrvbC9
 
@@ -376,6 +376,7 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .sbody.pop{animation:popIn .3s cubic-bezier(.2,.8,.2,1)}
 @keyframes pushIn{from{transform:translateX(40%);opacity:0}to{transform:none;opacity:1}}
 @keyframes popIn{from{transform:translateX(-30%);opacity:0}to{transform:none;opacity:1}}
+.sgrid{padding:6px 0 0}
 .srow .chev{color:var(--ink2);opacity:.6;font:600 17px var(--text)}
 .srow.addrow{color:var(--accent)}
 .srow.addrow .plus{width:32px;text-align:center;font-size:26px;font-weight:300}
@@ -1084,20 +1085,18 @@ $("aYes").addEventListener("click",()=>{
 });
 
 /* ---------- Settings: the categories in your order; tap one to change or delete it ---------- */
-/* ---------- All bills: a category's header opens its sheet; New at the end ---------- */
+/* ---------- All bills: read only, a quick check of bills and totals ---------- */
 function endsShort(e){ return `ends ${String(e.getMonth()+1).padStart(2,"0")}/${String(e.getFullYear()).slice(2)}`; }
 function renderBills(){
   const groups=cats.map((c,i)=>{ const bs=bills.filter(b=>b.cat===i&&b.every==="m"&&(!b.end||b.end>=TODAY)).sort((a,b)=>b.amount-a.amount);
     return {i,bs,total:bs.reduce((t,b)=>t+Math.round(b.amount),0)}; }).filter(g=>g.bs.length).sort((a,b)=>b.total-a.total);
   $("bbody").innerHTML=`<div class="bt">All bills</div><div class="bsub">${money(groups.reduce((t,g)=>t+g.total,0))} a month</div>`+
-    groups.map(g=>`<div class="bg2"><button class="bgh" data-ci="${g.i}" aria-label="Change ${esc(cats[g.i].name)}"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span>`+
-      `<span class="bn">${esc(cats[g.i].name)}</span><span class="bta">${money(g.total)}</span><span class="chev">›</span></button>`+
-      g.bs.map(b=>`<div class="brow"><span class="n">${esc(b.name)}</span><span class="k">${b.end?endsShort(b.end):"Monthly"}</span><span class="a">${money(b.amount)}</span></div>`).join("")+`</div>`).join("")+
-    `<button class="bnew" data-new="1"><span style="font-size:24px;font-weight:300">+</span> New Category</button>`;
+    groups.map(g=>`<div class="bg2"><div class="bgh"><span class="grp-pic">${catPic(g.i,34,false,S.boil==="all")}</span>`+
+      `<span class="bn">${esc(cats[g.i].name)}</span><span class="bta">${money(g.total)}</span></div>`+
+      g.bs.map(b=>`<div class="brow"><span class="n">${esc(b.name)}</span><span class="k">${b.end?endsShort(b.end):"Monthly"}</span><span class="a">${money(b.amount)}</span></div>`).join("")+`</div>`).join("");
 }
 $("billsB").addEventListener("click",()=>{ renderBills(); $("bsheet").classList.add("open"); $("scrim").classList.add("on"); });
 $("bClose").addEventListener("click",()=>{ $("bsheet").classList.remove("open"); $("scrim").classList.remove("on"); });
-$("bbody").addEventListener("click",e=>{ const h=e.target.closest(".bgh,.bnew"); if(!h) return; openCat("bills",h.dataset.new?null:+h.dataset.ci); });
 let setPage="root";
 const GRIDICON=`<svg viewBox="0 0 20 20" fill="#fff"><rect x="3.5" y="3.5" width="5.6" height="5.6" rx="1.4"/><rect x="10.9" y="3.5" width="5.6" height="5.6" rx="1.4"/><rect x="3.5" y="10.9" width="5.6" height="5.6" rx="1.4"/><rect x="10.9" y="10.9" width="5.6" height="5.6" rx="1.4"/></svg>`;
 function renderSettings(){
@@ -1107,16 +1106,16 @@ function renderSettings(){
   sb.innerHTML=setPage==="root"?
     `<div class="grp"><button class="srow" data-go="cats"><span class="grp-pic stile" style="background:#5A6CE8">${GRIDICON}</span><span class="sn">Categories</span><span class="sc">${cats.length}</span><span class="chev">›</span></button></div>`+
     `<div class="sfoot">More settings join this list as they arrive.</div>`:
-    `<div class="grp">`+cats.map((c,i)=>{ const n=bills.filter(b=>b.cat===i).length;
-      return `<button class="srow" data-ci="${i}"><span class="grp-pic">${catPic(i,32,false,S.boil==="all")}</span><span class="sn">${esc(c.name)}</span><span class="sc">${n?n+(n>1?" bills":" bill"):""}</span><span class="chev">›</span></button>`; }).join("")+
-    `<button class="srow addrow" data-new="1"><span class="plus">+</span><span class="sn" style="color:var(--accent)">New Category</span></button></div>`+
+    (()=>{ const W=(sb.clientWidth||390)-32, cw=Math.floor((W-30)/4);
+      return `<div class="pgrid sgrid" style="grid-template-columns:repeat(4,1fr);--gh:98px;--gps:36px;--gpt:14px;--gfs:12px">`+
+        cats.map((c,i)=>gridCard(c,i,cw,98,false)).join("")+`<button class="gc new" data-new="1"><span class="plus">+</span><span class="gn">New</span></button></div>`; })()+
     `<div class="sfoot">Tap a category to change or delete it. Hold and drag to reorder.</div>`;
 }
 function goSettings(page){ setPage=page; const sb=$("sbody"); sb.classList.remove("push","pop"); void sb.offsetWidth; renderSettings();
   if(S.motion==="quick") sb.classList.add(page==="root"?"pop":"push"); sb.scrollTop=0; }
 $("gearB").addEventListener("click",()=>{ setPage="root"; renderSettings(); $("ssheet").classList.add("open"); $("scrim").classList.add("on"); });
 $("sClose").addEventListener("click",()=>{ if(setPage!=="root"){ goSettings("root"); return; } $("ssheet").classList.remove("open"); $("scrim").classList.remove("on"); });
-$("sbody").addEventListener("click",e=>{ const r=e.target.closest(".srow"); if(!r) return; if(r.dataset.go){ goSettings(r.dataset.go); return; } openCat("settings",r.dataset.new?null:+r.dataset.ci); });
+$("sbody").addEventListener("click",e=>{ const r=e.target.closest(".srow,.gc"); if(!r) return; if(r.dataset.go){ goSettings(r.dataset.go); return; } openCat("settings",r.dataset.new?null:+r.dataset.ci); });
 $("cX").addEventListener("click",closeCat);
 $("cDel").addEventListener("click",()=>{ if(CE&&CE.ci!=null) askDelete(CE.ci); });
 $("cOk").addEventListener("click",()=>{ if(ceDone()&&ceChanged()) saveCat(); });
@@ -1150,7 +1149,7 @@ function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class=
 const fld=(label,body,note)=>`<div class="fld"><div class="fl">${label}</div>${body}${note?`<p class="desc">${note}</p>`:""}</div>`;
 const tcard=(title,sub,body)=>`<section class="tc"><div class="ch">${title}</div>${sub?`<div class="cs">${sub}</div>`:""}${body}</section>`;
 function panelHTML(){
-  return `<div class="ptop"><div><h1>The category editor</h1><p class="lead">Only the choices still open. Make one: + then the card's picture tile, then New. Change or delete one: hold a card in the grid, tap a category header in All bills, or Settings → Categories.</p></div>`+
+  return `<div class="ptop"><div><h1>The category editor</h1><p class="lead">Only the choices still open. Make one: + then the card's picture tile, then New. Change or delete one: hold a card in the grid or Settings → Categories.</p></div>`+
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
@@ -1166,7 +1165,7 @@ function panelHTML(){
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
     `<li>There are 28 stand-in symbols, drawn in SF Symbols' manner. The app has about 400 real ones, roughened.</li>`+
     `<li>The guesses come from a short keyword list and a second list standing in for on-device word similarity (NLEmbedding), which in the app finds far more.</li>`+
-    `<li>All bills shows monthly bills only, without its Monthly/Yearly switch or filter chips; only the header tap is new.</li><li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
+    `<li>All bills shows monthly bills only, without its Monthly/Yearly switch or filter chips. It is read only.</li><li>Settings doesn't drag to reorder here. The app already does.</li><li>The search bar is near-opaque, not Liquid Glass, so the browser scrolls smoothly under it.</li>`+
     `<li>Edges, washes and grain are SVG filters; the glass is a blur, not Liquid Glass; sheets, menus and alerts are CSS, not the system's.</li>`+
     `<li>The type is SF Pro Rounded on an iPhone and Nunito elsewhere. No Dynamic Type.</li>`+
     `<li>What you make, change or delete lasts until you reload or reset.</li></ul></details></details>`;
