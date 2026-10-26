@@ -17,9 +17,27 @@ extension Tokens {
         static var pictureSize: CGFloat { l.sheetPictureSize }
         static var pictureTop: CGFloat { l.sheetPictureTop }
         /// The name, rounded bold 18 at the default text size, scaling as `title3` does.
-        static func nameFont(_ dynamicTypeSize: DynamicTypeSize) -> Font {
-            .system(size: Tokens.Text.scaled(l.sheetNameSize, as: .title3, at: dynamicTypeSize),
-                    weight: .bold, design: .rounded)
+        static func nameSize(_ dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+            Tokens.Text.scaled(l.sheetNameSize, as: .title3, at: dynamicTypeSize)
+        }
+        static func nameFont(size: CGFloat) -> Font { .system(size: size, weight: .bold, design: .rounded) }
+
+        /// The size the typed name takes: `full` while it fits two lines across the card, then
+        /// smaller, to `Scale.cardName` of it at least. A text field can't shrink its own text.
+        static func fittedNameSize(_ name: String, full: CGFloat) -> CGFloat {
+            let width = cardWidth - 2 * nameInset
+            var size = full
+            while size > full * Tokens.Scale.cardName {
+                let font = UIFont.systemFont(ofSize: size, weight: .bold)
+                let rounded = font.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: size) } ?? font
+                let height = (name as NSString).boundingRect(
+                    with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                    options: .usesLineFragmentOrigin, attributes: [.font: rounded], context: nil
+                ).height
+                if height <= rounded.lineHeight * 2 + 1 { break }
+                size -= 0.5
+            }
+            return max(size, full * Tokens.Scale.cardName)
         }
         static var nameBottom: CGFloat { l.sheetNameBottom }
         static var nameInset: CGFloat { l.sheetNameInset }
@@ -38,6 +56,7 @@ extension Tokens {
         static var sparkSymbol: CGFloat { l.sparkSymbol }
         static var sparkRight: CGFloat { l.sparkRight }
         static var sparkUp: CGFloat { l.sparkUp }
+        static var sparkFont: Font { .system(size: sparkSymbol) }
 
         // Colour swatches, spread across the width.
         static var swatchDot: CGFloat { l.swatchDot }
@@ -55,6 +74,18 @@ extension Tokens {
         static var symbolRingWidth: CGFloat { l.symbolRingWidth }
         static var symbolRingOutset: CGFloat { l.symbolRingOutset }
         static var hairline: CGFloat { l.hairline }
+
+        /// How many symbols a search that matches nothing offers instead.
+        static let closestLimit = 6
+        /// `No exact match. Closest` over them: 10 semibold, uppercase, spaced 0.05em; 4 above, 8 below.
+        static let noteSize: CGFloat = 10
+        static let noteTracking: CGFloat = 0.5
+        static let noteTop: CGFloat = 4
+        static let noteBottom: CGFloat = 8
+        /// The name's field on the card: never shorter than one line of the dashed outline.
+        static let nameFieldMinHeight: CGFloat = 40
+        /// The longest name the card takes; from the prototype.
+        static let nameMaxLength = 28
 
         // The search field, sticking at the top of the symbols.
         static var searchHeight: CGFloat { l.searchHeight }

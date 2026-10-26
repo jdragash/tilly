@@ -41,7 +41,7 @@ nonisolated struct CategoryLayout: Codable, Equatable, Sendable {
     var sheetCardTop = 0.0
     var sheetCardBottom = 16.0
     var sheetShadowOpacity = 0.12
-    var sheetShadowRadius = 5.0
+    var sheetShadowRadius = 2.5   // the prototype's 5pt CSS blur, halved as every shadow here is
     var sheetShadowY = 2.0
     var sparkSize = 17.0
     var sparkSymbol = 12.0

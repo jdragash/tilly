@@ -24,6 +24,12 @@ enum Tokens {
         /// and 5px vertical stems; this measured 5px too, where `.headline` (semibold) measured 6px.
         static let monthButton: Font = .body.weight(.medium)
         static let floatingSymbol: Font = .body.weight(.medium)
+        /// The category sheet's `No exact match. Closest`, scaling as `caption2` does.
+        static func symbolsNote(_ dynamicTypeSize: DynamicTypeSize) -> Font {
+            .system(size: scaled(CategorySheet.noteSize, as: .caption2, at: dynamicTypeSize), weight: .semibold)
+        }
+        /// A sheet's title between its header buttons: 17 semibold, from the prototype.
+        static let sheetTitle: Font = .headline
         static let name: Font = .body
         static let amount: Font = .body
         static let caption: Font = .footnote
@@ -125,6 +131,8 @@ enum Tokens {
         static let editorAmountMin: CGFloat = 0.3
         /// A month header's name and a picked-out category's name, before they truncate.
         static let headerMin: CGFloat = 0.8
+        /// A category card's name, on any card: two lines, then this much smaller, then cut.
+        static let cardName: CGFloat = 0.8
         /// A lane's total, before it would run out of its column.
         static let laneTotalMin: CGFloat = 0.5
         /// A day's total, before it would run out of its column.
@@ -415,6 +423,8 @@ enum Tokens {
         /// +, at the top. Calendar's top glass buttons, measured on the iPhone 17 simulator
         /// (iOS 26.5, month view, 3x): 44.00pt tall.
         static let floatingButton: CGFloat = 44
+        /// Room a sheet's centred title leaves each side: two header buttons and their gaps.
+        static let sheetTitleClearance: CGFloat = 2 * (floatingButton + Space.sheetButtonGap)
         /// One button's width in a top glass group. Calendar's top group measured 158pt for three
         /// icons on the iPhone 17 simulator.
         static let groupSlot: CGFloat = 52
@@ -681,6 +691,8 @@ extension Tokens {
     nonisolated enum Drawn {
         static let paper = dynamic(light: 0xEFEEEA, dark: 0x1D1C1A)
         static let paperCard = dynamic(light: 0xF7F6F2, dark: 0x2B2A27)
+        /// A field's ground on paper: the category sheet's search; the prototype's `--key`.
+        static let key = dynamic(light: 0xE7E6E1, dark: 0x2B2A27)
         static let ink = dynamic(light: 0x1C1B19, dark: 0xF2F1EE)
         static let ink2 = dynamic(light: 0x8A8883, dark: 0x8D8B86)
         /// The faint dashed line round what's still to come.

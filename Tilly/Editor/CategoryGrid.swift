@@ -10,8 +10,6 @@ struct CategoryGrid: View {
     let onPick: (UUID) -> Void
     let onNew: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: Tokens.Space.pickerGap), count: Tokens.Size.pickerColumns)
@@ -41,57 +39,15 @@ struct CategoryGrid: View {
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
-    private var cornerRadii: RectangleCornerRadii {
-        let radius = Tokens.Radius.pickerCard
-        return RectangleCornerRadii(topLeading: radius, bottomLeading: radius, bottomTrailing: radius, topTrailing: radius)
-    }
-
-    /// A paper card: the picture on its wash near the top, the name above the bottom, and a strip of
-    /// the colour along the bottom, inside the card's shape. `pickerCard` tall, or taller where a
-    /// larger text size needs the room for two lines of name.
+    /// The card, as `CategoryCardFace` draws it, with the picked one's ring outside it.
     private func card(_ category: ExpenseCategory) -> some View {
-        let seed = stableSeed(category.id.uuidString)
-        let colour = category.colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured
-        let shape = RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, wobble: Tokens.Drawn.pickerCardWobble)
-        return VStack(spacing: 0) {
+        CategoryCardFace(
+            colour: category.colour, seed: stableSeed(category.id.uuidString), metrics: .grid, name: category.name
+        ) {
             CategoryPictureView(
                 picture: CategoryPicture(category), colour: category.colour,
                 size: Tokens.Size.pickerPicture, round: true, place: .editor
             )
-            .padding(.top, Tokens.Space.pickerPictureTop)
-            Spacer(minLength: Tokens.Space.pickerNameTop)
-            Text(category.name)
-                .font(Tokens.Text.pickerName(dynamicTypeSize))
-                .foregroundStyle(Tokens.Ink.primary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(Tokens.Scale.headerMin)
-                .padding(.horizontal, Tokens.Space.pickerNameSide)
-                .padding(.bottom, Tokens.Space.pickerNameBottom)
-        }
-        // As tall as the row, so a row's cards line up when one name needs more room.
-        .frame(maxWidth: .infinity, minHeight: Tokens.Size.pickerCard, maxHeight: .infinity)
-        .background {
-            PaperCard(cornerRadii: cornerRadii, seed: seed, wobble: Tokens.Drawn.pickerCardWobble)
-                .overlay(alignment: .bottom) {
-                    // A wash, speckled as the prototype's `washF` speckles it.
-                    RoughRoundedRectangle(
-                        cornerRadii: RectangleCornerRadii(), seed: seed,
-                        wobble: Tokens.Drawn.stripWobble, frequency: Tokens.Drawn.stripFrequency
-                    )
-                        .fill(colour.opacity(Tokens.Opacity.pickerStrip))
-                        .frame(height: Tokens.Size.pickerStrip)
-                        .mask {
-                            Image(uiImage: Grain.speckle)
-                                .resizable(resizingMode: .tile)
-                                .interpolation(.medium)
-                        }
-                }
-                .clipShape(shape)
-                .shadow(
-                    color: colorScheme == .light ? Tokens.Shadow.pickerCardColour : .clear,
-                    radius: Tokens.Shadow.pickerCardRadius, y: Tokens.Shadow.pickerCardY
-                )
         }
         .overlay {
             if category.id == selection {
@@ -116,8 +72,7 @@ struct CategoryGrid: View {
                     .padding(.top, Tokens.Space.pickerPlusTop)
             }
             .overlay(alignment: .bottom) {
-                Text("New")
-                    .font(Tokens.Text.pickerName(dynamicTypeSize))
+                CategoryCardName(name: String(localized: "New"), ink: Tokens.Drawn.ink2)
                     .padding(.bottom, Tokens.Space.pickerNameBottom)
             }
             .foregroundStyle(Tokens.Drawn.ink2)

@@ -108,18 +108,10 @@ struct ExpenseEditor: View {
 
     // MARK: Pieces
 
-    /// ✕ top left; trash, when a charge is open, and ✓ top right. Glass circles the size and place
-    /// of the system sheet's toolbar buttons, which this row replaced when the editor stopped being
-    /// a system sheet. A half-made category is finished or cancelled before the expense is saved.
+    /// ✕ top left; trash, when a charge is open, and ✓ top right. A half-made category is finished
+    /// or cancelled before the expense is saved.
     private var header: some View {
-        HStack(spacing: Tokens.Space.sheetButtonGap) {
-            Button { close(.cancelled) } label: {
-                headerSymbol("xmark", ink: Tokens.Ink.primary)
-            }
-            .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: Circle())
-            .accessibilityLabel("Close")
-            Spacer(minLength: 0)
+        SheetHeader(onClose: { close(.cancelled) }) {
             if let session {
                 // A `Menu`, not a `confirmationDialog`: the dialog ran its button's action only
                 // once its closing transition had finished, a second after it had visibly gone
@@ -131,7 +123,7 @@ struct ExpenseEditor: View {
                         Text("\(deleteTitle(for: session)) \(deleteMessage(for: session))")
                     }
                 } label: {
-                    headerSymbol("trash", ink: Tokens.Ink.destructive)
+                    SheetHeaderSymbol(name: "trash", ink: Tokens.Ink.destructive)
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
@@ -140,9 +132,6 @@ struct ExpenseEditor: View {
             }
             confirm
         }
-        .padding(.horizontal, Tokens.Space.sheetButtonInset)
-        .padding(.top, Tokens.Space.sheetButtonInset)
-        .padding(.bottom, Tokens.Space.sheetHeaderBottom)
     }
 
     /// ✓: the system's prominent checkmark, grey while there's nothing to save, and a menu of
@@ -155,7 +144,7 @@ struct ExpenseEditor: View {
             Menu {
                 scopeButtons
             } label: {
-                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+                SheetHeaderSymbol(name: "checkmark", ink: Tokens.Ink.onProminent)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -163,7 +152,7 @@ struct ExpenseEditor: View {
             .accessibilityLabel("Save")
         } else {
             Button(action: save) {
-                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+                SheetHeaderSymbol(name: "checkmark", ink: Tokens.Ink.onProminent)
             }
             // Not `.plain`, which dims a disabled label: the system's disabled ✓ keeps it white
             // on grey glass.
@@ -172,16 +161,6 @@ struct ExpenseEditor: View {
             .disabled(!canSave)
             .accessibilityLabel("Save")
         }
-    }
-
-    private func headerSymbol(_ name: String, ink: Color) -> some View {
-        Image(systemName: name)
-            .font(Tokens.Text.floatingSymbol)
-            // Fixed, as toolbar symbols are: the circle doesn't grow with the text.
-            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            .foregroundStyle(ink)
-            .frame(width: Tokens.Size.floatingButton, height: Tokens.Size.floatingButton)
-            .contentShape(Circle())
     }
 
     private var card: some View {
@@ -607,11 +586,4 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
         .modelContainer(container)
         .preferredColorScheme(.dark)
         .dynamicTypeSize(.accessibility3)
-}
-
-/// A button that draws its label as it is, enabled or not; its glass answers the press.
-private struct UndimmedButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-    }
 }
