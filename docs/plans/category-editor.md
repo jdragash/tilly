@@ -21,7 +21,7 @@ from the prototype's CSS, never guessed. Observations 2, 3 and 4.
   ship (tenet 1). The sort's Undo toast ships: it is the only way back from a sort.
 - `NewCategoryRow` and the editor's `.newCategory` panel go. Settings' list rows, colour menu and
   inline `SymbolPicker` go.
-- DialKit is a Debug-only dev tool (`CLAUDE.md`, code). Release reads `Tokens` and nothing else.
+- DialKit is a Debug-only dev tool (`CLAUDE.md`, code). Release reads the token defaults only.
 
 ## Model routing
 
@@ -97,7 +97,7 @@ embedding can't load.
 
 ### Step 4 — Tokens, and DialKit for live tuning
 
-**Files:** modified `Tokens.swift`; new `Tilly/DesignSystem/CategoryLayout.swift`; new
+**Files:** modified `Tokens.swift`; new `Tilly/DesignSystem/LayoutTuning.swift`; new
 `Tilly/Developer/CategoryDials.swift`; modified `TillyApp.swift`, `project.pbxproj` (the package).
 
 - New tokens, from the prototype: sheet card 150 × 184, radius 14, strip 5, picture 64 at 28 from the
@@ -112,16 +112,21 @@ embedding can't load.
   y 4; the scroll keeps 80 clear under it. Settings card 112 tall with its figure, the name 27 from
   the bottom; the figure `.caption2` medium, `ink2`, 11 from the bottom, 4 in from the sides.
   Settings' `Categories` tile 32, radius 8, `#5A6CE8`, white `square.grid.2x2`.
-- `CategoryLayout: Codable, Equatable` holds the numbers above as stored properties whose defaults
-  are the tokens. Views read `@Environment(\.categoryLayout)`, which is `CategoryLayout()` unless set.
-- Debug only: add `https://github.com/mikelikesdesign/dialkit-macos`, products `DialkitmacOS` and
-  `DialkitmacOSAgent` on the app target. Every import sits in `#if DEBUG`. `TillyApp.init` starts
-  `DialKitAgent.shared.start(appName: "Tilly")`. `CategoryDials` owns a `DialPanelState` with a fixed
-  UUID, `name: "Categories"`, a slider per value, and sets `\.categoryLayout` on the root from
-  `dial.values`. Previews of the sheet and the Settings grid start the agent in `.task`.
+- `LayoutTuning` (`@MainActor @Observable`, `.shared`) holds `CategoryLayout: Codable, Equatable`,
+  the numbers above plus the picker grid's, defaulting to today's values. The tunable tokens read
+  it, so views keep reading `Tokens` and nothing else changes. Release never sets it.
+- Debug only: add `https://github.com/mikelikesdesign/dialkit-macos` pinned to a revision (it has no
+  tags), products `DialkitmacOS` and `DialkitmacOSAgent` on the app target. Every import sits in
+  `#if DEBUG`. `TillyApp.init` starts `DialKitAgent.shared.start(appName: "Tilly")`.
+  `Tilly/Developer/CategoryDials.swift` owns a `DialPanelState` with a fixed UUID, a slider per
+  value in groups (picker, sheet, Settings), and copies `values` into `LayoutTuning.shared`.
+- A Jake's-Mac worktree (`.claude/worktrees/dialkit`) already does this for the picker grid,
+  uncommitted; start from it.
+- The package still links into Release (about a thousand symbols, never run). Keeping it out of the
+  Release link waits for the first TestFlight build.
 
-**Done when:** a Release build doesn't reference DialKit symbols (`nm` on the binary), the suite is
-green, and in the Simulator a slider in the inspector moves the sheet's card live.
+**Done when:** the suite is green, a Release build never starts the agent, and in the Simulator a
+slider in the inspector moves the sheet's card live.
 
 ### Step 5 — The category sheet (Opus)
 
