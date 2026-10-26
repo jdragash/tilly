@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tilly Card Polish</title>
+<link rel="icon" href="data:,">
+<!--
+  Tilly — card polish: motion prototype. 2026-10-16.
+  Questions: how pressing, picking a pocket, pockets arriving and filing on ✓ should move, and where
+  the pockets sit (right under the card, scrolling beneath it). Built from docs/briefs/card-polish/brief.md.
+  Compares the motion as built in v0.6.0 with the tilly-video's card scene. Direction: pending.
+  ✓ loops for testing: the card starts complete, and after it files and the sheet closes, the sheet
+  comes back as it was before ✓.
+
+  Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
+-->
+<style>
+:root{
+  --page:#E5E5EA; --sheet:#FFFFFF; --ground:#F2F2F7; --fg:#000000; --sec:#6C6C70; --hair:rgba(0,0,0,.14);
+  --btn:#F2F2F7; --btnfg:#000; --off:#E5E5EA; --offfg:#AEAEB2; --accent:#2A78D6; --keyflash:#EEEEEE;
+  --cardsh:0 12px 28px rgba(0,0,0,.16); --panel:#FFFFFF; --panelfg:#000; --ctl:#F2F2F7; --rowbar:#E3E3E8;
+  --newdash:#AEAEB2; --newfg:#8E8E93;
+}
+html.dark{
+  --page:#111113; --sheet:#1C1C1E; --ground:#000000; --fg:#FFFFFF; --sec:#98989F; --hair:rgba(255,255,255,.2);
+  --btn:#2C2C2E; --btnfg:#fff; --off:#3A3A3C; --offfg:#6C6C70; --accent:#0A84FF; --keyflash:#3A3A3C;
+  --cardsh:0 12px 28px rgba(0,0,0,.4); --panel:#1C1C1E; --panelfg:#fff; --ctl:#2C2C2E; --rowbar:#1C1C1E;
+  --newdash:#636366; --newfg:#98989F; color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--page);color:var(--fg);
+  font:14px/1.3 -apple-system,system-ui,"SF Pro Text",Helvetica,Arial,sans-serif;touch-action:manipulation;
+  -webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none}
+.noselect,.noselect *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* ---------- stage + phone ---------- */
+/* in normal flow with a real height, so a host that sizes its frame to the page still shows it */
+#stage{position:relative;height:100vh;height:100dvh;min-height:640px;display:flex;align-items:center;justify-content:center}
+#phoneBox{position:relative;flex:none}
+#phone{position:absolute;left:0;top:0;width:402px;height:874px;border-radius:55px;overflow:hidden;background:var(--ground);
+  box-shadow:0 0 0 10px #111,0 30px 80px rgba(0,0,0,.3);transform-origin:0 0;
+  --sat:47px;--sab:34px}
+@media (min-width:900px){ #stage{margin-right:340px} }
+@media (max-width:499px){
+  #stage{display:block}
+  #phoneBox{width:100%!important;height:100%!important}
+  #phone{width:100%;height:100%;border-radius:0;box-shadow:none;transform:none!important;
+    --sat:env(safe-area-inset-top,0px);--sab:calc(env(safe-area-inset-bottom,0px) + 8px)}
+}
+#ground{position:absolute;inset:0;padding:calc(var(--sat) + 8px) 16px 0}
+#ground h1{font-size:34px;margin:8px 0 18px;font-weight:700;color:var(--sec);opacity:.5}
+.grow{height:62px;border-radius:14px;background:var(--rowbar);margin-bottom:10px;opacity:.7}
+
+/* ---------- sheet ---------- */
+#sheet{position:absolute;left:0;right:0;bottom:0;top:calc(var(--sat) + 10px);background:var(--sheet);
+  border-radius:38px 38px 0 0;box-shadow:0 -4px 30px rgba(0,0,0,.12);will-change:transform}
+.hbtn{position:absolute;top:16px;width:44px;height:44px;border-radius:50%;background:var(--btn);
+  box-shadow:inset 0 0 0 .5px var(--hair);display:flex;align-items:center;justify-content:center;font-size:18px;
+  color:var(--btnfg);z-index:6}
+#xBtn{left:16px} #okBtn{right:16px;background:var(--off);color:var(--offfg)}
+#okBtn.ok{background:var(--accent);color:#fff}
+#okBtn svg{width:20px;height:20px}
+
+/* ---------- card ---------- */
+.card{position:absolute;left:22px;right:22px;top:76px;aspect-ratio:1.586;border-radius:20px;box-shadow:var(--cardsh);
+  z-index:5;color:#fff;touch-action:manipulation;will-change:transform}
+.face{position:absolute;inset:0;border-radius:20px}
+#faceB{opacity:0}
+.cin{position:absolute;inset:0;padding:16px 18px;border-radius:20px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.amt{flex:1;min-width:0;height:64px;display:flex;align-items:center;white-space:nowrap;cursor:pointer;text-align:left}
+.amt #amtT{font-size:60px;font-weight:700;letter-spacing:-.026em;font-variant-numeric:tabular-nums;line-height:64px;
+  font-family:-apple-system,system-ui,"SF Pro Display",Helvetica,Arial,sans-serif;display:inline-block}
+.amt.faint #amtT{color:rgba(255,255,255,.58)}
+.caret{display:none;width:2px;height:.82em;background:#fff;margin-left:2px;animation:blink 1.06s steps(1) infinite;
+  flex:none}
+.caret.on{display:inline-block}
+@keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+.dd{display:flex;flex-direction:column;gap:2px;align-items:flex-end;padding-top:2px}
+.dl{display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:13px;font-weight:600;line-height:16px;
+  padding:14px 0;margin:-14px 0;color:#fff;position:relative}
+.dl .t{position:relative;padding:3px;margin:-3px;display:inline-flex;align-items:center;gap:5px}
+.dl .t::after,.tile::after{content:"";position:absolute;inset:0;border:2px solid #fff;border-radius:6px;opacity:0;transition:opacity .15s}
+.dl.open .t::after{opacity:1}
+.dl svg{width:10px;height:10px;color:rgba(255,255,255,.58);flex:none}
+.nm{position:absolute;left:6px;bottom:10px;display:grid;padding:6px 12px;border-radius:9px;max-width:calc(100% - 66px);
+  font-size:22px;line-height:26px;font-weight:600;cursor:text}
+.nm .ghost{grid-area:1/1;visibility:hidden;white-space:pre;overflow:hidden}
+.nm input{grid-area:1/1;width:0;min-width:100%;background:transparent;border:0;outline:0;padding:0;color:#fff;font:inherit;
+  caret-color:#fff;-webkit-user-select:text;user-select:text}
+.nm input::placeholder{color:rgba(255,255,255,.58);opacity:1}
+.dash{position:absolute;inset:0;border:2px dashed rgba(255,255,255,.75);border-radius:9px;transition:opacity .15s;pointer-events:none}
+.nm.has .dash{opacity:0}
+.tile{position:absolute;right:18px;bottom:16px;width:46px;height:46px;border-radius:12.88px;display:flex;align-items:center;
+  justify-content:center;color:#fff}
+.tile .dash{border-radius:12.88px}
+.tile.has .dash{opacity:0}
+.tile::after{inset:-4px;border-radius:16px}
+.tile.open::after{opacity:1}
+.emo{font-size:28px;line-height:1;display:block}
+.badge{position:absolute;right:-5px;bottom:-5px;width:16px;height:16px;border-radius:50%;background:#fff;color:#555;
+  display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tile.has .badge{display:flex}
+.badge svg{width:9px;height:9px}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.55}}
+.breathe .dash{animation:breathe 1.8s ease-in-out infinite}
+.taps .dl,.taps .tile,.taps .nm,.taps .amt,.taps .key,.taps .hbtn{outline:1px solid magenta;outline-offset:-1px}
+
+/* ---------- keypad ---------- */
+#keypad{position:absolute;left:22px;right:22px;bottom:var(--sab);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;z-index:2}
+#keypad.off{visibility:hidden;pointer-events:none}
+.key{height:64px;border-radius:14px;font-size:26px;display:flex;align-items:center;justify-content:center;color:var(--fg);
+  font-family:-apple-system,system-ui,sans-serif;position:relative}
+.key.flash{background:var(--keyflash)}
+
+/* ---------- pockets ---------- */
+#pscroll{position:absolute;left:0;right:0;top:60px;bottom:0;overflow-y:auto;overflow-x:hidden;z-index:2;scrollbar-width:none;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#pscroll::-webkit-scrollbar{display:none}
+#pscroll.off{visibility:hidden;pointer-events:none}
+#grid{display:grid;grid-template-columns:repeat(3,108px);justify-content:center;column-gap:14px;row-gap:22px;
+  padding-bottom:calc(50px + var(--sab))}
+.pk{position:relative;width:108px;height:86px;transform-origin:50% 100%;touch-action:pan-y}
+.pback{position:absolute;inset:0;border-radius:12px}
+.pslip{position:absolute;left:10px;right:10px;height:34px;border-radius:6px;background:#fff;color:#3A3A3C;
+  font-size:11px;font-weight:600;padding:2px 7px;box-shadow:0 -1px 3px rgba(0,0,0,.14);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;line-height:15px}
+.pslot{position:absolute;left:0;top:0;width:108px;height:86px;z-index:5;pointer-events:none}
+.plip{position:absolute;left:0;right:0;bottom:0;height:46px;border-radius:10px 10px 12px 12px;z-index:6;color:#fff;
+  font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;
+  box-shadow:0 -2px 6px rgba(0,0,0,.14);padding:0 6px;white-space:nowrap;overflow:hidden}
+.plip span:last-child{overflow:hidden;text-overflow:ellipsis}
+.pring{position:absolute;inset:-2.5px;border-radius:14px;border:2.5px solid var(--accent);z-index:7;opacity:0;
+  transition:opacity .15s;pointer-events:none}
+.pk.chosen .pring{opacity:1}
+.pk.newpk{border:2px dashed var(--newdash);border-radius:12px}
+.pk.newpk .nl{position:absolute;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;justify-content:center;
+  color:var(--newfg);font-size:13px;font-weight:600}
+
+/* ---------- overlays inside phone ---------- */
+.pill{position:absolute;left:50%;transform:translateX(-50%);z-index:30;padding:9px 16px;border-radius:99px;font-size:13px;
+  font-weight:600;white-space:nowrap}
+#again{top:46%;background:var(--accent);color:#fff;display:none;font-size:15px;padding:12px 22px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+#haptic{bottom:calc(var(--sab) + 70px);background:rgba(30,30,30,.82);color:#fff;opacity:0;pointer-events:none}
+#toast{bottom:calc(var(--sab) + 28px);background:rgba(30,30,30,.88);color:#fff;opacity:0;pointer-events:none;
+  transition:opacity .2s}
+
+/* ---------- controls ---------- */
+#panel{display:none}
+@media (min-width:900px){
+  #panel{display:block;position:fixed;right:0;top:0;bottom:0;width:340px;overflow-y:auto;background:var(--panel);color:var(--panelfg);
+    padding:16px 18px 40px;border-left:1px solid var(--hair);z-index:50}
+  #tuneBtn,#drawer{display:none!important}
+}
+/* in the sheet header's empty middle, clear of the keypad */
+#tuneBtn{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 32px);width:72px;height:32px;border-radius:16px;
+  background:#111;color:#fff;font-weight:600;font-size:13px;z-index:90;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+#drawer{position:fixed;left:0;right:0;bottom:0;max-height:70%;background:var(--panel);color:var(--panelfg);z-index:100;
+  border-radius:22px 22px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);overflow-y:auto;transform:translateY(105%);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1);padding:0 16px calc(24px + env(safe-area-inset-bottom,0px))}
+#drawer.open{transform:none}
+#drawer .dh{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;
+  padding:14px 0 8px;font-size:17px;font-weight:700;z-index:2}
+#dclose{width:34px;height:34px;border-radius:50%;background:var(--ctl);font-size:15px}
+.ctl h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);margin:18px 0 6px;font-weight:700}
+.row{display:flex;align-items:center;gap:10px;min-height:32px;font-size:13px}
+.row label{flex:1;min-width:0}
+.row .v{width:46px;text-align:right;font-variant-numeric:tabular-nums;color:var(--sec);font-size:12px}
+.row input[type=range]{width:120px;flex:none;accent-color:var(--accent)}
+.row select{font:inherit;font-size:13px;background:var(--ctl);color:inherit;border:0;border-radius:8px;padding:5px 8px}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin:10px 0}
+.btns button{flex:1;background:var(--ctl);border-radius:10px;padding:9px;font-weight:600}
+pre#swift{background:var(--ctl);border-radius:10px;padding:10px;font:11px/1.5 ui-monospace,Menlo,monospace;overflow-x:auto;
+  white-space:pre;margin:6px 0;-webkit-user-select:text;user-select:text}
+.step{margin:6px 0 10px}
+.step .sl{font-size:13px;font-weight:600;margin-bottom:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--ctl);border-radius:99px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--panelfg);min-height:32px}
+.chip.on{background:var(--accent);color:#fff}
+.slots{display:flex;gap:10px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.slot .load{width:52px}
+.slot .load.empty{opacity:.4}
+.slot .save{font-size:11px;color:var(--accent);font-weight:600;padding:2px 6px}
+.desc{font-size:11.5px;line-height:1.35;color:var(--sec);margin:-2px 0 8px;max-width:280px}
+.lies{font-size:12px;color:var(--sec);padding-left:16px;margin:6px 0}
+.lies li{margin-bottom:4px}
+</style>
+</head>
+<body class="noselect">
+
+<div id="stage"><div id="phoneBox"><div id="phone">
+  <div id="ground"><h1>Upcoming</h1><div class="grow"></div><div class="grow"></div><div class="grow"></div><div class="grow"></div><div class="grow"></div></div>
+  <div id="sheet">
+    <button class="hbtn" id="xBtn" aria-label="Close">✕</button>
+    <button class="hbtn" id="okBtn" aria-label="Save"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></button>
+
+    <div id="pscroll" class="off"><div id="grid"></div></div>
+
+    <div class="card" id="card">
+      <div class="face" id="faceA"></div><div class="face" id="faceB"></div>
+      <div class="cin">
+        <div class="top">
+          <div class="amt noselect" id="amt"><span id="amtT">€0</span><i class="caret" id="caret"></i></div>
+          <div class="dd">
+            <button class="dl" id="dateB"><span class="t"><span id="dateT">Oct 16</span><svg viewBox="0 0 12 12"><path fill="currentColor" d="M8.2 1.3l2.5 2.5-6.4 6.4-3 .5.5-3z"/></svg></span></button>
+            <button class="dl" id="repB"><span class="t"><span id="repT">Monthly</span><svg viewBox="0 0 12 12"><path fill="currentColor" d="M8.2 1.3l2.5 2.5-6.4 6.4-3 .5.5-3z"/></svg></span></button>
+          </div>
+        </div>
+        <label class="nm" id="nm"><span class="dash"></span><span class="ghost" id="nmGhost">Name</span>
+          <input id="nameIn" type="text" placeholder="Name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="30"></label>
+        <button class="tile" id="tile" aria-label="Category"><span class="dash"></span><span class="emo" id="emo"></span>
+          <span class="badge"><svg viewBox="0 0 12 12"><path fill="currentColor" d="M8.2 1.3l2.5 2.5-6.4 6.4-3 .5.5-3z"/></svg></span></button>
+      </div>
+    </div>
+
+    <div id="keypad"></div>
+  </div>
+  <div class="pill" id="again">Add another</div>
+  <div class="pill" id="haptic"></div>
+  <div class="pill" id="toast"></div>
+</div></div></div>
+
+<aside id="panel"></aside>
+<button id="tuneBtn">Tune</button>
+<div id="drawer"><div class="dh"><span>Tune</span><button id="dclose" aria-label="Close">✕</button></div><div id="drawerBody"></div></div>
+
+<script>
+"use strict";
+/* =====================================================================================================
+   SETTINGS + PRESETS
+   ===================================================================================================== */
+const PRESET_KEYS = ["pressOn","pressDip","pressDur","pressB","popOn","popFrom","popDur","popB","xfadeDur","xfadeCurve",
+  "emojiEased","emojiDur","emojiB","liftEased","liftDur","liftB","slipB","arriveOn","arriveOff","arriveStagger","arriveDur",
+  "arriveB","fileStyle","fileDelay","fileDur","fileTurn","sqY","sqDur","sqB","slipPop","slipDur","slipSB","hold","haptics"];
+const BUILT = {pressOn:false,pressDip:.93,pressDur:.45,pressB:.3, popOn:false,popFrom:.88,popDur:.3,popB:.3,
+  xfadeDur:.3,xfadeCurve:"inout", emojiEased:true,emojiDur:.3,emojiB:.3, liftEased:true,liftDur:.3,liftB:.3,slipB:.3,
+  arriveOn:false,arriveOff:24,arriveStagger:30,arriveDur:.45,arriveB:.3,
+  fileStyle:"shrink",fileDelay:.05,fileDur:.25,fileTurn:0,sqY:.88,sqDur:.45,sqB:.5,slipPop:8,slipDur:.3,slipSB:.5,hold:.7,haptics:false};
+// the video's values, snapped to the nearest step
+const VIDEO = Object.assign({}, BUILT, {pressOn:true,pressB:.5,popOn:true,popB:.5,xfadeCurve:"out",emojiEased:false,emojiDur:.45,emojiB:.5,
+  liftEased:false,liftDur:.45,liftB:.3,slipB:.3,arriveOn:true,fileStyle:"drop",fileDelay:.25,fileDur:.375,fileTurn:-5,hold:.45,haptics:true});
+const S = Object.assign({preset:"video", reduce:false, dark:null, darkTouched:false, slow:1, taps:false, pockets:6}, VIDEO);
+try { const j = JSON.parse(localStorage.getItem("tilly-card-polish-2")||"null"); if (j) Object.assign(S, j); } catch(e){}
+function save(){ try { localStorage.setItem("tilly-card-polish-2", JSON.stringify(S)); } catch(e){} }
+const mq = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+if (!S.darkTouched) S.dark = !!(mq && mq.matches);
+
+/* =====================================================================================================
+   ANIMATION ENGINE — springs use SwiftUI's Animation.spring(duration:bounce:) mapping, mass 1:
+   k = (2π/duration)², c = 4π(1−bounce)/duration (bounce ≥ 0) or 4π/(duration(1+bounce)) (bounce < 0).
+   Integrated with a fixed 1/240 s step. Everything runs on one clock scaled by Slow motion.
+   ===================================================================================================== */
+function bez(a,b,c,d){
+  const cx=3*a,bx=3*(c-a)-cx,ax=1-cx-bx,cy=3*b,by=3*(d-b)-cy,ay=1-cy-by;
+  const X=t=>((ax*t+bx)*t+cx)*t, Y=t=>((ay*t+by)*t+cy)*t, dX=t=>(3*ax*t+2*bx)*t+cx;
+  return x=>{
+    if (x<=0) return 0; if (x>=1) return 1;
+    let t=x;
+    for (let i=0;i<8;i++){ const e=X(t)-x; if (Math.abs(e)<1e-6) return Y(t); const d=dX(t); if (Math.abs(d)<1e-6) break; t-=e/d; }
+    let lo=0,hi=1; t=x;
+    for (let i=0;i<40;i++){ const e=X(t)-x; if (Math.abs(e)<1e-6) break; if (e>0) hi=t; else lo=t; t=(lo+hi)/2; }
+    return Y(t);
+  };
+}
+const CURVES = { linear:x=>x, inout:bez(.42,0,.58,1), out:bez(0,0,.58,1), shrink:bez(.3,.6,.35,1),
+  dropX:bez(.55,.085,.68,.53), dropY:bez(.55,.055,.675,.19) };
+
+const E = (() => {
+  let clock=0, last=0, running=false, nid=0;
+  const tw = new Map(); let timers = [];
+  function kick(){ if(!running){ running=true; last=performance.now(); requestAnimationFrame(frame); } }
+  function frame(now){
+    let dt = Math.min((now-last)/1000, .05) * S.slow; last = now; clock += dt;
+    for (const t of [...tw.values()]) {
+      if (tw.get(t.key)!==t) continue;
+      let fin=false;
+      if (t.kind==="spring"){
+        const n=Math.max(1,Math.ceil(dt*240)), h=dt/n;
+        for(let i=0;i<n;i++){ const a=-t.k*(t.x-t.to)-t.c*t.v; t.v+=a*h; t.x+=t.v*h; }
+        const range=Math.abs(t.to-t.from)||1;
+        if (Math.abs(t.x-t.to)<.001*range && Math.abs(t.v)<.01*range){ t.x=t.to; fin=true; }
+        t.tx.set(t.prop, t.x); t.tx.vel[t.prop]=t.v;
+      } else {
+        t.t+=dt; const p=Math.min(1,t.t/t.dur);
+        t.tx.set(t.prop, t.from+(t.to-t.from)*t.curve(p)); t.tx.vel[t.prop]=0;
+        if (p>=1) fin=true;
+      }
+      if (fin){ tw.delete(t.key); t.tx.set(t.prop,t.to); t.tx.vel[t.prop]=0; if(t.done) t.done(); }
+    }
+    if (timers.length){
+      const due=timers.filter(x=>x.t<=clock); timers=timers.filter(x=>x.t>clock);
+      due.sort((a,b)=>a.t-b.t).forEach(x=>{ if(!x.dead) x.fn(); });
+    }
+    if (tw.size||timers.length) requestAnimationFrame(frame); else running=false;
+  }
+  /* go(tx, prop, spec): spec = {to, from?, spring:[dur,bounce] | ease:[dur,curveName], fade?}. Restarting a
+     property cancels the old tween and continues from the current value (and velocity, for springs). */
+  function go(tx,prop,o,done){
+    const key=tx.id+":"+prop, old=tw.get(key); if(old) tw.delete(key);
+    let spec=o;
+    if (S.reduce){
+      if (o.fade) spec={to:o.to,from:o.from,ease:[.16,"linear"]};
+      else { if(o.from!==undefined) tx.set(prop,o.from); tx.set(prop,o.to); tx.vel[prop]=0; if(done) wait(0,done); return null; }
+    }
+    let from, vel=0;
+    if (spec.from!==undefined){ from=spec.from; tx.set(prop,from); } else { from=tx[prop]; vel=tx.vel[prop]||0; }
+    const t={key,tx,prop,from,to:spec.to,done,x:from,v:vel,t:0};
+    if (spec.spring){
+      const d=Math.max(.05,spec.spring[0]), b=spec.spring[1];
+      t.kind="spring"; t.k=Math.pow(2*Math.PI/d,2); t.c = b>=0 ? 4*Math.PI*(1-b)/d : 4*Math.PI/(d*(1+b));
+    } else {
+      t.kind="ease"; t.dur=Math.max(.001,spec.ease[0]); t.curve=typeof spec.ease[1]==="function"?spec.ease[1]:CURVES[spec.ease[1]];
+    }
+    tw.set(key,t); kick();
+    return {cancel(){ if(tw.get(key)===t) tw.delete(key); }};
+  }
+  function wait(sec,fn){ const x={t:clock+sec*1,fn,dead:false,cancel(){x.dead=true;}}; timers.push(x); kick(); return x; }
+  function cancel(tx,prop){ if(prop) tw.delete(tx.id+":"+prop); else for(const k of [...tw.keys()]) if(k.startsWith(tx.id+":")) tw.delete(k); }
+  function id(){ return "t"+(++nid); }
+  return { go, wait, cancel, id };
+})();
+
+/* A Tx owns one element's transform + opacity. Only transform and opacity are ever animated. */
+class Tx {
+  constructor(el,init,on){ this.el=el; this.id=E.id(); this.x=0;this.y=0;this.ly=0;this.s=1;this.sx=1;this.sy=1;this.r=0;this.op=1;
+    this.p=0; this.vel={}; this.on=on||null; Object.assign(this,init||{}); this.render(); }
+  set(p,v){ this[p]=v; this.render(); if(this.on) this.on(p,v); }
+  render(){
+    if(!this.el) return;
+    this.el.style.transform=`translate(${this.x}px,${this.y+this.ly}px) rotate(${this.r}deg) scale(${this.s*this.sx},${this.s*this.sy})`;
+    this.el.style.opacity=Math.max(0,Math.min(1,this.op));
+  }
+}
+const go=E.go, wait=E.wait;
+
+/* =====================================================================================================
+   DATA
+   ===================================================================================================== */
+const PAL = [["#2a78d6","#3987e5"],["#eb6834","#d95926"],["#1baf7a","#199e70"],["#eda100","#c98500"],
+  ["#e87ba4","#d55181"],["#008300","#008300"],["#4a3aa7","#9085e9"],["#e34948","#e66767"]];
+const CATS0 = [["Home","🏠",["Rent","Electricity","Water"]],["Car","🚗",["Parking","Car insurance"]],
+  ["Phone & internet","📱",["Broadband","Phone"]],["Subscriptions","🎬",["Film club","Music","Cloud storage"]],
+  ["Health","💪",["Gym","Dentist plan"]],["Learning","📗",["Language course"]],["Pet","🐶",["Pet insurance","Vet plan"]],
+  ["Kids","🧒",["Swimming","School trip fund"]],["Software","💻",["Design app"]],["Garden","🌱",["Seed box"]],
+  ["Giving","🎁",["Charity"]],["Hobbies","🎨",["Pottery class"]],["Coffee","☕️",["Coffee beans"]],["Games","🎮",["Game pass"]]];
+let cats = [];
+const NAMES = ["Streaming","Gym","Water","Phone","Comics","Parking","Charity"];
+let bill, ui;
+function freshCats(){ cats = CATS0.map(c=>({name:c[0],emoji:c[1],items:c[2].slice()})); }
+function resetBill(empty){
+  bill = empty ? {amount:"",name:"",date:"Oct 16",repeat:"Monthly",cat:null}
+               : {amount:"85.55",name:"Streaming",date:"Oct 16",repeat:"Monthly",cat:Math.min(3,S.pockets-1)};
+  ui = {panel:"keypad", ring:null, busy:false, closed:false, committed:false, nameFocus:false};
+}
+freshCats(); resetBill(false);
+
+/* ---------- colour helpers ---------- */
+const hex2rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const mixc=(c,w,t)=>c.map(v=>Math.round(v*w+t*(1-w)));
+function catHex(i){ return i==null ? (S.dark?"#98989D":"#8E8E93") : PAL[i%8][S.dark?1:0]; }
+function grad(hex,a){
+  const c=hex2rgb(hex), l=mixc(c,.72,255), d=mixc(c,.76,0), al=a==null?1:a;
+  return `linear-gradient(135deg, rgba(${l},${al}) 0%, rgba(${c},${al}) 50%, rgba(${d},${al}) 100%)`;
+}
+const $=id=>document.getElementById(id);
+const phone=$("phone"), sheet=$("sheet"), card=$("card"), grid=$("grid"), pscroll=$("pscroll"), keypad=$("keypad");
+
+/* =====================================================================================================
+   HAPTIC MARKERS + TOAST
+   ===================================================================================================== */
+let hapTimer=0;
+function haptic(kind){
+  if(!S.haptics) return;
+  const p=$("haptic"); p.textContent="◉ "+kind; p.style.opacity=1; clearTimeout(hapTimer);
+  hapTimer=setTimeout(()=>{p.style.opacity=0;},600);
+  try{ if(navigator.vibrate) navigator.vibrate(kind==="medium"?18:8); }catch(e){}
+}
+let toastTimer=0;
+function toast(t){ const p=$("toast"); p.textContent=t; p.style.opacity=1; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{p.style.opacity=0;},1800); }
+
+/* =====================================================================================================
+   PRESS FEEDBACK — scale to dip on pointerdown, spring back on release (only when "Press" is on)
+   ===================================================================================================== */
+function pressable(el,tx,enabled){
+  let down=false;
+  el.addEventListener("pointerdown",()=>{ if(!S.pressOn||(enabled&&!enabled())) return; down=true; go(tx,"s",{to:S.pressDip,ease:[.08,"out"]}); });
+  const up=()=>{ if(!down) return; down=false; go(tx,"s",{to:1,spring:[S.pressDur,S.pressB]}); };
+  ["pointerup","pointercancel","pointerleave"].forEach(n=>el.addEventListener(n,up));
+}
+
+/* =====================================================================================================
+   CARD
+   ===================================================================================================== */
+const amtEl=$("amt"), amtT=$("amtT"), caret=$("caret"), nameIn=$("nameIn"), nm=$("nm"), tile=$("tile"), emo=$("emo");
+const cardTx=new Tx(card), tileTx=new Tx(tile), emoTx=new Tx(emo,{op:1}), okTx=new Tx($("okBtn")), sheetTx=new Tx(sheet);
+const faceA=$("faceA"), faceB=$("faceB"), faceBTx=new Tx(faceB,{op:0});
+pressable(tile,tileTx); pressable($("okBtn"),okTx,()=>complete());
+let shownHex=null;
+
+function fitAmount(){
+  amtT.style.fontSize="60px";
+  const avail=amtEl.clientWidth-(caret.classList.contains("on")?6:0), w=amtT.scrollWidth;
+  const size=w>avail?Math.max(18,60*avail/w):60;
+  amtT.style.fontSize=size+"px";
+  // the caret follows the amount's size, as the built one does: 0.82em tall, 0.055em wide
+  caret.style.height=(size*0.82)+"px"; caret.style.width=Math.max(2,size*0.055)+"px";
+}
+function complete(){ return parseFloat(bill.amount)>0 && bill.name.trim().length>0 && bill.cat!=null; }
+function renderCard(){
+  const v=parseFloat(bill.amount)||0;
+  amtT.textContent="€"+(bill.amount===""?"0":bill.amount);
+  amtEl.classList.toggle("faint",v===0);
+  $("dateT").textContent=bill.date; $("repT").textContent=bill.repeat;
+  nameIn.value!==bill.name&&(nameIn.value=bill.name);
+  $("nmGhost").textContent=bill.name||"Name";
+  nm.classList.toggle("has",bill.name.length>0);
+  tile.classList.toggle("has",bill.cat!=null);
+  caret.classList.toggle("on",ui.panel==="keypad"&&!ui.nameFocus);
+  $("dateB").classList.toggle("open",ui.ring==="date"); $("repB").classList.toggle("open",ui.ring==="repeat");
+  tile.classList.toggle("open",ui.panel==="pockets"&&!ui.ring);
+  // next part breathes: once the amount is in, whichever of name / category is still missing
+  nm.classList.toggle("breathe",v>0&&bill.name.length===0&&!ui.nameFocus);
+  tile.classList.toggle("breathe",v>0&&bill.cat==null);
+  $("okBtn").classList.toggle("ok",complete());
+  fitAmount();
+}
+function paintFaces(){ // instant colour set (no crossfade)
+  E.cancel(faceBTx); faceBTx.set("op",0);
+  shownHex=catHex(bill.cat); faceA.style.background=grad(shownHex);
+  emo.textContent=bill.cat!=null?cats[bill.cat].emoji:"";
+}
+
+/* ---------- amount keypad ---------- */
+(function buildKeypad(){
+  ["1","2","3","4","5","6","7","8","9",".","0","⌫"].forEach(k=>{
+    const b=document.createElement("button"); b.className="key"; b.textContent=k; keypad.appendChild(b);
+    const tx=new Tx(b); pressable(b,tx);
+    b.addEventListener("pointerdown",()=>b.classList.add("flash"));
+    ["pointerup","pointercancel","pointerleave"].forEach(n=>b.addEventListener(n,()=>b.classList.remove("flash")));
+    b.addEventListener("click",()=>typeKey(k));
+  });
+})();
+function typeKey(k){
+  let a=bill.amount;
+  if(k==="⌫") a=a.slice(0,-1);
+  else if(k==="."){ if(!a.includes(".")) a=(a===""?"0":a)+"."; }
+  else if(a.includes(".")){ if(a.split(".")[1].length<2) a+=k; }
+  else if(a==="0") a=k; else if(a.length<7) a+=k;
+  bill.amount=a; renderCard();
+}
+
+/* ---------- name + date/repeat + amount taps ---------- */
+nameIn.addEventListener("input",()=>{ bill.name=nameIn.value; renderCard(); const p=pks[bill.cat]; if(p&&p.preview) p.preview.el.textContent=bill.name||"Name"; });
+nameIn.addEventListener("focus",()=>{ ui.nameFocus=true; renderCard(); });
+nameIn.addEventListener("blur",()=>{ ui.nameFocus=false; renderCard(); });
+nameIn.addEventListener("keydown",e=>{ if(e.key==="Enter") nameIn.blur(); });
+nm.addEventListener("click",e=>{ e.stopPropagation(); nameIn.focus(); });
+amtEl.addEventListener("click",e=>{ e.stopPropagation(); nameIn.blur(); setPanel("keypad"); });
+$("dateB").addEventListener("click",e=>{ e.stopPropagation(); ui.ring=ui.ring==="date"?null:"date"; renderCard(); });
+$("repB").addEventListener("click",e=>{ e.stopPropagation(); ui.ring=ui.ring==="repeat"?null:"repeat"; renderCard(); });
+tile.addEventListener("click",e=>{ e.stopPropagation(); nameIn.blur(); setPanel("pockets"); });
+card.addEventListener("click",()=>{ nameIn.blur(); setPanel("pockets"); });
+
+/* =====================================================================================================
+   POCKETS
+   ===================================================================================================== */
+let pks=[];
+function mkSlip(text,top,z){
+  const el=document.createElement("div"); el.className="pslip"; el.textContent=text; el.style.top=top+"px"; el.style.zIndex=z;
+  return {el, tx:new Tx(el)};
+}
+function buildPockets(){
+  grid.innerHTML=""; pks=[];
+  cats.slice(0,S.pockets).forEach((c,i)=>{
+    const hex=catHex(i), el=document.createElement("div"); el.className="pk";
+    const back=document.createElement("div"); back.className="pback"; const rgb=hex2rgb(hex); back.style.background=`rgba(${rgb},.35)`;
+    el.appendChild(back);
+    const shown=c.items.slice(-3), slips=shown.map((t,k)=>{ const s=mkSlip(t,26-11*(shown.length-1-k),k+1); el.appendChild(s.el); return s; });
+    const slot=document.createElement("div"); slot.className="pslot"; el.appendChild(slot);
+    const lip=document.createElement("div"); lip.className="plip"; lip.style.background=grad(hex,.95);
+    lip.innerHTML=`<span>${c.emoji}</span><span>${c.name}</span>`; el.appendChild(lip);
+    const ring=document.createElement("div"); ring.className="pring"; el.appendChild(ring);
+    grid.appendChild(el);
+    const p={el,i,slips,slot,tx:new Tx(el),preview:null};
+    pressable(el,p.tx);
+    el.addEventListener("click",ev=>{ ev.stopPropagation(); pick(i); });
+    pks.push(p);
+  });
+  const ne=document.createElement("div"); ne.className="pk newpk"; ne.innerHTML='<div class="nl">+ New</div>';
+  grid.appendChild(ne); const np={el:ne,tx:new Tx(ne),isNew:true,slips:[]}; pressable(ne,np.tx);
+  ne.addEventListener("click",ev=>{ ev.stopPropagation(); toast("Making a category isn't in this prototype"); });
+  pks.push(np);
+  if(bill.cat!=null&&pks[bill.cat]&&!pks[bill.cat].isNew) setChosen(pks[bill.cat],true,false); else if(bill.cat!=null&&bill.cat>=S.pockets){ bill.cat=null; paintFaces(); renderCard(); }
+  layout();
+}
+function layout(){ // first pocket row starts 20px under the card
+  const pad=(card.offsetTop+card.offsetHeight)-pscroll.offsetTop+20;
+  grid.style.paddingTop=pad+"px";
+}
+const liftSpec=(to)=> S.liftEased?{to,ease:[S.liftDur,"inout"]}:{to,spring:[S.liftDur,S.liftB]};
+const riseSpec=(to,from)=>{ const o=S.liftEased?{to,ease:[S.liftDur,"inout"]}:{to,spring:[S.liftDur,S.slipB]}; if(from!==undefined)o.from=from; return o; };
+/* Chosen pocket: lifted 6px, ringed, a slip with the card's name stands in front (older slips shift up 11px). */
+function setChosen(p,on,animate){
+  if(!p||p.isNew) return;
+  p.el.classList.toggle("chosen",on);
+  if(on){
+    if(!p.preview){
+      const s=mkSlip(bill.name||"Name",26,4); p.el.insertBefore(s.el,p.slot); p.preview=s;
+      if(animate){
+        go(p.tx,"ly",liftSpec(-6));
+        s.tx.set("op",0); go(s.tx,"op",{to:1,from:0,ease:[.2,"out"],fade:true});
+        go(s.tx,"y",Object.assign(riseSpec(0,10),{fade:false}));
+        p.slips.forEach(x=>go(x.tx,"y",liftSpec(-11)));
+      } else { p.tx.set("ly",-6); p.slips.forEach(x=>x.tx.set("y",-11)); }
+    }
+  } else {
+    if(p.preview){ p.preview.el.remove(); p.preview=null; }
+    if(animate){ go(p.tx,"ly",liftSpec(0)); p.slips.forEach(x=>go(x.tx,"y",liftSpec(0))); }
+    else { p.tx.set("ly",0); p.slips.forEach(x=>x.tx.set("y",0)); }
+  }
+}
+function pick(i){
+  if(ui.busy) return;
+  haptic("light");
+  const prev=bill.cat; if(prev===i) return;
+  bill.cat=i;
+  if(prev!=null&&pks[prev]) setChosen(pks[prev],false,true);
+  setChosen(pks[i],true,true);
+  // card colour crossfade
+  const hex=catHex(i);
+  faceA.style.background=grad(shownHex); faceB.style.background=grad(hex); faceBTx.set("op",0);
+  shownHex=hex;
+  go(faceBTx,"op",{to:1,ease:[S.xfadeDur,S.xfadeCurve],fade:true},()=>{ faceA.style.background=grad(hex); faceBTx.set("op",0); });
+  // emoji drops into the tile
+  emo.textContent=cats[i].emoji;
+  if(S.reduce){ emoTx.set("op",0); go(emoTx,"op",{to:1,fade:true}); }
+  else {
+    const mk=(to,from)=> S.emojiEased?{to,from,ease:[S.emojiDur,"inout"]}:{to,from,spring:[S.emojiDur,S.emojiB]};
+    go(emoTx,"s",mk(1,1.35)); go(emoTx,"y",mk(0,-6));
+  }
+  renderCard();
+}
+/* Pockets arriving when the panel opens */
+function playArrival(){
+  pks.forEach(p=>{ E.cancel(p.tx,"y"); E.cancel(p.tx,"s"); E.cancel(p.tx,"op"); p.tx.set("y",0); p.tx.set("s",1); p.tx.set("op",1); });
+  if(!S.arriveOn) return;
+  pks.forEach((p,j)=>{
+    if(S.reduce){ p.tx.set("op",0); wait(j*S.arriveStagger/1000,()=>go(p.tx,"op",{to:1,fade:true})); return; }
+    p.tx.set("y",S.arriveOff); p.tx.set("s",.96); p.tx.set("op",0);
+    wait(j*S.arriveStagger/1000,()=>{
+      const sp=[S.arriveDur,S.arriveB];
+      go(p.tx,"y",{to:0,spring:sp}); go(p.tx,"s",{to:1,spring:sp}); go(p.tx,"op",{to:1,spring:sp});
+    });
+  });
+}
+function setPanel(name){
+  const changed=ui.panel!==name; ui.panel=name; ui.ring=null;
+  keypad.classList.toggle("off",name!=="keypad"); pscroll.classList.toggle("off",name!=="pockets");
+  if(changed&&name==="pockets") playArrival();
+  renderCard();
+  return changed;
+}
+
+/* =====================================================================================================
+   FILING — ✓ files the card into its pocket
+   ===================================================================================================== */
+const ptx=new Tx(null);
+let handles=[], inPocket=false, filingP=null, snap=null;
+const later=(s,fn)=>{ const h=wait(s,fn); handles.push(h); return h; };
+function sheetPos(p){ // pocket top-left in sheet coordinates, from layout (not affected by transforms)
+  return { x:p.el.offsetLeft, y:pscroll.offsetTop+p.el.offsetTop-pscroll.scrollTop };
+}
+function ensureVisible(p){
+  const top=pscroll.offsetTop+p.el.offsetTop-pscroll.scrollTop, min=card.offsetTop+card.offsetHeight+20, max=sheet.offsetHeight-86-24;
+  if(top<min) pscroll.scrollTop-= (min-top); else if(top>max) pscroll.scrollTop+= (top-max);
+}
+function fileCard(){
+  if(ui.busy||ui.closed||!complete()) return;
+  ui.busy=true; nameIn.blur();
+  // what to come back to: the card and pockets exactly as they were before ✓
+  snap={bill:Object.assign({},bill), panel:ui.panel, items:cats.map(c=>c.items.slice())};
+  haptic("light");
+  if(S.popOn) go(okTx,"s",{from:S.popFrom,to:1,spring:[S.popDur,S.popB]});
+  const p=pks[bill.cat], switched=setPanel("pockets");
+  ensureVisible(p);
+  let extra=0; if(switched&&S.arriveOn) extra=(bill.cat*S.arriveStagger)/1000+.3;
+  later(S.fileDelay+extra,()=>startFiling(p));
+}
+function startFiling(p){
+  const W=card.offsetWidth, H=card.offsetHeight, bl=card.offsetLeft, bt=card.offsetTop;
+  const cx0=bl+W/2, cy0=bt+H/2, pos=sheetPos(p), py=pos.y-6, px=pos.x;
+  const lw=pks[0]?96:96, lh=lw/1.586, cxT=px+54, cyT=py+86-46-10+lh/2, sT=lw/W;
+  inPocket=false;
+  const pose=(cx,cy,s,r)=>{
+    if(!inPocket) card.style.transform=`translate(${cx-W/2-bl}px,${cy-H/2-bt}px) rotate(${r}deg) scale(${s})`;
+    else card.style.transform=`translate(${cx-px-W/2}px,${cy-py-H/2}px) rotate(${r}deg) scale(${s})`;
+  };
+  card.style.transition="none"; cardTx.el=null; card.style.pointerEvents="none";
+  if(S.reduce){
+    cardTx.el=card; cardTx.set("op",1); go(cardTx,"op",{to:0,fade:true},()=>land(p,true));
+    return;
+  }
+  if(S.fileStyle==="drop"){
+    if(p.preview) p.preview.tx.set("op",0); // the real slip arrives at landing
+    ptx.on=(prop,v)=>{
+      if(prop!=="p") return;
+      const ex=CURVES.dropX(v), ey=CURVES.dropY(v);
+      if(!inPocket&&v>=.7){ inPocket=true; p.el.style.zIndex=20; card.style.width=W+"px"; card.style.right="auto"; card.style.left="0"; card.style.top="0"; p.slot.appendChild(card); card.style.transformOrigin="50% 50%"; card.style.zIndex="auto"; }
+      if(!inPocket) p.el.style.zIndex=20;
+      pose(cx0+(cxT-cx0)*ex, cy0+(cyT-cy0)*ey, 1+(sT-1)*ex, S.fileTurn*ex);
+    };
+    ptx.set("p",0);
+    // x/y have their own curves, so the clock itself is linear
+    go(ptx,"p",{from:0,to:1,ease:[S.fileDur,"linear"]},()=>land(p,false));
+  } else {
+    ptx.on=(prop,v)=>{ if(prop==="p") pose(cx0+(cxT-cx0)*v, cy0+(cyT-cy0)*v, 1+(sT-1)*v, 0); };
+    ptx.set("p",0);
+    go(ptx,"p",{from:0,to:1,ease:[S.fileDur,"shrink"]},()=>land(p,false));
+  }
+}
+function commitItem(){
+  if(ui.committed) return; ui.committed=true;
+  if(bill.cat!=null) cats[bill.cat].items.push(bill.name.trim()||"Bill");
+}
+function land(p,reduced){
+  ptx.on=null; card.style.visibility="hidden"; // the card disappears
+  commitItem(); haptic("medium");
+  if(!reduced){
+    if(S.fileStyle==="drop"){
+      // new slip pops up, settles; the pocket squashes from its base and springs back
+      if(p.preview){
+        const s=p.preview.tx; s.set("op",1); s.set("y",0);
+        go(s,"y",{to:-S.slipPop,ease:[.14,"out"]},()=>go(s,"y",{to:0,spring:[S.slipDur,S.slipSB]}));
+      }
+      const sxT=1+(1-S.sqY)*.58;
+      go(p.tx,"sy",{to:S.sqY,ease:[.07,"out"]},()=>go(p.tx,"sy",{to:1,spring:[S.sqDur,S.sqB]}));
+      go(p.tx,"sx",{to:sxT,ease:[.07,"out"]},()=>go(p.tx,"sx",{to:1,spring:[S.sqDur,S.sqB]}));
+    } else {
+      // shrink and fade: the pocket scales 1 → 1.06 → 0.98 → 1 over 0.28s
+      const set=v=>{ p.tx.set("sx",v); p.tx.set("sy",v); };
+      const seg=(to,d,next)=>go(p.tx,"sx",{to,ease:[d,"inout"]},next), segy=(to,d)=>go(p.tx,"sy",{to,ease:[d,"inout"]});
+      seg(1.06,.09,()=>seg(.98,.1,()=>seg(1,.09)));
+      segy(1.06,.09); wait(.09,()=>segy(.98,.1)); wait(.19,()=>segy(1,.09));
+    }
+  }
+  later(reduced?0:S.hold,()=>closeSheet());
+}
+function cancelFiling(){
+  handles.forEach(h=>h.cancel()); handles=[];
+  E.cancel(ptx); ptx.on=null; E.cancel(cardTx); E.cancel(okTx);
+  pks.forEach(p=>{ E.cancel(p.tx); if(p.preview) E.cancel(p.preview.tx); });
+}
+function closeNow(){ // any tap during filing
+  cancelFiling();
+  const p=pks[bill.cat];
+  if(p){ p.tx.set("sx",1); p.tx.set("sy",1); if(p.preview){ p.preview.tx.set("op",1); p.preview.tx.set("y",0); } }
+  card.style.visibility="hidden";
+  commitItem(); closeSheet();
+}
+phone.addEventListener("pointerdown",e=>{
+  if(ui.busy&&!ui.closed&&!ui.closing){ e.stopPropagation(); e.preventDefault(); closeNow(); }
+},true);
+
+/* ---------- closing + Add another ---------- */
+function sheetOff(){ return sheet.offsetHeight+30; }
+function closeSheet(){
+  if(ui.closing||ui.closed) return;
+  ui.closing=true;
+  if(S.reduce){
+    go(sheetTx,"op",{to:0,fade:true},()=>{ sheetTx.set("y",sheetOff()); ui.closed=true; });
+  } else {
+    go(sheetTx,"y",{to:sheetOff(),spring:[.35,0]},()=>{ ui.closed=true; });
+  }
+  // the test loop: once the sheet is down, it comes back up as it was before ✓
+  wait(.6,comeBack);
+}
+function comeBack(){
+  restoreCard();
+  if(snap){ cats.forEach((c,i)=>{ c.items=snap.items[i]; }); bill=Object.assign({},snap.bill); }
+  else resetBill(false);
+  const panel=snap?snap.panel:"keypad"; snap=null;
+  ui={panel, ring:null, busy:false, closed:false, closing:false, committed:false, nameFocus:false};
+  paintFaces(); buildPockets(); setPanelRaw(panel); renderCard();
+  E.cancel(sheetTx);
+  if(S.reduce){ sheetTx.set("y",0); sheetTx.set("op",0); go(sheetTx,"op",{to:1,fade:true}); }
+  else { sheetTx.set("op",1); sheetTx.set("y",sheetOff()); go(sheetTx,"y",{to:0,spring:[.45,.15]}); }
+}
+$("xBtn").addEventListener("click",()=>{ if(ui.busy||ui.closing||ui.closed) return; ui.busy=true; nameIn.blur(); commitItemIfNone(); closeSheet(); });
+function commitItemIfNone(){ /* closing without ✓ files nothing */ ui.committed=true; }
+$("okBtn").addEventListener("click",e=>{ e.stopPropagation(); if(!ui.busy) fileCard(); });
+$("again").addEventListener("click",e=>{
+  e.stopPropagation(); $("again").style.display="none";
+  const nm2=NAMES.filter(n=>n!==bill.name); const nextName=nm2[Math.floor(Math.random()*nm2.length)];
+  restoreCard(); resetBill(false); bill.name=nextName; ui.closing=false; ui.closed=false;
+  paintFaces(); buildPockets(); setPanelRaw("keypad"); renderCard();
+  E.cancel(sheetTx);
+  if(S.reduce){ sheetTx.set("y",0); sheetTx.set("op",0); go(sheetTx,"op",{to:1,fade:true}); }
+  else { sheetTx.set("op",1); sheetTx.set("y",sheetOff()); go(sheetTx,"y",{to:0,spring:[.45,.15]}); }
+});
+function setPanelRaw(name){ ui.panel=name; ui.ring=null; keypad.classList.toggle("off",name!=="keypad"); pscroll.classList.toggle("off",name!=="pockets"); }
+function restoreCard(){
+  if(card.parentNode!==sheet) sheet.insertBefore(card,$("keypad"));
+  card.style.cssText=""; cardTx.el=card; cardTx.set("op",1); cardTx.set("s",1); card.style.transform="";
+  faceA.style.cssText=""; emoTx.set("s",1); emoTx.set("y",0); emoTx.set("op",1);
+  $("sheet").scrollTop=0; pscroll.scrollTop=0;
+}
+
+/* =====================================================================================================
+   RESET
+   ===================================================================================================== */
+function fullReset(empty){
+  cancelFiling(); snap=null; E.cancel(sheetTx); wait(0,()=>{});
+  $("again").style.display="none";
+  restoreCard(); freshCats(); resetBill(empty);
+  sheetTx.set("y",0); sheetTx.set("op",1); okTx.set("s",1);
+  paintFaces(); buildPockets(); setPanelRaw("keypad"); renderCard();
+}
+
+/* =====================================================================================================
+   CONTROLS
+   ===================================================================================================== */
+/* =====================================================================================================
+   STEPS — every control is a few named choices a real step apart, not a slider. Springs use Apple's own
+   named springs (bounce 0, 0.15, 0.3), plus a livelier one, so a choice ports to SwiftUI by name.
+   ===================================================================================================== */
+const FEEL=[["Smooth",0],["Snappy",.15],["Bouncy",.3],["Springy",.5]];
+const SPEED=[["Quick",.3],["Normal",.45],["Slow",.6]];
+const feel=(b,extra)=>FEEL.map(([l,v])=>[l,Object.assign({[b]:v},extra||{})]);
+const speed=d=>SPEED.map(([l,v])=>[l,{[d]:v}]);
+const glideFeel=(b,eased,also)=>[["Glide",{[eased]:true}]].concat(FEEL.map(([l,v])=>[l,Object.assign({[eased]:false,[b]:v},also?{[also]:v}:{})]));
+const onOff=k=>[["Off",{[k]:false}],["On",{[k]:true}]];
+const D_FEEL="Smooth settles without overshoot; Snappy overshoots a touch; Bouncy and Springy overshoot more.";
+const D_SPEED="How long it takes to settle.";
+const GROUPS=[
+ ["Press feedback",[
+  ["On","Whether pockets, the emoji tile, keys and ✓ shrink a little while your finger is on them.",onOff("pressOn")],
+  ["Depth","How far a pressed thing shrinks.",[["Subtle",{pressDip:.96}],["Medium",{pressDip:.93}],["Deep",{pressDip:.88}]]],
+  ["Feel","How it springs back when you let go. "+D_FEEL,feel("pressB")],
+  ["Speed",D_SPEED,speed("pressDur")]]],
+ ["✓ pop",[
+  ["On","Whether ✓ itself pops when you tap it.",onOff("popOn")],
+  ["Size","How small ✓ starts its pop from.",[["Subtle",{popFrom:.94}],["Medium",{popFrom:.88}],["Big",{popFrom:.8}]]],
+  ["Feel",D_FEEL,feel("popB")],["Speed",D_SPEED,speed("popDur")]]],
+ ["Pick a pocket",[
+  ["Colour fade","How long the card takes to fade into the picked pocket's colour.",[["Quick",{xfadeDur:.15}],["Normal",{xfadeDur:.3}],["Slow",{xfadeDur:.45}]]],
+  ["Emoji feel","How the emoji drops into its tile. Glide has no bounce at all, as the app does today. "+D_FEEL,glideFeel("emojiB","emojiEased")],
+  ["Emoji speed",D_SPEED,speed("emojiDur")],
+  ["Lift feel","How the picked pocket rises, with the bill's slip rising into it.",glideFeel("liftB","liftEased","slipB")],
+  ["Lift speed",D_SPEED,speed("liftDur")]]],
+ ["Pockets arriving",[
+  ["On","Whether the pockets slide in one after another when they appear, instead of all at once.",onOff("arriveOn")],
+  ["Distance","How far below its place each pocket starts.",[["Short",{arriveOff:12}],["Medium",{arriveOff:24}],["Long",{arriveOff:48}]]],
+  ["Stagger","The gap between one pocket starting and the next.",[["Tight",{arriveStagger:15}],["Normal",{arriveStagger:30}],["Loose",{arriveStagger:60}]]],
+  ["Feel",D_FEEL,feel("arriveB")],["Speed",D_SPEED,speed("arriveDur")]]],
+ ["Filing on ✓",[
+  ["Style","Shrink onto the pocket (the app today), or drop in behind its lip (the video).",[["Shrink",{fileStyle:"shrink"}],["Drop in",{fileStyle:"drop"}]]],
+  ["Delay","The pause between tapping ✓ and the card moving.",[["None",{fileDelay:.05}],["Short",{fileDelay:.12}],["Long",{fileDelay:.25}]]],
+  ["Travel","How long the card takes to reach the pocket.",[["Fast",{fileDur:.25}],["Normal",{fileDur:.375}],["Slow",{fileDur:.5}]]],
+  ["Turn","How far the card tilts as it drops. Drop in only.",[["None",{fileTurn:0}],["Slight",{fileTurn:-5}],["Big",{fileTurn:-12}]]],
+  ["Squash","How much the pocket flattens as the card lands. Drop in only.",[["None",{sqY:1}],["Soft",{sqY:.94}],["Medium",{sqY:.88}],["Big",{sqY:.8}]]],
+  ["Squash feel","How the pocket springs back. "+D_FEEL,feel("sqB")],["Squash speed",D_SPEED,speed("sqDur")],
+  ["Slip pop","How far the bill's slip jumps up as the card lands. Drop in only.",[["None",{slipPop:0}],["Small",{slipPop:4}],["Medium",{slipPop:8}],["Big",{slipPop:14}]]],
+  ["Slip feel","How the slip settles back down. "+D_FEEL,feel("slipSB")],["Slip speed",D_SPEED,speed("slipDur")],
+  ["Hold","How long the pocket stays in view after the card lands, before the sheet closes.",[["Short",{hold:.25}],["Normal",{hold:.45}],["Long",{hold:.7}]]]]],
+ ["View",[
+  ["Haptics","Shows a marker where the phone would give a tap you can feel.",onOff("haptics")],
+  ["Reduce Motion","Plays everything as iOS's Reduce Motion would: fades instead of movement.",onOff("reduce")],
+  ["Dark","",onOff("dark")],
+  ["Slow motion","Slows everything down, to watch a moment closely.",[["1×",{slow:1}],["½×",{slow:.5}],["¼×",{slow:.25}]]],
+  ["Tap areas","Outlines everything you can tap in magenta.",onOff("taps")],
+  ["Pockets","How many categories there are.",[["1",{pockets:1}],["3",{pockets:3}],["6",{pockets:6}],["14",{pockets:14}]]]]],
+];
+const VIEW_KEYS=["haptics","reduce","dark","slow","taps","pockets"];
+const same=(a,b)=>typeof a==="number"&&typeof b==="number"?Math.abs(a-b)<1e-6:a===b;
+const matches=vals=>Object.keys(vals).every(k=>same(S[k],vals[k]));
+
+const ctl=document.createElement("div"); ctl.className="ctl";
+const chipRows=[];
+function buildControls(){
+  // presets and saved setups
+  ctl.insertAdjacentHTML("beforeend",`<h2>Start from</h2><div class="chips" id="presetChips"></div>
+    <p class="desc">The app as it is today, or the motion from the video. Changing any step below makes it Custom.</p>
+    <h2>Your setups</h2><div class="slots" id="slots"></div>
+    <p class="desc">Save the current steps to A, B or C, then tap a letter to flip back to it and compare.</p>`);
+  GROUPS.forEach(([title,rows])=>{
+    ctl.insertAdjacentHTML("beforeend",`<h2>${title}</h2>`);
+    rows.forEach(([label,desc,opts])=>{
+      const wrap=document.createElement("div"); wrap.className="step";
+      wrap.innerHTML=`<div class="sl">${label}</div><div class="chips"></div>`+(desc?`<p class="desc">${desc}</p>`:"");
+      const box=wrap.querySelector(".chips"), chips=[];
+      opts.forEach(([l,vals])=>{
+        const b=document.createElement("button"); b.className="chip"; b.textContent=l; box.appendChild(b);
+        b.addEventListener("click",()=>choose(vals)); chips.push({b,vals});
+      });
+      chipRows.push(chips); ctl.appendChild(wrap);
+    });
+  });
+  const b=document.createElement("div"); b.className="btns";
+  b.innerHTML='<button id="bReset">Reset card</button><button id="bEmpty">Start empty</button>'; ctl.appendChild(b);
+  ctl.insertAdjacentHTML("beforeend",'<h2>Values for SwiftUI</h2><pre id="swift"></pre>');
+  ctl.insertAdjacentHTML("beforeend",'<h2>What it lies about</h2><ul class="lies"><li>No Liquid Glass.</li><li>No Dynamic Type.</li><li>No real haptics: the markers stand in.</li><li>No iOS keyboard: the name field uses the browser\'s.</li><li>No calendar or repeat wheel: tapping date or repeat only shows its ring.</li><li>Frame timing isn\'t ProMotion\'s.</li><li>Springs use SwiftUI\'s parameters, so the steps port by name; the feel on device will still differ slightly.</li></ul>');
+  ctl.querySelector("#bReset").onclick=()=>fullReset(false);
+  ctl.querySelector("#bEmpty").onclick=()=>fullReset(true);
+  const pc=ctl.querySelector("#presetChips");
+  [["built","As built (v0.6.0)"],["video","Video"]].forEach(([k,l])=>{
+    const c=document.createElement("button"); c.className="chip"; c.textContent=l; c.dataset.k=k; pc.appendChild(c);
+    c.addEventListener("click",()=>{ Object.assign(S,k==="built"?BUILT:VIDEO); S.preset=k; afterChange([]); });
+  });
+  const sl=ctl.querySelector("#slots");
+  ["A","B","C"].forEach(L=>{
+    const g=document.createElement("div"); g.className="slot";
+    g.innerHTML=`<button class="chip load">${L}</button><button class="save">Save</button>`;
+    g.querySelector(".load").addEventListener("click",()=>{ const v=slots[L]; if(!v) return; Object.assign(S,v); S.preset="slot"+L; afterChange([]); });
+    g.querySelector(".save").addEventListener("click",()=>{ const v={}; PRESET_KEYS.forEach(k=>v[k]=S[k]); slots[L]=v; S.preset="slot"+L; saveSlots(); syncControls(); toast("Saved to "+L); });
+    sl.appendChild(g);
+  });
+}
+let slots={}; try{ slots=JSON.parse(localStorage.getItem("tilly-card-polish-slots")||"{}")||{}; }catch(e){}
+function saveSlots(){ try{ localStorage.setItem("tilly-card-polish-slots",JSON.stringify(slots)); }catch(e){} }
+function choose(vals){
+  const keys=Object.keys(vals);
+  Object.assign(S,vals);
+  if(keys.some(k=>PRESET_KEYS.includes(k))) S.preset="custom";
+  afterChange(keys);
+}
+function afterChange(keys){
+  if(keys.includes("dark")){ S.darkTouched=true; }
+  applyTheme();
+  document.body.classList.toggle("taps",!!S.taps);
+  if((keys.length===0||keys.includes("pockets"))&&!ui.busy) buildPockets();
+  syncControls(); save();
+}
+function syncControls(){
+  chipRows.forEach(chips=>chips.forEach(({b,vals})=>b.classList.toggle("on",matches(vals))));
+  ctl.querySelectorAll("#presetChips .chip").forEach(c=>c.classList.toggle("on",S.preset===c.dataset.k));
+  ctl.querySelectorAll("#slots .slot").forEach((g,i)=>{ const L="ABC"[i];
+    g.querySelector(".load").classList.toggle("on",S.preset==="slot"+L); g.querySelector(".load").classList.toggle("empty",!slots[L]); });
+  swiftOut();
+}
+const f2=n=>(+n).toFixed(2);
+function swiftOut(){
+  const sp=(d,b)=> same(b,0)?`Animation.smooth(duration: ${f2(d)})` : same(b,.15)?`Animation.snappy(duration: ${f2(d)})`
+    : same(b,.3)?`Animation.bouncy(duration: ${f2(d)})` : same(b,.5)?`Animation.bouncy(duration: ${f2(d)}, extraBounce: 0.2)`
+    : `Animation.spring(duration: ${f2(d)}, bounce: ${f2(b)})`;
+  const L=[];
+  L.push(S.pressOn?`static let press = ${sp(S.pressDur,S.pressB)}  // dip ${f2(S.pressDip)}`:`// press: off`);
+  L.push(S.popOn?`static let checkPop = ${sp(S.popDur,S.popB)}  // from ${f2(S.popFrom)}`:`// checkPop: off`);
+  L.push(`static let colourCrossfade = Animation.${S.xfadeCurve==="out"?"easeOut":"easeInOut"}(duration: ${f2(S.xfadeDur)})`);
+  L.push(`static let emojiDrop = ${S.emojiEased?`Animation.easeInOut(duration: ${f2(S.emojiDur)})`:sp(S.emojiDur,S.emojiB)}  // from scale 1.35, 6 pt up`);
+  L.push(`static let pocketLift = ${S.liftEased?`Animation.easeInOut(duration: ${f2(S.liftDur)})`:sp(S.liftDur,S.liftB)}  // 6 pt`);
+  L.push(`static let slipRise = ${S.liftEased?`Animation.easeInOut(duration: ${f2(S.liftDur)})`:sp(S.liftDur,S.slipB)}  // from 10 pt below`);
+  L.push(S.arriveOn?`static let pocketArrive = ${sp(S.arriveDur,S.arriveB)}  // from ${S.arriveOff} pt below, scale 0.96, stagger ${S.arriveStagger} ms`:`// pocketArrive: off`);
+  L.push(`static let filingDelay = ${f2(S.fileDelay)}  // seconds after ✓`);
+  if(S.fileStyle==="drop"){
+    L.push(`static let drop = ${(+S.fileDur).toFixed(3)}  // seconds; x ease-in(2), y ease-in(3), turn ${S.fileTurn}°`);
+    L.push(`static let squashDown = Animation.easeOut(duration: 0.07)  // scale y ${f2(S.sqY)}, x ${f2(1+(1-S.sqY)*.58)}`);
+    L.push(`static let squashBack = ${sp(S.sqDur,S.sqB)}`);
+    L.push(`static let slipPop = Animation.easeOut(duration: 0.14)  // ${S.slipPop} pt up`);
+    L.push(`static let slipSettle = ${sp(S.slipDur,S.slipSB)}`);
+  } else {
+    L.push(`static let shrink = ${(+S.fileDur).toFixed(3)}  // seconds, curve (0.3, 0.6, 0.35, 1); pocket 1 → 1.06 → 0.98 → 1 over 0.28`);
+  }
+  L.push(`static let holdBeforeClose = ${f2(S.hold)}  // seconds after landing`);
+  L.push(`static let sheetClose = ${sp(.35,0)}`);
+  L.push(`static let sheetReturn = ${sp(.45,.15)}`);
+  const el=ctl.querySelector("#swift"); if(el) el.textContent=L.join("\n");
+}
+function applyTheme(){ document.documentElement.classList.toggle("dark",!!S.dark); try{ document.querySelector('meta[name=color-scheme]')||0; }catch(e){}
+  if(typeof pks!=="undefined"&&ctlReady){ if(!ui.busy){ paintFaces(); buildPockets(); } renderCard(); } }
+if(mq) mq.addEventListener&&mq.addEventListener("change",e=>{ if(!S.darkTouched){ S.dark=e.matches; syncControls(); applyTheme(); } });
+
+/* ---------- where the controls live: side panel (wide) or drawer (phone) ---------- */
+const wideMq=matchMedia("(min-width:900px)");
+function placeControls(){
+  if(wideMq.matches) $("panel").appendChild(ctl); else $("drawerBody").appendChild(ctl);
+}
+wideMq.addEventListener&&wideMq.addEventListener("change",placeControls);
+$("tuneBtn").addEventListener("click",()=>$("drawer").classList.add("open"));
+$("dclose").addEventListener("click",()=>$("drawer").classList.remove("open"));
+
+/* ---------- fit the phone frame to short windows ---------- */
+function fit(){
+  const box=$("phoneBox");
+  if(innerWidth<500){ box.style.width=box.style.height=""; phone.style.transform=""; return; }
+  const avail=innerHeight-30, s=Math.min(1,avail/874);
+  box.style.width=(402*s)+"px"; box.style.height=(874*s)+"px"; phone.style.transform=`scale(${s})`;
+}
+addEventListener("resize",()=>{ fit(); layout(); fitAmount(); });
+
+/* =====================================================================================================
+   BOOT
+   ===================================================================================================== */
+let ctlReady=false;
+buildControls(); placeControls(); ctlReady=true;
+document.documentElement.classList.toggle("dark",!!S.dark);
+document.body.classList.toggle("taps",!!S.taps);
+syncControls(); fit();
+paintFaces(); buildPockets(); setPanelRaw("keypad"); renderCard();
+requestAnimationFrame(()=>{ layout(); fitAmount(); });
+// test hook
+window.__cp={S,get bill(){return bill;},get ui(){return ui;},get pks(){return pks;},pick,fileCard};
+</script>
+</body>
+</html>
