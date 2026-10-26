@@ -461,6 +461,16 @@ html:not(.dark) .cc>.fimg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .ccr .s.soon{color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px}
 .ccr .s.soon i{width:6px;height:6px;border-radius:50%;flex:none}
 .ccr .sd{width:7px;height:7px;border-radius:50%;flex:none}
+/* the breakdown under the total */
+.brk{display:flex;gap:2px;height:12px;margin:-6px 4px 18px;border-radius:6px;overflow:hidden}
+.brk+.bkey{margin-top:-8px}
+.brk button{min-width:3px;height:100%}
+.bkey{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 4px 18px;font:13px var(--text);color:var(--ink2)}
+.bkey button,.bkey span{display:flex;align-items:center;gap:6px;padding:2px 0}
+.bkey i{width:8px;height:8px;border-radius:50%;flex:none}
+.bkey b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.flash{animation:flash 1.2s ease}
+@keyframes flash{0%,30%{filter:brightness(.93)}100%{filter:none}}
 .mq .enter{animation:enter .2s cubic-bezier(.2,.8,.2,1)}
 @keyframes enter{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 .bnew{display:flex;align-items:center;gap:10px;width:100%;height:52px;border:2px dashed var(--ink2);border-radius:16px;color:var(--ink2);
@@ -636,7 +646,7 @@ const KEY="tilly-all-bills-folders-3";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"grid",layout:"pockets",ccLine:"bottom",ccShare:"off",ccRows:"full",ccDiv:"hair",ccOrder:"cost",ccSoon:"plain",ix:"index",period:"m"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"grid",layout:"pockets",brk:"off",ccLine:"bottom",ccShare:"off",ccRows:"full",ccDiv:"hair",ccOrder:"cost",ccSoon:"plain",ix:"index",period:"m"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -1300,6 +1310,16 @@ function cardFile(groups,W){
   });
   return html+`</div>`;
 }
+// the month split by category: one bar, a segment per category in its colour, costliest first; a segment takes you to its card
+function breakdown(groups){
+  if(S.brk==="off") return "";
+  const all=groups.reduce((t,g)=>t+g.total,0)||1;
+  const bar=`<div class="brk">${groups.map(g=>`<button data-go="${g.i}" style="flex:${g.total} 1 0;background:${colHex(cats[g.i].col)}" aria-label="${esc(cats[g.i].name)}, ${Math.round(g.total/all*100)}%"></button>`).join("")}</div>`;
+  if(S.brk!=="key") return bar;
+  const top=groups.slice(0,4), rest=groups.slice(4), restP=Math.round(rest.reduce((t,g)=>t+g.total,0)/all*100);
+  return bar+`<div class="bkey">${top.map(g=>`<button data-go="${g.i}"><i style="background:${colHex(cats[g.i].col)}"></i>${esc(cats[g.i].name)} <b>${Math.round(g.total/all*100)}%</b></button>`).join("")}`+
+    (rest.length?`<span><i style="background:var(--ink2);opacity:.5"></i>${rest.length} more <b>${restP}%</b></span>`:"")+`</div>`;
+}
 function renderBills(anim){
   const body=$("bbody"), W=Math.round(body.clientWidth||390)-32, groups=groupsOf();
   if(S.fold!=="grid"||!groups.some(g=>g.i===openF)) openF=null;
@@ -1310,7 +1330,7 @@ function renderBills(anim){
   if(openF!=null){ const g=groups.find(x=>x.i===openF);
     html=`<div class="enter" style="padding-top:6px">${openFolder(g,W)}</div>`; }
   else {
-    html=`<div class="bt">All bills</div><div class="bsub">${sum}</div>`;
+    html=`<div class="bt">All bills</div><div class="bsub">${sum}</div>`+breakdown(groups);
     if(S.layout==="card"){ const all=groups.reduce((t,g)=>t+g.total,0); html+=groups.map(g=>catCard(g,W,all)).join(""); }
     else if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="${anim?"enter":""}">${gridColumns(groups,cw)}</div>`; }
     else if(S.fold==="file") html+=cardFile(groups,W);
@@ -1325,6 +1345,9 @@ $("bClose").addEventListener("click",()=>{ $("bsheet").classList.remove("open");
 $("bBack").addEventListener("click",()=>{ openF=null; renderBills(true); });
 $("seg").addEventListener("click",e=>{ const b=e.target.closest("[data-p]"); if(!b) return; S.period=b.dataset.p; save(); renderBills(); });
 $("bbody").addEventListener("click",e=>{
+  const go=e.target.closest("[data-go]");
+  if(go){ const el=$("bbody").querySelector(`[data-ci="${go.dataset.go}"],[data-open="${go.dataset.go}"]`); const card=el&&(el.closest(".cc,.fc")||el);
+    if(card){ $("bbody").scrollTo({top:card.offsetTop-12,behavior:S.motion==="quick"?"smooth":"auto"}); card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash"); } return; }
   const t=e.target.closest("[data-ci],[data-new],[data-bid],[data-open]"); if(!t) return;
   if(t.dataset.open!=null){ openF=+t.dataset.open; renderBills(); $("bbody").scrollTop=0; return; }
   if(t.dataset.bid){ const b=bills.find(x=>x.id===+t.dataset.bid); if(b) openEditor(b,nextDate(b)); return; }
@@ -1369,7 +1392,8 @@ function panelHTML(){
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
-    tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("layout"))+(S.layout==="pockets"?tcard("The bills in a pocket, drawn as","",optHTML("ix")):"")+
+    tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("layout"))+
+    tcard("The month, split by category","",fld("Under the total",chips("brk",[["off","Off"],["bar","Bar"],["key","Bar and key"]]),"One bar, a segment per category in its colour, costliest first. The key names the four biggest with their share. Tap a segment or a name to jump to its card."))+(S.layout==="pockets"?tcard("The bills in a pocket, drawn as","",optHTML("ix")):"")+
     (S.layout==="card"?tcard("Category cards","Each changes the cards as you tap it.",
       fld("Colour line",chips("ccLine",[["bottom","Bottom"],["left","Left edge"],["head","Washed header"],["none","None"]]),"Bottom matches the grid's category card. Left reads down the list; a washed header ties the colour to the name and total.")+
       fld("Share of the month",chips("ccShare",[["off","Off"],["bar","Bar"]]),"A bar under the name, in its colour, and its percentage under the total: which category is the big one, at a glance.")+
@@ -1398,7 +1422,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["layout","ccLine","ccShare","ccRows","ccDiv","ccOrder","ccSoon","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["layout","brk","ccLine","ccShare","ccRows","ccDiv","ccOrder","ccSoon","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
