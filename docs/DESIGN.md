@@ -38,8 +38,8 @@ Laid out like iOS Calendar, with two views, Calendar and Categories, opening on 
 A glass pair floats at the right end of the top row: the view button, whose icon names the view
 you're in and whose menu lists the views with a checkmark on the current one, and +. The month
 button sits bottom left; All bills and settings share a glass capsule bottom right, in every view.
-Everything else is a sheet, so the reader never leaves their place: no tab bar, no pushed pages.
-Settings keeps the categories in your order: drag to reorder, tap a picture or a colour to change it.
+Everything else is a sheet, so the reader never leaves their place: no tab bar, and pages push only
+inside Settings, where a `Categories` row opens the categories (`The editor`).
 
 ### Amounts
 
@@ -223,9 +223,23 @@ it in two lines at most, and a strip of its colour along the bottom. A dashed `N
 tap applies a category: a ring marks it, and the card's colour fades in, quickly, with no flight.
 The grid scrolls when the categories outgrow the keypad's height, and its type caps at `xxxLarge`.
 
-`New` opens Tilly's symbols in the keypad's place, searchable by word, under a picture slot, a name
-field and the eight colours, the next unused one chosen. Return makes the category and applies it.
-With none yet, `New` is the only card, and it breathes once the amount and name are in.
+With none yet, `New` is the only card, and it breathes once the amount and name are in. `New` opens
+the category sheet; Return or its ✓ makes the category and applies it. Holding a card lifts it with
+`Edit` and `Delete` under it.
+
+### A category is made and changed on its own sheet
+
+The same sheet makes and changes one, sliding over the bill's or Settings, with ✕, a red trash button
+when changing, and ✓, which waits for a name and a change. Fixed at its top: the category's card,
+150 × 184, with the name typed on the card, dashed until there is one, then the eight colours, the
+next unused one chosen. Under them, Tilly's symbols scroll in sections, six across, with a search
+capsule floating at the bottom. A new category starts on a tag; while the name matches a symbol's
+words or comes close to one, that symbol replaces it, marked with a spark, until one is picked.
+
+Deleting asks once, saying what goes with it: `Its 3 bills go too, past and future.` A category's
+bills go with it. Settings shows the categories as the picker's grid, each card with `€95/mo` under
+its name, and `New` last. Tap to change, hold and drag to reorder. Sort, top right, arranges the
+order once by colour, name, monthly cost or number of bills, with Undo, and the order then holds.
 
 ### Saving puts the row in place
 

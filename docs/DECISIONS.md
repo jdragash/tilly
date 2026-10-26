@@ -124,19 +124,23 @@ twelve months' monthly bills.
 - **Revisit when:** planned one-offs arrive; they are extras by this definition.
 
 ## Every expense has a category, and a category is a symbol, a name and a colour
-**Decided:** 2026-09-19, colour and order added 2026-09-24, the symbol 2026-10-18
+**Decided:** 2026-09-19, colour and order added 2026-09-24, the symbol 2026-10-18, changing and deleting 2026-10-26
 Amount, name, category and date are all required. The app ships with no categories, so the first
 expense makes the first. The picture is a symbol from Tilly's own set, searched by word in the
 keypad's place, and drawn roughened (`DESIGN.md`, the look). A category made before symbols keeps its
 emoji until one is picked. The colour is one of eight tokens, checked so neighbours stay distinct for
 colour-blind readers, and a new category starts on the next one unused. Categories keep an order the
-user sets in Settings.
+user sets in Settings; a sort arranges it once and never re-sorts. A category is made and changed on
+its own sheet, which guesses a symbol from the name by keyword and on-device word similarity
+(`NLEmbedding`). Deleting one deletes its bills, after a warning that counts them.
 - **Rejected — the emoji keyboard, with a symbol matched to each emoji:** any emoji without a match shows a mixed row.
 - **Rejected — keeping emoji under the Drawn look:** the one part of every row that wouldn't draw alike.
 - **Rejected — pictures made on the phone (L), or Tilly's own hand (G):** prototyped in `icons-in-app.html`; I won.
 - **Rejected — Tilly assigning colours in the order categories were made:** a colour the user didn't pick means nothing to them.
 - **Rejected — a colour taken from the picture:** 🏠 and 🚗 landed on orange and red, too close to tell apart as dots.
 - **Rejected — ordering by size or by name:** an order that reshuffles as bills change, where the user's own holds still.
+- **Rejected — moving a deleted category's bills to one you pick, as a merge:** deleting stays one step.
+- **Rejected — a row of suggested symbols under the name:** clutter beside one guess shown on the card.
 - **Rejected — an optional category:** the row's picture and any insight by category would need a stand-in that means nothing.
 - **Rejected — a starter set:** the user's categories are theirs (tenet 4).
 - **Revisit when:** someone can't find a symbol for a category they mean; the set grows, or emoji return beside it.
