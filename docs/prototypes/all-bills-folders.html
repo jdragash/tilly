@@ -6,7 +6,8 @@
   Question it settles: what All bills looks like when each category is a folder holding its bills,
   drawn in the dashed-and-solid look. Round two (same day) brings back the bill editor's old pocket picker
   (edit-revisit-card.html, combined.html) with the bills as index cards, and adds a card file.
-  Jake chose the pockets two across (2026-10-26); round three asks where the › for the category's sheet goes.
+  Jake chose the pockets two across (2026-10-26), each as tall as its bills in uneven columns, with a margin along
+  its top holding the total and a › at the far right for the category's sheet.
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, editor and category sheet are
   category-editor.html's (branch of 2026-10-26); a folder's tab or front opens its category's sheet, as
   a category header does there. Bills inside a folder are the timeline's paper cards without the picture.
@@ -386,7 +387,8 @@ html:not(.dark) .pk .strip>.fimg{filter:drop-shadow(0 -1px 2px rgba(0,0,0,.1))}
 .lip .chev{color:#fff;opacity:.75}
 html:not(.dark) .lip>.fimg{filter:drop-shadow(0 -1px 3px rgba(0,0,0,.12))}
 /* Two across: pockets side by side; one opens to its folder */
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:0 0 16px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin:0 0 16px}
+.fgc{display:flex;flex-direction:column;gap:14px;min-width:0}
 .fc{position:relative;display:block;text-align:left;cursor:pointer}
 .fc .sl{position:absolute;left:8px;right:8px;height:36px;display:flex;justify-content:space-between;gap:6px;padding:6px 10px 0;
   font-size:13px;line-height:17px;font-weight:600}
@@ -402,6 +404,9 @@ html:not(.dark) .fc .sl>.fimg{filter:drop-shadow(0 -1px 2px rgba(0,0,0,.1))}
 /* the › on the front: its own target, the front's full height */
 .gch{position:relative;align-self:stretch;width:40px;margin-right:-10px;display:flex;align-items:center;justify-content:center;flex:none}
 .gch span{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.24);color:#fff;font:600 17px/25px var(--text);text-align:center}
+.gm{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:var(--ink)}
+.gm .tt{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.gm .chev{font-size:17px;opacity:.55}
 .gtab{position:absolute;left:0;top:0;display:flex;align-items:center;gap:4px;padding:0 0 0 12px;text-align:left;color:var(--ink)}
 .gtab .tt{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
 .gtab .chev{font-size:15px}
@@ -1222,20 +1227,22 @@ function pocket(g,W){
     `<button class="lip" data-ci="${g.i}" style="height:${lipH}px" aria-label="Change ${esc(cats[g.i].name)}"><img class="fimg" src="${lipSrc(W,lipH,hex)}" alt="">`+
     `<span class="grp-pic">${catPic(g.i,32,true,S.boil==="all")}</span><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span><span class="chev">›</span></button></div>`;
 }
-// The front opens the folder; the › opens the category's sheet. It sits on the front, or on a lip along the pocket's top with the total.
-function gridPocket(g,cw,most){
-  const hex=colHex(cats[g.i].col), max=4, show=g.bs.slice(0,max), lipH=60, step=24, slipH=34, onTop=S.edit==="lip", tabH=onTop?30:0;
-  const H=tabH+lipH+Math.min(max,most)*step+14, base=H-lipH-show.length*step+2, nm=esc(cats[g.i].name);
-  const tabW=onTop?Math.round(Math.min(cw-20,14+textW(money(g.total),800)*15/18+8+12+10)):0;
-  const back=onTop?cardSrc(cw,H,{wash:hex,washOp:.42,edgeOp:.5,path:folderPath(tabW,tabH),pk:"g"+tabW}):cardSrc(cw,H,{wash:hex,washOp:.42,edgeOp:.5,r:14});
-  return `<div class="fc${ix()?" ix":""}" data-open="${g.i}" role="button" tabindex="0" style="height:${H}px" aria-label="Open ${nm}"><img class="fimg" src="${back}" alt="">`+
-    (onTop?`<button class="gtab" data-ci="${g.i}" style="width:${tabW}px;height:${tabH}px" aria-label="Change ${nm}"><span class="tt">${money(g.total)}</span><span class="chev">›</span></button>`:"")+
-    (g.bs.length>max?`<span class="more" style="top:${base-19}px">+${g.bs.length-max} more</span>`:"")+
-    show.map((b,k)=>`<span class="sl" style="top:${base+k*step}px;height:${slipH}px"><img class="fimg" src="${slipSrc(cw-16,slipH,21,g.i,ix()?4:8)}" alt="">`+
+// Every bill peeks out, so a pocket is as tall as its cards. A margin along its top carries the total and, at the far right, a ›
+// for the category's sheet; the rest of the pocket opens it to its folder.
+function gridPocket(g,cw){
+  const hex=colHex(cats[g.i].col), n=g.bs.length, lipH=56, step=24, slipH=34, mH=32, H=mH+n*step+lipH+4, nm=esc(cats[g.i].name);
+  return `<div class="fc${ix()?" ix":""}" data-open="${g.i}" role="button" tabindex="0" style="height:${H}px" aria-label="Open ${nm}"><img class="fimg" src="${cardSrc(cw,H,{wash:hex,washOp:.42,edgeOp:.5,r:14})}" alt="">`+
+    `<button class="gm" data-ci="${g.i}" style="height:${mH}px" aria-label="Change ${nm}"><span class="tt">${money(g.total)}</span><span class="chev">›</span></button>`+
+    g.bs.map((b,k)=>`<span class="sl" style="top:${mH+k*step}px;height:${slipH}px"><img class="fimg" src="${slipSrc(cw-16,slipH,21,g.i,ix()?4:8)}" alt="">`+
       `<span>${esc(b.name)}</span><span class="a">${money(figure(b))}</span></span>`).join("")+
-    `<span class="lip${onTop?" bare":""}" style="height:${lipH}px"><img class="fimg" src="${lipSrc(cw,lipH,hex)}" alt="">`+
-    `<span class="grp-pic">${catPic(g.i,28,true,S.boil==="all")}</span><span class="col"><span class="tn">${nm}</span>${onTop?"":`<span class="tt">${money(g.total)}</span>`}</span>`+
-    (onTop?"":`<button class="gch" data-ci="${g.i}" aria-label="Change ${nm}"><span>›</span></button>`)+`</span></div>`;
+    `<span class="lip bare" style="height:${lipH}px"><img class="fimg" src="${lipSrc(cw,lipH,hex)}" alt="">`+
+    `<span class="grp-pic">${catPic(g.i,28,true,S.boil==="all")}</span><span class="col"><span class="tn">${nm}</span></span></span></div>`;
+}
+// two columns that needn't match: each pocket, costliest first, goes to the shorter column
+function gridColumns(groups,cw){
+  const col=[[],[]], h=[0,0];
+  groups.forEach(g=>{ const k=h[1]<h[0]?1:0; col[k].push(gridPocket(g,cw)); h[k]+=32+g.bs.length*24+60+14; });
+  return `<div class="fg">${col.map(c=>`<div class="fgc">${c.join("")}</div>`).join("")}</div>`;
 }
 // a card file: each category a coloured divider with a tab, its bills filed behind it, a strip of each showing
 function cardFile(groups,W){
@@ -1262,7 +1269,7 @@ function renderBills(anim){
     html=`<div class="enter" style="padding-top:6px">${openFolder(g,W)}</div>`; }
   else {
     html=`<div class="bt">All bills</div><div class="bsub">${sum}</div>`;
-    if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="fg${anim?" enter":""}">${groups.map((g,k)=>{ const mate=groups[k%2?k-1:k+1]; return gridPocket(g,cw,Math.max(g.bs.length,mate?mate.bs.length:0)); }).join("")}</div>`; }
+    if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="${anim?"enter":""}">${gridColumns(groups,cw)}</div>`; }
     else if(S.fold==="file") html+=cardFile(groups,W);
     else html+=groups.map(g=>S.fold==="pocket"?pocket(g,W):openFolder(g,W)).join("");
     html+=`<button class="bnew" data-new="1"><span style="font-size:24px;font-weight:300">+</span> New Category</button>`;
@@ -1305,8 +1312,6 @@ function toast(t){ const p=$("toast"); p.textContent=t; p.style.opacity=1; clear
    TUNE
    ===================================================================================================== */
 const OPT={
-  edit:[["front","On the front","The front keeps the name and total, with a › in a circle at its right edge. The › opens the category's sheet; anywhere else on the pocket opens it to its folder.","recommended"],
-        ["lip","On a lip, with the total","A lip along the pocket's top carries the total and a ›, like a folder's tab. The front names the category; tap the lip for its sheet, the rest to open it."]],
   ix:[["index","Index cards","White cards with the name over a rule in the category's colour, and faint lines under it.","recommended"],
       ["paper","Paper cards","The timeline's plain paper cards, as round one drew them."]]
 };
@@ -1319,7 +1324,7 @@ function panelHTML(){
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
-    tcard("The ›, for the category's sheet","Try Monthly and Yearly at the top too.",optHTML("edit"))+tcard("The bills drawn as","",optHTML("ix"))+
+    tcard("The bills drawn as","Pockets are as tall as their bills now, in two columns that needn't match. Try Monthly and Yearly at the top too.",optHTML("ix"))+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
       fld("Motion",chips("motion",[["none","None"],["quick","Quick"]])))+
@@ -1341,7 +1346,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["edit","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
