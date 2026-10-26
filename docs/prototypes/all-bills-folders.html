@@ -4,7 +4,8 @@
 <!--
   Tilly, All bills as folders. 2026-10-26.
   Question it settles: what All bills looks like when each category is a folder holding its bills,
-  drawn in the dashed-and-solid look. Three directions to tap between in Tune.
+  drawn in the dashed-and-solid look. Round two (same day) brings back the bill editor's old pocket picker
+  (edit-revisit-card.html, combined.html) with the bills as index cards, and adds a card file.
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, editor and category sheet are
   category-editor.html's (branch of 2026-10-26); a folder's tab or front opens its category's sheet, as
   a category header does there. Bills inside a folder are the timeline's paper cards without the picture.
@@ -385,7 +386,7 @@ html:not(.dark) .pk .strip>.fimg{filter:drop-shadow(0 -1px 2px rgba(0,0,0,.1))}
 html:not(.dark) .lip>.fimg{filter:drop-shadow(0 -1px 3px rgba(0,0,0,.12))}
 /* Two across: pockets side by side; one opens to its folder */
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin:0 0 16px}
-.fc{position:relative;height:156px;display:block;text-align:left}
+.fc{position:relative;display:block;text-align:left}
 .fc .sl{position:absolute;left:8px;right:8px;height:36px;display:flex;justify-content:space-between;gap:6px;padding:6px 10px 0;
   font-size:13px;line-height:17px;font-weight:600}
 html:not(.dark) .fc .sl>.fimg{filter:drop-shadow(0 -1px 2px rgba(0,0,0,.1))}
@@ -400,6 +401,28 @@ html:not(.dark) .fc .sl>.fimg{filter:drop-shadow(0 -1px 2px rgba(0,0,0,.1))}
 #bBack{position:absolute;left:16px;top:16px;z-index:7;padding:0 14px 0 10px;gap:3px;font-weight:500;display:none}
 #bBack b{font-size:24px;font-weight:400;line-height:1;margin-top:-3px}
 #bsheet.inF #bBack{display:flex} #bsheet.inF #bClose{display:none}
+/* index cards: the name sits over the rule */
+.bc.ix{align-items:flex-start;padding-top:7px}
+.bc.ix .s{margin-top:8px}
+.bc.ix .a{line-height:22px}
+.pk.ix .strip{padding-top:6px}
+.fc.ix .sl{padding-top:3px}
+/* the card file */
+.cf{position:relative;padding-bottom:8px;margin:0 0 16px}
+.cfd{position:relative;height:84px;margin-top:-14px;color:#fff}
+.cfd:first-child{margin-top:0}
+html:not(.dark) .cfd>.fimg{filter:drop-shadow(0 -1px 3px rgba(0,0,0,.12))}
+.cfd .tab{position:relative;display:flex;align-items:center;gap:9px;height:44px;padding:0 12px 0 10px;text-align:left}
+.cfd .tab .grp-pic{width:30px;height:30px;flex:none}
+.cfd .tab .tn{flex:1;min-width:0;font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cfd .tab .tt{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.cfd .tab .chev{color:#fff;opacity:.75}
+.cfb{position:relative;display:flex;justify-content:space-between;gap:10px;width:calc(100% - 12px);height:56px;margin:-16px 6px 0;
+  padding:6px 14px 0;text-align:left;font-size:16px;line-height:21px;font-weight:600}
+.cfd+.cfb{margin-top:-36px}
+html:not(.dark) .cfb>.fimg{filter:drop-shadow(0 -1px 2px rgba(0,0,0,.1))}
+.cfb>span{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cfb>span.a{flex:none;font-variant-numeric:tabular-nums}
 .mq .enter{animation:enter .2s cubic-bezier(.2,.8,.2,1)}
 @keyframes enter{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 .bnew{display:flex;align-items:center;gap:10px;width:100%;height:52px;border:2px dashed var(--ink2);border-radius:16px;color:var(--ink2);
@@ -571,11 +594,11 @@ const $=id=>document.getElementById(id);
 const phone=$("phone"), list=$("list"), sheet=$("sheet"), card=$("card"), picker=$("picker"), keypad=$("keypad");
 
 /* ---------- state, kept in this browser only ---------- */
-const KEY="tilly-all-bills-folders";
+const KEY="tilly-all-bills-folders-2";
 const DEFAULTS={picker:"grid",across:4,motion:"quick",boil:"all",dark:null,
   recur:"badge",dates:"relative",lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",today2:"squiggle",todayLabel:"date",
   badge:"none",badgeCol:"cat",badgeCase:"normal",dateCase:"normal",ends:"near",yearly:"badge",
-  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"open",period:"m"};
+  preview:"card",guess:"fill",buttons:"header",findEdit:"press",search:"bottom",fold:"grid",ix:"index",period:"m"};
 const S=Object.assign({custom:false,customText:""},DEFAULTS,
   (()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })());
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
@@ -630,7 +653,7 @@ function makeGrain(){
    o: {fill, wash (a colour washed solid), dash (outline colour), strip: {side:"left"|"bottom"|"leftShort", col, w}, r} */
 function cardSrc(w,h,o){
   const P=6, sw=o.dash?1.6:DT.edgeW, i=sw/2, r=o.r??14, mm=v=>Math.max(0,v-i);
-  const d=o.path?o.path(w-sw,h-sw):rrPath(w-sw,h-sw,mm(r),mm(r),mm(r),mm(r)), seed=(hashStr(w+"|"+h+"|"+r+"|"+(o.pk||""))%80)+1;
+  const rs=(o.rs||[r,r,r,r]).map(mm), d=o.path?o.path(w-sw,h-sw):rrPath(w-sw,h-sw,rs[0],rs[1],rs[2],rs[3]), seed=(hashStr(w+"|"+h+"|"+r+"|"+(o.pk||""))%80)+1;
   const rp=rough(d,{amp:.6,step:3,seed}), tr=`transform="translate(${i+P} ${i+P})"`, ids=[]; let body="";
   if(o.fill){ body+=`<path ${tr} d="${rp}" fill="${o.fill}" stroke="${o.fill}" stroke-width="${sw}" stroke-linejoin="round" filter="url(#paperBigF)"/>`; ids.push("paperBigF"); }
   if(o.wash){ body+=`<path ${tr} d="${rp}" fill="${DT.paper[md()]}" stroke="${DT.paper[md()]}" stroke-width="${sw}" stroke-linejoin="round" filter="url(#paperBigF)"/>`+
@@ -642,6 +665,11 @@ function cardSrc(w,h,o){
     else rect=`<rect x="5" y="14" width="3" height="${h-28}" rx="1.5"/>`;
     body+=`<clipPath id="cl"><path ${tr} d="${rp}"/></clipPath><g clip-path="url(#cl)"><g transform="translate(${P} ${P})" fill="${s.col}" fill-opacity="${s.op??.92}" filter="url(#washF)">${rect}</g></g>`;
     ids.push("washF"); }
+  // an index card: a coloured rule under its heading, faint ruled lines below
+  if(o.rule){ const R=o.rule; let ln=""; for(let y=R.y+R.step;y<h-6;y+=R.step) ln+=`<rect x="-4" y="${y}" width="${w+8}" height=".8"/>`;
+    body+=`<clipPath id="cl2"><path ${tr} d="${rp}"/></clipPath><g clip-path="url(#cl2)" transform="translate(${P} ${P})">`+
+      `<rect x="-4" y="${R.y}" width="${w+8}" height="1.3" fill="${R.col}" fill-opacity=".75"/><g fill="${DT.dashN[md()]}" fill-opacity=".45">${ln}</g></g>`;
+  }
   if(o.dash){ body+=`<path ${tr} d="${rp}" fill="none" stroke="${o.dash}" stroke-opacity="${o.dashOp??1}" stroke-width="${sw}" stroke-dasharray="${o.dashes||"5 4"}" stroke-linecap="round"/>`; }
   return svgUrl(w+2*P,h+2*P,`0 0 ${w+2*P} ${h+2*P}`,body,[...new Set(ids)]);
 }
@@ -1159,7 +1187,10 @@ function groupsOf(){
 function folderPath(tabW,tabH){ return (w,h)=>{ const r=16, t=11, y0=tabH;
   return `M0 ${y0+r} V${t} A${t} ${t} 0 0 1 ${t} 0 H${tabW-8} C${tabW+2} 0 ${tabW+3} ${y0} ${tabW+16} ${y0} H${w-r} A${r} ${r} 0 0 1 ${w} ${y0+r} V${h-r} A${r} ${r} 0 0 1 ${w-r} ${h} H${r} A${r} ${r} 0 0 1 0 ${h-r} Z`; }; }
 const tint=()=>S.dark?.3:.24;
-const billCard=(b,W)=>`<button class="bc" data-bid="${b.id}"><img class="fimg" src="${cardSrc(W,58,{fill:DT.paperCard[md()],r:12})}" alt="">`+
+const ix=()=>S.ix!=="paper";
+// a bill's card: the timeline's paper card, or an index card with its name over a coloured rule
+const slipSrc=(w,h,ruleY,ci,r,step)=>ix()?cardSrc(w,h,{fill:DT.paperCard[md()],r:r??5,rule:{y:ruleY,col:colHex(cats[ci].col),step:step||15},pk:"ix"+ruleY}):cardSrc(w,h,{fill:DT.paperCard[md()],r:r??11});
+const billCard=(b,W)=>`<button class="bc${ix()?" ix":""}" data-bid="${b.id}"><img class="fimg" src="${ix()?slipSrc(W,58,31,b.cat,6,19):cardSrc(W,58,{fill:DT.paperCard[md()],r:12})}" alt="">`+
   `<div class="t"><div class="n">${esc(b.name)}</div><div class="s">${aheadLine(b)}</div></div><div class="a">${money(figure(b))}</div></button>`;
 const tabText=g=>`<span class="grp-pic">${catPic(g.i,30,false,S.boil==="all")}</span><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span><span class="chev">›</span>`;
 const meas=document.createElement("span"); meas.style.cssText="position:absolute;visibility:hidden;white-space:pre;font-size:18px;left:0;top:0";
@@ -1172,22 +1203,38 @@ function openFolder(g,W){
     `<button class="tab" data-ci="${g.i}" style="width:${tabW}px" aria-label="Change ${esc(cats[g.i].name)}">${tabText(g)}</button>`+
     `<div class="in">${g.bs.map(b=>billCard(b,W-16)).join("")}</div></div>`;
 }
+// a pocket's front: rounded on top like the picker's pockets, full colour
+const lipSrc=(w,h,hex)=>cardSrc(w,h,{wash:hex,rs:[12,12,16,16],pk:"lip"});
 function pocket(g,W){
-  const n=g.bs.length, step=44, lipH=64, top=12, H=top+n*step+lipH, hex=colHex(cats[g.i].col);
-  return `<div class="pk" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{wash:hex,washOp:.42,edgeOp:.5,r:16})}" alt="">`+
-    g.bs.map((b,k)=>`<button class="strip" data-bid="${b.id}" style="top:${top+k*step}px"><img class="fimg" src="${cardSrc(W-20,58,{fill:DT.paperCard[md()],r:11})}" alt="">`+
+  const n=g.bs.length, step=ix()?34:44, slipH=ix()?48:58, lipH=62, top=12, H=top+n*step+lipH, hex=colHex(cats[g.i].col);
+  return `<div class="pk${ix()?" ix":""}" style="height:${H}px"><img class="fimg" src="${cardSrc(W,H,{wash:hex,washOp:.42,edgeOp:.5,r:16})}" alt="">`+
+    g.bs.map((b,k)=>`<button class="strip" data-bid="${b.id}" style="top:${top+k*step}px;height:${slipH}px"><img class="fimg" src="${slipSrc(W-20,slipH,29,g.i)}" alt="">`+
       `<span>${esc(b.name)}</span><span class="a">${money(figure(b))}</span></button>`).join("")+
-    `<button class="lip" data-ci="${g.i}" style="height:${lipH}px" aria-label="Change ${esc(cats[g.i].name)}"><img class="fimg" src="${cardSrc(W,lipH,{wash:hex,r:16})}" alt="">`+
+    `<button class="lip" data-ci="${g.i}" style="height:${lipH}px" aria-label="Change ${esc(cats[g.i].name)}"><img class="fimg" src="${lipSrc(W,lipH,hex)}" alt="">`+
     `<span class="grp-pic">${catPic(g.i,32,true,S.boil==="all")}</span><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span><span class="chev">›</span></button></div>`;
 }
-function gridPocket(g,cw){
-  const hex=colHex(cats[g.i].col), show=g.bs.slice(0,3), lipH=66, step=28, H=156, base=H-lipH-show.length*step+4;
-  return `<button class="fc" data-open="${g.i}" aria-label="Open ${esc(cats[g.i].name)}"><img class="fimg" src="${cardSrc(cw,H,{wash:hex,washOp:.42,edgeOp:.5,r:14})}" alt="">`+
-    (g.bs.length>3?`<span class="more" style="top:${base-20}px">+${g.bs.length-3} more</span>`:"")+
-    show.map((b,k)=>`<span class="sl" style="top:${base+k*step}px"><img class="fimg" src="${cardSrc(cw-16,36,{fill:DT.paperCard[md()],r:8})}" alt="">`+
+function gridPocket(g,cw,most){
+  const hex=colHex(cats[g.i].col), max=4, show=g.bs.slice(0,max), lipH=60, step=24, slipH=34, H=lipH+Math.min(max,most)*step+14, base=H-lipH-show.length*step+2;
+  return `<button class="fc${ix()?" ix":""}" data-open="${g.i}" style="height:${H}px" aria-label="Open ${esc(cats[g.i].name)}"><img class="fimg" src="${cardSrc(cw,H,{wash:hex,washOp:.42,edgeOp:.5,r:14})}" alt="">`+
+    (g.bs.length>max?`<span class="more" style="top:${base-19}px">+${g.bs.length-max} more</span>`:"")+
+    show.map((b,k)=>`<span class="sl" style="top:${base+k*step}px;height:${slipH}px"><img class="fimg" src="${slipSrc(cw-16,slipH,21,g.i,ix()?4:8)}" alt="">`+
       `<span>${esc(b.name)}</span><span class="a">${money(figure(b))}</span></span>`).join("")+
-    `<span class="lip" style="height:${lipH}px"><img class="fimg" src="${cardSrc(cw,lipH,{wash:hex,r:14})}" alt="">`+
+    `<span class="lip" style="height:${lipH}px"><img class="fimg" src="${lipSrc(cw,lipH,hex)}" alt="">`+
     `<span class="grp-pic">${catPic(g.i,28,true,S.boil==="all")}</span><span class="col"><span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span></span></span></button>`;
+}
+// a card file: each category a coloured divider with a tab, its bills filed behind it, a strip of each showing
+function cardFile(groups,W){
+  const fam=getComputedStyle(phone).fontFamily; let html=`<div class="cf">`;
+  groups.forEach((g,gi)=>{
+    const hex=colHex(cats[g.i].col), nw=textW(cats[g.i].name,700), tw=textW(money(g.total),800);
+    const tabW=Math.round(Math.min(W-40,10+30+9+nw+9+tw+9+12+14));
+    html+=`<div class="cfd" style="z-index:${gi*40}"><img class="fimg" src="${cardSrc(W,84,{wash:hex,path:folderPath(tabW,44),pk:"d"+tabW})}" alt="">`+
+      `<button class="tab" data-ci="${g.i}" style="width:${tabW}px" aria-label="Change ${esc(cats[g.i].name)}"><span class="grp-pic">${catPic(g.i,30,true,S.boil==="all")}</span>`+
+      `<span class="tn">${esc(cats[g.i].name)}</span><span class="tt">${money(g.total)}</span><span class="chev">›</span></button></div>`+
+      g.bs.map((b,k)=>`<button class="cfb" data-bid="${b.id}" style="z-index:${gi*40+k+1}"><img class="fimg" src="${slipSrc(W-12,56,29,g.i)}" alt="">`+
+        `<span>${esc(b.name)}</span><span class="a">${money(figure(b))}</span></button>`).join("");
+  });
+  return html+`</div>`;
 }
 function renderBills(anim){
   const body=$("bbody"), W=Math.round(body.clientWidth||390)-32, groups=groupsOf();
@@ -1200,7 +1247,8 @@ function renderBills(anim){
     html=`<div class="enter" style="padding-top:6px">${openFolder(g,W)}</div>`; }
   else {
     html=`<div class="bt">All bills</div><div class="bsub">${sum}</div>`;
-    if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="fg${anim?" enter":""}">${groups.map(g=>gridPocket(g,cw)).join("")}</div>`; }
+    if(S.fold==="grid"){ const cw=Math.floor((W-12)/2); html+=`<div class="fg${anim?" enter":""}">${groups.map((g,k)=>{ const mate=groups[k%2?k-1:k+1]; return gridPocket(g,cw,Math.max(g.bs.length,mate?mate.bs.length:0)); }).join("")}</div>`; }
+    else if(S.fold==="file") html+=cardFile(groups,W);
     else html+=groups.map(g=>S.fold==="pocket"?pocket(g,W):openFolder(g,W)).join("");
     html+=`<button class="bnew" data-new="1"><span style="font-size:24px;font-weight:300">+</span> New Category</button>`;
   }
@@ -1242,9 +1290,12 @@ function toast(t){ const p=$("toast"); p.textContent=t; p.style.opacity=1; clear
    TUNE
    ===================================================================================================== */
 const OPT={
-  fold:[["open","Open folders","A tinted folder per category, costliest first. Its tab carries the picture, name and total, and every bill sits inside as the timeline's paper card: name, what's ahead, the figure. Nothing to open.","recommended"],
-        ["pocket","Pockets","The bills stand in the folder with a strip of each showing, name and figure, and the folder's coloured front carries the picture, name and total. More like a folder, less of each bill: what's ahead goes."],
-        ["grid","Two across","Pockets side by side, each showing its three costliest bills and the total. Tap one and it opens to its folder, every bill inside, with All bills to go back. Most categories on a screen, one tap more."]]
+  fold:[["open","Open folders","Round one. A tinted folder per category with its tab naming it, and every bill inside as a card: name, what's ahead, the figure. Nothing to open."],
+        ["grid","Pockets, two across","The bill editor's old pocket picker, grown into All bills: a pale pocket per category, its four costliest bills peeking out as index cards with their figures, the coloured front naming it with the total. Tap one and it opens to its folder.","recommended"],
+        ["pocket","Pockets, full width","The same pockets one to a row, every bill's card peeking out with its name and figure. The front opens the category."],
+        ["file","Card file","A box of index cards: each category a coloured divider with a tab, its bills filed behind it with a strip of each showing. One long run, like a recipe box."]],
+  ix:[["index","Index cards","White cards with the name over a rule in the category's colour, and faint lines under it.","recommended"],
+      ["paper","Paper cards","The timeline's plain paper cards, as round one drew them."]]
 };
 function optHTML(k){ return `<div class="opts">`+OPT[k].map(o=>`<button class="opt${S[k]===o[0]?" on":""}" data-k="${k}" data-v="${o[0]}"><b>${o[1]}${o[3]?`<i>${o[3]}</i>`:""}</b><span>${o[2]}</span></button>`).join("")+`</div>`; }
 function chips(k,vals){ return `<div class="chips">`+vals.map(v=>`<button class="chip${String(S[k])===String(v[0])?" on":""}" data-k="${k}" data-v="${v[0]}">${v[1]}</button>`).join("")+`</div>`; }
@@ -1255,7 +1306,7 @@ function panelHTML(){
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
     `<h2>Open choices</h2>`+
-    tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("fold"))+
+    tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("fold"))+tcard("The bills drawn as","",optHTML("ix"))+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
       fld("Motion",chips("motion",[["none","None"],["quick","Quick"]])))+
@@ -1264,7 +1315,7 @@ function panelHTML(){
       `<div class="btns"><button class="pri" id="catsApply">Use these</button><button id="catsReset">Example set</button></div>`+
       `<p class="desc">A symbol is guessed from the name; to choose one, add it after a colon, like <b>Rent: home</b>. Symbols: ${Object.keys(G).join(", ")}.</p>`)+
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
-    `<li>No filter chips and no ended bills under the folders; the app keeps both. Two across's open folder does the chips' job.</li>`+
+    `<li>No filter chips and no ended bills under the folders; the app keeps both. An opened pocket does the chips' job.</li>`+
     `<li>Yearly shows a monthly bill as twelve of it, even one that ends sooner.</li>`+
     `<li>There are 28 stand-in symbols, drawn in SF Symbols' manner. The app has about 400 real ones, roughened.</li>`+
     `<li>Edges, washes and grain are SVG filters; the glass is a blur, not Liquid Glass; sheets, menus and alerts are CSS, not the system's.</li>`+
@@ -1277,7 +1328,7 @@ function onPanel(e){
   if(b.id==="catsApply"){ const t=b.closest(".ctl").querySelector("#catsIn").value; S.customText=t; S.custom=parseCustom(t).length>0; save(); rebuild(); return; }
   if(b.id==="catsReset"){ S.custom=false; save(); rebuild(); return; }
   if(b.dataset.copy){
-    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["fold","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
+    const txt="Tilly setup: "+JSON.stringify(Object.fromEntries(["fold","ix","period"].map(k=>[k,S[k]])))+(S.custom?" · own categories: "+cats.length:"");
     const pre=b.closest(".ctl").querySelector(".setup"); pre.textContent=txt; pre.hidden=false;
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(pre); const g=getSelection(); g.removeAllRanges(); g.addRange(r); };
     try{ navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it in the thread"),()=>{ sel(); toast("Select the text below and copy it"); }); }
