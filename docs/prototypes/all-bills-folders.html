@@ -7,6 +7,7 @@
   drawn in the dashed-and-solid look. Round two (same day) brings back the bill editor's old pocket picker
   (edit-revisit-card.html, combined.html) with the bills as index cards, and adds a card file.
   All bills is read-only: categories are changed only in Settings, bills from the timeline (Jake, 2026-10-26).
+  Settled 2026-10-26 on plain category cards (Jake's setup), after pockets and folders were tried.
   Jake chose the pockets two across (2026-10-26), each as tall as its bills in uneven columns, with a margin along
   its top holding the total and a › at the far right for the category's sheet.
   Drawn at an iPhone 13 Pro's size, 390 × 844pt. The timeline, editor and category sheet are
@@ -663,6 +664,8 @@ function systemDark(){ const t=document.documentElement.getAttribute("data-theme
   return t ? t==="dark" : !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); }
 if(S.dark===null) S.dark=systemDark();
 S.fold="grid";   // two across, chosen by Jake; the other directions stay drawable for the record
+// Settled by Jake (2026-10-26): plain category cards, colour strip along the bottom, names only, hairlines, costliest first, no breakdown.
+Object.assign(S,{layout:"card",brk:"off",ccLine:"bottom",ccShare:"off",ccRows:"compact",ccDiv:"hair",ccOrder:"cost",ccSoon:"plain"});
 
 /* =====================================================================================================
    TILLY, DRAWN. The noise, roughening, wash and grain are combined.html's, so the two draw alike.
@@ -1408,16 +1411,7 @@ function panelHTML(){
   return `<div class="ptop"><div><h1>All bills as folders</h1><p class="lead">The sheet opens by itself; ✕ then the list button bottom right brings it back. All bills is for reading: nothing in it edits. Categories change in Settings (the gear), bills from the timeline.</p></div>`+
     `<div class="pbtns"><button class="copy" data-copy="1">Copy my setup</button><button class="reset" data-reset="1">Reset</button></div></div>`+
     `<pre class="setup" hidden></pre>`+
-    `<h2>Open choices</h2>`+
-    tcard("All bills as","Try Monthly and Yearly at the top too.",optHTML("layout"))+
-    tcard("The month, split by category","",fld("Under the total",chips("brk",[["off","Off"],["bar","Bar"],["key","Bar and key"]]),"One bar, a segment per category in its colour, costliest first. The key names the four biggest with their share. Tap a segment or a name to jump to its card."))+(S.layout==="pockets"?tcard("The bills in a pocket, drawn as","",optHTML("ix")):"")+
-    (S.layout==="card"?tcard("Category cards","Each changes the cards as you tap it.",
-      fld("Colour line",chips("ccLine",[["bottom","Bottom"],["left","Left edge"],["head","Washed header"],["none","None"]]),"Bottom matches the grid's category card. Left reads down the list; a washed header ties the colour to the name and total.")+
-      fld("Share of the month",chips("ccShare",[["off","Off"],["bar","Bar"]]),"A bar under the name, in its colour, and its percentage under the total: which category is the big one, at a glance.")+
-      fld("Each bill",chips("ccRows",[["full","Name and what's ahead"],["compact","Name only"]]),"Name only is shorter: more categories on a screen, less to read.")+
-      fld("Between bills",chips("ccDiv",[["hair","Hairlines"],["none","Nothing"]]),"Without lines, the spacing alone groups them, and the card reads calmer.")+
-      fld("Order in a card",chips("ccOrder",[["cost","Costliest first"],["soon","Soonest first"]]),"Soonest first answers what's coming; costliest first, where the money goes.")+
-      fld("Due within a week",chips("ccSoon",[["plain","Plain"],["mark","Marked"]]),"Marked: a dot in its colour and its date in ink, so what's due soon stands out.")):"")+
+    `<h2>Settled</h2>`+tcard("All bills","Read-only: a place to check bills and totals. One category card per category, costliest first: its picture, name and total, a strip of its colour along the bottom, and its bills by name and figure, costliest first, with hairlines between. Monthly or Yearly at the top. Categories change in Settings, bills from the timeline.","")+
     `<details class="tc lies-c"><summary class="ch">Prototype settings</summary>`+
     tcard("Look","",fld("Boil",chips("boil",[["off","Off"],["editor","Editor's card"],["all","Everywhere"]]))+fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+
       fld("Motion",chips("motion",[["none","None"],["quick","Quick"]])))+
