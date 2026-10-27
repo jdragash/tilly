@@ -8,6 +8,8 @@ struct TodayDivider: View {
     /// The divider's scroll target and its key among the reported frames: the month button lands it
     /// in the middle of the list.
     static let scrollID = "today-divider"
+    /// Its unscaled size among the reported frames, under its own key.
+    static let sizeID = "today-divider-size"
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale

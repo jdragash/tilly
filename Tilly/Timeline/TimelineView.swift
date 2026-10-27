@@ -421,6 +421,10 @@ struct TimelineView: View {
                         }
                         .id(month.id)
                     }
+                    // Where a day below every listed month falls.
+                    Color.clear
+                        .frame(height: Tokens.Size.scrollMarker)
+                        .id(TimelineFloor.scrollID)
                     floorLine(window.floor)
                         .onGeometryChange(for: CGFloat.self) { proxy in
                             proxy.frame(in: .named(Self.contentSpace)).maxY
@@ -581,8 +585,10 @@ struct TimelineView: View {
         }
     }
 
-    /// A day with charges opens the days: the timeline, with that day's first row just under its
-    /// month's pinned header, the day's rows marked and then fading. The timeline stays mounted
+    /// Any day of the month opens the days: the timeline, with that day's first row just under its
+    /// month's pinned header, the day's rows marked and then fading. A day with nothing on it lands
+    /// where it would fall, in the middle of what shows, with nothing marking it; today with nothing
+    /// on it lands the Today line there, as the month button does. The timeline stays mounted
     /// beneath the grid, so its proxy is there to scroll.
     ///
     /// Two scrolls, a turn apart, neither animated. The month first, because a lazy list resolves
@@ -592,25 +598,79 @@ struct TimelineView: View {
     /// no height of its own the marker's top lands at `f × (listHeight − bottomClearance)`.
     /// Measured: 59.86 under a 60pt header, from the current month and from three months back.
     private func openDay(_ date: Date) {
-        guard let scrollProxy else { return }
+        guard scrollProxy != nil else { return }
         let day = calendar.startOfDay(for: date)
-        let month = MonthKey(containing: day, calendar: calendar)
-        markedDay = day
+        let hasRows = sections[MonthKey(containing: day, calendar: calendar)]?.entries.contains { $0.date == day } ?? false
+        markedDay = hasRows ? day : nil
         zoomFrames.openedDay = day
         setLevel(.day, zoom: zoomFrames.zoom(forDay: day))
+        land(on: day) {
+            if hasRestoredPlace { saveCurrentPlace() }
+            withAnimation(.easeOut(duration: Tokens.Motion.dayMark)) { markedDay = nil }
+        }
+    }
+
+    /// What a day lands on in the list, and how.
+    private enum DayLanding {
+        /// A day with rows: its marker just under the header.
+        case rows(MonthKey)
+        /// Today with nothing on it, while the divider shows.
+        case divider(MonthKey)
+        /// A zero-high marker, where a day without a charge would fall, centred.
+        case marker(AnyHashable, MonthKey)
+    }
+
+    private func landing(for day: Date) -> DayLanding {
+        let month = MonthKey(containing: day, calendar: calendar)
+        let months = visibleMonths
+        if months.contains(month) {
+            let section = section(for: month)
+            if section.entries.contains(where: { $0.date == day }) { return .rows(month) }
+            if day == calendar.startOfDay(for: today), section.isCurrent, section.hasChargedEntry {
+                return .divider(month)
+            }
+            return .marker(AnyHashable(OccurrenceRow.dayScrollID(day)), month)
+        }
+        // Not listed, as an empty month isn't: where it would be, at the top of the nearest month below.
+        guard let below = months.first(where: { $0 < month }) else {
+            return .marker(AnyHashable(TimelineFloor.scrollID), months.last ?? month)
+        }
+        let section = section(for: below)
+        let seams = DaySeams.seams(for: section, today: today, calendar: calendar)
+        let first = seams[0]?.first ?? section.entries.first?.date ?? seams[section.entries.count]?.first
+        return .marker(first.map { AnyHashable(OccurrenceRow.dayScrollID($0)) } ?? AnyHashable(below.id), below)
+    }
+
+    /// Lands `day` as `openDay` describes, unanimated, then calls `done` once the list is still.
+    private func land(on day: Date, then done: @escaping () -> Void = {}) {
+        guard let scrollProxy else { return }
+        let landing = landing(for: day)
+        let month: MonthKey
+        switch landing {
+        case .rows(let key), .divider(let key), .marker(_, let key): month = key
+        }
         isProgrammaticScroll = true
         // The month first: a lazy list resolves only ids it has laid out, and a month far from
         // where the list rests hasn't been. Landing on it lays it out and measures its header.
         scrollProxy.scrollTo(month.id, anchor: .top)
         DispatchQueue.main.async {
             let headerHeight = headerHeights[month] ?? 0
-            let room = listHeight - bottomClearance
-            let fraction = room > 0 ? min(1, headerHeight / room) : 0
-            scrollProxy.scrollTo(OccurrenceRow.dayScrollID(day), anchor: UnitPoint(x: 0.5, y: fraction))
+            switch landing {
+            case .rows:
+                let room = listHeight - bottomClearance
+                let fraction = room > 0 ? min(1, headerHeight / room) : 0
+                scrollProxy.scrollTo(OccurrenceRow.dayScrollID(day), anchor: UnitPoint(x: 0.5, y: fraction))
+            case .divider:
+                // Its own height, not its frame's, which the zoom is scaling; until it has laid out
+                // it is centred as a zero-high marker would be.
+                let height = rowFrames.frames[TodayDivider.sizeID]?.height ?? 0
+                scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: height, in: month))
+            case .marker(let id, _):
+                scrollProxy.scrollTo(id, anchor: dividerAnchor(height: 0, in: month))
+            }
             DispatchQueue.main.async {
                 isProgrammaticScroll = false
-                if hasRestoredPlace { saveCurrentPlace() }
-                withAnimation(.easeOut(duration: Tokens.Motion.dayMark)) { markedDay = nil }
+                done()
             }
         }
     }

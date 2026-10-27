@@ -241,6 +241,13 @@ only to hand the gesture's location in, if the frames already reported aren't en
 
 ## Lessons
 
+- **Step 1's map can't place a passed day at the divider's own index.** Days keyed to the row the
+  Today line sits before straddle the line; `MonthSectionView` splits them by date, future above.
+- **Read the divider's height from its size, not its frame,** when landing under a zoom: the
+  timeline is scaled then, and the frame read 6.3pt for a 31.7pt line, putting it 1.3pt off.
+- **An empty day near either end of the list lands as near the middle as the content allows**:
+  in a floor month the list was already at its end (marker at 184, 469 and 608 for a 420 middle).
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

@@ -26,10 +26,15 @@ struct MonthSectionView: View {
     @Environment(\.calendar) private var calendar
 
     var body: some View {
+        let seams = DaySeams.seams(for: section, today: today, calendar: calendar)
+        let todayStart = calendar.startOfDay(for: today)
         VStack(spacing: 0) {
             ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
+                let dividerHere = index == todayDividerIndex
+                // Days still to come sit above the divider, passed ones below it.
+                markers(seams[index]?.filter { !dividerHere || $0 > todayStart })
                 // Before the day's scroll marker, so a calendar tap on today lands on the row.
-                if index == todayDividerIndex {
+                if dividerHere {
                     TodayDivider(today: today)
                         .id(TodayDivider.scrollID)
                         .onGeometryChange(for: CGRect.self) { proxy in
@@ -37,7 +42,13 @@ struct MonthSectionView: View {
                         } action: { frame in
                             onRowFrame(TodayDivider.scrollID, frame)
                         }
+                        // Its own size too, which a zoom's scale doesn't touch: landing on it
+                        // under the zoom reads its height while the frame above is still scaled.
+                        .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
+                            onRowFrame(TodayDivider.sizeID, CGRect(origin: .zero, size: size))
+                        }
                         .onDisappear { onRowFrame(TodayDivider.scrollID, nil) }
+                    markers(seams[index]?.filter { $0 < todayStart })
                 }
                 // A day's first row carries the day's scroll target: zero high, so the
                 // target's top is the row's top and landing on it needs no row height.
@@ -67,6 +78,7 @@ struct MonthSectionView: View {
                 }
                 .onDisappear { onRowFrame(entry.id, nil) }
             }
+            markers(seams[section.entries.count])
             if !section.entries.isEmpty {
                 Color.clear
                     .frame(height: Tokens.Space.stackMonthBottom)
@@ -79,6 +91,16 @@ struct MonthSectionView: View {
                     .padding(.horizontal, Tokens.Space.gutter * 2)
                     .padding(.top, Tokens.Space.section)
             }
+        }
+    }
+
+    /// Where days without a charge fall, so a calendar tap on one has somewhere to land: zero high
+    /// and drawing nothing, carrying the same scroll id a day with rows does.
+    @ViewBuilder private func markers(_ days: [Date]?) -> some View {
+        ForEach(days ?? [], id: \.self) { day in
+            Color.clear
+                .frame(height: Tokens.Size.scrollMarker)
+                .id(OccurrenceRow.dayScrollID(day))
         }
     }
 }
