@@ -10,6 +10,7 @@ move it to Done in the same change.
    on-device word similarity (`NLEmbedding`); Apple's on-device model as an optional extra.
 6. [ ] When every charge this month is done, the timeline still shows the plain Today line above
    them, which looks awkward. Design a fuller, positive ending instead, like "All done this month".
+
 ## Done
 
 1. [x] Past charges don't treat all bills alike. A bill with an end date shows its charges in the
