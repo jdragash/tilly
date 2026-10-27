@@ -24,7 +24,10 @@ struct TimelineView: View {
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasRestoredPlace = false
     @State private var isProgrammaticScroll = false
-    @State private var isScrollHalted = false
+    /// Stops the list's glide where it is, for the month button and All / Extras.
+    @State private var glideStopper = GlideStopper()
+    /// How many times the month button's return has had to start again, overtaken by a fling.
+    @State private var returnRestarts = 0
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
     @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
@@ -428,9 +431,9 @@ struct TimelineView: View {
                     Color.clear.frame(height: floorSpacer)
                 }
                 .coordinateSpace(name: Self.contentSpace)
+                .background { GlideStopperAnchor(stopper: glideStopper) }
                 .scrollTargetLayout()
             }
-            .scrollDisabled(isScrollHalted)
             .contentMargins(.bottom, bottomClearance, for: .scrollContent)
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                 scrollOffset = newValue
@@ -439,8 +442,16 @@ struct TimelineView: View {
                 containerHeight = newValue
                 updateFloorSpacer()
             }
-            .onScrollPhaseChange { _, newPhase in
-                if newPhase == .idle && !isProgrammaticScroll && hasRestoredPlace { saveCurrentPlace() }
+            .onScrollPhaseChange { oldPhase, newPhase in
+                // The return was overtaken: the fling the tap cut short got its momentum back
+                // (its finger lifted a moment after the tap, or the halt didn't hold). Stop it again
+                // and start the return over, a couple of times at most.
+                if isProgrammaticScroll, oldPhase == .animating, newPhase == .decelerating,
+                   level == .day, returnRestarts < Self.returnRestartLimit {
+                    returnRestarts += 1
+                    returnToResting(restarting: true)
+                }
+            if newPhase == .idle && !isProgrammaticScroll && hasRestoredPlace { saveCurrentPlace() }
             }
             .onAppear { scrollProxy = proxy }
         }
@@ -523,7 +534,7 @@ struct TimelineView: View {
     /// the list had shrunk under it, it ran off the end and showed nothing at all (measured).
     private func showExtrasChange() {
         guard window != nil else { return }
-        isScrollHalted = true
+        glideStopper.stop()
         let anchorMonth = monthUnderMiddle()
         let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
         rebuildSections()
@@ -534,7 +545,6 @@ struct TimelineView: View {
         }
         isProgrammaticScroll = true
         DispatchQueue.main.async {
-            isScrollHalted = false
             if let target { restoreAnchor(target, to: max(0, desiredOffset)) }
             DispatchQueue.main.async { isProgrammaticScroll = false }
         }
@@ -647,6 +657,9 @@ struct TimelineView: View {
         }
         scrollToRow(tries: Self.frameTries)
     }
+
+    /// Times the month button's return starts over when a fling overtakes it.
+    private static let returnRestartLimit = 2
 
     /// Turns a jump waits for its row to lay out before it gives up.
     private static let frameTries = 10
@@ -1043,19 +1056,20 @@ struct TimelineView: View {
     /// own duration is timing-dependent, not sufficient in principle, but held in every
     /// trial. That delay is derived from `returnDuration` rather than hard-coded, because the
     /// duration varies with distance and the two must not drift apart.
-    private func returnToResting() {
+    private func returnToResting(restarting: Bool = false) {
         guard let window, let scrollProxy else { return }
+        if !restarting { returnRestarts = 0 }
         let duration = returnDuration
         let hasDivider = section(for: window.current).hasChargedEntry
         isProgrammaticScroll = true
         // A tap lands while the list is still flying, and an animated `scrollTo` issued then
-        // loses to the deceleration already in flight — measured: the phase stayed
+        // loses to the deceleration already in flight — measured on device: the phase stayed
         // `decelerating`, never became `animating`, and the list carried on to where the fling
-        // was going. Switching scrolling off for one turn stops the momentum where it is, with
-        // no jump, so the return is issued into a list that is standing still.
-        isScrollHalted = true
+        // was going. `scrollDisabled` for a turn didn't stop it on an iPhone; the scroll view's
+        // own offset, set to where it is, does, so the return is issued a turn later into a list
+        // that is standing still.
+        glideStopper.stop()
         DispatchQueue.main.async {
-            isScrollHalted = false
             // Near enough that the divider is laid out: one glide to it. Otherwise the month first,
             // since a lazy list resolves only ids it has laid out, and then on to the divider once
             // the month's glide is over: two animated scrolls a turn apart fight.
