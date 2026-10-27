@@ -13,14 +13,12 @@ struct CardProgress: Equatable, Sendable {
     private let amountMissing: Bool
     private let nameMissing: Bool
     private let categoryMissing: Bool
-    private let isMakingCategory: Bool
 
-    init(draft: ExpenseDraft, categoryExists: Bool, isMakingCategory: Bool) {
+    init(draft: ExpenseDraft, categoryExists: Bool) {
         let editAtZero = draft.baseline != nil && draft.isZero
         self.amountMissing = draft.amount == nil && !editAtZero
         self.nameMissing = draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         self.categoryMissing = !categoryExists
-        self.isMakingCategory = isMakingCategory
     }
 
     /// Amount: `draft.amount == nil`, except an edit at €0 (`baseline != nil && isZero`), which is
@@ -35,7 +33,7 @@ struct CardProgress: Equatable, Sendable {
     }
 
     /// The first missing part after `part` in the order amount, name, category, wrapping round;
-    /// `nil` when nothing is missing. Skips the category while one is being made. With no part,
+    /// `nil` when nothing is missing. With no part,
     /// the first missing from the start. Date and repeat sit where `CardPart` places them, so
     /// after either comes the category.
     func next(after part: CardPart?) -> CardPart? {
@@ -52,14 +50,11 @@ struct CardProgress: Equatable, Sendable {
     }
 
     /// The part that breathes: the first missing of amount, name, category, but never the one
-    /// focused, never while the amount is missing, and never the category while one is made.
+    /// focused, never while the amount is missing.
     func breathing(focused: CardPart?) -> CardPart? {
         guard !amountMissing else { return nil }
         return Self.required.first { $0 != focused && isOpen($0) }
     }
 
-    /// Missing, and not the category while one is being made.
-    private func isOpen(_ part: CardPart) -> Bool {
-        isMissing(part) && !(part == .category && isMakingCategory)
-    }
+    private func isOpen(_ part: CardPart) -> Bool { isMissing(part) }
 }

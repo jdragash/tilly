@@ -24,7 +24,10 @@ struct TimelineView: View {
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasRestoredPlace = false
     @State private var isProgrammaticScroll = false
-    @State private var isScrollHalted = false
+    /// Stops the list's glide where it is, for the month button and All / Extras.
+    @State private var glideStopper = GlideStopper()
+    /// How many times the month button's return has had to start again, overtaken by a fling.
+    @State private var returnRestarts = 0
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
     @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
@@ -54,7 +57,9 @@ struct TimelineView: View {
     /// A save's close refreshes the months itself, before the sheet goes, to find its row.
     @State private var refreshedOnClose = false
     /// Which view shows. The app opens on the one it was left on, as Calendar does.
-    @AppStorage("viewMode") private var mode: ViewMode = .firstRun
+    /// The category view is set aside for now: the timeline is the only view, and a stored choice
+    /// of categories is left in place for when it returns.
+    private let mode: ViewMode = .timeline
     /// The month the category view shows. Set properly once the window is.
     @State private var categoryMonth = MonthKey(containing: Date(), calendar: .current)
     /// How far the Calendar is zoomed, and the month its grid shows (a `MonthKey.id`; negative until
@@ -266,8 +271,8 @@ struct TimelineView: View {
         }
         .coordinateSpace(name: CalendarZoom.space)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { zoomFrames.size = $0 }
-        // The pair never moves: it sits in the `headerRow` band where headers pin, and each
-        // header hands off beneath it. Over the empty state too, where + is the next step.
+        // Settings never moves: it sits in the `headerRow` band where headers pin, and each
+        // header hands off beneath it. Over the empty state too.
         // While a finger drags across the lanes the controls step aside with the month's name,
         // and the readout takes the row alone. The bottom row stays: hiding it felt wrong.
         .overlayPreferenceValue(CategoryReadoutKey.self, alignment: .topTrailing) { readout in
@@ -287,7 +292,7 @@ struct TimelineView: View {
                         step: { calendarMonthID = shown.advanced(by: $0).id }
                     )
                 }
-                HeaderControls(mode: $mode) { editor = .add }
+                HeaderControls { isSettingsPresented = true }
             }
             .frame(height: Tokens.Size.headerRow)
             .padding(.trailing, Tokens.Space.gutter)
@@ -297,7 +302,7 @@ struct TimelineView: View {
         }
         // Under the top row's trailing end at every Calendar level, where the month's and the
         // year's titles begin, and over the pinned header on the timeline. It doesn't zoom with
-        // the levels: like the glass pair, it stays put while they change beneath it.
+        // the levels: like the settings button, it stays put while they change beneath it.
         .overlay(alignment: .topTrailing) {
             if mode == .timeline && !expenses.isEmpty && window != nil {
                 ExtrasToggle(extrasOnly: $extrasOnly)
@@ -309,7 +314,7 @@ struct TimelineView: View {
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         // Above the glass controls, which fade while it shows: the readout takes the header row.
         .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
-        .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
+        .sheet(isPresented: $isSettingsPresented) { SettingsSheet(today: today) }
         .sheet(isPresented: $isBillsPresented) { AllBillsSheet(today: today) }
     }
 
@@ -319,7 +324,7 @@ struct TimelineView: View {
             if expenses.isEmpty {
                 TimelineEmptyState()
             } else if let window {
-                // The days' top row holds the way back to the month; the glass pair floats over
+                // The days' top row holds the way back to the month; the settings button floats over
                 // its trailing end from `content`. Months pin beneath the row, not in it.
                 VStack(spacing: 0) {
                     dayTopRow(window)
@@ -426,9 +431,9 @@ struct TimelineView: View {
                     Color.clear.frame(height: floorSpacer)
                 }
                 .coordinateSpace(name: Self.contentSpace)
+                .background { GlideStopperAnchor(stopper: glideStopper) }
                 .scrollTargetLayout()
             }
-            .scrollDisabled(isScrollHalted)
             .contentMargins(.bottom, bottomClearance, for: .scrollContent)
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                 scrollOffset = newValue
@@ -437,8 +442,16 @@ struct TimelineView: View {
                 containerHeight = newValue
                 updateFloorSpacer()
             }
-            .onScrollPhaseChange { _, newPhase in
-                if newPhase == .idle && !isProgrammaticScroll && hasRestoredPlace { saveCurrentPlace() }
+            .onScrollPhaseChange { oldPhase, newPhase in
+                // The return was overtaken: the fling the tap cut short got its momentum back
+                // (its finger lifted a moment after the tap, or the halt didn't hold). Stop it again
+                // and start the return over, a couple of times at most.
+                if isProgrammaticScroll, oldPhase == .animating, newPhase == .decelerating,
+                   level == .day, returnRestarts < Self.returnRestartLimit {
+                    returnRestarts += 1
+                    returnToResting(restarting: true)
+                }
+            if newPhase == .idle && !isProgrammaticScroll && hasRestoredPlace { saveCurrentPlace() }
             }
             .onAppear { scrollProxy = proxy }
         }
@@ -521,7 +534,7 @@ struct TimelineView: View {
     /// the list had shrunk under it, it ran off the end and showed nothing at all (measured).
     private func showExtrasChange() {
         guard window != nil else { return }
-        isScrollHalted = true
+        glideStopper.stop()
         let anchorMonth = monthUnderMiddle()
         let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
         rebuildSections()
@@ -532,7 +545,6 @@ struct TimelineView: View {
         }
         isProgrammaticScroll = true
         DispatchQueue.main.async {
-            isScrollHalted = false
             if let target { restoreAnchor(target, to: max(0, desiredOffset)) }
             DispatchQueue.main.async { isProgrammaticScroll = false }
         }
@@ -646,6 +658,9 @@ struct TimelineView: View {
         scrollToRow(tries: Self.frameTries)
     }
 
+    /// Times the month button's return starts over when a fling overtakes it.
+    private static let returnRestartLimit = 2
+
     /// Turns a jump waits for its row to lay out before it gives up.
     private static let frameTries = 10
 
@@ -738,13 +753,12 @@ struct TimelineView: View {
         }
     }
 
-    /// The month button bottom left and All bills and settings bottom right, always visible, placed as
+    /// The month button bottom left and All bills and + bottom right, always visible, placed as
     /// Calendar's bottom row is. How far it reaches above the home indicator's safe area, which
     /// grows with Dynamic Type, sets the list's bottom inset so the floor line clears it. See "Getting back" in `docs/DESIGN.md`.
     private func bottomRow(bottomInset: CGFloat) -> some View {
         HStack {
             MonthButton(
-                month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today,
                 // The year has no month to go back to.
                 action: mode == .timeline && level == .year ? nil : {
                     if mode == .categories, let window {
@@ -757,7 +771,7 @@ struct TimelineView: View {
                 }
             )
             Spacer()
-            BottomTrailingControls(onBills: { isBillsPresented = true }, onSettings: { isSettingsPresented = true })
+            BottomTrailingControls(onBills: { isBillsPresented = true }, onAdd: { editor = .add })
         }
         .padding(.horizontal, Tokens.Space.bottomRowInset)
         .padding(.bottom, Tokens.Space.bottomRowInset)
@@ -1042,36 +1056,79 @@ struct TimelineView: View {
     /// own duration is timing-dependent, not sufficient in principle, but held in every
     /// trial. That delay is derived from `returnDuration` rather than hard-coded, because the
     /// duration varies with distance and the two must not drift apart.
-    private func returnToResting() {
+    private func returnToResting(restarting: Bool = false) {
         guard let window, let scrollProxy else { return }
+        if !restarting { returnRestarts = 0 }
         let duration = returnDuration
+        let hasDivider = section(for: window.current).hasChargedEntry
         isProgrammaticScroll = true
         // A tap lands while the list is still flying, and an animated `scrollTo` issued then
-        // loses to the deceleration already in flight — measured: the phase stayed
+        // loses to the deceleration already in flight — measured on device: the phase stayed
         // `decelerating`, never became `animating`, and the list carried on to where the fling
-        // was going. Switching scrolling off for one turn stops the momentum where it is, with
-        // no jump, so the return is issued into a list that is standing still.
-        isScrollHalted = true
+        // was going. `scrollDisabled` for a turn didn't stop it on an iPhone; the scroll view's
+        // own offset, set to where it is, does, so the return is issued a turn later into a list
+        // that is standing still.
+        glideStopper.stop()
         DispatchQueue.main.async {
-            isScrollHalted = false
+            // Near enough that the divider is laid out: one glide to it. Otherwise the month first,
+            // since a lazy list resolves only ids it has laid out, and then on to the divider once
+            // the month's glide is over: two animated scrolls a turn apart fight.
+            if hasDivider, let divider = rowFrames.frames[TodayDivider.scrollID] {
+                withAnimation(.easeInOut(duration: duration)) {
+                    scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
+                }
+                settleReturn(after: duration, atMonthTop: false)
+                return
+            }
             withAnimation(.easeInOut(duration: duration)) {
                 scrollProxy.scrollTo(window.current.id, anchor: .top)
             }
+            guard hasDivider else {
+                settleReturn(after: duration, atMonthTop: true)
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration + Tokens.Motion.returnSettle) {
+                guard let divider = rowFrames.frames[TodayDivider.scrollID] else {
+                    settleReturn(after: 0, atMonthTop: true)
+                    return
+                }
+                let onward = Tokens.Motion.returnDurationMin
+                withAnimation(.easeInOut(duration: onward)) {
+                    scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
+                }
+                settleReturn(after: onward, atMonthTop: false)
+            }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.06) {
+    }
+
+    /// The anchor that puts the divider's centre in the middle of what shows of the list: between
+    /// the pinned header's bottom and the top of the bottom row's clearance. `scrollTo` lands a
+    /// target's point at fraction `f` on the container's point at `f`, the container net of its
+    /// bottom margin, so a target `h` high centred at `m` needs `f = (m − h/2) / (C − h)`.
+    private func dividerAnchor(height: CGFloat, in month: MonthKey) -> UnitPoint {
+        let container = containerHeight
+        let middle = ((headerHeights[month] ?? 0) + container) / 2
+        let room = container - height
+        let fraction = room > 0 ? min(1, max(0, (middle - height / 2) / room)) : 0
+        return UnitPoint(x: 0.5, y: fraction)
+    }
+
+    /// Once the return's glide is over: the app's own scroll ends, and the place is saved.
+    private func settleReturn(after delay: TimeInterval, atMonthTop: Bool) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay + Tokens.Motion.returnSettle) {
             isProgrammaticScroll = false
-            // The reader is now at the resting position by construction, so `scrollOffset`
-            // *is* `restingContentOffset`. Saying so is not belt-and-braces: the cache is
-            // normally written as `scrollOffset + frame.minY` from two geometry callbacks
+            // At the month's top the reader is at the resting position by construction, so
+            // `scrollOffset` *is* `restingContentOffset`. Saying so is not belt-and-braces: the
+            // cache is normally written as `scrollOffset + frame.minY` from two geometry callbacks
             // that arrive independently, and during an animated scroll they are sampled at
-            // different instants — measured on device leaving the cache 702, 493 and 0.2
-            // points wrong across three otherwise identical returns, and the next return's
-            // duration is read from it.
-            restingContentOffset = scrollOffset
+            // different instants — measured on device leaving the cache 702, 493 and 0.2 points
+            // wrong across three otherwise identical returns, and the next return's duration is
+            // read from it. At the divider it isn't, so the cache is left to the header.
+            if atMonthTop { restingContentOffset = scrollOffset }
             // And save it. The scroll-idle save is suppressed while this view's own scroll is
             // in flight, and a fling cut short by this tap never settled to save either — so
             // without this the saved place is wherever the fling was heading, and a relaunch
-            // returns there rather than to the month just landed on.
+            // returns there rather than to the place just landed on.
             if hasRestoredPlace { saveCurrentPlace() }
         }
     }

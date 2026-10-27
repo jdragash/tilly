@@ -33,10 +33,9 @@ measurement, so Opus builds it.
   frame reports (a turn later wasn't always enough: 128pt off), both unanimated, to the row's own id.
   A zero-high marker needs no row height (59.86 under a 60pt header). Two *animated* scrolls a turn
   apart fight. A row's frame lags its scroll by a turn: measure at rest.
-- **A scroll issued while the list glides is dropped.** Rebuilding the months mid-glide lost the
-  anchor, and once the list had shrunk under the glide it ran off the end, blank. Halting scrolling
-  for a turn (`scrollDisabled`) stops it in the Simulator; on an iOS 27 iPhone even that hasn't
-  stopped the glide. Unsolved: see the month button. Test it on a device (`simulator.md`).
+- **A scroll issued mid-glide is dropped,** and `scrollDisabled` didn't stop it on an iPhone. Stop
+  it with the `UIScrollView`'s `setContentOffset(contentOffset, animated: false)` (`GlideStopper`),
+  scroll a turn later, and restart if momentum overtakes it (`.animating` → `.decelerating`).
 - **An animated `scrollTo` has no reliable completion;** wait out its duration. Avoid `scrollTo(y:)`
   after an id-based scroll: it blanked the list.
 - **Re-anchoring to a pinned header after a save moved the list 136pt;** `refreshWindow()` didn't.

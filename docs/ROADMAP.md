@@ -21,7 +21,7 @@ The smallest thing that does the job.
 | Expense editor | Done | Adding and editing a bill on a card: tapping a row, "this charge only or future charges", deleting. Done as a card you complete; the dashed and solid timeline and the grid picker are being built (`docs/briefs/dashed-and-solid/brief.md`). Shake to undo deferred. |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
 | Categories | Done, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming, changing an emoji and deleting there aren't designed yet. |
-| Category view | Done | Lanes across one month, a dot per charge, beside the calendar in the view menu; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
+| Category view | Set aside | Hidden from the shell while the calendar is tested alone; the code stays. Lanes across one month, a dot per charge; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
 | Token gallery | — | `DesignSystem/Gallery.swift`: every token and component in light, dark and accessibility sizes. |
 
 **Done when:** it holds a real set of recurring expenses and gets opened instead of guessed at.

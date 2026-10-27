@@ -49,6 +49,11 @@ upcoming and charged, skipped, a day with several charges.
 CloudKit-compatible from day one: every property optional or defaulted, no unique constraints,
 relationships optional. Sync is off in v1.
 
+## Nested corners
+
+A ring or outline round a rounded shape takes the shape's radius plus the gap between them, as a
+token computed from the two (`pickerCard + pickerRingOutset`), never a radius of its own.
+
 ## Size
 
 A file past a few hundred lines is usually doing too much. Dime's 98KB `InsightsView.swift` is

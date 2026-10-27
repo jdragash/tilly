@@ -1,17 +1,16 @@
 import SwiftUI
 
-/// All bills and settings: one glass capsule at the bottom right, in every view, as the view
-/// button and + share one at the top. Applied with `glassEffect` on the group rather than the
+/// All bills and +: one glass capsule at the bottom right, in every level. Applied with `glassEffect` on the group rather than the
 /// `.glass` button style, which pads around its label (see `.claude/rules/swiftui-controls.md`),
 /// so the capsule is exactly `Tokens.Size.bottomButton` high, as the month button beside it is.
 struct BottomTrailingControls: View {
     let onBills: () -> Void
-    let onSettings: () -> Void
+    let onAdd: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             button("list.bullet", label: "All bills", action: onBills)
-            button("gearshape", label: "Settings", action: onSettings)
+            button("plus", label: "Add an expense", action: onAdd)
         }
         .glassEffect(.regular.interactive(), in: Capsule())
     }

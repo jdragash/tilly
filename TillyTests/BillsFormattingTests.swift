@@ -28,16 +28,18 @@ import TillyCore
         )
     }
 
+    static let today = date(2026, 10, 27)
+
     static func note(_ row: BillRow, _ period: BillPeriod, locale: Locale = euro) -> String {
-        BillsFormatting.note(for: row, period: period, calendar: calendar, locale: locale)
+        BillsFormatting.note(for: row, period: period, today: today, calendar: calendar, locale: locale)
     }
 
-    @Test func aMonthlyBillInMonthlyIsJustMonthly() {
-        #expect(Self.note(Self.row(), .month) == "Monthly")
+    @Test func aMonthlyBillInMonthlyHasNoNote() {
+        #expect(Self.note(Self.row(), .month) == "")
     }
 
-    @Test func aYearlyBillInYearlyIsJustYearly() {
-        #expect(Self.note(Self.row(every: 1, .year), .year) == "Yearly")
+    @Test func aYearlyBillInYearlyHasNoNote() {
+        #expect(Self.note(Self.row(every: 1, .year), .year) == "")
     }
 
     @Test func aYearlyBillInMonthlyNamesItsCharge() {
@@ -79,6 +81,19 @@ import TillyCore
         #expect(Self.note(row, .month) == "ends 12/27")
         let named = Self.row(charge: 640, every: 1, .year, state: .ends(Self.date(2027, 12, 10)))
         #expect(Self.note(named, .month) == "\u{20AC}640 yearly \u{00B7} ends 12/27")
+    }
+
+    @Test func anEndSoonReadsThisMonthOrNextMonth() {
+        let thisMonth = Self.row(state: .ends(Self.date(2026, 10, 30)))
+        #expect(Self.note(thisMonth, .month) == "ends this month")
+        let nextMonth = Self.row(state: .ends(Self.date(2026, 11, 5)))
+        #expect(Self.note(nextMonth, .month) == "ends next month")
+        let after = Self.row(state: .ends(Self.date(2026, 12, 5)))
+        #expect(Self.note(after, .month) == "ends 12/26")
+        let acrossAYear = Self.row(state: .ends(Self.date(2027, 1, 5)))
+        #expect(Self.note(acrossAYear, .month) == "ends 01/27")
+        let named = Self.row(charge: 640, every: 1, .year, state: .ends(Self.date(2026, 11, 5)))
+        #expect(Self.note(named, .month) == "\u{20AC}640 yearly \u{00B7} ends next month")
     }
 
     @Test func anEndedBillReadsEndedAlone() {

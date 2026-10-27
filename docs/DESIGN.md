@@ -29,17 +29,18 @@ Tilly, Drawn: paper with a faint grain under everything, sheets included; colour
 with a rough edge that blooms; SF Pro Rounded, and no handwriting. A category's picture is a symbol,
 roughened, in its colour on a faint wash, or white on its own card. Every picture boils, three
 drawings swapped eight times a second, still under Reduce Motion, unless boil is turned off. A category made before symbols shows its emoji until one is picked. The glass stays stock.
+A ring or outline round a rounded shape is concentric: its corner radius is the shape's plus the gap.
+A category's name takes two lines, then shrinks to 80% at most, then is cut, on every card.
 
 ---
 
 ## The shell
 
-Laid out like iOS Calendar, with two views, Calendar and Categories, opening on the one you left.
-A glass pair floats at the right end of the top row: the view button, whose icon names the view
-you're in and whose menu lists the views with a checkmark on the current one, and +. The month
-button sits bottom left; All bills and settings share a glass capsule bottom right, in every view.
-Everything else is a sheet, so the reader never leaves their place: no tab bar, no pushed pages.
-Settings keeps the categories in your order: drag to reorder, tap a picture or a colour to change it.
+Laid out like iOS Calendar, with one view, Calendar. Settings floats alone in glass at the right
+end of the top row. The month button, `Today`, sits bottom left; All bills and + share a glass
+capsule bottom right, at every level.
+Everything else is a sheet, so the reader never leaves their place: no tab bar, and pages push only
+inside Settings, where a `Categories` row opens the categories (`The editor`).
 
 ### Amounts
 
@@ -89,10 +90,11 @@ figures read `+€351 on top` or `Nothing on top`. Switching holds the month bei
 
 ### Getting back
 
-The month button names the current month, `September`, and stays in its level. Over the days it
-scrolls back, with a duration that scales with distance, even mid-flick; over a month it pages back
+The month button says `Today` and stays in its level. Over the days it
+scrolls back to today, the Today line in the middle of what shows of the list, or to the month's top
+before anything is charged, with a duration that scales with distance, even mid-flick; over a month it pages back
 to this one; over the year, which already starts now, it isn't there. It stays as it is while you're
-already there, like Calendar's Today. VoiceOver reads "Back to September". It is a system glass
+already there, like Calendar's Today. VoiceOver reads "Back to today". It is a system glass
 button at Calendar's size, weight and place, 28pt in from the screen's edges, and the last line of
 history clears it.
 
@@ -152,6 +154,8 @@ where it was.
 
 ## The category view
 
+Set aside: the shell doesn't reach it, and its code stays for when it returns.
+
 One month, one lane per category across its days, in the Settings order. Each charge is a dot on its
 day in its category's colour: filled once charged, a ring while still to come, a dashed ring at €0.
 A dot's area follows its amount on one scale for every month, so paging never resizes anything. A
@@ -173,14 +177,15 @@ colour, one of eight, shows here, on the year and on the timeline's cards.
 
 ## All bills
 
-A sheet from the list button: every bill once, however many charges it has. Monthly / Yearly at the
-top, kept across launches; Monthly is a bill's year over twelve, so a yearly bill reads as its share
-of a month. The title, `All bills` or the picked category, sits over `€1,563 a month`; chips pick
-out one category. Each category is a card with its total, costliest first, and its bills costliest
-first: the name, a line saying what's actually charged when the figure isn't (`€640 yearly`) and
-what's ahead (`€25 until Nov 10`, `from Oct 18`, `ends 12/26`), and the figure. No bill counts.
-Ended bills wait behind `2 ended bills` under the cards, each with what it cost in all. Tapping a
-bill opens its next charge in the editor, an ended one its last.
+A sheet from the list button, read only: a quick check of every bill and what it costs. Monthly /
+Yearly sits top right, kept across launches; Monthly is a bill's year over twelve. `All bills` sits
+over `€1,552 a month`. Each category is a paper card, costliest first, as the grid draws it: its
+picture on the wash, name and total in a 58pt header, a strip of its colour along the bottom, and
+its bills under hairlines, 44pt rows, costliest first: the name, then in grey on the same line what's
+actually charged when the figure isn't (`€640 yearly`) and an end (`ends next month`, `ends 12/26`),
+then the figure. Ended bills wait behind
+`2 ended bills` under the cards. Nothing opens: bills change from the timeline, categories in
+Settings.
 
 ---
 
@@ -190,8 +195,8 @@ bill opens its next charge in the editor, an ended one its last.
 
 Adding a bill opens a sheet with a card at its top, washed in the category's colour, or grey until
 it has one, with white type. The amount is top left and largest, the date and repeat top right on
-two small lines, the name bottom left, the category's picture bottom right. Close is top left, and
-Save is the system's prominent checkmark top right. The input area under the card keeps the keypad's
+two small lines, the name bottom left, the category's picture bottom right. Close is top left, or a
+drag down from anywhere but a wheel or a scrolled list, and Save is the system's prominent checkmark. The input area under the card keeps the keypad's
 height, so the card never moves.
 
 Dashed means a part still needs you: a faint `€0`, a dashed `Name`, a dashed picture tile. A pencil
@@ -223,9 +228,24 @@ it in two lines at most, and a strip of its colour along the bottom. A dashed `N
 tap applies a category: a ring marks it, and the card's colour fades in, quickly, with no flight.
 The grid scrolls when the categories outgrow the keypad's height, and its type caps at `xxxLarge`.
 
-`New` opens Tilly's symbols in the keypad's place, searchable by word, under a picture slot, a name
-field and the eight colours, the next unused one chosen. Return makes the category and applies it.
-With none yet, `New` is the only card, and it breathes once the amount and name are in.
+With none yet, `New` is the only card, and it breathes once the amount and name are in. `New` opens
+the category sheet; its ✓ makes the category and applies it. Holding a card lifts it with
+`Edit` and `Delete` under it.
+
+### A category is made and changed on its own sheet
+
+The same sheet makes and changes one, sliding over the bill's or Settings, with ✕, a red trash button
+when changing, and ✓, which waits for a name and a change. Fixed at its top: the category's card,
+126 × 164, with the name typed on the card, dashed until there is one, then the eight colours, the
+next unused one chosen. Under them, Tilly's symbols scroll as one long grid, six across, 44pt each,
+under a search field that sticks at their top. A new category starts on a tag; while the name matches a symbol's
+words or comes close to one, that symbol replaces it until one is picked.
+
+Only ✓ saves. The keyboard's `Done`, a tap anywhere off the field, or a scroll of the symbols puts
+the keyboard away. Deleting asks once, saying what goes with it: `Its 3 bills go too, past and future.` A category's
+bills go with it. Settings shows the categories as the picker's grid, the same cards at the same margins, each with
+`€95/mo` under its name, and `New` last. Tap to change, hold and drag to reorder. Sort, top right, arranges the
+order once by colour, name, monthly cost or number of bills, with Undo, and the order then holds.
 
 ### Saving puts the row in place
 
@@ -264,7 +284,7 @@ which is how a subscription ends, and the bill then reads `ends 08/26` like any 
 ## Copy and interaction
 
 **No label restates its control** (tenet 3), and a word stays when removing it would leave a slot
-meaning two things (TASTE 6). The month button says only `September`. **The app never says a bill
+meaning two things (TASTE 6). The month button says only `Today`. **The app never says a bill
 was paid.** It says *charged*: Tilly knows a date passed, not what left an account.
 
 **Nothing to confirm, nothing to restart** (tenet 1). No control marks a charge as paid; a design

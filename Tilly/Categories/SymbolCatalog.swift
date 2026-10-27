@@ -398,11 +398,11 @@ enum SymbolCatalog {
         })
     }
 
-    private static func candidateWords(_ entry: SymbolEntry) -> [String] {
+    static func candidateWords(_ entry: SymbolEntry) -> [String] {
         entry.name.split(separator: ".").map { fold(String($0)) } + entry.words.map(fold)
     }
 
-    private static func fold(_ text: String) -> String {
+    static func fold(_ text: String) -> String {
         text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
     }
 }

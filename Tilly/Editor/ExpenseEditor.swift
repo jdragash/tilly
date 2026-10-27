@@ -5,7 +5,7 @@ import os
 
 /// Which input fills the area under the card, in the keypad's place.
 enum EditorPanel: Equatable {
-    case keypad, date, `repeat`, category, newCategory
+    case keypad, date, `repeat`, category
 }
 
 /// The editor, in `EditorSheet` over the timeline, or a system sheet over All bills. The card is
@@ -23,6 +23,7 @@ struct ExpenseEditor: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.editorSheetContents) private var sheetContents
+    @Environment(\.editorSheetTouch) private var sheetTouch
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -35,6 +36,10 @@ struct ExpenseEditor: View {
     @State private var viewportHeight: CGFloat = 0
     @State private var cardHeight: CGFloat = 0
     @State private var isClosing = false
+    /// The category sheets and the delete alert, opened from the grid.
+    @State private var makingCategory = false
+    @State private var editingCategory: ExpenseCategory?
+    @State private var deletingCategory: ExpenseCategory?
     /// Counts picks, for the pick's haptic.
     @State private var picks = 0
 
@@ -66,12 +71,10 @@ struct ExpenseEditor: View {
                         .padding(.horizontal, Tokens.Space.editorCardInset)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
                     Spacer(minLength: 0)
-                    // A new category takes the panel's place, above its keyboard. At accessibility
-                    // sizes the keyboard pushes the sheet up, so the panel goes while a name is typed.
+                    // At accessibility sizes the keyboard pushes the sheet up, so the panel goes
+                    // while a name is typed.
                     Group {
-                        if panel == .newCategory {
-                            NewCategoryRow(existing: categories, onCreate: create, onCancel: { panel = .category })
-                        } else if keyboardCovers || !nameFocused {
+                        if keyboardCovers || !nameFocused {
                             // Where the keyboard covers, the panel stays in the layout so nothing
                             // above it moves, and hides so it can't show above a shorter keyboard.
                             panelArea
@@ -79,6 +82,10 @@ struct ExpenseEditor: View {
                                 // The category grid takes everything under the card, as the
                                 // prototype's picker does; every other panel keeps its height.
                                 .frame(height: panel == .category ? gridHeight : Tokens.Size.editorPanel)
+                                // The stack's spacing falls on both sides of the spacer, so a panel
+                                // sits two gaps under the card. The grid takes one, as the prototype's
+                                // picker sits 16 under it; `gridHeight` already counts only one.
+                                .padding(.top, panel == .category ? -Tokens.Space.section : 0)
                                 .opacity(nameFocused ? 0 : 1)
                                 .accessibilityHidden(nameFocused)
                         }
@@ -93,6 +100,7 @@ struct ExpenseEditor: View {
                 .frame(minHeight: viewportHeight)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .editorSheetScroll()
             .ignoresSafeArea(.keyboard, edges: keyboardCovers ? .bottom : [])
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
                 viewportHeight = height
@@ -104,22 +112,23 @@ struct ExpenseEditor: View {
         .onChange(of: nameFocused) { _, focused in
             if focused { panel = .keypad }
         }
+        .sheet(isPresented: $makingCategory) {
+            CategorySheet(
+                subject: .new(existing: categories), onSave: { pick($0.id) }, onDelete: {}
+            )
+        }
+        .sheet(item: $editingCategory) { category in
+            let id = category.id
+            CategorySheet(subject: .change(category), onSave: { _ in }, onDelete: { categoryDeleted(id) })
+        }
+        .categoryDeleteAlert(for: $deletingCategory, onDeleted: categoryDeleted)
     }
 
     // MARK: Pieces
 
-    /// ✕ top left; trash, when a charge is open, and ✓ top right. Glass circles the size and place
-    /// of the system sheet's toolbar buttons, which this row replaced when the editor stopped being
-    /// a system sheet. A half-made category is finished or cancelled before the expense is saved.
+    /// ✕ top left; trash, when a charge is open, and ✓ top right.
     private var header: some View {
-        HStack(spacing: Tokens.Space.sheetButtonGap) {
-            Button { close(.cancelled) } label: {
-                headerSymbol("xmark", ink: Tokens.Ink.primary)
-            }
-            .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: Circle())
-            .accessibilityLabel("Close")
-            Spacer(minLength: 0)
+        SheetHeader(onClose: { if sheetTouch.allowsTap { close(.cancelled) } }) {
             if let session {
                 // A `Menu`, not a `confirmationDialog`: the dialog ran its button's action only
                 // once its closing transition had finished, a second after it had visibly gone
@@ -131,7 +140,7 @@ struct ExpenseEditor: View {
                         Text("\(deleteTitle(for: session)) \(deleteMessage(for: session))")
                     }
                 } label: {
-                    headerSymbol("trash", ink: Tokens.Ink.destructive)
+                    SheetHeaderSymbol(name: "trash", ink: Tokens.Ink.destructive)
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
@@ -140,9 +149,6 @@ struct ExpenseEditor: View {
             }
             confirm
         }
-        .padding(.horizontal, Tokens.Space.sheetButtonInset)
-        .padding(.top, Tokens.Space.sheetButtonInset)
-        .padding(.bottom, Tokens.Space.sheetHeaderBottom)
     }
 
     /// ✓: the system's prominent checkmark, grey while there's nothing to save, and a menu of
@@ -155,15 +161,15 @@ struct ExpenseEditor: View {
             Menu {
                 scopeButtons
             } label: {
-                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+                SheetHeaderSymbol(name: "checkmark", ink: Tokens.Ink.onProminent)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
             .glassEffect(glass, in: Circle())
             .accessibilityLabel("Save")
         } else {
-            Button(action: save) {
-                headerSymbol("checkmark", ink: Tokens.Ink.onProminent)
+            Button { if sheetTouch.allowsTap { save() } } label: {
+                SheetHeaderSymbol(name: "checkmark", ink: Tokens.Ink.onProminent)
             }
             // Not `.plain`, which dims a disabled label: the system's disabled ✓ keeps it white
             // on grey glass.
@@ -172,16 +178,6 @@ struct ExpenseEditor: View {
             .disabled(!canSave)
             .accessibilityLabel("Save")
         }
-    }
-
-    private func headerSymbol(_ name: String, ink: Color) -> some View {
-        Image(systemName: name)
-            .font(Tokens.Text.floatingSymbol)
-            // Fixed, as toolbar symbols are: the circle doesn't grow with the text.
-            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            .foregroundStyle(ink)
-            .frame(width: Tokens.Size.floatingButton, height: Tokens.Size.floatingButton)
-            .contentShape(Circle())
     }
 
     private var card: some View {
@@ -193,7 +189,7 @@ struct ExpenseEditor: View {
             progress: progress,
             focused: focusedPart,
             today: today,
-            onTap: open,
+            onTap: { part in if sheetTouch.allowsTap { open(part) } },
             onNameSubmit: submitName
         )
         .sensoryFeedback(.impact(weight: .medium), trigger: picks)
@@ -236,11 +232,21 @@ struct ExpenseEditor: View {
     private var panelArea: some View {
         switch panel {
         case .keypad:
-            Keypad { draft.press($0) }
+            Keypad { key in if sheetTouch.allowsTap { draft.press(key) } }
         case .date:
-            DatePicker("Date", selection: dateBinding, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
+            // A new bill's date is its first charge: the charges since fill in, and nothing
+            // before it shows. Editing a charge moves only that charge, so it stays "Date".
+            VStack(spacing: 0) {
+                if session == nil {
+                    Text("First charge")
+                        .font(Tokens.Text.caption)
+                        .foregroundStyle(Tokens.Ink.secondary)
+                        .accessibilityHidden(true)
+                }
+                DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+            }
         case .repeat:
             RepeatWheel(draft: $draft)
         case .category:
@@ -248,11 +254,14 @@ struct ExpenseEditor: View {
                 categories: categories.sorted { $0.sortOrder < $1.sortOrder },
                 selection: draft.categoryID,
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
-                onPick: pick,
-                onNew: { panel = .newCategory }
+                onPick: { id in if sheetTouch.allowsTap { pick(id) } },
+                onNew: { if sheetTouch.allowsTap { makeCategory() } },
+                onEdit: { category in
+                    nameFocused = false
+                    editingCategory = category
+                },
+                onDelete: { deletingCategory = $0 }
             )
-        case .newCategory:
-            EmptyView()
         }
     }
 
@@ -260,11 +269,12 @@ struct ExpenseEditor: View {
 
     /// Everything under the card, as the prototype's picker takes; never less than the other panels.
     private var gridHeight: CGFloat {
-        max(Tokens.Size.editorPanel, viewportHeight - cardHeight - Tokens.Space.section)
+        // Two gaps: the card's stack spaces the card, the spacer and the panel apart.
+        max(Tokens.Size.editorPanel, viewportHeight - cardHeight - 2 * Tokens.Space.section)
     }
 
     private var progress: CardProgress {
-        CardProgress(draft: draft, categoryExists: selectedCategory != nil, isMakingCategory: panel == .newCategory)
+        CardProgress(draft: draft, categoryExists: selectedCategory != nil)
     }
 
     /// The part whose input is open: the name while it's typed in, otherwise the panel's own part.
@@ -274,15 +284,14 @@ struct ExpenseEditor: View {
         case .keypad: return .amount
         case .date: return .date
         case .repeat: return .repeat
-        case .category, .newCategory: return .category
+        case .category: return .category
         }
     }
 
-    /// The keyboard covers the editor at standard sizes. It can't while a category is made, where
-    /// the symbols take the keypad's place and the name's keyboard pushes the sheet up, or at accessibility sizes, where it
+    /// The keyboard covers the editor at standard sizes. It can't at accessibility sizes, where it
     /// would cover the name field.
     private var keyboardCovers: Bool {
-        !dynamicTypeSize.isAccessibilitySize && panel != .newCategory
+        !dynamicTypeSize.isAccessibilitySize
     }
 
     private var selectedCategory: ExpenseCategory? {
@@ -295,7 +304,6 @@ struct ExpenseEditor: View {
 
     /// ✓ waits for a change once there's a charge open — an untouched edit has nothing to save.
     private var canSave: Bool {
-        guard panel != .newCategory else { return false }
         guard session != nil else { return isValid }
         return isValid && draft.changes.any
     }
@@ -313,16 +321,16 @@ struct ExpenseEditor: View {
         withAnimation(.easeInOut(duration: Tokens.Motion.categoryFade)) { draft.categoryID = id }
     }
 
-    /// A category made in the editor is picked at once, and the grid comes back.
-    private func create(_ category: ExpenseCategory) {
-        modelContext.insert(category)
-        do {
-            try modelContext.save()
-        } catch {
-            Self.logger.error("Saving a category failed: \(error)")
-        }
-        pick(category.id)
-        panel = .category
+    private func makeCategory() {
+        nameFocused = false
+        makingCategory = true
+    }
+
+    /// A category was deleted, here or from its sheet, with its bills. The bill being made loses it
+    /// if it was picked; a charge open on a bill that went with it closes the editor.
+    private func categoryDeleted(_ id: UUID) {
+        if draft.categoryID == id { draft.categoryID = nil }
+        if let session, fetchExpense(session.expenseID) == nil { close(.deleted) }
     }
 
     /// Whether ✓ asks "this charge or future charges" rather than saving.
@@ -607,11 +615,4 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
         .modelContainer(container)
         .preferredColorScheme(.dark)
         .dynamicTypeSize(.accessibility3)
-}
-
-/// A button that draws its label as it is, enabled or not; its glass answers the press.
-private struct UndimmedButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-    }
 }

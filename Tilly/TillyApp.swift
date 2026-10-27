@@ -18,6 +18,17 @@ struct TillyApp: App {
     }()
     #endif
 
+    #if DEBUG
+    init() {
+        // The layout's dials: DialKit's Mac inspector in the Simulator, its drawer on a phone (shake).
+        #if targetEnvironment(simulator)
+        CategoryDials.shared.start()
+        #else
+        CategoryDrawer.shared.start()
+        #endif
+    }
+    #endif
+
     var body: some Scene {
         WindowGroup {
             #if DEBUG

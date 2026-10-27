@@ -3,8 +3,19 @@ import UIKit
 
 enum Tokens {
     enum Text {
-        /// A picker card's name, 12pt bold, and the light plus on `New`; from the prototype.
-        static let pickerName: Font = .caption.bold()
+        /// A picker card's name, 13.5pt bold at the default text size, scaling as `caption` does;
+        /// from the prototype. Pass the view's `dynamicTypeSize`, so a cap on it holds.
+        static func pickerNameSize(_ dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+            scaled(LayoutTuning.shared.layout.nameSize, as: .caption1, at: dynamicTypeSize)
+        }
+        static func pickerName(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
+
+        /// `size` at the default text size, scaled as `style` scales at `dynamicTypeSize`. A tuned
+        /// point size keeps Dynamic Type this way: `Font.system(size:)` has no `relativeTo:`.
+        static func scaled(_ size: CGFloat, as style: UIFont.TextStyle, at dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+            let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
+            return UIFontMetrics(forTextStyle: style).scaledValue(for: size, compatibleWith: traits)
+        }
         static let pickerPlus: Font = .system(size: Size.pickerPlus, weight: .light)
         /// The face the whole app is set in: SF Pro Rounded, through `.fontDesign` at the root.
         static let design: Font.Design = .rounded
@@ -14,6 +25,12 @@ enum Tokens {
         /// and 5px vertical stems; this measured 5px too, where `.headline` (semibold) measured 6px.
         static let monthButton: Font = .body.weight(.medium)
         static let floatingSymbol: Font = .body.weight(.medium)
+        /// The category sheet's `No exact match. Closest`, scaling as `caption2` does.
+        static func symbolsNote(_ dynamicTypeSize: DynamicTypeSize) -> Font {
+            .system(size: scaled(CategorySheet.noteSize, as: .caption2, at: dynamicTypeSize), weight: .semibold)
+        }
+        /// A sheet's title between its header buttons: 17 semibold, from the prototype.
+        static let sheetTitle: Font = .headline
         static let name: Font = .body
         static let amount: Font = .body
         static let caption: Font = .footnote
@@ -59,14 +76,6 @@ enum Tokens {
         static let yearMonthLabel: Font = .caption
         static let yearMonthLabelHeavy: Font = .caption.weight(.semibold)
         static let yearKey: Font = .footnote
-        /// All bills: the chips, a card's header, and its rows.
-        static let billsChip: Font = .subheadline
-        static let billCardName: Font = .body.weight(.semibold)
-        static let billCardTotal: Font = .title3.weight(.semibold)
-        static let billName: Font = .subheadline
-        static let billNote: Font = .footnote
-        static let billFigure: Font = .subheadline
-        static let endedToggle: Font = .subheadline
         /// The editor's card, at the prototype's sizes L, L, L, S. The amount scales
         /// `Size.cardAmount` with `@ScaledMetric`, as the editor's amount does.
         static func cardAmount(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
@@ -115,6 +124,10 @@ enum Tokens {
         static let editorAmountMin: CGFloat = 0.3
         /// A month header's name and a picked-out category's name, before they truncate.
         static let headerMin: CGFloat = 0.8
+        /// A category card's name, on any card: two lines, then this much smaller, then cut.
+        static let cardName: CGFloat = 0.8
+        /// How far a name steps down at a time while it's fitted to its card.
+        static let nameFitStep: CGFloat = 0.5
         /// A lane's total, before it would run out of its column.
         static let laneTotalMin: CGFloat = 0.5
         /// A day's total, before it would run out of its column.
@@ -136,7 +149,7 @@ enum Tokens {
         /// A timeline row's picture while still to come; from the prototype.
         static let upcomingPicture: Double = 0.8
         /// A picker card's colour strip, a wash at the prototype's 0.92.
-        static let pickerStrip: Double = 0.92
+        static var pickerStrip: Double { LayoutTuning.shared.layout.stripOpacity }
         /// The today divider's waves; from the prototype.
         static let squiggle: Double = 0.5
         /// The category view's today line; from the prototype.
@@ -207,14 +220,14 @@ enum Tokens {
     enum Space {
         /// The picker's cards, both ways; a card's picture from its top, its name from its bottom,
         /// and the ring outside the picked card. From the prototype.
-        static let pickerGap: CGFloat = 10
+        static var pickerGap: CGFloat { LayoutTuning.shared.layout.gap }
         /// The grid's cards in from the screen's sides, and its top under the panel's; from the
         /// prototype's `#picker` padding.
-        static let pickerSide: CGFloat = 22
-        static let pickerTop: CGFloat = 6
-        static let pickerPictureTop: CGFloat = 14
-        static let pickerNameBottom: CGFloat = 12
-        static let pickerNameSide: CGFloat = 5
+        static var pickerSide: CGFloat { LayoutTuning.shared.layout.side }
+        static var pickerTop: CGFloat { LayoutTuning.shared.layout.top }
+        static var pickerPictureTop: CGFloat { LayoutTuning.shared.layout.pictureTop }
+        static var pickerNameBottom: CGFloat { LayoutTuning.shared.layout.nameBottom }
+        static var pickerNameSide: CGFloat { LayoutTuning.shared.layout.nameSide }
         /// The least room between a picker card's picture and its name, where a large text size
         /// grows the card.
         static let pickerNameTop: CGFloat = 4
@@ -237,8 +250,8 @@ enum Tokens {
         /// Clear space above and below + in the header row.
         static let headerRowInset: CGFloat = 8
         /// What a month header keeps clear at its trailing end so its text never runs under the
-        /// glass pair: the view button and +, the gutter they sit in, and a gap.
-        static let headerTrailingClearance: CGFloat = 2 * Size.groupSlot + gutter + gap
+        /// settings button, the gutter it sits in, and a gap.
+        static let headerTrailingClearance: CGFloat = Size.groupSlot + gutter + gap
         /// Between the category view's arrows and the view-and-+ pair. Drawn, not measured:
         /// Calendar has no two groups side by side.
         static let groupGap: CGFloat = 8
@@ -293,27 +306,8 @@ enum Tokens {
         static let yearKeyTop: CGFloat = 24
         static let keyLineGap: CGFloat = 6
         static let keyDotGap: CGFloat = 8
-        /// All bills: a chip's inner side padding and the gap between chips; from the prototype.
-        static let chipHorizontal: CGFloat = 13
-        static let chipGap: CGFloat = 8
-        /// A card's inset from the screen, its padding, and the gap between cards; from the
-        /// prototype.
-        static let cardInset: CGFloat = 16
-        static let cardTop: CGFloat = 14
-        static let cardSides: CGFloat = 16
-        static let cardBottom: CGFloat = 8
-        static let cardGap: CGFloat = 12
-        /// Above and below a bill's row inside a card, and from a card header to its first row.
-        static let billRowVertical: CGFloat = 8
-        static let cardHeaderBottom: CGFloat = 8
-        /// Between the parts of a bill's row, and the ended bills' line above and below.
-        static let billRowGap: CGFloat = 8
-        static let endedToggleVertical: CGFloat = 14
-        /// Above the chips, and above the cards.
-        static let chipsTop: CGFloat = 12
-        static let cardsTop: CGFloat = 16
         /// The editor's card: its padding, from the sheet's sides, and between its parts. From
-        /// the prototype. `editorCardInset` isn't `cardInset`, which is All bills' 16.
+        /// the prototype. `editorCardInset` is the editor's own.
         static let cardHorizontal: CGFloat = 18
         static let cardVertical: CGFloat = 16
         static let editorCardInset: CGFloat = 22
@@ -326,6 +320,8 @@ enum Tokens {
         static let grabberTop: CGFloat = 5
         /// How far a finger moves before it drags the sheet rather than tapping what's on it.
         static let sheetDragSlop: CGFloat = 10
+        /// A scroll offset within this of the top counts as at the top.
+        static let frameAtRest: CGFloat = 0.5
         /// Below its rest, the sheet is off the screen by this much more than its own height: the
         /// home indicator's band, before the sheet has measured itself.
         static let sheetOffMargin: CGFloat = 60
@@ -369,12 +365,12 @@ enum Tokens {
     enum Size {
         /// The category picker: cards across, a card's height, its picture and the colour strip
         /// along its bottom. From the prototype.
-        static let pickerColumns = 4
-        static let pickerCard: CGFloat = 98
-        static let pickerPicture: CGFloat = 36
+        static var pickerColumns: Int { LayoutTuning.shared.layout.columns }
+        static var pickerCard: CGFloat { LayoutTuning.shared.layout.cardHeight }
+        static var pickerPicture: CGFloat { LayoutTuning.shared.layout.pictureSize }
         static let pickerPlus: CGFloat = 32
-        /// The strip shows 7pt: the prototype's 4pt band starts the card's 3pt edge above that.
-        static let pickerStrip: CGFloat = 7
+        /// The strip along a picker card's bottom.
+        static var pickerStrip: CGFloat { LayoutTuning.shared.layout.stripHeight }
         /// A timeline row, its card `Space.rowGap / 2` in from its top and bottom; from the prototype.
         static let row: CGFloat = 64
         /// A row's picture, its badge and the badge's symbol; from the prototype.
@@ -405,6 +401,8 @@ enum Tokens {
         /// +, at the top. Calendar's top glass buttons, measured on the iPhone 17 simulator
         /// (iOS 26.5, month view, 3x): 44.00pt tall.
         static let floatingButton: CGFloat = 44
+        /// Room a sheet's centred title leaves each side: two header buttons and their gaps.
+        static let sheetTitleClearance: CGFloat = 2 * (floatingButton + Space.sheetButtonGap)
         /// One button's width in a top glass group. Calendar's top group measured 158pt for three
         /// icons on the iPhone 17 simulator.
         static let groupSlot: CGFloat = 52
@@ -481,8 +479,6 @@ enum Tokens {
         static let yearDotExtra: CGFloat = 7
         static let yearDotExtraLarge: CGFloat = 11
         static let yearDotRing: CGFloat = 7
-        /// A category chip in All bills.
-        static let chipHeight: CGFloat = 34
         /// The editor's card: a bank card's proportions (ISO/IEC 7810 ID-1), from the prototype.
         /// The name field's height: room for it focused, which is taller than it is at rest.
         static let cardNameField: CGFloat = 28
@@ -517,6 +513,8 @@ enum Tokens {
         static let returnPointsPerSecond: CGFloat = 3000
         static let returnDurationMin: TimeInterval = 0.35
         static let returnDurationMax: TimeInterval = 0.9
+        /// A beat after a return's glide before the next step reads where it landed.
+        static let returnSettle: TimeInterval = 0.06
         /// The dots settling onto and off the dragging line; from the prototype.
         static let scrub: TimeInterval = 0.12
         /// A tapped day's rows fading from marked, once the timeline has landed on them.
@@ -553,15 +551,17 @@ enum Tokens {
         static let sheetFlingCloses: CGFloat = 0.5
         /// Dragged up, the sheet gives this fraction of the finger's travel. A tuning value.
         static let sheetDragResistance: CGFloat = 0.1
+        /// After a drag moves the sheet, a button's action this soon is the finger lifting, not a tap.
+        static let sheetDragTapGrace: TimeInterval = 0.3
     }
 
     /// The editor's card sits on the sheet: the prototype's 0 12 28 at 16% black. A radius is
     /// half the CSS blur.
     enum Shadow {
         /// A picker card's, in light mode only: the prototype's 0 1 2 at 10% black.
-        static let pickerCardColour: Color = .black.opacity(0.1)
-        static let pickerCardRadius: CGFloat = 1
-        static let pickerCardY: CGFloat = 1
+        static var pickerCardColour: Color { .black.opacity(LayoutTuning.shared.layout.shadowOpacity) }
+        static var pickerCardRadius: CGFloat { LayoutTuning.shared.layout.shadowRadius }
+        static var pickerCardY: CGFloat { LayoutTuning.shared.layout.shadowY }
         static let cardColour: Color = .black.opacity(0.16)
         static let cardRadius: CGFloat = 14
         static let cardY: CGFloat = 12
@@ -582,8 +582,9 @@ enum Tokens {
 
     enum Radius {
         /// A card in the category picker, and the ring round the picked one; from the prototype.
-        static let pickerCard: CGFloat = 10
-        static let pickerRing: CGFloat = 14
+        static var pickerCard: CGFloat { LayoutTuning.shared.layout.cornerRadius }
+        /// Concentric with the card it rings: the card's radius plus the gap.
+        static var pickerRing: CGFloat { pickerCard + Space.pickerRingOutset }
         static let icon: CGFloat = 10
         static let iconAccessible: CGFloat = 12
         static let editorButton: CGFloat = 12
@@ -670,6 +671,8 @@ extension Tokens {
     nonisolated enum Drawn {
         static let paper = dynamic(light: 0xEFEEEA, dark: 0x1D1C1A)
         static let paperCard = dynamic(light: 0xF7F6F2, dark: 0x2B2A27)
+        /// A field's ground on paper: the category sheet's search; the prototype's `--key`.
+        static let key = dynamic(light: 0xE7E6E1, dark: 0x2B2A27)
         static let ink = dynamic(light: 0x1C1B19, dark: 0xF2F1EE)
         static let ink2 = dynamic(light: 0x8A8883, dark: 0x8D8B86)
         /// The faint dashed line round what's still to come.
@@ -730,7 +733,7 @@ extension Tokens {
         static let roundWashEdgeBlur: CGFloat = 0.7
         /// A picker card's edge, as the prototype's `paperBigF` bends it: displacement 5, so at most
         /// 2.5pt, slowly. The timeline's rows keep the tuned `edgeWobble`.
-        static let pickerCardWobble: CGFloat = 2.5
+        @MainActor static var pickerCardWobble: CGFloat { LayoutTuning.shared.layout.edgeWobble }
         /// A picker card's colour strip, ragged as the prototype's `washF` makes it: displacement 3.2,
         /// at 0.07 cycles per pt.
         static let stripWobble: CGFloat = 1.6
@@ -772,5 +775,14 @@ extension Tokens {
                 $0.userInterfaceStyle == .dark ? rgb(dark, darkAlpha) : rgb(light, lightAlpha)
             })
         }
+    }
+}
+
+extension Tokens {
+    enum Guess {
+        /// How far a name's word may be from a catalogue word, by on-device word similarity, and
+        /// still count as that symbol. Lower is stricter. A tuning value; Jake tunes it by feel. This
+        /// model puts even close words near 1 (rugby to its nearest catalogue word is 1.05).
+        static var maxDistance: Double { LayoutTuning.shared.layout.guessDistance }
     }
 }

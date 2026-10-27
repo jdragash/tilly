@@ -34,7 +34,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         case .yourData, .empty:
             return
         case .oneExpense:
-            let subscriptions = ExpenseCategory(name: "Subscriptions", emoji: "📺", colour: .blue, sortOrder: 0)
+            let subscriptions = ExpenseCategory(name: "Subscriptions", symbol: Self.symbol(for: "Subscriptions"), colour: .blue, sortOrder: 0)
             context.insert(subscriptions)
             context.insert(Expense(name: "Music", amount: 15, anchorDate: calendar.startOfDay(for: today), category: subscriptions))
         case .typicalYear:
@@ -42,7 +42,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         case .longHistory:
             try PreviewData.insert(into: context, today: today, calendar: calendar, historyMonths: 36)
         case .nothingChargedYet:
-            let home = ExpenseCategory(name: "Home", emoji: "🏠", colour: .blue, sortOrder: 0)
+            let home = ExpenseCategory(name: "Home", symbol: Self.symbol(for: "Home"), colour: .blue, sortOrder: 0)
             context.insert(home)
             let start = calendar.startOfDay(for: today)
             let internet = calendar.date(byAdding: .day, value: 2, to: start)!
@@ -60,6 +60,12 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         try context.save()
     }
 
+    /// A sample category's symbol, as the category sheet would guess it from the name, so the
+    /// samples draw as categories made today do. "Typical year" keeps two made before symbols.
+    private static func symbol(for name: String) -> String {
+        SymbolGuess.guess(for: name) ?? SymbolGuess.fallback
+    }
+
     /// A steady user: six monthly bills in four categories, anchored eight months back so the
     /// timeline has some history and no month differs from another. Invented names and amounts.
     private static func insertMonthlyBills(into context: ModelContext, today: Date, calendar: Calendar) {
@@ -73,8 +79,8 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
             ("📺", "Subscriptions", .magenta, [("Streaming", 13, 8)]),
             ("💪", "Health", .green, [("Gym", 25, 10)]),
         ]
-        for (order, (emoji, name, colour, bills)) in plan.enumerated() {
-            let category = ExpenseCategory(name: name, emoji: emoji, colour: colour, sortOrder: order)
+        for (order, (_, name, colour, bills)) in plan.enumerated() {
+            let category = ExpenseCategory(name: name, symbol: Self.symbol(for: name), colour: colour, sortOrder: order)
             context.insert(category)
             for (bill, amount, day) in bills {
                 context.insert(Expense(name: bill, amount: amount, anchorDate: anchor(day: day), category: category))
@@ -86,7 +92,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
     /// today: the year's one coloured day, and its heaviest month.
     private static func insertGiantBill(into context: ModelContext, today: Date, calendar: Calendar) {
         let components = calendar.dateComponents([.year, .month], from: today)
-        let category = ExpenseCategory(name: "Education", emoji: "🎓", colour: .violet, sortOrder: 4)
+        let category = ExpenseCategory(name: "Education", symbol: Self.symbol(for: "Education"), colour: .violet, sortOrder: 4)
         context.insert(category)
         let anchor = calendar.date(from: DateComponents(year: components.year, month: (components.month ?? 1) - 8, day: 14))!
         context.insert(Expense(
@@ -122,10 +128,10 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
             ("🎮", "Games", [("Game pass", 15, 4, 1)]),
         ]
         var colours: [CategoryColour] = []
-        for (order, (emoji, name, bills)) in plan.enumerated() {
+        for (order, (_, name, bills)) in plan.enumerated() {
             let colour = CategoryOrdering.nextColour(after: colours)
             colours.append(colour)
-            let category = ExpenseCategory(name: name, emoji: emoji, colour: colour, sortOrder: order)
+            let category = ExpenseCategory(name: name, symbol: Self.symbol(for: name), colour: colour, sortOrder: order)
             context.insert(category)
             for (bill, amount, day, interval) in bills {
                 let yearly = interval == 12
