@@ -9,15 +9,18 @@
 <!--
   Tilly, moving between the year, a month and the days. 2026-10-27.
   Brief: docs/briefs/calendar-pinch/brief.md (observation 8).
-  Questions it puts on switches, still open:
-    1. Where an empty day lands in the timeline, and how it's marked.
-    2. Whether a pinch follows the fingers the whole way, or nudges and then plays the tap's zoom.
-    3. Where pinching in on a month lands: the day under the fingers, or the month's top.
+  Questions it put on switches, settled by Jake 2026-10-27:
+    1. An empty day lands where it falls in the list, in the middle of what shows, with no mark.
+       Rejected: a fading "Nothing on Thu 12" line there (Jake: just take you to the place), and
+       landing it under the month's header.
+    2. The pinch follows the fingers the whole way, as Photos does. Rejected: nudging a little,
+       then playing the tap's zoom.
+    3. Pinching in on a month opens the day under the fingers. Rejected: the month's top.
   Settled before it, and built in: every day of the month is a button; one pinch moves one level;
   pinching out goes where the back button goes; a day with charges lands as it does today.
   The year and the month are drawn closely enough to zoom between; what carries to iOS is the
-  pinch, the zoom's numbers (Tokens.Scale.zoomMin/zoomMax/zoomIn, Tokens.Motion.zoom) and the
-  empty-day mark. The Drawn code is dashed-and-solid.html's.
+  pinch, the zoom's numbers (Tokens.Scale.zoomMin/zoomMax/zoomIn, Tokens.Motion.zoom) and
+  where an empty day lands. The Drawn code is dashed-and-solid.html's.
   Published: https://claude.ai/artifact/3o3eZsooEbVWTYnkLvsQP5
 
   Retained as a record of the work rather than as a spec. Where this disagrees with the docs, the docs win.
@@ -313,8 +316,10 @@ const phone=$("phone"), list=$("list"), levels=$("levels");
 const KEY="tilly-calendar-pinch";
 // What dashed-and-solid settled, fixed here.
 const FIXED={lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",recur:"badge",dates:"relative",badge:"none",
-  badgeCol:"cat",badgeCase:"normal",ends:"near",yearly:"badge",boil:"all",custom:false,customText:""};
-const DEFAULTS={empty:"middle",pinch:"follow",monthIn:"finger",dark:null,rm:false};
+  badgeCol:"cat",badgeCase:"normal",ends:"near",yearly:"badge",boil:"all",custom:false,customText:"",
+  // Settled 2026-10-27: an empty day lands mid-list unmarked; the pinch follows the fingers; pinching in opens the day under them.
+  empty:"middle",pinch:"follow",monthIn:"finger"};
+const DEFAULTS={dark:null,rm:false};
 const S=Object.assign({},DEFAULTS,(()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })(),FIXED);
 function save(){ try{ const o={}; Object.keys(DEFAULTS).forEach(k=>o[k]=S[k]); localStorage.setItem(KEY,JSON.stringify(o)); }catch(e){} }
 function systemDark(){ const t=document.documentElement.getAttribute("data-theme");
@@ -637,9 +642,8 @@ function land(date){
   if(dayRows.length){ list.scrollTop=topIn(dayRows[0])-hdrH(); dayRows.forEach(r=>r.classList.add("mark")); return; }
   const tdl=list.querySelector(".tdl");
   if(sameDay(date,TODAY)&&tdl){ list.scrollTop=topIn(tdl)+tdl.offsetHeight/2-middle(); return; }
-  const y=seamFor(date), m=document.createElement("div");
-  m.className="dmark"; m.innerHTML=`<span>Nothing on ${WD[date.getDay()]} ${date.getDate()}</span>`; m.style.top=(y-10)+"px"; list.appendChild(m);
-  list.scrollTop = S.empty==="middle" ? y-middle() : y-hdrH()-24;
+  // An empty day: where it would fall, in the middle of what shows, and nothing marks it.
+  list.scrollTop=seamFor(date)-middle();
 }
 function landTop(k){
   clearMarks();
@@ -784,6 +788,12 @@ levels.addEventListener("touchstart",e=>{ if(e.touches.length===2){ e.preventDef
 addEventListener("touchmove",e=>{ if(T0&&e.touches.length===2){ e.preventDefault(); pMove(tdist(e)/T0,tmid(e)); } },{passive:false});
 const tend=e=>{ if(T0&&e.touches.length<2){ T0=null; pEnd(); } };
 addEventListener("touchend",tend); addEventListener("touchcancel",tend);
+// A second way to hear the fingers lift: a touch sequence's end can go missing while the levels change
+// under it (seen in Chrome), and its pointers still report up or cancelled.
+const downTouches=new Set();
+addEventListener("pointerdown",e=>{ if(e.pointerType==="touch") downTouches.add(e.pointerId); },true);
+const pup=e=>{ if(e.pointerType!=="touch") return; downTouches.delete(e.pointerId); if(T0&&downTouches.size<2){ T0=null; pEnd(); } };
+addEventListener("pointerup",pup,true); addEventListener("pointercancel",pup,true);
 document.addEventListener("gesturestart",e=>e.preventDefault());
 /* a trackpad: Chrome and Firefox send ctrl+wheel, Safari sends gestures */
 let wheelR=null, wheelT=0;
@@ -822,10 +832,8 @@ function panelHTML(){
   return `<div class="ptop"><div><h1>Calendar pinch</h1><p class="lead">iPhone 13 Pro size. Every day of a month now opens the timeline, empty or not. `+
     `Pinch with two fingers on a phone or a trackpad, or hold ⌥ and drag up or down with a mouse. The back buttons and taps still work.</p></div>`+
     `<div class="pbtns"><button class="reset" data-reset="1">Reset</button></div></div>`+
-    `<h2>Open questions</h2>`+
-    tcard("An empty day","Tap the 13th, a weekend, or a day in a month with nothing in it.",optHTML("empty"))+
-    tcard("The pinch","Taste 12: every control answers at once, even mid-motion.",optHTML("pinch"))+
-    tcard("Pinching in on a month","Where the timeline opens.",optHTML("monthIn"))+
+    tcard("Settled 2026-10-27","",`<p class="desc">An empty day lands where it falls, in the middle of what shows, with nothing marking it. `+
+      `The pinch follows the fingers the whole way and springs back if let go early. Pinching in on a month opens the day under the fingers.</p>`)+
     `<h2>Prototype</h2>`+
     tcard("Look","",fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+fld("Reduce Motion",chips("rm",[["false","Off"],["true","On"]]),"On: the levels crossfade, as they do now, and a pinch crossfades with the fingers."))+
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+

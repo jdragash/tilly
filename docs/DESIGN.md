@@ -56,11 +56,20 @@ equals the figures above it.
 ### Three levels of one place
 
 Calendar zooms, as iOS Calendar does: the year, a month, and the days, which are the timeline.
-Tapping a month in the year opens it. Tapping a day with charges opens the timeline with that day's
-first charge just under its month's header, the day's rows marked and fading. A back button top left
-goes out a level: `‹ Year` over a month, and over the days the month under the middle of the list,
-`‹ October`. A level grows out of what was tapped, a month from its place in the year, and shrinks
-back into it, or crossfades under Reduce Motion. The app reopens on the level and month you left,
+Tapping a month in the year opens it. Every day of a month opens the timeline at that day. A day with
+charges puts its first charge just under its month's header, its rows marked and fading. A day with
+none lands where it would fall in the list, in the middle of what shows, as Today puts the Today
+line, and nothing marks it; today itself lands on the Today line. A back button top left goes out a
+level: `‹ Year` over a month, and over the days the month under the middle of the list, `‹ October`.
+A level grows out of what was tapped, a month from its place in the year, and shrinks back into it,
+or crossfades under Reduce Motion.
+
+A pinch moves one level, never two. Spreading goes in, as a tap would on the month or the day
+between the fingers; closing goes out, where the back button goes, shrinking into the day under the
+fingers when it is in that month. The levels follow the fingers the whole way, all the way in at a
+2.2× spread, and once the fingers lift they finish if past 40% or flicked, and spring back if not. A
+pinch past the year or the days does nothing. One finger still scrolls the year and the days and
+pages the month. The app reopens on the level and month you left,
 at the month's top, however long you were gone; the current month decides only on first run.
 
 ### The year
@@ -76,7 +85,7 @@ colour.`
 
 ### The month
 
-A grid from the week's first day, capped at `xxxLarge` as Calendar's is. A day shows its costliest
+A grid from the week's first day, capped at `xxxLarge` as Calendar's is. Every day is a button. A day shows its costliest
 charge's picture, two overlapped and `+N` beyond, and its total; an upcoming day sits back as an
 upcoming row does; neighbouring months' days show only their number. Arrows and a swipe page it,
 across the timeline's span. Under its name, the header's figure, or `Nothing this month`.

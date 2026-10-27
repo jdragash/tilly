@@ -103,3 +103,17 @@ The category view, which is set aside.
 `CalendarMonthView.swift`, `CalendarZoom.swift`, `YearView.swift`; `Tilly/Timeline/TimelineView.swift`
 (`setLevel`, `openDay`), `MonthSectionView.swift`; `.claude/rules/calendar.md`;
 `git log -- Tilly/Calendar`.
+
+## Updates
+
+### 2026-10-27: the prototype settled the three questions
+
+`docs/prototypes/calendar-pinch.html`, on the phone. The rules are in `DESIGN.md` ("Three levels of
+one place").
+
+1. **An empty day lands where it falls, in the middle of what shows, with no mark.** A fading line
+   saying "Nothing on Thu 12" was prototyped and dropped: Jake wanted to be taken to the place, not
+   told about the absence. Landing it under the month's header lost too.
+2. **The pinch follows the fingers the whole way**, as Photos does, finishing past 40% or on a flick
+   and springing back otherwise. Nudging a little and then playing the tap's zoom lost.
+3. **Pinching in on a month opens the day under the fingers.** Opening the month's top lost.
