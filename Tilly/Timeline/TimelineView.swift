@@ -744,7 +744,6 @@ struct TimelineView: View {
     private func bottomRow(bottomInset: CGFloat) -> some View {
         HStack {
             MonthButton(
-                month: window?.current ?? MonthKey(containing: today, calendar: calendar), today: today,
                 // The year has no month to go back to.
                 action: mode == .timeline && level == .year ? nil : {
                     if mode == .categories, let window {

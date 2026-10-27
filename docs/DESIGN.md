@@ -91,11 +91,11 @@ figures read `+€351 on top` or `Nothing on top`. Switching holds the month bei
 
 ### Getting back
 
-The month button names the current month, `September`, and stays in its level. Over the days it
+The month button says `Today` and stays in its level. Over the days it
 scrolls back to today, the Today line in the middle of what shows of the list, or to the month's top
 before anything is charged, with a duration that scales with distance, even mid-flick; over a month it pages back
 to this one; over the year, which already starts now, it isn't there. It stays as it is while you're
-already there, like Calendar's Today. VoiceOver reads "Back to September". It is a system glass
+already there, like Calendar's Today. VoiceOver reads "Back to today". It is a system glass
 button at Calendar's size, weight and place, 28pt in from the screen's edges, and the last line of
 history clears it.
 
@@ -283,7 +283,7 @@ which is how a subscription ends, and the bill then reads `ends 08/26` like any 
 ## Copy and interaction
 
 **No label restates its control** (tenet 3), and a word stays when removing it would leave a slot
-meaning two things (TASTE 6). The month button says only `September`. **The app never says a bill
+meaning two things (TASTE 6). The month button says only `Today`. **The app never says a bill
 was paid.** It says *charged*: Tilly knows a date passed, not what left an account.
 
 **Nothing to confirm, nothing to restart** (tenet 1). No control marks a charge as paid; a design
