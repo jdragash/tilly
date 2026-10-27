@@ -30,7 +30,8 @@ with a rough edge that blooms; SF Pro Rounded, and no handwriting. A category's 
 roughened, in its colour on a faint wash, or white on its own card. Every picture boils, three
 drawings swapped eight times a second, still under Reduce Motion, unless boil is turned off. A category made before symbols shows its emoji until one is picked. The glass stays stock.
 A ring or outline round a rounded shape is concentric: its corner radius is the shape's plus the gap.
-A category's name takes two lines, then shrinks to 80% at most, then is cut, on every card.
+A category's name takes two lines, then shrinks to 80% at most, then is cut, on every card; a
+word too long to fit across shrinks on to 60% rather than break.
 
 ---
 

@@ -132,7 +132,8 @@ extension CategoryCardFace where Name == CategoryCardName {
     }
 }
 
-/// A card's name: two lines, then smaller down to `Tokens.Scale.cardName` (`NameFit`), then it breaks.
+/// A card's name: two lines, then smaller down to `Tokens.Scale.cardName` (`NameFit`), a lone long
+/// word further, then it's cut.
 struct CategoryCardName: View {
     let name: String
     var ink: Color = Tokens.Ink.primary
@@ -146,7 +147,7 @@ struct CategoryCardName: View {
             .font(Tokens.Text.pickerName(size: NameFit.size(name, full: full, width: width)))
             .foregroundStyle(ink)
             .multilineTextAlignment(.center)
-            // `NameFit` has already shrunk it as far as it goes; past that it breaks, never smaller.
+            // `NameFit` has already shrunk it as far as it goes; past that it's cut, never smaller.
             .lineLimit(2)
             .frame(maxWidth: .infinity)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }

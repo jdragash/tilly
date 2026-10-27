@@ -16,11 +16,11 @@ The smallest thing that does the job.
 |---|---|---|
 | Recurrence engine | Done | Every N days, weeks, months or years from a fixed anchor. Pure and tested. |
 | App scaffolding | Done | Xcode project, `Expense` and `OverrideRecord`, `TillyStore`, token layer. |
-| Calendar | Done | The year, a month and the days, which are the timeline: one list with a pinned header and saved place, five years ahead or to the last payment. All / Extras holds at every level. On an iPhone, the month button and the toggle may still lose to a flick in progress (open). In the year, a month past the last payment opens the last one with charges (open). |
+| Calendar | Done | The year, a month and the days, which are the timeline: one list with a pinned header and saved place, five years ahead or to the last payment. All / Extras holds at every level. In the year, a month past the last payment opens the last one with charges (open). |
 | All bills | Done | A sheet of category cards, Monthly or Yearly, ended bills behind a line; a bill opens its next charge. No sorting or search. |
 | Expense editor | Done | Adding and editing a bill on a card: tapping a row, "this charge only or future charges", deleting. Done as a card you complete; the dashed and solid timeline and the grid picker are being built (`docs/briefs/dashed-and-solid/brief.md`). Shake to undo deferred. |
 | Occurrence overrides | Done | A different amount or date for one charge, €0 included. Built with editing. Skipping is left out. |
-| Categories | Done, partly | Emoji, name and colour, user-created, ships empty, required on every expense. Created in the editor; ordered, and recoloured, in Settings. Renaming, changing an emoji and deleting there aren't designed yet. |
+| Categories | Done | A symbol, name and colour, user-created, ships empty, required on every expense. Made, changed and deleted on their own sheet, from the editor or Settings, with a symbol guessed from the name. How long names fit their cards wants another look. |
 | Category view | Set aside | Hidden from the shell while the calendar is tested alone; the code stays. Lanes across one month, a dot per charge; dragging reads a day's charges. Other periods (a year, a monthly average) were tried and set aside. Accessibility sizes render without overlap but aren't designed. |
 | Token gallery | — | `DesignSystem/Gallery.swift`: every token and component in light, dark and accessibility sizes. |
 

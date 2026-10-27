@@ -126,6 +126,9 @@ enum Tokens {
         static let headerMin: CGFloat = 0.8
         /// A category card's name, on any card: two lines, then this much smaller, then cut.
         static let cardName: CGFloat = 0.8
+        /// How far a single word too long for its card shrinks past `cardName` so it stays whole,
+        /// before it too breaks.
+        static let cardNameWord: CGFloat = 0.6
         /// How far a name steps down at a time while it's fitted to its card.
         static let nameFitStep: CGFloat = 0.5
         /// A lane's total, before it would run out of its column.
