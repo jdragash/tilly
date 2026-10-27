@@ -1,6 +1,6 @@
 # Category editor, prototype and app side by side
 
-Taken 2026-10-27 at `claude/project-thread-v3a3hk` 7479606, iPhone 17 Simulator (iOS 27), against
+Taken 2026-10-27 at `claude/project-thread-v3a3hk` 7479606 (the picker pair at fbecc80), iPhone 17 Simulator (iOS 27), against
 `docs/prototypes/category-editor.html` (Tune: search `top`, findEdit `press`, cardInfo `cost`,
 infoAt `below`). Each `side-by-side-*` has the prototype on the left and the app on the right,
 both at point scale (390 and 402 wide). The sample data differs: the prototype has its 14
@@ -9,8 +9,6 @@ design. `app-*-ax` are the app at the accessibility-large text size.
 
 ## Differences that remain
 
-- **Picker under the bill card:** the app's grid starts about 10pt lower under the card than the
-  prototype's. The editor's own spacing; left alone, as its layout is held by measured rules.
 - **Symbols:** the app's catalogue is far larger than the prototype's 28 stand-ins, so the grid
   runs longer and the picked symbol is often below the fold.
 - **Sort menu:** the system menu puts each sort's detail under its name; the prototype sets it on
@@ -20,10 +18,12 @@ design. `app-*-ax` are the app at the accessibility-large text size.
   editor already has.
 - **Pictures from emoji:** sample categories made before symbols (Car, Loans) still draw their
   emoji.
-- **Long names at the largest sizes:** past 80% a name breaks mid-word ("Subscriptions" at
-  accessibility sizes), as agreed: imperfect over tiny.
+- **Long names:** a name shrinks to 80% of its size at most, then breaks mid-word, as agreed:
+  imperfect over tiny. "Subscriptions" breaks on a picker card; the prototype's sample has no
+  name that long.
 - **All bills notes:** a bill whose figure is its own charge shows no note, where the prototype
   showed none either; rhythms the prototype doesn't have (`€45 every 3 months`) are kept.
 
-Fixed in this pass: the Categories page's ground (white → paper), square symbol cells, the Undo
+Fixed in this pass: the picker grid now sits 22 under the bill card, as the prototype's (it was
+40); a card's name no longer shrinks below 80%; the Categories page's ground (white → paper), square symbol cells, the Undo
 capsule's height (70 above the bottom), and the filled tile in Settings.
