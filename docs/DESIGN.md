@@ -227,7 +227,7 @@ tap applies a category: a ring marks it, and the card's colour fades in, quickly
 The grid scrolls when the categories outgrow the keypad's height, and its type caps at `xxxLarge`.
 
 With none yet, `New` is the only card, and it breathes once the amount and name are in. `New` opens
-the category sheet; Return or its ✓ makes the category and applies it. Holding a card lifts it with
+the category sheet; its ✓ makes the category and applies it. Holding a card lifts it with
 `Edit` and `Delete` under it.
 
 ### A category is made and changed on its own sheet
@@ -239,7 +239,8 @@ next unused one chosen. Under them, Tilly's symbols scroll as one long grid, six
 size of a grid card's picture, under a search field that sticks at their top. A new category starts on a tag; while the name matches a symbol's
 words or comes close to one, that symbol replaces it, marked with a spark, until one is picked.
 
-Deleting asks once, saying what goes with it: `Its 3 bills go too, past and future.` A category's
+Only ✓ saves. The keyboard's `Done`, a tap anywhere off the field, or a scroll of the symbols puts
+the keyboard away. Deleting asks once, saying what goes with it: `Its 3 bills go too, past and future.` A category's
 bills go with it. Settings shows the categories as the picker's grid, the same cards at the same margins, each with
 `€95/mo` under its name, and `New` last. Tap to change, hold and drag to reorder. Sort, top right, arranges the
 order once by colour, name, monthly cost or number of bills, with Undo, and the order then holds.

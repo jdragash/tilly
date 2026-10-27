@@ -3763,10 +3763,11 @@ function mountCat(root,host){
   bot.innerHTML=S.search==="bottom"?sfieldHTML():"";
   const input=root.querySelector(".nm2");
   input.addEventListener("input",()=>{ if(/\n/.test(input.value)) input.value=input.value.replace(/\n/g," "); CE.name=input.value; if(!CE.picked){ const g=suggest(CE.name).best; CE.glyph=g||"tag"; CE.guessed=!!g; } updateCat(); });
-  input.addEventListener("keydown",e=>{ if(e.key!=="Enter") return; e.preventDefault(); if(ceDone()) saveCat(); else input.blur(); });
+  input.addEventListener("keydown",e=>{ if(e.key!=="Enter") return; e.preventDefault(); input.blur(); });
   if(S.search==="icon") renderIconHead();
   wireSearch(root); wireSearch(bot);
   const click=e=>{
+    if(!e.target.closest(".nm2,.sq")&&document.activeElement) document.activeElement.blur();   // a tap off the field puts the keyboard away
     const b=e.target.closest("button"); if(!b) return;
     if(b.dataset.g){ CE.glyph=b.dataset.g; CE.picked=true; CE.guessed=false; updateCat(); return; }
     if(b.dataset.col){ CE.col=+b.dataset.col; updateCat(); return; }
@@ -3778,6 +3779,7 @@ function mountCat(root,host){
     if(a==="delete") askDelete(CE.ci);
   };
   root.onclick=click; bot.onclick=click;
+  root.querySelector(".symscroll").addEventListener("scroll",()=>{ const t=document.activeElement; if(t&&t.classList.contains("nm2")) t.blur(); },{passive:true});
   updateCat();
 }
 function renderIconHead(){

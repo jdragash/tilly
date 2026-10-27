@@ -149,13 +149,14 @@ struct CategorySheet: View {
 ```
 
 - Title `New Category` or `Edit Category`, 17 semibold. ✓ is enabled when the trimmed name isn't
-  empty and something changed. Return in the name saves when ✓ would, else dismisses the keyboard.
+  empty and something changed. Only ✓ saves: Return (`Done`), a tap off the field, or scrolling the symbols
+  dismisses the keyboard.
   A new category's name is focused once the sheet is up.
 - `CategoryCardFace` draws the sheet's card and the grid's card from one view at two sizes, so the
   Settings and picker cards stay the same drawing (`CategoryGrid.card` moves into it).
 - A name, on any card, takes two lines, then shrinks to no less than 80%, then is cut:
   `.lineLimit(2).minimumScaleFactor(0.8)`, which does exactly that. The sheet's field is a
-  two-line `TextField(axis: .vertical)` whose Return saves instead of breaking the line.
+  two-line `TextField(axis: .vertical)` whose Return dismisses the keyboard instead of breaking the line.
 - Tapping the card's picture scrolls the symbols to the top.
 - Trash shows the stock alert: title `Delete “Home”?`; message `Its bill goes too, past and future.
   This can’t be undone.`, `Its 3 bills go too…`, or `No bills use it.`; buttons `Delete Category
