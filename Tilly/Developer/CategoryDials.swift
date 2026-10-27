@@ -67,10 +67,6 @@ final class CategoryDials {
                     plain("sheetShadowOpacity", \.sheetShadowOpacity, "Shadow", 0...0.4, step: 0.01),
                     pt("sheetShadowRadius", \.sheetShadowRadius, "Shadow blur", 0...20, step: 0.5),
                     pt("sheetShadowY", \.sheetShadowY, "Shadow drop", 0...20, step: 0.5),
-                    pt("sparkSize", \.sparkSize, "Spark badge", 10...30),
-                    pt("sparkSymbol", \.sparkSymbol, "Spark symbol", 6...20),
-                    pt("sparkRight", \.sparkRight, "Spark right", -10...20),
-                    pt("sparkUp", \.sparkUp, "Spark up", -10...20),
                 ]),
                 .group("Sheet colours and symbols", children: [
                     pt("swatchDot", \.swatchDot, "Colour dot", 16...36),
@@ -81,6 +77,7 @@ final class CategoryDials {
                     pt("swatchBottom", \.swatchBottom, "Colours below", 0...30),
                     pt("gutter", \.gutter, "Side margin", 12...40),
                     .slider("symbolsAcross", keyPath: \.symbolsAcross, label: "Symbols across", range: 4...8, step: 1),
+                    pt("symbolSize", \.symbolSize, "Symbol size", 30...56),
                     pt("symbolGap", \.symbolGap, "Symbol gap", 0...20),
                     pt("symbolRingWidth", \.symbolRingWidth, "Picked ring", 0...5, step: 0.5),
                     pt("symbolRingOutset", \.symbolRingOutset, "Picked ring outside", 0...10, step: 0.5),

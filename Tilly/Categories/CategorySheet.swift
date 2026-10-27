@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Makes a category or changes one, over the bill editor or Settings. Fixed at its top: the
 /// category's card, its name typed on it, and the eight colours; under them the symbols scroll.
-/// A new category starts on a tag, and while nothing is picked the name's guess replaces it,
-/// marked with a spark. Changing one adds a trash button, which deletes it and its bills after
+/// A new category starts on a tag, and while nothing is picked the name's guess replaces it.
+/// Changing one adds a trash button, which deletes it and its bills after
 /// an alert that says so.
 struct CategorySheet: View {
     enum Subject {
@@ -26,7 +26,6 @@ struct CategorySheet: View {
     @State private var colour: CategoryColour
     /// A symbol was chosen, so the name no longer guesses one.
     @State private var picked: Bool
-    @State private var guessed = false
     @State private var scrollToTop = 0
     @State private var deleting: ExpenseCategory?
     @FocusState private var nameFocused: Bool
@@ -54,7 +53,6 @@ struct CategorySheet: View {
             seed = stableSeed(UUID().uuidString)
             if let typed, let match = SymbolGuess.guess(for: typed) {
                 _picture = State(initialValue: .symbol(match))
-                _guessed = State(initialValue: true)
             }
         case .change(let category):
             _name = State(initialValue: category.name)
@@ -124,7 +122,6 @@ struct CategorySheet: View {
                 nameFocused = false
                 picture = .symbol(chosen)
                 picked = true
-                guessed = false
             }
         }
         // The sheet's own ground, between and around everything, puts the keyboard away too.
@@ -154,9 +151,6 @@ struct CategorySheet: View {
                 CategoryPictureView(
                     picture: picture, colour: colour, size: Tokens.CategorySheet.pictureSize, round: true, place: .editor
                 )
-                .overlay(alignment: .topTrailing) {
-                    if guessed { spark }
-                }
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Symbol")
@@ -167,18 +161,6 @@ struct CategorySheet: View {
         }
         .frame(width: Tokens.CategorySheet.cardWidth)
         .fixedSize(horizontal: false, vertical: true)
-    }
-
-    /// The guess's mark: a sparkle on a paper badge at the picture's corner.
-    private var spark: some View {
-        Image(systemName: "sparkle")
-            .font(Tokens.CategorySheet.sparkFont)
-            .foregroundStyle(Tokens.Drawn.ink2)
-            .frame(width: Tokens.CategorySheet.sparkSize, height: Tokens.CategorySheet.sparkSize)
-            .background(Tokens.Drawn.paperCard, in: Circle())
-            .overlay { Circle().strokeBorder(Tokens.Drawn.hairline, lineWidth: Tokens.Size.hairline) }
-            .offset(x: Tokens.CategorySheet.sparkRight, y: -Tokens.CategorySheet.sparkUp)
-            .accessibilityHidden(true)
     }
 
     /// Typed on the card: two lines, then smaller, then it scrolls. Return puts the keyboard away;
@@ -262,7 +244,6 @@ struct CategorySheet: View {
         guard !picked else { return }
         let match = SymbolGuess.guess(for: name)
         picture = .symbol(match ?? SymbolGuess.fallback)
-        guessed = match != nil
     }
 
     /// The keyboard's key only ends typing: saving is the ✓ at the top's alone.

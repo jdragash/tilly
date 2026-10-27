@@ -134,6 +134,8 @@ struct SymbolPicker: View {
             // A square cell as wide as its column, the picture in its middle.
             Color.clear
                 .aspectRatio(1, contentMode: .fit)
+                // A symbol larger than its column makes the cell taller rather than overlap the next.
+                .frame(minHeight: picture + 2 * Tokens.CategorySheet.symbolRingOutset)
                 .overlay {
                     CategoryPictureView(picture: .symbol(entry.name), colour: colour, size: picture, round: true, place: .editor)
                 }

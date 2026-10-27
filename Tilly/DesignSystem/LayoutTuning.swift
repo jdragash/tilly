@@ -43,10 +43,6 @@ nonisolated struct CategoryLayout: Codable, Equatable, Sendable {
     var sheetShadowOpacity = 0.12
     var sheetShadowRadius = 2.5   // the prototype's 5pt CSS blur, halved as every shadow here is
     var sheetShadowY = 2.0
-    var sparkSize = 17.0
-    var sparkSymbol = 12.0
-    var sparkRight = 6.0
-    var sparkUp = 4.0
     var swatchDot = 26.0
     var swatchTarget = 32.0
     var swatchRingWidth = 2.0
@@ -56,6 +52,7 @@ nonisolated struct CategoryLayout: Codable, Equatable, Sendable {
     var gutter = 24.0
     var symbolsAcross = 6
     var symbolGap = 8.0
+    var symbolSize = 44.0
     var symbolRingWidth = 2.5
     var symbolRingOutset = 5.0
     var hairline = 0.5

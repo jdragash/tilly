@@ -34,12 +34,6 @@ extension Tokens {
         static var shadowRadius: CGFloat { l.sheetShadowRadius }
         static var shadowY: CGFloat { l.sheetShadowY }
 
-        // The spark badge on the picture while a guess is showing.
-        static var sparkSize: CGFloat { l.sparkSize }
-        static var sparkSymbol: CGFloat { l.sparkSymbol }
-        static var sparkRight: CGFloat { l.sparkRight }
-        static var sparkUp: CGFloat { l.sparkUp }
-        static var sparkFont: Font { .system(size: sparkSymbol) }
 
         // Colour swatches, spread across the width.
         static var swatchDot: CGFloat { l.swatchDot }
@@ -53,7 +47,8 @@ extension Tokens {
         static var gutter: CGFloat { l.gutter }
         static var symbolsAcross: Int { l.symbolsAcross }
         static var symbolGap: CGFloat { l.symbolGap }
-        static var symbolPicture: CGFloat { Tokens.Size.pickerPicture }
+        /// The symbols' own size, apart from the grid card's picture; a cell grows to hold it.
+        static var symbolPicture: CGFloat { l.symbolSize }
         static var symbolRingWidth: CGFloat { l.symbolRingWidth }
         static var symbolRingOutset: CGFloat { l.symbolRingOutset }
         static var hairline: CGFloat { l.hairline }
