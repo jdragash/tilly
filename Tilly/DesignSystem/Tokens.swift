@@ -76,14 +76,6 @@ enum Tokens {
         static let yearMonthLabel: Font = .caption
         static let yearMonthLabelHeavy: Font = .caption.weight(.semibold)
         static let yearKey: Font = .footnote
-        /// All bills: the chips, a card's header, and its rows.
-        static let billsChip: Font = .subheadline
-        static let billCardName: Font = .body.weight(.semibold)
-        static let billCardTotal: Font = .title3.weight(.semibold)
-        static let billName: Font = .subheadline
-        static let billNote: Font = .footnote
-        static let billFigure: Font = .subheadline
-        static let endedToggle: Font = .subheadline
         /// The editor's card, at the prototype's sizes L, L, L, S. The amount scales
         /// `Size.cardAmount` with `@ScaledMetric`, as the editor's amount does.
         static func cardAmount(size: CGFloat) -> Font { .system(size: size, weight: .bold) }
@@ -314,27 +306,8 @@ enum Tokens {
         static let yearKeyTop: CGFloat = 24
         static let keyLineGap: CGFloat = 6
         static let keyDotGap: CGFloat = 8
-        /// All bills: a chip's inner side padding and the gap between chips; from the prototype.
-        static let chipHorizontal: CGFloat = 13
-        static let chipGap: CGFloat = 8
-        /// A card's inset from the screen, its padding, and the gap between cards; from the
-        /// prototype.
-        static let cardInset: CGFloat = 16
-        static let cardTop: CGFloat = 14
-        static let cardSides: CGFloat = 16
-        static let cardBottom: CGFloat = 8
-        static let cardGap: CGFloat = 12
-        /// Above and below a bill's row inside a card, and from a card header to its first row.
-        static let billRowVertical: CGFloat = 8
-        static let cardHeaderBottom: CGFloat = 8
-        /// Between the parts of a bill's row, and the ended bills' line above and below.
-        static let billRowGap: CGFloat = 8
-        static let endedToggleVertical: CGFloat = 14
-        /// Above the chips, and above the cards.
-        static let chipsTop: CGFloat = 12
-        static let cardsTop: CGFloat = 16
         /// The editor's card: its padding, from the sheet's sides, and between its parts. From
-        /// the prototype. `editorCardInset` isn't `cardInset`, which is All bills' 16.
+        /// the prototype. `editorCardInset` is the editor's own.
         static let cardHorizontal: CGFloat = 18
         static let cardVertical: CGFloat = 16
         static let editorCardInset: CGFloat = 22
@@ -504,8 +477,6 @@ enum Tokens {
         static let yearDotExtra: CGFloat = 7
         static let yearDotExtraLarge: CGFloat = 11
         static let yearDotRing: CGFloat = 7
-        /// A category chip in All bills.
-        static let chipHeight: CGFloat = 34
         /// The editor's card: a bank card's proportions (ISO/IEC 7810 ID-1), from the prototype.
         /// The name field's height: room for it focused, which is taller than it is at rest.
         static let cardNameField: CGFloat = 28

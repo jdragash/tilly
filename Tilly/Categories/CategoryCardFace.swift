@@ -58,16 +58,7 @@ struct CategoryCardFace<Picture: View, Name: View>: View {
     @ViewBuilder let picture: Picture
     @ViewBuilder let name: Name
 
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var cornerRadii: RectangleCornerRadii {
-        let radius = metrics.radius
-        return RectangleCornerRadii(topLeading: radius, bottomLeading: radius, bottomTrailing: radius, topTrailing: radius)
-    }
-
     var body: some View {
-        let ink = colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured
-        let shape = RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, wobble: metrics.wobble)
         VStack(spacing: 0) {
             picture
                 .padding(.top, metrics.pictureTop)
@@ -79,27 +70,56 @@ struct CategoryCardFace<Picture: View, Name: View>: View {
         // As tall as the row in a grid, so a row's cards line up when one name needs more room.
         .frame(maxWidth: .infinity, minHeight: metrics.height, maxHeight: .infinity)
         .background {
-            PaperCard(cornerRadii: cornerRadii, seed: seed, wobble: metrics.wobble)
-                .overlay(alignment: .bottom) {
-                    // A wash, speckled as the prototype's `washF` speckles it.
-                    RoughRoundedRectangle(
-                        cornerRadii: RectangleCornerRadii(), seed: seed,
-                        wobble: Tokens.Drawn.stripWobble, frequency: Tokens.Drawn.stripFrequency
-                    )
-                        .fill(ink.opacity(Tokens.Opacity.pickerStrip))
-                        .frame(height: metrics.strip)
-                        .mask {
-                            Image(uiImage: Grain.speckle)
-                                .resizable(resizingMode: .tile)
-                                .interpolation(.medium)
-                        }
-                }
-                .clipShape(shape)
-                .shadow(
-                    color: colorScheme == .light ? metrics.shadowColour : .clear,
-                    radius: metrics.shadowRadius, y: metrics.shadowY
-                )
+            CategoryCardBackground(
+                colour: colour, seed: seed, radius: metrics.radius, strip: metrics.strip, wobble: metrics.wobble,
+                shadowColour: metrics.shadowColour, shadowRadius: metrics.shadowRadius, shadowY: metrics.shadowY
+            )
         }
+    }
+}
+
+/// A category card's ground: paper, a speckled strip of its colour along the bottom inside the card's
+/// shape, and a light shadow. Behind the grids' cards and All bills', which differ only in their
+/// contents.
+struct CategoryCardBackground: View {
+    let colour: CategoryColour?
+    let seed: UInt64
+    let radius: CGFloat
+    let strip: CGFloat
+    let wobble: CGFloat
+    let shadowColour: Color
+    let shadowRadius: CGFloat
+    let shadowY: CGFloat
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var cornerRadii: RectangleCornerRadii {
+        return RectangleCornerRadii(topLeading: radius, bottomLeading: radius, bottomTrailing: radius, topTrailing: radius)
+    }
+
+    var body: some View {
+        let ink = colour.map(Tokens.CategoryColour.color) ?? Tokens.Chart.uncoloured
+        let shape = RoughRoundedRectangle(cornerRadii: cornerRadii, seed: seed, wobble: wobble)
+        PaperCard(cornerRadii: cornerRadii, seed: seed, wobble: wobble)
+            .overlay(alignment: .bottom) {
+                // A wash, speckled as the prototype's `washF` speckles it.
+                RoughRoundedRectangle(
+                    cornerRadii: RectangleCornerRadii(), seed: seed,
+                    wobble: Tokens.Drawn.stripWobble, frequency: Tokens.Drawn.stripFrequency
+                )
+                    .fill(ink.opacity(Tokens.Opacity.pickerStrip))
+                    .frame(height: strip)
+                    .mask {
+                        Image(uiImage: Grain.speckle)
+                            .resizable(resizingMode: .tile)
+                            .interpolation(.medium)
+                    }
+            }
+            .clipShape(shape)
+            .shadow(
+                color: colorScheme == .light ? shadowColour : .clear,
+                radius: shadowRadius, y: shadowY
+            )
     }
 }
 

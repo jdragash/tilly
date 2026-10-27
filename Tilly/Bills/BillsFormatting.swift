@@ -6,11 +6,12 @@ enum BillsFormatting {
     /// What the card of bills with no category is called, as the lanes call theirs.
     static let uncategorisedName = "No category"
 
-    /// "€640 yearly", "€41 every 2 months", "€15 every 2 weeks", or "Monthly" when the figure *is*
-    /// the charge (a monthly bill in Monthly, a yearly one in Yearly), joined to the state with
-    /// " · ": "€25 until Nov 10", "from Oct 18", "ends 12/26". A plain "Monthly" or "Yearly" gives
-    /// way to the state alone. An ended row reads "ended 08/26" and nothing else.
-    static func note(for row: BillRow, period: BillPeriod, calendar: Calendar, locale: Locale) -> String {
+    /// A row's note, or "" when it has none: "€640 yearly", "€41 every 2 months", "€15 every 2 weeks"
+    /// when the figure isn't the charge (a monthly bill in Yearly, a yearly one in Monthly, anything
+    /// else), joined to the state with " · ": "ends this month", "ends next month", "ends 12/26",
+    /// "€25 until Nov 10", "from Oct 18". A bill whose figure is its charge says nothing of its
+    /// rhythm. An ended row reads "ended 08/26" and nothing else.
+    static func note(for row: BillRow, period: BillPeriod, today: Date, calendar: Calendar, locale: Locale) -> String {
         if case .ended(let end) = row.state {
             return "ended \(monthAndYear(end, calendar: calendar, locale: locale))"
         }
@@ -23,16 +24,27 @@ enum BillsFormatting {
         case .changes(let date, let from):
             "\(TimelineFormatting.amount(from, locale: locale)) until \(monthAndDay(date, calendar: calendar, locale: locale))"
         case .ends(let date):
-            "ends \(monthAndYear(date, calendar: calendar, locale: locale))"
+            ends(date, today: today, calendar: calendar, locale: locale)
         }
 
-        let rhythm = rhythm(row.rule)
         let figureIsCharge = row.rule.interval == 1 && row.rule.unit == (period == .month ? .month : .year)
         if figureIsCharge {
-            return state ?? rhythm.capitalized
+            return state ?? ""
         }
-        let charge = "\(TimelineFormatting.amount(row.charge, locale: locale)) \(rhythm)"
+        let charge = "\(TimelineFormatting.amount(row.charge, locale: locale)) \(rhythm(row.rule))"
         return state.map { "\(charge) \u{00B7} \($0)" } ?? charge
+    }
+
+    /// "ends this month", "ends next month", else "ends 12/26".
+    private static func ends(_ date: Date, today: Date, calendar: Calendar, locale: Locale) -> String {
+        let from = calendar.dateComponents([.year, .month], from: today)
+        let to = calendar.dateComponents([.year, .month], from: date)
+        let months = calendar.dateComponents([.month], from: calendar.date(from: from) ?? today, to: calendar.date(from: to) ?? date).month
+        switch months {
+        case 0: return "ends this month"
+        case 1: return "ends next month"
+        default: return "ends \(monthAndYear(date, calendar: calendar, locale: locale))"
+        }
     }
 
     /// "€1,563 a month" or "€18,756 a year".
