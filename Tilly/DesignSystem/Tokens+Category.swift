@@ -83,6 +83,14 @@ extension Tokens {
         /// A card with the figure under its name (`€95/mo`, `No bills`).
         static var cardHeightFigure: CGFloat { l.settingsCardHeightFigure }
         static var nameBottomFigure: CGFloat { l.settingsNameBottomFigure }
+        /// The name's place over the figure at `dynamicTypeSize`: as the figure grows, the name rises
+        /// by as much, so the two never meet.
+        static func nameBottomFigure(_ dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+            let grown = Tokens.Text.scaled(l.settingsFigureSize, as: .caption2, at: dynamicTypeSize) - l.settingsFigureSize
+            return l.settingsNameBottomFigure + grown * figureLineRatio
+        }
+        /// A line of the figure's text, as a multiple of its size.
+        static let figureLineRatio: CGFloat = 1.2
         /// The figure: 9 medium, `ink2`.
         static func figureFont(_ dynamicTypeSize: DynamicTypeSize) -> Font {
             .system(size: Tokens.Text.scaled(l.settingsFigureSize, as: .caption2, at: dynamicTypeSize),
@@ -95,5 +103,17 @@ extension Tokens {
         static var tile: CGFloat { l.settingsTile }
         static var tileRadius: CGFloat { l.settingsTileRadius }
         static let tileColour = Color(red: 0x5A / 255, green: 0x6C / 255, blue: 0xE8 / 255)
+        /// The tile's symbol, and the figure's ink.
+        static let tileSymbol: Font = .system(size: 19, weight: .medium)
+        static let figureInk = Tokens.Drawn.ink2
+
+        /// After a sort: a dark capsule with `Undo`, above the bottom edge, for a few seconds.
+        static let undoFont: Font = .footnote.weight(.semibold)
+        static let undoGround = Color(white: 0.12, opacity: 0.88)
+        static let undoInk: Color = .white
+        static let undoVertical: CGFloat = 9
+        static let undoHorizontal: CGFloat = 16
+        static let undoBottom: CGFloat = 36
+        static let undoSeconds: Double = 4
     }
 }

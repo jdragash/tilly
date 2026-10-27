@@ -309,7 +309,7 @@ struct TimelineView: View {
         .overlay(alignment: .bottom) { bottomRow(bottomInset: bottomInset) }
         // Above the glass controls, which fade while it shows: the readout takes the header row.
         .overlayPreferenceValue(CategoryReadoutKey.self) { CategoryReadoutLayer(placement: $0) }
-        .sheet(isPresented: $isSettingsPresented) { SettingsSheet() }
+        .sheet(isPresented: $isSettingsPresented) { SettingsSheet(today: today) }
         .sheet(isPresented: $isBillsPresented) { AllBillsSheet(today: today) }
     }
 

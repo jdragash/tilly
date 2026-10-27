@@ -31,6 +31,14 @@ struct CategoryCardFace<Picture: View, Name: View>: View {
             )
         }
 
+        /// Settings' card: the grid's, taller by the room for its figure under the name.
+        static func settings(_ dynamicTypeSize: DynamicTypeSize) -> Metrics {
+            var metrics = grid
+            metrics.height = Tokens.SettingsCategories.cardHeightFigure
+            metrics.nameBottom = Tokens.SettingsCategories.nameBottomFigure(dynamicTypeSize)
+            return metrics
+        }
+
         /// The category sheet's card.
         static var sheet: Metrics {
             Metrics(
