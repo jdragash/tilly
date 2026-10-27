@@ -54,3 +54,5 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
   `resignFirstResponder()` in `updateUIView` fires `didEndEditing` mid-update.
 - A `UITextField` subclass whose `textInputMode` returns the active mode with
   `primaryLanguage == "emoji"` opens straight on the system emoji keyboard.
+- A `TextField` ignores `minimumScaleFactor`: to shrink a typed name as a `Text` would, measure
+  it with `UIFont` and set the size yourself.
