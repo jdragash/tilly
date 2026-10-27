@@ -129,7 +129,12 @@ struct SymbolPicker: View {
             searchFocused = false
             onPick(entry.name)
         } label: {
-            CategoryPictureView(picture: .symbol(entry.name), colour: colour, size: picture, round: true, place: .editor)
+            // A square cell as wide as its column, the picture in its middle.
+            Color.clear
+                .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    CategoryPictureView(picture: .symbol(entry.name), colour: colour, size: picture, round: true, place: .editor)
+                }
                 .overlay {
                     if isPicked {
                         Circle()
@@ -140,8 +145,6 @@ struct SymbolPicker: View {
                             )
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

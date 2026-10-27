@@ -60,6 +60,8 @@ struct CategoriesPage: View {
             .onDrop(of: [.text], isTargeted: nil) { _ in true }
         }
         .scrollBounceBehavior(.basedOnSize)
+        // A pushed page draws its own ground; without it the stack shows white.
+        .drawnPaper()
         .navigationTitle("Categories")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

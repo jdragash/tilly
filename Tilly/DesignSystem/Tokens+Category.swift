@@ -99,7 +99,7 @@ extension Tokens {
         static var figureBottom: CGFloat { l.settingsFigureBottom }
         static var figureSide: CGFloat { l.settingsFigureSide }
 
-        /// The `Categories` row's tile: white `square.grid.2x2` on `#5A6CE8`.
+        /// The `Categories` row's tile: white `square.grid.2x2.fill` on `#5A6CE8`, as the prototype draws it.
         static var tile: CGFloat { l.settingsTile }
         static var tileRadius: CGFloat { l.settingsTileRadius }
         static let tileColour = Color(red: 0x5A / 255, green: 0x6C / 255, blue: 0xE8 / 255)
@@ -113,7 +113,7 @@ extension Tokens {
         static let undoInk: Color = .white
         static let undoVertical: CGFloat = 9
         static let undoHorizontal: CGFloat = 16
-        static let undoBottom: CGFloat = 36
+        static let undoBottom: CGFloat = 70
         static let undoSeconds: Double = 4
     }
 }

@@ -22,7 +22,7 @@ struct SettingsSheet: View {
                         CategoriesPage(today: today)
                     } label: {
                         HStack(spacing: Tokens.Space.gap) {
-                            Image(systemName: "square.grid.2x2")
+                            Image(systemName: "square.grid.2x2.fill")
                                 .font(Tokens.SettingsCategories.tileSymbol)
                                 .foregroundStyle(Tokens.Ink.onProminent)
                                 .frame(width: Tokens.SettingsCategories.tile, height: Tokens.SettingsCategories.tile)
