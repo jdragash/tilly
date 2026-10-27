@@ -81,6 +81,10 @@ struct ExpenseEditor: View {
                                 // The category grid takes everything under the card, as the
                                 // prototype's picker does; every other panel keeps its height.
                                 .frame(height: panel == .category ? gridHeight : Tokens.Size.editorPanel)
+                                // The stack's spacing falls on both sides of the spacer, so a panel
+                                // sits two gaps under the card. The grid takes one, as the prototype's
+                                // picker sits 16 under it; `gridHeight` already counts only one.
+                                .padding(.top, panel == .category ? -Tokens.Space.section : 0)
                                 .opacity(nameFocused ? 0 : 1)
                                 .accessibilityHidden(nameFocused)
                         }
