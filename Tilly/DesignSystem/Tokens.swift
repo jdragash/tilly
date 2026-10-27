@@ -144,12 +144,9 @@ enum Tokens {
         /// than this, and the further level no larger than `zoomMax`. Tuning values.
         static let zoomMin: CGFloat = 0.2
         static let zoomMax: CGFloat = 3
-        /// The spread of a pinch that carries a change of level all the way; the prototype's
-        /// `PIN.full` (`calendar-pinch.html`), a tuning value.
-        static let pinchFull: CGFloat = 2.2
-        /// How far a pinch's magnification must leave 1 before it has a direction, either way;
-        /// the prototype's `PIN.start` (`calendar-pinch.html`).
-        static let pinchStart: CGFloat = 1.04
+        /// The spread, or its inverse closing, at which a pinch plays the change of level;
+        /// from `calendar-pinch.html`, a tuning value.
+        static let pinchTrigger: CGFloat = 1.25
     }
 
     enum Opacity {
@@ -533,15 +530,6 @@ enum Tokens {
         /// A tuning value.
         static let zoomDuration: TimeInterval = 0.38
         static let zoom: Animation = .timingCurve(0.2, 0.8, 0.2, 1, duration: zoomDuration)
-        /// How far along a lifted pinch must be to finish the change of level; the prototype's
-        /// `PIN.commit` (`calendar-pinch.html`).
-        static let pinchFinish: CGFloat = 0.4
-        /// A lifted pinch faster than this, in shares of the way per second, finishes however far
-        /// it got; the prototype's `PIN.flick` (`calendar-pinch.html`).
-        static let pinchFlick: CGFloat = 1.5
-        /// The least a pinch's settling takes after the fingers lift, however little is left;
-        /// the prototype's 140ms (`calendar-pinch.html`).
-        static let pinchSettleMin: TimeInterval = 0.14
         /// The header and its controls fading aside while dragging across the lanes,
         /// and back. Out is quick so nothing lies under the readout as it lands; back is a touch
         /// slower. Guesses: 0.2s both ways felt slow in the Simulator.

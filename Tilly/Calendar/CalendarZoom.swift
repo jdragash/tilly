@@ -67,52 +67,15 @@ final class CalendarZoomFrames {
     }
 }
 
-extension CalendarZoom {
-    /// How far in a change of level is: 0 shows the further level, 1 the closer.
-    /// The closer level's scale and opacity at `t`: from `scale` and 0 to 1 and 1.
-    func closer(at t: CGFloat) -> (scale: CGFloat, opacity: Double) {
-        (scale + (1 - scale) * t, Double(t))
-    }
-
-    /// The further level's: from 1 and 1 to `outerScale` and 0.
-    func further(at t: CGFloat) -> (scale: CGFloat, opacity: Double) {
-        (1 + (outerScale - 1) * t, Double(1 - t))
-    }
-}
-
 enum PinchDirection: Equatable { case `in`, out }
 
-/// One pinch, from the gesture's magnification, as the prototype's `pMove` and `pEnd` read it.
-struct PinchProgress: Equatable {
-    /// nil until the magnification leaves 1/pinchStart...pinchStart.
+/// When a pinch plays the zoom, as the prototype's trigger reads it.
+enum PinchTrigger {
+    /// The way a pinch goes once its magnification reaches `pinchTrigger` spreading or
+    /// `1 / pinchTrigger` closing; nil before either.
     static func direction(magnification: CGFloat) -> PinchDirection? {
-        if magnification > Tokens.Scale.pinchStart { return .in }
-        if magnification < 1 / Tokens.Scale.pinchStart { return .out }
+        if magnification >= Tokens.Scale.pinchTrigger { return .in }
+        if magnification <= 1 / Tokens.Scale.pinchTrigger { return .out }
         return nil
-    }
-
-    /// How far along its direction: ln(spread) / ln(pinchFull), clamped to 0...1, where spread is
-    /// the magnification going in and its inverse going out.
-    static func progress(magnification: CGFloat, direction: PinchDirection) -> CGFloat {
-        let spread = direction == .in ? magnification : 1 / magnification
-        return min(1, max(0, log(spread) / log(Tokens.Scale.pinchFull)))
-    }
-
-    /// The same per second, from the gesture's magnification velocity: the derivative of
-    /// `progress` over time, velocity / (magnification * ln(pinchFull)), negated going out.
-    /// Unclamped, so a pinch past either end still reports how fast the fingers move.
-    static func speed(magnification: CGFloat, velocity: CGFloat, direction: PinchDirection) -> CGFloat {
-        let rate = velocity / (magnification * log(Tokens.Scale.pinchFull))
-        return direction == .in ? rate : -rate
-    }
-
-    /// Whether a lifted pinch finishes: past pinchFinish, or faster than pinchFlick.
-    static func finishes(progress: CGFloat, speed: CGFloat) -> Bool {
-        progress > Tokens.Motion.pinchFinish || speed > Tokens.Motion.pinchFlick
-    }
-
-    /// How long the rest takes: zoomDuration times the distance left, at least pinchSettleMin.
-    static func settleDuration(from t: CGFloat, to end: CGFloat) -> TimeInterval {
-        max(Tokens.Motion.pinchSettleMin, Tokens.Motion.zoomDuration * TimeInterval(abs(end - t)))
     }
 }
