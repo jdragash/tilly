@@ -117,3 +117,8 @@ one place").
 2. **The pinch follows the fingers the whole way**, as Photos does, finishing past 40% or on a flick
    and springing back otherwise. Nudging a little and then playing the tap's zoom lost.
 3. **Pinching in on a month opens the day under the fingers.** Opening the month's top lost.
+
+### 2026-10-27, later: the pinch only triggers the zoom
+
+Mid-build, Jake simplified it: a pinch plays the zoom a tap plays once it passes 1.25×, rather than
+following the fingers. Driving the zoom by a progress value (the plan's step 4) was dropped with it.

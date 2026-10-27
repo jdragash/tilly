@@ -64,12 +64,11 @@ level: `‹ Year` over a month, and over the days the month under the middle of 
 A level grows out of what was tapped, a month from its place in the year, and shrinks back into it,
 or crossfades under Reduce Motion.
 
-A pinch moves one level, never two. Spreading goes in, as a tap would on the month or the day
-between the fingers; closing goes out, where the back button goes, shrinking into the day under the
-fingers when it is in that month. The levels follow the fingers the whole way, all the way in at a
-2.2× spread, and once the fingers lift they finish if past 40% or flicked, and spring back if not. A
-pinch past the year or the days does nothing. One finger still scrolls the year and the days and
-pages the month. The app reopens on the level and month you left,
+A pinch moves one level, never two, and plays the zoom a tap plays once the fingers have spread or
+closed by a quarter (1.25×), without waiting for them to lift; less moves nothing. Spreading goes in,
+as a tap would on the month or the day between the fingers; closing goes out, where the back button
+goes, shrinking into the day under the fingers when it is in that month. A pinch past the year or
+the days does nothing. One finger still scrolls the year and the days and pages the month. The app reopens on the level and month you left,
 at the month's top, however long you were gone; the current month decides only on first run.
 
 ### The year

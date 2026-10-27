@@ -16,16 +16,16 @@ is three zoom levels" and "Every charge is its own row". Reference: `docs/protot
 - Pinching in on the year opens the month nearest the fingers; on a month, the day nearest the
   fingers, exactly as tapping it would. Pinching out goes where the back button goes, shrinking into
   the day under the fingers when that day is in the month it lands on.
-- The pinch follows the fingers the whole way: all the way in at a 2.2× spread, finishing on lift past
-  40% or on a flick faster than 1.5 of the way per second, springing back otherwise. Reduce Motion
-  keeps the crossfade, following the fingers. No haptic.
-- Taps, the back buttons and the month button keep today's motion: the same anchor, scales and
-  `Tokens.Motion.zoom`. Their look must not change in step 4.
+- A pinch doesn't follow the fingers (Jake, 2026-10-27: simpler). Once the spread or the closing passes
+  1.25×, it plays the zoom a tap plays, at once, without waiting for the fingers to lift; the rest of
+  that pinch does nothing. Below it, nothing moves. Reduce Motion keeps the crossfade. No haptic.
+- Taps, the back buttons, the month button and the pinch all play today's zoom: the same anchor,
+  scales, transitions and `Tokens.Motion.zoom`. The transitions stay.
 - The All / Extras toggle, settings, the arrows and the bottom row don't zoom.
 
 ## Model routing
 
-Steps 1 and 3 are Sonnet's: their tests prove them. Steps 2, 4 and 5 are Opus's: a green suite stays
+Steps 1 and 3 are Sonnet's: their tests prove them. Steps 2 and 5 are Opus's: a green suite stays
 green with each broken (`CLAUDE.md`; `.claude/rules/swiftui-scrolling.md`, `calendar.md`). Step 6 is
 `tilly-ship`.
 
@@ -105,139 +105,78 @@ content height before and after with `onScrollGeometryChange`. Screenshots in li
 
 **Out of scope:** the pinch, the zoom's code, any mark or label for an empty day.
 
-### Step 3 — The zoom and the pinch, as numbers
+### Step 3 — The pinch's trigger, as a number
 
-Order: before 4 and 5, which draw with it.
+Built first as a pinch that follows the fingers (`a6c03af`). **Revised 2026-10-27**: the pinch now only
+triggers the zoom, so this step shrinks to the trigger. Remove what only a scrubbed zoom needed.
 
 **Files:**
-- modified `Tilly/Calendar/CalendarZoom.swift`
-- modified `Tilly/DesignSystem/Tokens.swift`: in `Scale`, `pinchFull: CGFloat = 2.2` (the spread
-  that goes all the way) and `pinchStart: CGFloat = 1.04` (before which a pinch has no direction);
-  in `Motion`, `pinchFinish: CGFloat = 0.4`, `pinchFlick: CGFloat = 1.5` (of the way per second) and
-  `pinchSettleMin: TimeInterval = 0.14`. Each with a comment naming `calendar-pinch.html`.
-- new `TillyTests/CalendarZoomTests.swift`
+- modified `Tilly/Calendar/CalendarZoom.swift`: remove `closer(at:)`, `further(at:)` and
+  `PinchProgress`; keep `PinchDirection`; add `PinchTrigger`.
+- modified `Tilly/DesignSystem/Tokens.swift`: remove `pinchFull`, `pinchStart`, `pinchFinish`,
+  `pinchFlick`, `pinchSettleMin`; add in `Scale` `pinchTrigger: CGFloat = 1.25`, commented as the
+  spread (or its inverse, closing) at which a pinch plays the zoom, from `calendar-pinch.html`.
+- modified `TillyTests/CalendarZoomTests.swift`: drop the removed functions' tests.
 
 **Interface:**
 ```swift
-extension CalendarZoom {
-    /// How far in a change of level is: 0 shows the further level, 1 the closer.
-    /// The closer level's scale and opacity at `t`: from `scale` and 0 to 1 and 1.
-    func closer(at t: CGFloat) -> (scale: CGFloat, opacity: Double)
-    /// The further level's: from 1 and 1 to `outerScale` and 0.
-    func further(at t: CGFloat) -> (scale: CGFloat, opacity: Double)
-}
-
-enum PinchDirection: Equatable { case `in`, out }
-
-/// One pinch, from the gesture's magnification, as the prototype's `pMove` and `pEnd` read it.
-struct PinchProgress: Equatable {
-    /// nil until the magnification leaves 1/pinchStart...pinchStart.
+enum PinchTrigger {
+    /// The way a pinch goes once its magnification reaches `pinchTrigger` spreading or
+    /// `1 / pinchTrigger` closing; nil before either.
     static func direction(magnification: CGFloat) -> PinchDirection?
-    /// How far along its direction: ln(spread) / ln(pinchFull), clamped to 0...1, where spread is the
-    /// magnification going in and its inverse going out.
-    static func progress(magnification: CGFloat, direction: PinchDirection) -> CGFloat
-    /// The same per second, from the gesture's magnification velocity.
-    static func speed(magnification: CGFloat, velocity: CGFloat, direction: PinchDirection) -> CGFloat
-    /// Whether a lifted pinch finishes: past pinchFinish, or faster than pinchFlick.
-    static func finishes(progress: CGFloat, speed: CGFloat) -> Bool
-    /// How long the rest takes: zoomDuration times the distance left, at least pinchSettleMin.
-    static func settleDuration(from t: CGFloat, to end: CGFloat) -> TimeInterval
 }
 ```
 
-**Done when:** the suite passes, with `CalendarZoomTests`: `closerStartsAtCellScaleAndClear`,
-`closerEndsFullAndOpaque`, `furtherEndsAtOuterScaleAndClear`, `outerScaleCapsAtZoomMax`,
-`noDirectionInsideTheDeadZone`, `spreadingIsIn`, `closingIsOut`, `progressIsFullAtPinchFull`,
-`progressClampsBothEnds`, `progressOutUsesTheInverse`, `finishesPastFortyPercent`,
-`flickFinishesEarly`, `slowShortPinchSpringsBack`, `settleDurationScalesWithDistance`,
-`settleDurationHasAFloor`.
+**Done when:** the suite passes, with `CalendarZoomTests`: `nothingInsideTheTrigger`,
+`spreadingPastTheTriggerIsIn`, `closingPastTheTriggerIsOut`, `exactlyAtTheTriggerCounts`.
 
 **Verify:** the step 1 command.
 
 **Out of scope:** views and gestures.
 
-### Step 4 — Zoom between levels by a progress value, not by transitions (Opus)
+### Step 4 — Dropped
 
-Needs step 3. Today the year and the month arrive and leave as `.transition`s, which can't be
-scrubbed. Drive every level from one value instead, so step 5 can hand it to the fingers.
+Driving the zoom by a progress value was only needed for a pinch that follows the fingers.
 
-**Files:** modified `Tilly/Timeline/TimelineView.swift` (and `CalendarZoom.swift` only if a helper
-is needed).
+### Step 5 — The pinch plays the zoom (Opus)
 
-**Shape:**
-- New state: `zoomPair: (further: CalendarLevel, closer: CalendarLevel)?` and `zoomProgress: CGFloat`.
-  While `zoomPair` is set, both its levels are mounted and drawn with `levelZoom.closer(at:)` and
-  `levelZoom.further(at:)` as `scaleEffect` (about `levelZoom.anchor`) and `opacity`; under Reduce
-  Motion the scale is 1. At rest (`zoomPair == nil`) only `level` is mounted, at full size, as now.
-  The timeline stays mounted throughout and takes the same values when it is in the pair.
-- `setLevel(_:zoom:)` keeps its signature: set the pair and the progress to where the level now is,
-  a turn later `withAnimation(Tokens.Motion.zoom)` the progress to the other end, and when
-  `zoomDuration` has passed set `level`, clear the pair and `zoomFrames.isZooming`. Remove the year's
-  and the month's `.transition`s.
-- `level` changes as the zoom starts, so the controls answer at once (TASTE 12): the arrows, the
-  month button and the top row's back button switch on the tap, as they do now.
-- A tap during a zoom finishes the running one at once and starts the new one.
+Needs steps 2 and 3.
 
-**Done when:** the suite passes, and screen recordings on the simulator of year → month → day → month
-→ year, by taps and back buttons, match recordings of `main` frame for frame at the start, middle and
-end (same anchor, same sizes, same fades), in light, dark and Reduce Motion. The timeline keeps its
-place across a round trip (the month under the middle and its offset, logged, unchanged). The rules'
-traps still hold: frames in flight aren't kept.
-
-**Verify:** the step 1 command, then the recordings.
-
-**Out of scope:** the gesture. No change a reader could see.
-
-### Step 5 — The pinch (Opus)
-
-Needs steps 2 and 4.
-
-**Files:** modified `Tilly/Timeline/TimelineView.swift`; `CalendarMonthView.swift` and `YearView.swift`
-only to hand the gesture's location in, if the frames already reported aren't enough.
+**Files:** modified `Tilly/Timeline/TimelineView.swift`; `CalendarMonthView.swift` only if its paging
+drag needs to step aside.
 
 **Shape:**
 - One `MagnifyGesture`, `.simultaneousGesture` on the levels' `ZStack`, so one finger still scrolls
   and pages. Its `startLocation` is in `CalendarZoom.space`; check that it and `TimelineSpace`
   share an origin, and convert if they don't.
-- On the first change outside the dead zone (`PinchProgress.direction`), choose the pair, the zoom
-  and the target, exactly as the taps and back buttons do, from what is nearest the start location:
-  - year, in: the month in `zoomFrames.months` nearest it; set `calendarMonthID`; zoom from its frame.
-  - month, in: the day in `zoomFrames.days`, among the shown month's days, nearest it; land the
-    timeline on it as `openDay` does, without marking the day or saving the place yet; zoom from
-    its frame.
-  - day, out: the month under the middle, as the back button; the row under the location gives a
-    day, used when it is in that month and `zoomFrames.days` has its frame; otherwise
-    `zoomFrames.openedDay` as now, otherwise `.centre`.
-  - month, out: the month's frame in the year, as the back button.
-  - year out, day in: nothing, for the rest of this pinch.
-- On change: `zoomProgress` = the progress, or 1 − it going out, set without animation.
-- On end: `PinchProgress.finishes`, then animate to the end with
-  `.timingCurve(0.2, 0.8, 0.2, 1, duration: PinchProgress.settleDuration(...))`. Finishing sets the
-  level when the pinch commits (as `setLevel` does), marks the day and saves the timeline's place
-  when it lands in the days. Springing back restores the level it started on and clears what it
-  prepared, and the timeline's place is put back if the pinch had moved it.
-- The month's paging `DragGesture` ignores a drag while a pinch is under way.
+- On change, the first time `PinchTrigger.direction` is non-nil, act once, exactly as the matching
+  tap or back button, choosing from what is nearest the start location:
+  - year, in: the month in `zoomFrames.months` nearest it, as `openMonth`.
+  - month, in: the day in `zoomFrames.days`, among the shown month's days, nearest it, as `openDay`.
+  - day, out: the back button's action, except that the row under the location gives the day to
+    shrink into when that day is in the month it lands on and `zoomFrames.days` has its frame.
+  - month, out: the back button's action.
+  - year out, day in: nothing.
+  The rest of that pinch does nothing; the next pinch starts fresh.
+- The month's paging `DragGesture` ignores a drag that was part of a pinch.
 
-**Done when:** the suite passes, and on a device (two-finger pinch needs one; the simulator's
-⌥-drag pinches about the screen's centre and is enough for a first pass):
-- Each of the four directions follows the fingers, finishes past 40%, springs back below it, and a
-  quick flick finishes from about 15%.
+**Done when:** the suite passes, and on the simulator (⌥-drag pinches about the centre) and then a
+device:
+- Each of the four directions plays the same zoom its tap or back button plays, about the cell
+  under the fingers, once the pinch passes 1.25×, before the fingers lift; a smaller pinch moves nothing.
 - Pinching in on a month at an empty day lands it as step 2 measured; at a day with charges, as a tap
   does, marked.
-- Pinching in on the year opens the month under the fingers.
 - One-finger scrolling of the year and the days, and paging the month by a swipe, still work.
-- A pinch past the year or the days does nothing.
-- Reduce Motion crossfades with the fingers.
-- Screenshots of a pinch half-way, in light and dark, beside the prototype's at the same progress.
+- A pinch past the year or the days does nothing; a long pinch never moves two levels.
 
 **Verify:** the step 1 command, then the checks above, reported with what was seen.
 
-**Out of scope:** density within a level, haptics, the key's copy.
+**Out of scope:** following the fingers, density within a level, haptics.
 
 ### Step 6 — Ship
 
 `tilly-ship`: move observation 8 to Done in `docs/observations.md`, carry this plan's Lessons into
-`.claude/rules/calendar.md` (the transition notes there change with step 4), delete the plan, tag.
+`.claude/rules/calendar.md`, delete the plan, tag.
 
 ## Lessons
 

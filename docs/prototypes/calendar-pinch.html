@@ -13,8 +13,9 @@
     1. An empty day lands where it falls in the list, in the middle of what shows, with no mark.
        Rejected: a fading "Nothing on Thu 12" line there (Jake: just take you to the place), and
        landing it under the month's header.
-    2. The pinch follows the fingers the whole way, as Photos does. Rejected: nudging a little,
-       then playing the tap's zoom.
+    2. The pinch plays the tap's zoom once it passes 1.25x, without following the fingers (Jake,
+       later the same day: simpler). Rejected: following the fingers the whole way, as Photos does,
+       and nudging a little first.
     3. Pinching in on a month opens the day under the fingers. Rejected: the month's top.
   Settled before it, and built in: every day of the month is a button; one pinch moves one level;
   pinching out goes where the back button goes; a day with charges lands as it does today.
@@ -317,8 +318,8 @@ const KEY="tilly-calendar-pinch";
 // What dashed-and-solid settled, fixed here.
 const FIXED={lineAt:"left",cLine:"off",cPic:"wash",uLine:"off",uPic:"wash",uEdge:"faint",recur:"badge",dates:"relative",badge:"none",
   badgeCol:"cat",badgeCase:"normal",ends:"near",yearly:"badge",boil:"all",custom:false,customText:"",
-  // Settled 2026-10-27: an empty day lands mid-list unmarked; the pinch follows the fingers; pinching in opens the day under them.
-  empty:"middle",pinch:"follow",monthIn:"finger"};
+  // Settled 2026-10-27: an empty day lands mid-list unmarked; the pinch plays the tap's zoom at 1.25x; pinching in opens the day under them.
+  empty:"middle",pinch:"trigger",monthIn:"finger"};
 const DEFAULTS={dark:null,rm:false};
 const S=Object.assign({},DEFAULTS,(()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ return {}; } })(),FIXED);
 function save(){ try{ const o={}; Object.keys(DEFAULTS).forEach(k=>o[k]=S[k]); localStorage.setItem(KEY,JSON.stringify(o)); }catch(e){} }
@@ -759,6 +760,7 @@ function pMove(r,mid){
     paint(P.outer,P.inner,P.dir==="in"?q:1-q,P.z);
   } else {
     if(spread>=PIN.nudgeAt){ commit(); return; }
+    if(S.pinch==="trigger") return;
     const e=LV[level], k=1+Math.max(-PIN.nudgeMax,Math.min(PIN.nudgeMax,(r-1)*PIN.nudgeGain));
     e.style.transition="none"; e.style.transformOrigin=`${P.mid.x}px ${P.mid.y}px`; e.style.transform=`scale(${S.rm?1:k})`;
   }
@@ -833,7 +835,7 @@ function panelHTML(){
     `Pinch with two fingers on a phone or a trackpad, or hold ⌥ and drag up or down with a mouse. The back buttons and taps still work.</p></div>`+
     `<div class="pbtns"><button class="reset" data-reset="1">Reset</button></div></div>`+
     tcard("Settled 2026-10-27","",`<p class="desc">An empty day lands where it falls, in the middle of what shows, with nothing marking it. `+
-      `The pinch follows the fingers the whole way and springs back if let go early. Pinching in on a month opens the day under the fingers.</p>`)+
+      `A pinch plays the zoom a tap plays once the fingers have spread or closed by a quarter, without waiting for them to lift. Pinching in on a month opens the day under the fingers.</p>`)+
     `<h2>Prototype</h2>`+
     tcard("Look","",fld("Appearance",chips("dark",[["false","Light"],["true","Dark"]]))+fld("Reduce Motion",chips("rm",[["false","Off"],["true","On"]]),"On: the levels crossfade, as they do now, and a pinch crossfades with the fingers."))+
     `<details class="tc lies-c"><summary class="ch">What this prototype lies about</summary><ul class="lies">`+
