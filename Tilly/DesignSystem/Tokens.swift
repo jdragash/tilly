@@ -530,6 +530,9 @@ enum Tokens {
         /// A tuning value.
         static let zoomDuration: TimeInterval = 0.38
         static let zoom: Animation = .timingCurve(0.2, 0.8, 0.2, 1, duration: zoomDuration)
+        /// How long after a pinch taps are ignored, so its fingers lifting don't land as taps; the
+        /// prototype's `quietUntil` (`calendar-pinch.html`).
+        static let pinchQuiet: TimeInterval = 0.35
         /// The header and its controls fading aside while dragging across the lanes,
         /// and back. Out is quick so nothing lies under the readout as it lands; back is a touch
         /// slower. Guesses: 0.2s both ways felt slow in the Simulator.

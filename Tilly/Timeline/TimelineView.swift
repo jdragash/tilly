@@ -76,6 +76,13 @@ struct TimelineView: View {
     @State private var zoomPairsWithYear = true
     /// The frames a zoom grows from, reported by the year's and the month's cells.
     @State private var zoomFrames = CalendarZoomFrames()
+    /// A pinch is under way, and whether it has played its zoom: each pinch moves one level at most.
+    @GestureState private var isPinching = false
+    @State private var pinchHasActed = false
+    /// The pinch as state, for taps to read: a level leaving keeps the closures it was drawn
+    /// with, and reads a `@GestureState` from them as it was then.
+    @State private var pinchUnderway = false
+    @State private var pinchEnded = Date.distantPast
     /// The timeline's size while it is the level that shows or is leaving; it rests at the size an
     /// arriving level grows from, so the next arrival has somewhere to grow from.
     @State private var timelineScale: CGFloat = 1
@@ -250,10 +257,13 @@ struct TimelineView: View {
             if showsCalendarMonth, let window {
                 CalendarMonthView(
                     month: calendarMonthBinding(in: window), window: window,
-                    calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay,
+                    calendarMonth: calendarMonthModel(in: window), today: today,
+                    onOpenDay: { day in ifNotPinching { openDay(day) } },
                     arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
-                    onDayFrame: { zoomFrames.report(day: $0, frame: $1) },
-                    onBack: { setLevel(.year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window))) },
+                    // Only while the month shows: leaving, it reports scaled frames past the zoom's end.
+                    onDayFrame: { if level == .month { zoomFrames.report(day: $0, frame: $1) } },
+                    onBack: { ifNotPinching { backToYear(in: window) } },
+                    isPinching: isPinching,
                     titleTrailingClearance: toggleClearance
                 )
                 .transition(monthTransition)
@@ -262,11 +272,30 @@ struct TimelineView: View {
                 YearView(
                     overview: yearOverview(in: window), extrasOnly: extrasOnly, today: today,
                     titleTrailingClearance: toggleClearance,
-                    onOpenMonth: { openMonth($0, in: window) },
+                    onOpenMonth: { month in ifNotPinching { openMonth(month, in: window) } },
                     arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
-                    onMonthFrame: { zoomFrames.report(month: $0, frame: $1) }
+                    onMonthFrame: { if level == .year { zoomFrames.report(month: $0, frame: $1) } }
                 )
                 .transition(yearTransition)
+            }
+        }
+        // Alongside the levels' own gestures, so one finger still scrolls and pages.
+        .simultaneousGesture(
+            MagnifyGesture()
+                .updating($isPinching) { _, pinching, _ in pinching = true }
+                .onChanged { value in
+                    guard !pinchHasActed,
+                          let direction = PinchTrigger.direction(magnification: value.magnification)
+                    else { return }
+                    pinchHasActed = true
+                    pinch(direction, at: value.startLocation)
+                }
+        )
+        .onChange(of: isPinching) { _, pinching in
+            pinchUnderway = pinching
+            if !pinching {
+                pinchHasActed = false
+                pinchEnded = Date()
             }
         }
         .coordinateSpace(name: CalendarZoom.space)
@@ -353,11 +382,7 @@ struct TimelineView: View {
         let month = monthUnderMiddle() ?? window.current
         return HStack {
             BackButton(title: month.name(in: calendar, relativeTo: today, locale: locale)) {
-                let target = min(max(month, window.floor), window.ceiling)
-                calendarMonthID = target.id
-                // Back into the day it came from, when the list is still in that day's month.
-                let day = zoomFrames.openedDay.flatMap { MonthKey(containing: $0, calendar: calendar) == target ? $0 : nil }
-                setLevel(.month, zoom: day.map(zoomFrames.zoom(forDay:)) ?? .centre)
+                ifNotPinching { backToMonth(in: window) }
             }
             Spacer()
         }
@@ -384,7 +409,7 @@ struct TimelineView: View {
                                 markedDay: markedDay,
                                 markedEntryID: markedEntryID,
                                 onRowFrame: { rowFrames.report($0, frame: $1) },
-                                onOpen: openEntry
+                                onOpen: { entry in ifNotPinching { openEntry(entry) } }
                             )
                             // The content, not the `Section`: a geometry modifier there
                             // stops headers pinning. And the content, not the header: a
@@ -515,6 +540,65 @@ struct TimelineView: View {
             sections: sections, categoryOf: Expense.categoryMap(expenses),
             categories: categories.map(CategoryInfo.init), extrasOnly: extrasOnly, today: today, calendar: calendar
         )
+    }
+
+    /// The days' back button: out to the month under the middle of the list, shrinking into `day`
+    /// when it's in that month and the grid has shown it, or else into the day last opened from the
+    /// grid if the list is still in its month.
+    private func backToMonth(in window: TimelineWindow, shrinkingInto day: Date? = nil) {
+        let target = min(max(monthUnderMiddle() ?? window.current, window.floor), window.ceiling)
+        calendarMonthID = target.id
+        let inTarget: (Date) -> Date? = { MonthKey(containing: $0, calendar: calendar) == target ? $0 : nil }
+        let shrinksInto = day.flatMap(inTarget).flatMap { zoomFrames.days[$0] == nil ? nil : $0 }
+            ?? zoomFrames.openedDay.flatMap(inTarget)
+        setLevel(.month, zoom: shrinksInto.map(zoomFrames.zoom(forDay:)) ?? .centre)
+    }
+
+    /// The month's back button: out to the year, shrinking into the month's cell.
+    private func backToYear(in window: TimelineWindow) {
+        setLevel(.year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window)))
+    }
+
+    /// A pinch past the trigger plays the zoom the matching tap or back button plays, choosing what
+    /// is nearest the fingers. Once a pinch: the rest of it does nothing, and past the year or the
+    /// days it does nothing at all.
+    private func pinch(_ direction: PinchDirection, at location: CGPoint) {
+        guard let window, mode == .timeline, !expenses.isEmpty else { return }
+        switch (level, direction) {
+        case (.year, .in):
+            if let month = nearest(to: location, in: zoomFrames.months) { openMonth(month, in: window) }
+        case (.month, .in):
+            let shown = shownCalendarMonth(in: window)
+            let days = zoomFrames.days.filter { MonthKey(containing: $0.key, calendar: calendar) == shown }
+            if let day = nearest(to: location, in: days) { openDay(day) }
+        case (.day, .out):
+            backToMonth(in: window, shrinkingInto: day(under: location))
+        case (.month, .out):
+            backToYear(in: window)
+        case (.year, .out), (.day, .in):
+            break
+        }
+    }
+
+    /// Runs a tap's action unless a pinch is under way or has just ended: the fingers lifting off a
+    /// pinch land as taps on whatever is under them, which opened two days at once.
+    private func ifNotPinching(_ action: () -> Void) {
+        guard !pinchUnderway, Date().timeIntervalSince(pinchEnded) > Tokens.Motion.pinchQuiet else { return }
+        action()
+    }
+
+    /// The key whose frame's centre is nearest `point`.
+    private func nearest<Key>(to point: CGPoint, in frames: [Key: CGRect]) -> Key? {
+        frames.min { hypot($0.value.midX - point.x, $0.value.midY - point.y) < hypot($1.value.midX - point.x, $1.value.midY - point.y) }?.key
+    }
+
+    /// The day of the row under `point` in the list, if a row is there.
+    private func day(under point: CGPoint) -> Date? {
+        let ids = rowFrames.frames.filter { $0.value.minY <= point.y && point.y < $0.value.maxY }.keys
+        for section in sections.values {
+            if let entry = section.entries.first(where: { ids.contains($0.id) }) { return entry.date }
+        }
+        return nil
     }
 
     /// A month in the year opens as the month level.

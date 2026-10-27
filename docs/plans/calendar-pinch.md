@@ -187,6 +187,14 @@ device:
 - **An empty day near either end of the list lands as near the middle as the content allows**:
   in a floor month the list was already at its end (marker at 184, 469 and 608 for a 420 middle).
 
+- **A level leaving reports scaled frames after `isZooming` clears**: the month grid kept its day
+  cells at 3× (150pt wide), and the back button and the pinch shrank into the wrong cell. Keep a
+  level's frames only while it is the level that shows.
+- **A pinch's fingers lifting land as taps** on whatever is under them: closing on the month
+  opened two days. Taps wait out a pinch and 0.35s after it, as the prototype's `quietUntil` does.
+- **A level leaving keeps the closures it was drawn with,** and a `@GestureState` read from them
+  is the value from then. Mirror it into `@State` for anything a tap reads.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be
