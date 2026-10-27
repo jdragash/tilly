@@ -235,9 +235,9 @@ the category sheet; its ✓ makes the category and applies it. Holding a card li
 The same sheet makes and changes one, sliding over the bill's or Settings, with ✕, a red trash button
 when changing, and ✓, which waits for a name and a change. Fixed at its top: the category's card,
 126 × 164, with the name typed on the card, dashed until there is one, then the eight colours, the
-next unused one chosen. Under them, Tilly's symbols scroll as one long grid, six across, each the
-size of a grid card's picture, under a search field that sticks at their top. A new category starts on a tag; while the name matches a symbol's
-words or comes close to one, that symbol replaces it, marked with a spark, until one is picked.
+next unused one chosen. Under them, Tilly's symbols scroll as one long grid, six across, 44pt each,
+under a search field that sticks at their top. A new category starts on a tag; while the name matches a symbol's
+words or comes close to one, that symbol replaces it until one is picked.
 
 Only ✓ saves. The keyboard's `Done`, a tap anywhere off the field, or a scroll of the symbols puts
 the keyboard away. Deleting asks once, saying what goes with it: `Its 3 bills go too, past and future.` A category's

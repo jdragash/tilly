@@ -14,7 +14,7 @@ from the prototype's CSS, never guessed. Observations 2, 3 and 4.
   No row of suggestions and no section titles: one long grid of symbols, with search sticking at
   its top.
 - A new category starts on `tag`. While nothing is picked, a guess from the name replaces it and the
-  picture carries a spark badge. Picking a symbol ends guessing for that sheet.
+  picture shows it, unmarked. Picking a symbol ends guessing for that sheet.
 - Deleting a category deletes its bills, all their charges and overrides, after one alert.
 - All bills stays read-only. Editing lives in Settings and in the bill editor's long-press.
 - Settings cards show `€95/mo` under the name (`No bills` for none). Sort arranges once, with Undo.
@@ -107,11 +107,9 @@ embedding can't load.
   medium, `ink2`, 14 from the bottom, 4 in from the sides; strip 3. The sheet's card 126 × 164,
   radius 16, strip 6, picture 60 at 26 from the top; name `.rounded` bold 18, 24 from the bottom,
   inset 8; a 2pt dashed outline radius 10 at 0.7 while empty; the card right under the header, 16
-  above the colours; light shadow 0.12 black, radius 5, y 2. Spark badge 17 round, `paperCard` with
-  a hairline ring, a `sparkle` at 12 in `ink2`, offset 6 right and 4 up. Swatches spread across the
+  above the colours; light shadow 0.12 black, radius 5, y 2. Swatches spread across the
   width: 26 dots in 32 targets, the ring 2pt at 3 outside; 10 above, 4 below. Gutter 24. Symbols one
-  grid, six across, 8 apart, each drawn at the grid card's picture size (36) and centred in its
-  cell; the picked one ringed 2.5pt, 5 outside, round. A 0.5 hairline above the scroll. Search field
+  grid, six across, 8 apart, each drawn at 44, its own size, centred in its cell; the picked one ringed 2.5pt, 5 outside, round. A 0.5 hairline above the scroll. Search field
   48 tall, radius 24, sticking at the top of the symbols on the ground, 10 above and 8 below.
 - A ring round a rounded shape is concentric: its radius is the shape's plus the gap (`DESIGN.md`,
   the look). The picker's ring: 16 + 4 = 20, not today's 14.

@@ -270,8 +270,8 @@ html:not(.dark) .gc>img.gbg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.1))}
 .allh{font-size:13px;font-weight:600;color:var(--ink2);margin:18px 0 8px;font-family:var(--text);text-transform:uppercase;letter-spacing:.04em}
 .allg{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
 .ag{position:relative;aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center}
-.ag .ic{width:var(--gps,36px);height:var(--gps,36px)}
-.ag.on::after{left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:calc(var(--gps,36px) + 10px);height:calc(var(--gps,36px) + 10px);transform:translate(-50%,-50%);border-radius:50%!important}
+.ag .ic{width:var(--syms,44px);height:var(--syms,44px)}
+.ag.on::after{left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:calc(var(--syms,44px) + 10px);height:calc(var(--syms,44px) + 10px);transform:translate(-50%,-50%);border-radius:50%!important}
 .cpdel{display:block;width:100%;margin:26px 0 6px;height:50px;border-radius:14px;background:var(--paperCard);color:#E5483B;
   font:600 17px var(--text);box-shadow:0 0 0 .5px var(--hair)}
 .cpmeta{font-size:13px;color:var(--ink2);text-align:center;margin:0 0 6px;font-family:var(--text)}
@@ -3611,7 +3611,7 @@ $("okBtn").addEventListener("click",()=>{
 let gridEditing=false;
 // The layout's numbers, tuned live in DialKit's Layout panel; these are the starting values.
 const L={gh:102,ghf:114,gg:8,gr:16,gps:36,gpt:16,gfs:13.5,gnb:16,gnbf:27,gxs:9,gxb:14,gstrip:3,gside:22,
-  cw:126,chh:164,cr:16,cstrip:6,cps:60,cpt:26,cns:18,cnb:24,ca:0,cb:16,gut:24,swd:26,symc:6,symg:8,sh:48};
+  cw:126,chh:164,cr:16,cstrip:6,cps:60,cpt:26,cns:18,cnb:24,ca:0,cb:16,gut:24,swd:26,symc:6,symg:8,syms:44,sh:48};
 const gvars=()=>`--gh:${L.gh}px;--gps:${L.gps}px;--gpt:${L.gpt}px;--gfs:${L.gfs}px`;
 // info: {n, m, show} for a card in Settings, laid out where Tune puts it.
 function gridCard(c,i,cw,ch,on,info){
@@ -3804,8 +3804,8 @@ function fitName(t){ let size=L.cns; const lines=n=>Math.ceil(size*1.15*n+12);
 function fitGridName(el){ el.style.fontSize=""; const base=parseFloat(getComputedStyle(el).fontSize); let size=base;
   while(el.scrollHeight>el.clientHeight+1&&size>base*NAME_FLOOR){ size-=.5; el.style.fontSize=size+"px"; } }
 const cellCache=new Map();
-function symCell(g){ const ck=g+"|"+CE.col+"|"+S.dark+"|"+L.gps;
-  if(!cellCache.has(ck)) cellCache.set(ck,picOf({glyph:g,col:CE.col,key:g},L.gps,false,false).replace(/(<span class="boil"><img[^>]*>)(<img[^>]*>){2}/,"$1"));
+function symCell(g){ const ck=g+"|"+CE.col+"|"+S.dark+"|"+L.syms;
+  if(!cellCache.has(ck)) cellCache.set(ck,picOf({glyph:g,col:CE.col,key:g},L.syms,false,false).replace(/(<span class="boil"><img[^>]*>)(<img[^>]*>){2}/,"$1"));
   return `<button class="ag${CE.glyph===g?" on":""}" data-g="${g}" aria-label="${g}">${cellCache.get(ck)}</button>`; }
 // Only what changed is redrawn: typing a name never rebuilds the symbols, so scrolling stays smooth.
 function updateCat(){
@@ -3814,10 +3814,10 @@ function updateCat(){
   if(k.col!==CE.col||k.dark!==S.dark){
     cp.querySelector(".gbg").src=cardSrc(L.cw,L.chh,{fill:DT.paperCard[md()],strip:{side:"bottom",col:colHex(CE.col),w:L.cstrip},r:L.cr});
     root.querySelectorAll(".sw button").forEach(b=>b.classList.toggle("on",+b.dataset.col===CE.col)); }
-  const pic=cp.querySelector(".cpic"); pic.classList.add("has"); pic.classList.toggle("guess",CE.guessed);
+  const pic=cp.querySelector(".cpic"); pic.classList.add("has"); pic.classList.remove("guess");
   if(k.glyph!==CE.glyph||k.col!==CE.col||k.dark!==S.dark) pic.innerHTML=picOf(d,L.cps,false,S.boil!=="off");
   cp.querySelector(".cnm").classList.toggle("has",CE.name.length>0); fitName(cp.querySelector(".nm2"));
-  const gk=(CE.q||"")+"|"+CE.col+"|"+S.dark+"|"+L.gps;
+  const gk=(CE.q||"")+"|"+CE.col+"|"+S.dark+"|"+L.syms;
   if(k.grid!==gk){
     const res=searchSymbols(CE.q||"");
     root.querySelector(".symbody").innerHTML=res?(res.title==="Closest"?`<div class="nores">No exact match. Closest:</div>`:"")+`<div class="symg">${res.list.map(symCell).join("")}</div>`:
@@ -4052,7 +4052,7 @@ addEventListener("resize",()=>{ fit(); if(sheet.classList.contains("open")){ lay
 
 /* ---------- Layout: DialKit's panel for the fine numbers; Tune keeps the named choices ---------- */
 function applyLayout(){
-  ["gg","gr","gnb","gxs","gxb","gside","gps","cw","chh","cps","cpt","cnb","ca","cb","gut","swd","symg","sh"].forEach(k=>phone.style.setProperty("--"+k,L[k]+"px"));
+  ["gg","gr","gnb","gxs","gxb","gside","gps","syms","cw","chh","cps","cpt","cnb","ca","cb","gut","swd","symg","sh"].forEach(k=>phone.style.setProperty("--"+k,L[k]+"px"));
   document.querySelectorAll(".gn").forEach(fitGridName);
   phone.style.setProperty("--symc",L.symc);
   if(sheet.classList.contains("open")&&sheet.dataset.panel==="picker") renderPicker();
@@ -4069,14 +4069,14 @@ function startDials(){
     "Category sheet":{"card width":[126,110,200,1],"card height":[164,140,240,1],"card corner":[16,6,24,1],"colour strip":[6,0,12,.5],
       picture:[60,40,96,1],"picture top":[26,10,50,1],"name size":[18,14,28,.5],"name from bottom":[24,10,50,1],
       "card top margin":[0,0,30,1],"card bottom margin":[16,6,40,1],"side margin":[24,12,32,1],"colour dot":[26,16,32,1],
-      "symbols across":[6,4,8,1],"symbol gap":[8,4,20,1],"search height":[48,36,60,1],_collapsed:true}
+      "symbols across":[6,4,8,1],"symbol size":[44,30,56,1],"symbol gap":[8,4,20,1],"search height":[48,36,60,1],_collapsed:true}
   },{id:"tilly-layout-2",persist:true});
   kit.subscribe(v=>{ const g=v["Grid card"], c=v["Category sheet"];
     Object.assign(L,{gh:g.height,ghf:g["height with figure"],gg:g.gap,gr:g.corner,gps:g.picture,gpt:g["picture top"],gfs:g["name size"],
       gnb:g["name from bottom"],gnbf:g["name from bottom, with figure"],gxs:g["figure size"],gxb:g["figure from bottom"],gstrip:g["colour strip"],gside:g["side margin"],
       cw:c["card width"],chh:c["card height"],cr:c["card corner"],cstrip:c["colour strip"],cps:c.picture,cpt:c["picture top"],cns:c["name size"],
       cnb:c["name from bottom"],ca:c["card top margin"],cb:c["card bottom margin"],gut:c["side margin"],swd:c["colour dot"],symc:c["symbols across"],
-      symg:c["symbol gap"],sh:c["search height"]});
+      symg:c["symbol gap"],syms:c["symbol size"],sh:c["search height"]});
     applyLayout(); });
   DialKit.createDialRoot({position:"top-left",defaultOpen:innerWidth>=900});
 }
