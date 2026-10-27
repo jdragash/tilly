@@ -107,6 +107,9 @@ struct CategorySheet: View {
                 .accessibilityLabel("Save")
             }
             card
+                // Tapping the card, away from its name, puts the keyboard away.
+                .contentShape(Rectangle())
+                .onTapGesture { nameFocused = false }
                 .padding(.top, Tokens.CategorySheet.cardTop)
                 .padding(.bottom, Tokens.CategorySheet.cardBottom)
             swatches
@@ -118,10 +121,17 @@ struct CategorySheet: View {
                 .frame(height: Tokens.CategorySheet.hairline)
                 .padding(.top, Tokens.Space.tight)
             SymbolPicker(colour: colour, selection: symbol, scrollToTop: scrollToTop, query: searching) { chosen in
+                nameFocused = false
                 picture = .symbol(chosen)
                 picked = true
                 guessed = false
             }
+        }
+        // The sheet's own ground, between and around everything, puts the keyboard away too.
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { nameFocused = false }
         }
         .drawnGround()
         .onAppear {
@@ -137,7 +147,10 @@ struct CategorySheet: View {
 
     private var card: some View {
         CategoryCardFace(colour: colour, seed: seed, metrics: .sheet) {
-            Button { scrollToTop += 1 } label: {
+            Button {
+                nameFocused = false
+                scrollToTop += 1
+            } label: {
                 CategoryPictureView(
                     picture: picture, colour: colour, size: Tokens.CategorySheet.pictureSize, round: true, place: .editor
                 )
@@ -168,8 +181,8 @@ struct CategorySheet: View {
             .accessibilityHidden(true)
     }
 
-    /// Typed on the card: two lines, then smaller, then it scrolls. Return saves when ✓ would,
-    /// else puts the keyboard away; it never breaks the line.
+    /// Typed on the card: two lines, then smaller, then it scrolls. Return puts the keyboard away;
+    /// it never saves and never breaks the line.
     private var nameField: some View {
         let full = Tokens.CategorySheet.nameSize(dynamicTypeSize)
         return TextField("Name", text: $name, axis: .vertical)
@@ -212,7 +225,10 @@ struct CategorySheet: View {
             ForEach(Array(CategoryColour.allCases.enumerated()), id: \.element) { index, option in
                 if index > 0 { Spacer(minLength: 0) }
                 let isChosen = option == colour
-                Button { colour = option } label: {
+                Button {
+                    nameFocused = false
+                    colour = option
+                } label: {
                     Circle()
                         .fill(Tokens.CategoryColour.color(option))
                         .frame(width: Tokens.CategorySheet.swatchDot, height: Tokens.CategorySheet.swatchDot)
@@ -249,8 +265,9 @@ struct CategorySheet: View {
         guessed = match != nil
     }
 
+    /// The keyboard's key only ends typing: saving is the ✓ at the top's alone.
     private func submit() {
-        if canSave { save() } else { nameFocused = false }
+        nameFocused = false
     }
 
     private func save() {

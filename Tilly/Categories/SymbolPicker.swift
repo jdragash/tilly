@@ -72,7 +72,8 @@ struct SymbolPicker: View {
                 }
                 .padding(.bottom, Tokens.Space.section)
             }
-            .scrollDismissesKeyboard(.interactively)
+            // Moving the symbols at all puts a keyboard away, the name's or the search's.
+            .scrollDismissesKeyboard(.immediately)
             .onChange(of: scrollToTop) {
                 withAnimation { proxy.scrollTo(Self.top, anchor: .top) }
             }
@@ -89,6 +90,7 @@ struct SymbolPicker: View {
                 .font(Tokens.Text.body)
                 .focused($searchFocused)
                 .submitLabel(.search)
+                .onSubmit { searchFocused = false }
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
             if isSearching {
