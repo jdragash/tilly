@@ -10,6 +10,7 @@
 		1A0000000000000000000020 /* TillyCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000019 /* TillyCore */; };
 		1A0000000000000000000033 /* DialkitmacOS in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000031 /* DialkitmacOS */; };
 		1A0000000000000000000034 /* DialkitmacOSAgent in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000032 /* DialkitmacOSAgent */; };
+		1A0000000000000000000037 /* DialKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000036 /* DialKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +41,7 @@
 				1A0000000000000000000020 /* TillyCore in Frameworks */,
 				1A0000000000000000000033 /* DialkitmacOS in Frameworks */,
 				1A0000000000000000000034 /* DialkitmacOSAgent in Frameworks */,
+				1A0000000000000000000037 /* DialKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +96,7 @@
 				1A0000000000000000000019 /* TillyCore */,
 				1A0000000000000000000031 /* DialkitmacOS */,
 				1A0000000000000000000032 /* DialkitmacOSAgent */,
+				1A0000000000000000000036 /* DialKit */,
 			);
 			productName = Tilly;
 			productReference = 1A0000000000000000000006 /* Tilly.app */;
@@ -151,6 +154,7 @@
 			packageReferences = (
 				1A0000000000000000000018 /* XCLocalSwiftPackageReference "Core" */,
 				1A0000000000000000000030 /* XCRemoteSwiftPackageReference "dialkit-macos" */,
+				1A0000000000000000000035 /* XCRemoteSwiftPackageReference "dialkit-ios" */,
 			);
 			productRefGroup = 1A0000000000000000000003 /* Products */;
 			projectDirPath = "";
@@ -470,6 +474,14 @@
 				revision = 352a31e4394c6e574f59df5aa1c306e5f2ff4f05;
 			};
 		};
+		1A0000000000000000000035 /* XCRemoteSwiftPackageReference "dialkit-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mikelikesdesign/dialkit-ios";
+			requirement = {
+				kind = revision;
+				revision = 7b58ff3eb926eac9b6cfd10124f8ab5bc8ceb703;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -486,6 +498,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1A0000000000000000000030 /* XCRemoteSwiftPackageReference "dialkit-macos" */;
 			productName = DialkitmacOSAgent;
+		};
+		1A0000000000000000000036 /* DialKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000000000000000000035 /* XCRemoteSwiftPackageReference "dialkit-ios" */;
+			productName = DialKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

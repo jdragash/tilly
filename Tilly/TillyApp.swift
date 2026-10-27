@@ -20,8 +20,12 @@ struct TillyApp: App {
 
     #if DEBUG
     init() {
-        // The layout's dials, for DialKit's Mac inspector. See `CategoryDials`.
+        // The layout's dials: DialKit's Mac inspector in the Simulator, its drawer on a phone (shake).
+        #if targetEnvironment(simulator)
         CategoryDials.shared.start()
+        #else
+        CategoryDrawer.shared.start()
+        #endif
     }
     #endif
 
