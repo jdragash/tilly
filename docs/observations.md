@@ -17,5 +17,8 @@ move it to Done in the same change.
    them, which looks awkward. Design a fuller, positive ending instead, like "All done this month".
 7. [ ] The bottom-left button jumps to the current month. Now that there's a Today line, it should
    jump to today instead, scrolling so the Today line sits in the middle of the screen.
+8. [ ] Need ability to pinch to zoom in and out between year view, month view, and timeline view.
+   Today you need to have an entry to enter timeline view from month view, which makes no sense.
+   (2026-10-27)
 
 ## Done
