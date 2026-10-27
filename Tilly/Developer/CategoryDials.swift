@@ -41,6 +41,14 @@ final class CategoryDials {
         }
     }
 
+    /// Every dial back to `CategoryLayout`'s defaults, in the app and the inspector, and what was
+    /// kept for them forgotten.
+    func reset() {
+        UserDefaults.standard.removeObject(forKey: "dialkit.versions.tilly.categories")
+        UserDefaults.standard.removeObject(forKey: "dialkit.versions.tilly.categories.thumbnails")
+        panel.values = CategoryLayout()
+    }
+
     /// Connects to the inspector, retrying until it's running. Safe to call more than once.
     func start() {
         DialKitAgent.shared.start(appName: "Tilly")

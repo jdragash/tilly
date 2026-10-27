@@ -53,6 +53,11 @@ final class CategoryDrawer {
         }
     }
 
+    /// Every dial back to `CategoryLayout`'s defaults, kept so across launches.
+    func reset() {
+        panel.values = CategoryLayout()
+    }
+
     /// Sets the drawer up; it opens on the first shake.
     func start() {}
 
