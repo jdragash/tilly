@@ -250,8 +250,8 @@ enum Tokens {
         /// Clear space above and below + in the header row.
         static let headerRowInset: CGFloat = 8
         /// What a month header keeps clear at its trailing end so its text never runs under the
-        /// glass pair: the view button and +, the gutter they sit in, and a gap.
-        static let headerTrailingClearance: CGFloat = 2 * Size.groupSlot + gutter + gap
+        /// settings button, the gutter it sits in, and a gap.
+        static let headerTrailingClearance: CGFloat = Size.groupSlot + gutter + gap
         /// Between the category view's arrows and the view-and-+ pair. Drawn, not measured:
         /// Calendar has no two groups side by side.
         static let groupGap: CGFloat = 8

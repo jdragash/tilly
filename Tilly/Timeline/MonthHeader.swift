@@ -8,9 +8,9 @@ import SwiftUI
 /// points of type, landing the month you're *in* on the same shape as one you could open.
 /// `isPinned` only ever changes the hairline beneath it.
 ///
-/// The figure sits under the name on its own line. The row is shared with the glass pair, which
+/// The figure sits under the name on its own line. The row is shared with the settings button, which
 /// floats over the trailing end, so the trailing edge keeps `trailingClearance` clear. Its minimum
-/// height is `Tokens.Size.headerRow`, the band the pair is centred in, with the text centred too.
+/// height is `Tokens.Size.headerRow`, the band the button is centred in, with the text centred too.
 struct MonthHeader: View {
     let section: MonthSection
     let today: Date

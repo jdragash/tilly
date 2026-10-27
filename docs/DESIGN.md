@@ -36,10 +36,9 @@ A category's name takes two lines, then shrinks to 80% at most, then is cut, on 
 
 ## The shell
 
-Laid out like iOS Calendar, with two views, Calendar and Categories, opening on the one you left.
-A glass pair floats at the right end of the top row: the view button, whose icon names the view
-you're in and whose menu lists the views with a checkmark on the current one, and +. The month
-button sits bottom left; All bills and settings share a glass capsule bottom right, in every view.
+Laid out like iOS Calendar, with one view, Calendar. Settings floats alone in glass at the right
+end of the top row. The month button, `Today`, sits bottom left; All bills and + share a glass
+capsule bottom right, at every level.
 Everything else is a sheet, so the reader never leaves their place: no tab bar, and pages push only
 inside Settings, where a `Categories` row opens the categories (`The editor`).
 
@@ -154,6 +153,8 @@ where it was.
 ---
 
 ## The category view
+
+Set aside: the shell doesn't reach it, and its code stays for when it returns.
 
 One month, one lane per category across its days, in the Settings order. Each charge is a dot on its
 day in its category's colour: filled once charged, a ring while still to come, a dashed ring at €0.
