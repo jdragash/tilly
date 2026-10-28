@@ -28,6 +28,8 @@ struct TimelineView: View {
     @State private var glideStopper = GlideStopper()
     /// How many times the month button's return has had to start again, overtaken by a fling.
     @State private var returnRestarts = 0
+    /// The list's fade, for the Today kind that jumps under one.
+    @State private var listFade: Double = 1
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
     @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
@@ -356,6 +358,7 @@ struct TimelineView: View {
                 VStack(spacing: 0) {
                     dayTopRow(window)
                     list(window)
+                        .opacity(listFade)
                 }
                 .drawnPaper()
                 .overlay(alignment: .top) {
@@ -1367,15 +1370,21 @@ struct TimelineView: View {
         // own offset, set to where it is, does, so the return is issued a turn later into a list
         // that is standing still.
         glideStopper.stop()
+        // Under Reduce Motion every kind fades: the list doesn't travel.
+        let kind = reduceMotion ? .crossfade : Tokens.Motion.todayKind
         DispatchQueue.main.async {
+            if kind == .crossfade {
+                crossfadeToToday(in: window, hasDivider: hasDivider)
+                return
+            }
             // Near enough that the divider is laid out: one glide to it. Otherwise the month first,
             // since a lazy list resolves only ids it has laid out, and then on to the divider once
             // the month's glide is over: two animated scrolls a turn apart fight.
             if hasDivider, let divider = rowFrames.frames[TodayDivider.scrollID] {
-                withAnimation(.easeInOut(duration: duration)) {
+                withAnimation(todayAnimation(kind, duration: duration)) {
                     scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
                 }
-                settleReturn(after: duration, atMonthTop: false)
+                settleReturn(after: settling(kind, duration), atMonthTop: false)
                 return
             }
             // Further off, one glide to the month, anchored so the divider lands in the middle as the
@@ -1383,17 +1392,17 @@ struct TimelineView: View {
             // from above and came back (284pt, logged).
             if hasDivider, let top = dividerHeaderTop(in: window.current) {
                 let room = containerHeight - (headerHeights[window.current] ?? 0)
-                withAnimation(.easeInOut(duration: duration)) {
+                withAnimation(todayAnimation(kind, duration: duration)) {
                     scrollProxy.scrollTo(window.current.id, anchor: UnitPoint(x: 0.5, y: top / room))
                 }
-                settleReturn(after: duration, atMonthTop: false)
+                settleReturn(after: settling(kind, duration), atMonthTop: false)
                 return
             }
-            withAnimation(.easeInOut(duration: duration)) {
+            withAnimation(todayAnimation(kind, duration: duration)) {
                 scrollProxy.scrollTo(window.current.id, anchor: .top)
             }
             guard hasDivider else {
-                settleReturn(after: duration, atMonthTop: true)
+                settleReturn(after: settling(kind, duration), atMonthTop: true)
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + duration + Tokens.Motion.returnSettle) {
@@ -1402,10 +1411,37 @@ struct TimelineView: View {
                     return
                 }
                 let onward = Tokens.Motion.returnDurationMin
-                withAnimation(.easeInOut(duration: onward)) {
+                withAnimation(todayAnimation(kind, duration: onward)) {
                     scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
                 }
-                settleReturn(after: onward, atMonthTop: false)
+                settleReturn(after: settling(kind, onward), atMonthTop: false)
+            }
+        }
+    }
+
+    /// Today's scroll, by the kind chosen in the tuning panel; what ships is `.glide`.
+    private func todayAnimation(_ kind: TodayKind, duration: TimeInterval) -> Animation {
+        kind == .spring ? .spring(duration: duration, bounce: 0) : .easeInOut(duration: duration)
+    }
+
+    /// How long Today's scroll takes to come to rest: a spring settles a while after its duration.
+    private func settling(_ kind: TodayKind, _ duration: TimeInterval) -> TimeInterval {
+        kind == .spring ? duration * Tokens.Motion.springSettling : duration
+    }
+
+    /// Today as a crossfade: the list fades out, jumps to the Today line (or this month's top when
+    /// nothing is charged yet) unanimated, and fades back in, over `todayFade` in all.
+    private func crossfadeToToday(in window: TimelineWindow, hasDivider: Bool) {
+        guard let scrollProxy else { return }
+        let half = Tokens.Motion.todayFade / 2
+        withAnimation(.easeIn(duration: half)) { listFade = 0 } completion: {
+            scrollProxy.scrollTo(window.current.id, anchor: .top)
+            DispatchQueue.main.async {
+                if hasDivider, let size = rowFrames.frames[TodayDivider.sizeID] {
+                    scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: size.height, in: window.current))
+                }
+                withAnimation(.easeOut(duration: half)) { listFade = 1 }
+                settleReturn(after: half, atMonthTop: !hasDivider)
             }
         }
     }

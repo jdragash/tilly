@@ -262,6 +262,11 @@ current one doesn't have, and the suite passes. Under Reduce Motion, every kind 
   The levels' pictures now hold their drawing while the editor is up, from the tap that opens it
   (held in `onChange`, a tick still landed in the sheet's first frame).
 
+- **A spring scroll with no bounce is still moving at its duration** (step 9): 3pt short of the
+  line when its settle was read, on it a second later. Wait half again as long before saving.
+- **A sheet faded in at 0.96 lifts off the screen's bottom edge** scaled about its centre, showing
+  the list beneath: scale it from the bottom.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

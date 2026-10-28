@@ -57,8 +57,19 @@ extension MotionGroup {
             Step(name: "Rough", values: ["roughAmount": 3]),
         ]),
         MotionGroup(id: "sheetRise", section: "Bill editor", label: "Opening", detail: "How the bill editor comes up from the bottom. Smooth glides in; Springy overshoots and settles.", steps: springs("sheetRise", "sheetRiseBounce", base: 0.45)),
+        MotionGroup(id: "sheetKind", section: "Bill editor", label: "Kind of opening", detail: "Rise comes up on a spring that can overshoot, as now. Damped comes up on a spring that never does. Slide eases out as the system sheet does. Fade grows a little as it fades in where it rests. The Opening steps above set each one's speed.", steps: [
+            Step(name: "Rise", values: ["sheetKind": 0]),
+            Step(name: "Damped", values: ["sheetKind": 1]),
+            Step(name: "Slide", values: ["sheetKind": 2]),
+            Step(name: "Fade", values: ["sheetKind": 3]),
+        ]),
         MotionGroup(id: "sheetExit", section: "Bill editor", label: "Closing", detail: "How long the bill editor takes to drop away after you save or cancel.",
                     steps: speeds("sheetExit", quick: 0.35, normal: 0.55, slow: 0.85)),
+        MotionGroup(id: "todayKind", section: "Today button", label: "Kind of movement", detail: "Glide scrolls back on an ease, longer the further it goes, as now. Spring scrolls back on a spring that never overshoots. Crossfade jumps there under a quick fade.", steps: [
+            Step(name: "Glide", values: ["todayKind": 0]),
+            Step(name: "Spring", values: ["todayKind": 1]),
+            Step(name: "Crossfade", values: ["todayKind": 2]),
+        ]),
         MotionGroup(id: "jump", section: "After saving", label: "Timeline: jumping to the bill", detail: "When a saved bill is far off screen, the timeline jumps so its row sits this far down from the top.", steps: [
             Step(name: "Near the top", values: ["landingRowOffset": 60]),
             Step(name: "Medium", values: ["landingRowOffset": 120]),
@@ -72,5 +83,5 @@ extension MotionGroup {
     ]
 
     /// The headings, in order.
-    static let sections = ["Pictures", "Bill editor", "After saving"]
+    static let sections = ["Pictures", "Bill editor", "Today button", "After saving"]
 }

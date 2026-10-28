@@ -568,6 +568,15 @@ enum Tokens {
         static let caretBlink: TimeInterval = 0.53
         /// Reduce Motion's fade, in place of a movement; from the prototype.
         static let reducedFade: TimeInterval = 0.16
+        /// The sheet's ease-out slide, as the system sheet's, at the Opening step's default speed.
+        static let sheetSlide: TimeInterval = 0.35
+        /// The sheet's size as its fade-in starts.
+        static let sheetFadeScale: CGFloat = 0.96
+        /// A spring with no bounce is still moving a few points at its duration; it has settled by
+        /// this many times it (measured: 3pt short of the line at 1.3s, on it at 2.5s for 0.9s).
+        static let springSettling: Double = 1.5
+        /// The Today crossfade: out, the jump, and back in, over this in all.
+        static let todayFade: TimeInterval = 0.2
         /// A saved charge arriving on its day: it fades in over this long, the tap lands at this
         /// fraction of the drop, and the drop begins once this fraction of the sheet's exit is done.
         static let dayFade: TimeInterval = 0.15
