@@ -122,3 +122,8 @@ one place").
 
 Mid-build, Jake simplified it: a pinch plays the zoom a tap plays once it passes 1.25×, rather than
 following the fingers. Driving the zoom by a progress value (the plan's step 4) was dropped with it.
+
+### 2026-10-28: following the fingers after all
+
+After a day with the trigger version on his phone, Jake asked for the pinch that follows the fingers,
+as the prototype first had it, before the work lands.

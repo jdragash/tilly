@@ -180,10 +180,22 @@ device:
 
 ## Updates
 
-### 2026-10-28: three fixes before landing (observations 9, 10, 11)
+### 2026-10-28: the following pinch, and three fixes, before landing (observations 9 to 12)
 
-Jake tried the build on his phone: the pinch is fine as it is. Before it lands, in this order, then
-step 6. All three are Opus's: each proves itself only on screen.
+Jake tried the build on his phone. Before it lands, in this order (10, 7, 8, 9), then step 6. All are
+Opus's: each proves itself only on screen.
+
+**Step 10, first — The pinch follows the fingers after all (12).** Jake, 2026-10-28: worth finishing.
+Built on top of what landed in steps 3 and 5, not by reverting them. Bring back the original specs,
+which `git show 43a989b:docs/plans/calendar-pinch.md` holds, and the code started in `a6c03af`:
+- Step 3 as first written: `CalendarZoom.closer(at:)`, `further(at:)`, `PinchProgress` and the
+  tokens `pinchFull` 2.2, `pinchStart` 1.04, `pinchFinish` 0.4, `pinchFlick` 1.5,
+  `pinchSettleMin` 0.14, with their tests. `PinchTrigger` and `pinchTrigger` go.
+- Step 4 as first written: the zoom driven by one progress value, taps unchanged frame for frame.
+- Step 5 as first written: the pinch follows the fingers, finishes past 40% or a flick, springs back
+  otherwise. Keep what step 5's trigger version learned: taps wait 0.35s after a pinch ends, the
+  month's paging ignores a pinch, and frames reported during a zoom aren't kept.
+**Done when:** the original steps' Done-when, and the prototype (`pinch: "follow"`) behaves the same.
 
 **Step 7 — Today without overshoot (10).** Tapping Today over the days overshoots the Today line and
 springs back. Find why before changing anything: log the scroll offset every frame of a return

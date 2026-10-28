@@ -14,8 +14,8 @@ move it to Done in the same change.
 10. [ ] Tapping Today overshoots and springs back to the day: not smooth, feels janky. (2026-10-28)
 11. [ ] More settings to try other kinds of transition for opening the sheet, and for going to
     Today. (2026-10-28)
-12. [ ] Try the pinch that follows the fingers, as first prototyped, once the trigger version has
-    been lived with. (2026-10-28)
+12. [ ] Make the pinch follow the fingers, as first prototyped: the trigger version works, but this
+    is worth finishing. (2026-10-28)
 
 ## Done
 
