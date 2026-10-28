@@ -673,8 +673,9 @@ function paint(outer,inner,t,z){
   for(const k in LV) if(k!==outer&&k!==inner){ LV[k].style.visibility="hidden"; LV[k].style.opacity=0; }
   const o=LV[outer], i=LV[inner];
   [o,i].forEach(e=>{ e.style.visibility="visible"; e.style.transformOrigin=`${z.ax}px ${z.ay}px`; e.style.pointerEvents="none"; e.style.transition="none"; });
-  i.style.transform=`scale(${S.rm?1:z.s+(1-z.s)*t})`; i.style.opacity=t; i.style.zIndex=2;
-  o.style.transform=`scale(${S.rm?1:1+(z.outer-1)*t})`; o.style.opacity=1-t; o.style.zIndex=1;
+  // The further level draws on top, as the app's levels stack (the year over the month over the days).
+  i.style.transform=`scale(${S.rm?1:z.s+(1-z.s)*t})`; i.style.opacity=t; i.style.zIndex=1;
+  o.style.transform=`scale(${S.rm?1:1+(z.outer-1)*t})`; o.style.opacity=1-t; o.style.zIndex=2;
 }
 function settle(lv){
   level=lv;
