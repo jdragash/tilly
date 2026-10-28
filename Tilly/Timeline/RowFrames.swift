@@ -6,6 +6,9 @@ import SwiftUI
 /// safe area's top, as the timeline's root does.
 enum TimelineSpace {
     static let name = "timeline"
+    /// The list's own content, which scrolling doesn't move: distances measured here hold still
+    /// while the list scrolls.
+    static let content = "timelineContent"
 }
 
 /// The rows on screen, by entry id, in `TimelineSpace`. Rows report on appear and change, and drop

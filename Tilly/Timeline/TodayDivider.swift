@@ -10,6 +10,8 @@ struct TodayDivider: View {
     static let scrollID = "today-divider"
     /// Its unscaled size among the reported frames, under its own key.
     static let sizeID = "today-divider-size"
+    /// Its frame in the list's content, under its own key.
+    static let contentID = "today-divider-content"
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale

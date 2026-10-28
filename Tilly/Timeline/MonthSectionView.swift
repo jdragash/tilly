@@ -47,6 +47,11 @@ struct MonthSectionView: View {
                         .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
                             onRowFrame(TodayDivider.sizeID, CGRect(origin: .zero, size: size))
                         }
+                        // And where it sits in the list's content, which scrolling doesn't move:
+                        // Today glides straight to it from wherever the list is.
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TimelineSpace.content)) } action: {
+                            onRowFrame(TodayDivider.contentID, $0)
+                        }
                         .onDisappear { onRowFrame(TodayDivider.scrollID, nil) }
                     markers(seams[index]?.filter { $0 < todayStart })
                 }

@@ -252,6 +252,11 @@ current one doesn't have, and the suite passes. Under Reduce Motion, every kind 
   month on top** (opaque paper), so the days show fainter through it than in the prototype. Left
   as main draws it, for Jake to decide.
 
+- **Today overshot from ahead because it glided to the month's top first** (step 7), then on to
+  the line, which sat 284pt short of there: the list went past and came back. Neither a fight
+  between the scrolls nor the glide stopper. One glide now anchors the month so the line lands
+  centred, from the line's place in its month measured in the list's own content.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

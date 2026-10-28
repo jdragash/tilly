@@ -94,7 +94,7 @@ struct TimelineView: View {
     private static let scrollSpace = "timelineScroll"
     /// The list's own content, which scrolling doesn't move: distances measured here hold
     /// still while the list scrolls.
-    private static let contentSpace = "timelineContent"
+    private static let contentSpace = TimelineSpace.content
 
     /// The last month (in top-to-bottom document order) whose header has reached the
     /// container's top edge. Derived fresh from every header's live offset rather than
@@ -1367,6 +1367,17 @@ struct TimelineView: View {
                 settleReturn(after: duration, atMonthTop: false)
                 return
             }
+            // Further off, one glide to the month, anchored so the divider lands in the middle as the
+            // month arrives. Gliding to the month's top and then on to the divider overshot the line
+            // from above and came back (284pt, logged).
+            if hasDivider, let top = dividerHeaderTop(in: window.current) {
+                let room = containerHeight - (headerHeights[window.current] ?? 0)
+                withAnimation(.easeInOut(duration: duration)) {
+                    scrollProxy.scrollTo(window.current.id, anchor: UnitPoint(x: 0.5, y: top / room))
+                }
+                settleReturn(after: duration, atMonthTop: false)
+                return
+            }
             withAnimation(.easeInOut(duration: duration)) {
                 scrollProxy.scrollTo(window.current.id, anchor: .top)
             }
@@ -1398,6 +1409,20 @@ struct TimelineView: View {
         let room = container - height
         let fraction = room > 0 ? min(1, max(0, (middle - height / 2) / room)) : 0
         return UnitPoint(x: 0.5, y: fraction)
+    }
+
+    /// Where `month`'s header must sit, from the container's top, for the divider to land centred as
+    /// `dividerAnchor` puts it: from where the divider sat in its month when last laid out, both
+    /// measured in the list's content, which scrolling doesn't move. Nil before it has been laid
+    /// out, or when the header would have to sit above the top, which `scrollTo` can't express.
+    private func dividerHeaderTop(in month: MonthKey) -> CGFloat? {
+        guard let divider = rowFrames.frames[TodayDivider.contentID], let currentContentTop,
+              let header = headerHeights[month], containerHeight > header
+        else { return nil }
+        let fromHeaderTop = divider.midY - (currentContentTop - header)
+        let top = (header + containerHeight) / 2 - fromHeaderTop
+        guard top >= 0, top <= containerHeight - header else { return nil }
+        return top
     }
 
     /// Once the return's glide is over: the app's own scroll ends, and the place is saved.
