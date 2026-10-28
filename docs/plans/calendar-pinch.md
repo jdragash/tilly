@@ -240,6 +240,18 @@ current one doesn't have, and the suite passes. Under Reduce Motion, every kind 
 - **A level leaving keeps the closures it was drawn with,** and a `@GestureState` read from them
   is the value from then. Mirror it into `@State` for anything a tap reads.
 
+- **Main's zoom draws the month above the year**, whichever is arriving, as its transitions
+  stacked them, so the year's large end hides under the month's paper. Driven by one value, the
+  month is declared after the year to match; recordings then matched main zoom for zoom.
+- **A level arriving reports its at-rest frames before the zoom is declared over,** and they were
+  dropped: a year shown only once had no month frames to pinch from. They're held during a zoom
+  and kept for the level that shows once it settles.
+- **Fingers held still send no changes,** so a speed read at the last move turned a held pinch into
+  a flick. Lifted after 0.1s still, a pinch carries no speed.
+- **Half way through a pinch the prototype draws the closer level on top; main's zoom draws the
+  month on top** (opaque paper), so the days show fainter through it than in the prototype. Left
+  as main draws it, for Jake to decide.
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be

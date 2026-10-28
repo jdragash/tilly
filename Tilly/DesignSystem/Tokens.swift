@@ -144,9 +144,12 @@ enum Tokens {
         /// than this, and the further level no larger than `zoomMax`. Tuning values.
         static let zoomMin: CGFloat = 0.2
         static let zoomMax: CGFloat = 3
-        /// The spread, or its inverse closing, at which a pinch plays the change of level;
-        /// from `calendar-pinch.html`, a tuning value.
-        static let pinchTrigger: CGFloat = 1.25
+        /// The spread of a pinch that carries a change of level all the way; the prototype's
+        /// `PIN.full` (`calendar-pinch.html`), a tuning value.
+        static let pinchFull: CGFloat = 2.2
+        /// How far a pinch's magnification must leave 1 before it has a direction, either way;
+        /// the prototype's `PIN.start` (`calendar-pinch.html`).
+        static let pinchStart: CGFloat = 1.04
     }
 
     enum Opacity {
@@ -529,7 +532,23 @@ enum Tokens {
         /// prototype's 0.28s, which was for a 7% zoom; this one covers a cell growing to the screen.
         /// A tuning value.
         static let zoomDuration: TimeInterval = 0.38
-        static let zoom: Animation = .timingCurve(0.2, 0.8, 0.2, 1, duration: zoomDuration)
+        static let zoom: Animation = zoom(duration: zoomDuration)
+        /// The zoom's curve over another duration: a pinch settling after the fingers lift.
+        static func zoom(duration: TimeInterval) -> Animation {
+            .timingCurve(0.2, 0.8, 0.2, 1, duration: duration)
+        }
+        /// How far along a lifted pinch must be to finish the change of level; the prototype's
+        /// `PIN.commit` (`calendar-pinch.html`).
+        static let pinchFinish: CGFloat = 0.4
+        /// A lifted pinch faster than this, in shares of the way per second, finishes however far
+        /// it got; the prototype's `PIN.flick` (`calendar-pinch.html`).
+        static let pinchFlick: CGFloat = 1.5
+        /// The least a pinch's settling takes after the fingers lift, however little is left;
+        /// the prototype's 140ms (`calendar-pinch.html`).
+        static let pinchSettleMin: TimeInterval = 0.14
+        /// Fingers held still this long before lifting carry no speed: a pinch held and let go
+        /// isn't a flick. A guess, for the phone to settle.
+        static let pinchStill: TimeInterval = 0.1
         /// How long after a pinch taps are ignored, so its fingers lifting don't land as taps; the
         /// prototype's `quietUntil` (`calendar-pinch.html`).
         static let pinchQuiet: TimeInterval = 0.35

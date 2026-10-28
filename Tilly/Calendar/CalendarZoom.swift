@@ -45,8 +45,12 @@ final class CalendarZoomFrames {
     var days: [Date: CGRect] = [:]
     /// The day last opened from the grid, which the way back out shrinks into.
     var openedDay: Date?
-    /// Set while the levels zoom: a scale in flight reports scaled frames, which aren't kept.
+    /// Set while the levels zoom: a scale in flight reports scaled frames, which are held aside
+    /// rather than kept. A level's last report lands as it settles, often before the zoom is
+    /// declared over, so what was held is kept for the level that shows once a zoom settles.
     var isZooming = false
+    private var pendingMonths: [MonthKey: CGRect] = [:]
+    private var pendingDays: [Date: CGRect] = [:]
 
     func zoom(forMonth month: MonthKey) -> CalendarZoom {
         months[month].map { CalendarZoom(frame: $0, in: size) } ?? .centre
@@ -57,25 +61,70 @@ final class CalendarZoomFrames {
     }
 
     func report(month: MonthKey, frame: CGRect) {
-        guard !isZooming else { return }
-        months[month] = frame
+        if isZooming { pendingMonths[month] = frame } else { months[month] = frame }
     }
 
     func report(day: Date, frame: CGRect) {
-        guard !isZooming else { return }
-        days[day] = frame
+        if isZooming { pendingDays[day] = frame } else { days[day] = frame }
+    }
+
+    /// A zoom is over. `settled`: it ran to its end, so the last frames held are the ones at rest,
+    /// and `showing`'s are kept; cut short, they were mid-scale and go.
+    func zoomEnded(settled: Bool, showing: CalendarLevel) {
+        if settled, showing == .year { months.merge(pendingMonths) { $1 } }
+        if settled, showing == .month { days.merge(pendingDays) { $1 } }
+        pendingMonths = [:]
+        pendingDays = [:]
+        isZooming = false
+    }
+}
+
+extension CalendarZoom {
+    /// How far in a change of level is: 0 shows the further level, 1 the closer.
+    /// The closer level's scale and opacity at `t`: from `scale` and 0 to 1 and 1.
+    func closer(at t: CGFloat) -> (scale: CGFloat, opacity: Double) {
+        (scale + (1 - scale) * t, Double(t))
+    }
+
+    /// The further level's: from 1 and 1 to `outerScale` and 0.
+    func further(at t: CGFloat) -> (scale: CGFloat, opacity: Double) {
+        (1 + (outerScale - 1) * t, Double(1 - t))
     }
 }
 
 enum PinchDirection: Equatable { case `in`, out }
 
-/// When a pinch plays the zoom, as the prototype's trigger reads it.
-enum PinchTrigger {
-    /// The way a pinch goes once its magnification reaches `pinchTrigger` spreading or
-    /// `1 / pinchTrigger` closing; nil before either.
+/// One pinch, from the gesture's magnification, as the prototype's `pMove` and `pEnd` read it.
+struct PinchProgress: Equatable {
+    /// nil until the magnification leaves 1/pinchStart...pinchStart.
     static func direction(magnification: CGFloat) -> PinchDirection? {
-        if magnification >= Tokens.Scale.pinchTrigger { return .in }
-        if magnification <= 1 / Tokens.Scale.pinchTrigger { return .out }
+        if magnification > Tokens.Scale.pinchStart { return .in }
+        if magnification < 1 / Tokens.Scale.pinchStart { return .out }
         return nil
+    }
+
+    /// How far along its direction: ln(spread) / ln(pinchFull), clamped to 0...1, where spread is
+    /// the magnification going in and its inverse going out.
+    static func progress(magnification: CGFloat, direction: PinchDirection) -> CGFloat {
+        let spread = direction == .in ? magnification : 1 / magnification
+        return min(1, max(0, log(spread) / log(Tokens.Scale.pinchFull)))
+    }
+
+    /// The same per second, from the gesture's magnification velocity: the derivative of
+    /// `progress` over time, velocity / (magnification * ln(pinchFull)), negated going out.
+    /// Unclamped, so a pinch past either end still reports how fast the fingers move.
+    static func speed(magnification: CGFloat, velocity: CGFloat, direction: PinchDirection) -> CGFloat {
+        let rate = velocity / (magnification * log(Tokens.Scale.pinchFull))
+        return direction == .in ? rate : -rate
+    }
+
+    /// Whether a lifted pinch finishes: past pinchFinish, or faster than pinchFlick.
+    static func finishes(progress: CGFloat, speed: CGFloat) -> Bool {
+        progress > Tokens.Motion.pinchFinish || speed > Tokens.Motion.pinchFlick
+    }
+
+    /// How long the rest takes: zoomDuration times the distance left, at least pinchSettleMin.
+    static func settleDuration(from t: CGFloat, to end: CGFloat) -> TimeInterval {
+        max(Tokens.Motion.pinchSettleMin, Tokens.Motion.zoomDuration * TimeInterval(abs(end - t)))
     }
 }
