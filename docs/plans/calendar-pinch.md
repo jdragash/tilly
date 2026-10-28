@@ -178,6 +178,39 @@ device:
 `tilly-ship`: move observation 8 to Done in `docs/observations.md`, carry this plan's Lessons into
 `.claude/rules/calendar.md`, delete the plan, tag.
 
+## Updates
+
+### 2026-10-28: three fixes before landing (observations 9, 10, 11)
+
+Jake tried the build on his phone: the pinch is fine as it is. Before it lands, in this order, then
+step 6. All three are Opus's: each proves itself only on screen.
+
+**Step 7 — Today without overshoot (10).** Tapping Today over the days overshoots the Today line and
+springs back. Find why before changing anything: log the scroll offset every frame of a return
+(`simulator.md`) from this month, three months back and a year ahead, and from rest and mid-fling.
+Suspects, unconfirmed: the two animated scrolls a turn apart in `returnToResting` (month, then
+divider) fighting, a `GlideStopper` restart, or the divider's frame read under a zoom. **Done when:**
+the logged offset moves one way only and stops at the line, in all six cases, and the line lands
+where it does now (within 1pt). Add to Lessons what caused it.
+
+**Step 8 — Why the sheet feels laggy (9).** Measure before changing: Instruments' Animation Hitches
+(or `CADisplayLink` frame times logged) while opening the editor's sheet, adding and opening a
+bill, on Jake's phone or the simulator, in **both** Debug and Release (`-configuration Release`).
+Report the hitch ratio and the longest frames for each, and what the profile blames (the boil, the
+drawn edges, the grain, layout). Fix what is cheap and plainly ours; anything that would change a
+look goes to Jake as a finding with numbers, not a change. If Debug alone is slow, say so and
+suggest Jake runs Release on his phone. **Done when:** a before and after table of hitch ratios.
+
+**Step 9 — Transition kinds to try (11).** Debug-only, in Settings' tuning, beside the motion steps
+that exist (`MotionTuningSection`, `MotionGroup`): a picker of kinds for the sheet opening and one
+for Today. The kind is stored like the other tuning, read through `Tokens.Motion`, and what ships
+stays the default. Sheet: the current rise (spring), a critically damped spring with no bounce,
+an ease-out slide as the system sheet moves (0.35s), and a fade with a slight scale-up from 0.96.
+Today: the current animated scroll, one spring scroll with no bounce, and a quick crossfade
+(the list jumps under a 0.2s fade). The existing duration and bounce steps keep working within each
+kind. **Done when:** every kind runs on the simulator from rest and mid-motion without a hitch the
+current one doesn't have, and the suite passes. Under Reduce Motion, every kind is a fade.
+
 ## Lessons
 
 - **Step 1's map can't place a passed day at the divider's own index.** Days keyed to the row the

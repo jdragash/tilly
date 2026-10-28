@@ -9,6 +9,13 @@ move it to Done in the same change.
 8. [ ] Need ability to pinch to zoom in and out between year view, month view, and timeline view.
    Today you need to have an entry to enter timeline view from month view, which makes no sense.
    (2026-10-27)
+9. [ ] Opening the bill editor's sheet feels laggy, as if the frame rate were wrong, and the app in
+   general doesn't feel as smooth as real apps. Is the test build different? (2026-10-28)
+10. [ ] Tapping Today overshoots and springs back to the day: not smooth, feels janky. (2026-10-28)
+11. [ ] More settings to try other kinds of transition for opening the sheet, and for going to
+    Today. (2026-10-28)
+12. [ ] Try the pinch that follows the fingers, as first prototyped, once the trigger version has
+    been lived with. (2026-10-28)
 
 ## Done
 
