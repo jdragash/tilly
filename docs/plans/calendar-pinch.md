@@ -257,6 +257,11 @@ current one doesn't have, and the suite passes. Under Reduce Motion, every kind 
   between the scrolls nor the glide stopper. One glide now anchors the month so the line lands
   centred, from the line's place in its month measured in the list's own content.
 
+- **The sheet's lag was the boil behind it** (step 8): every picture in the levels redrew each
+  boil tick under the sheet, two dropped frames a tick in the simulator, Debug and Release alike.
+  The levels' pictures now hold their drawing while the editor is up, from the tap that opens it
+  (held in `onChange`, a tick still landed in the sheet's first frame).
+
 ## If a step is wrong
 
 These specs were written before the code existed. If a step turns out to be
