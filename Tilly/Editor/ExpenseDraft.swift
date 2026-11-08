@@ -252,22 +252,14 @@ struct ExpenseDraft: Equatable, Sendable {
 
     /// "Oct 31", never a year.
     func dateLabel(calendar: Calendar, locale: Locale) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        let formatter = FormatterCache.date(template: "MMMd", calendar: calendar, locale: locale)
         return formatter.string(from: date)
     }
 
     /// "Monthly", "3 months", or "05/27" once the bill ends.
     func repeatLabel(calendar: Calendar, locale: Locale) -> String {
         if let last = lastPaymentDate(calendar: calendar) {
-            let formatter = DateFormatter()
-            formatter.calendar = calendar
-            formatter.timeZone = calendar.timeZone
-            formatter.locale = locale
-            formatter.dateFormat = "MM/yy"
+            let formatter = FormatterCache.date(format: "MM/yy", calendar: calendar, locale: locale)
             return formatter.string(from: last)
         }
         if interval == 1 {

@@ -16,21 +16,14 @@ enum CategoryFormatting {
             relative.formattingContext = .beginningOfSentence
             return relative.localizedString(from: DateComponents(day: days))
         }
-        let formatter = formatter(calendar: calendar, locale: locale)
-        switch days {
-        case 2...6:
-            formatter.setLocalizedDateFormatFromTemplate("EEEE")
-        default:
-            formatter.setLocalizedDateFormatFromTemplate("MMMd")
-        }
-        return formatter.string(from: date)
+        let template = (2...6).contains(days) ? "EEEE" : "MMMd"
+        return FormatterCache.date(template: template, calendar: calendar, locale: locale).string(from: date)
     }
 
     /// What follows each quiet category's picture in the footer: "next Nov 3", or nothing for a
     /// category with no next charge. The view puts the picture in front.
     static func quietNext(_ item: QuietCategory, calendar: Calendar, locale: Locale) -> String {
-        let formatter = formatter(calendar: calendar, locale: locale)
-        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        let formatter = FormatterCache.date(template: "MMMd", calendar: calendar, locale: locale)
         return item.next.map { "next \(formatter.string(from: $0))" } ?? ""
     }
 
@@ -54,19 +47,10 @@ enum CategoryFormatting {
 
     /// "Sat 12 Sep" in the UK; the device's own order elsewhere.
     static func readoutDate(_ date: Date, calendar: Calendar, locale: Locale) -> String {
-        let formatter = formatter(calendar: calendar, locale: locale)
-        formatter.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        let formatter = FormatterCache.date(template: "EEEdMMM", calendar: calendar, locale: locale)
         return formatter.string(from: date)
     }
 
     /// What a lane of charges saved before categories existed is called.
     private static let uncategorisedName = "No category"
-
-    private static func formatter(calendar: Calendar, locale: Locale) -> DateFormatter {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        return formatter
-    }
 }

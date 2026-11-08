@@ -79,11 +79,7 @@ struct YearMonthCell: View {
 
     /// "October 2026, €1,166", or "October 2026, nothing".
     private var spokenLabel: String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.dateFormat = "MMMM yyyy"
+        let formatter = FormatterCache.date(format: "MMMM yyyy", calendar: calendar, locale: locale)
         let first = calendar.date(from: DateComponents(year: month.month.year, month: month.month.month, day: 1))!
         return "\(formatter.string(from: first)), \(figure.isEmpty ? "nothing" : figure)"
     }

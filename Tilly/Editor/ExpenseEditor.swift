@@ -497,11 +497,7 @@ struct ExpenseEditor: View {
 
     /// "Oct 31", never a year — matches `ExpenseDraft.dateLabel`.
     private func shortDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        let formatter = FormatterCache.date(template: "MMMd", calendar: calendar, locale: locale)
         return formatter.string(from: date)
     }
 
