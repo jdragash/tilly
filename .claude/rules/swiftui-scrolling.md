@@ -42,12 +42,7 @@ measurement, so Opus builds it.
 - **`LazyVStack` stops laying out distant headers**, freezing their cached geometry, and a header
   it stops drawing keeps its last offset: after a jump the month under the middle read June from
   a stale entry. Clear it in `onDisappear`; take distance from the `ScrollView`'s own offset.
-
-- **Gliding to a month's top and then on to a row inside it overshoots** when the row sits short
-  of the top: Today went 284pt past the line and came back. Anchor the one glide so the target
-  lands where it should, from its place in its month measured in the list's content space.
-- **A spring scroll with no bounce is still moving at its duration** (3pt short at 1.3s for 0.9s);
-  wait half again as long before saving the place.
+- **Gliding to a month's top, then on to a row inside it, overshoots and comes back** (284pt).
 
 ## Anchoring and measuring
 
@@ -59,9 +54,6 @@ measurement, so Opus builds it.
   (the list's height is the viewport less the fixed top row), or measure in a coordinate space on
   the `LazyVStack`, which scrolling doesn't move.
 - Suppress saving a place during the app's own scroll, then save once it settles.
-
-- **Read a height from a view's size, not its frame, under a zoom**: the timeline is scaled then,
-  and the Today line's frame read 6.3pt for 31.7pt.
 
 **Measuring:** `NSLog`s of frames beat pixels; how to fling and read logs is in `simulator.md`.
 **Diagnosing:** a correcting second pass that converges is how a missing term hides, and a constant

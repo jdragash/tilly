@@ -40,13 +40,11 @@ tests: each was found on screen.
   the value from then. Mirror it into `@State` for anything a tap reads.
 - **Fingers held still send no changes,** so a speed read at the last move made a held pinch a
   flick. A pinch still for `pinchStill` lifts with none.
-- A pinch that springs back puts the list's exact offset back through `GlideStopper`.
 
 ## Landing a day
 
 - **An empty day lands on a zero-high marker where it falls.** `DaySeams` keys days to the row they
   sit above; at the Today line's own row they straddle it, so the view splits them by date.
-- Near either end of the list it lands as near the middle as the content allows.
 
 ## Controls
 
