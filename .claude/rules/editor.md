@@ -32,6 +32,9 @@ Learned in the Simulator, invisible to tests. General keyboard and safe-area les
 - **A shape's fill eats the taps of a button in its `.background`.** The card's background button
   is an overlay over the fill and under the parts.
 
+- **A sheet scaled in place lifts off the screen's bottom edge** and shows what's beneath: scale it
+  from `.bottom`.
+
 ## Pickers and menus
 
 - **The header's buttons are its own glass circles, not a toolbar.** `.plain` dims a disabled
