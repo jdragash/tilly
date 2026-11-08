@@ -4,6 +4,9 @@ import Foundation
 /// applied. `scheduledDate` stays fixed so a moved or amended occurrence still matches
 /// its override on re-run; `effectiveDate` is what the timeline actually shows.
 public struct Occurrence: Equatable, Sendable, Identifiable {
+    /// The bill and the calendar day it was scheduled on ("…-2026-03-15"): the same in every
+    /// time zone, as the day itself is. This is identity, not date arithmetic.
+    public let id: String
     public let expenseID: UUID
     public let scheduledDate: Date
     public let effectiveDate: Date
@@ -17,20 +20,15 @@ public struct Occurrence: Equatable, Sendable, Identifiable {
         effectiveDate: Date,
         amount: Decimal?,
         isEstimate: Bool,
-        isSkipped: Bool
+        isSkipped: Bool,
+        calendar: Calendar
     ) {
+        self.id = "\(expenseID.uuidString)-\(CalendarDay(scheduledDate, calendar: calendar).id)"
         self.expenseID = expenseID
         self.scheduledDate = scheduledDate
         self.effectiveDate = effectiveDate
         self.amount = amount
         self.isEstimate = isEstimate
         self.isSkipped = isSkipped
-    }
-
-    /// Seconds since the epoch rather than a formatted date: an absolute instant is
-    /// timezone-free and stable, where a date string would need a calendar this value
-    /// type doesn't carry. This is identity, not date arithmetic.
-    public var id: String {
-        "\(expenseID.uuidString)-\(Int(scheduledDate.timeIntervalSince1970))"
     }
 }
