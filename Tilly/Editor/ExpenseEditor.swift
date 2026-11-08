@@ -250,9 +250,15 @@ struct ExpenseEditor: View {
                         .foregroundStyle(Tokens.Ink.secondary)
                         .accessibilityHidden(true)
                 }
-                DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .labelsHidden()
+                if let earliest = draft.earliestDate {
+                    DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, in: earliest..., displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+                } else {
+                    DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+                }
             }
         case .repeat:
             RepeatWheel(draft: $draft)

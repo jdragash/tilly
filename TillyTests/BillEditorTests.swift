@@ -586,4 +586,58 @@ import TillyCore
         #expect(!context.hasChanges)
         #expect(try context.fetch(FetchDescriptor<Expense>()).map(\.name) == ["Gym2"])
     }
+
+    // MARK: Moving a future-charges date before the previous charge
+
+    /// Every non-skipped charge's effective date across the whole series in `range`.
+    static func charges(of expense: Expense, in context: ModelContext, range: DateInterval) throws -> [Date] {
+        try BillEditor.series(of: expense, in: context).flatMap { record in
+            RecurrenceEngine.occurrences(
+                for: record.snapshot, overrides: record.overrideSnapshots, in: range, calendar: calendar
+            )
+            .filter { !$0.isSkipped }
+            .map(\.effectiveDate)
+        }
+    }
+
+    static func monthlyCounts(_ dates: [Date]) -> [Int: Int] {
+        Dictionary(grouping: dates, by: { calendar.component(.month, from: $0) }).mapValues(\.count)
+    }
+
+    @Test func futureChargesMovedBeforeThePreviousChargeNeverDoubleChargesAMonth() throws {
+        let context = try Self.makeContext()
+        let category = Self.category(in: context)
+        let expense = Self.makeBill(in: context, anchor: Self.date(2026, 1, 15), category: category)
+        try context.save()
+
+        let session = try #require(
+            try EditSession.make(
+                expenseID: expense.id, scheduledDate: Self.date(2026, 4, 15), context: context, calendar: Self.calendar
+            )
+        )
+        #expect(session.draft.baseline?.chargeIndex == 3)
+        let range = DateInterval(start: Self.date(2026, 1, 1), end: Self.date(2026, 5, 31))
+
+        // Feb 1 is before the previous charge (Mar 15): the editor must not allow it.
+        var early = session.draft
+        early.date = Self.date(2026, 2, 1)
+        #expect(!early.isValid(categoryExists: { _ in true }))
+
+        // Mar 16, the day after the previous charge, is the earliest allowed.
+        var draft = session.draft
+        draft.date = Self.date(2026, 3, 16)
+        #expect(draft.isValid(categoryExists: { _ in true }))
+        try BillEditor.saveFutureCharges(
+            draft, expense: expense, scheduledDate: Self.date(2026, 4, 15),
+            category: category, context: context, calendar: Self.calendar
+        )
+
+        // Mar 15 (old record's last) and Mar 16 (new record's first) are distinct days, so
+        // March legitimately holds both; every other month holds exactly one.
+        let charges = try Self.charges(of: expense, in: context, range: range)
+        let counts = Self.monthlyCounts(charges)
+        #expect(Set(charges).count == charges.count)
+        #expect([1, 2, 4, 5].allSatisfy { counts[$0] == 1 })
+        #expect(counts[3] == 2)
+    }
 }

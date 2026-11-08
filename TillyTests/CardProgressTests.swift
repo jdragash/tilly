@@ -50,7 +50,7 @@ import TillyCore
         let baseline = EditBaseline(
             digits: "12", name: "Rent", date: Self.today, interval: 1, unit: .month,
             paymentCount: nil, categoryID: UUID(), ruleAnchor: Self.today,
-            paymentsBeforeRule: 0, chargeIndex: 0
+            paymentsBeforeRule: 0, chargeIndex: 0, earliestDate: nil
         )
         var draft = ExpenseDraft(editing: baseline)
         draft.digits = "0"

@@ -74,7 +74,10 @@ struct EditSession: Identifiable, Equatable {
             interval: expense.recurrenceInterval, unit: expense.recurrenceUnit,
             paymentCount: wholeBillPaymentCount, categoryID: expense.category?.id,
             ruleAnchor: calendar.startOfDay(for: expense.anchorDate), paymentsBeforeRule: paymentsBeforeRule,
-            chargeIndex: chargeIndex
+            chargeIndex: chargeIndex,
+            earliestDate: previousChargeDate.flatMap {
+                calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: $0))
+            }
         )
 
         return EditSession(
