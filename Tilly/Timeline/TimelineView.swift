@@ -77,9 +77,16 @@ struct TimelineView: View {
     /// While the levels change, the two drawn, and how far in it is: 0 shows the further, 1 the
     /// closer. Every level draws from these, so a pinch can hold the zoom anywhere between; nil at rest.
     @State private var zoomPair: ZoomPair?
-    @State private var zoomProgress: CGFloat = 0
+    /// Read only by `LevelLook`, never in `body`, so a pinch frame redraws the levels' size and
+    /// fade without rebuilding the screen.
+    @State private var zoomProgress = ZoomProgress()
     /// Bumped by every zoom, so the end of one overtaken does nothing.
     @State private var zoomGeneration = 0
+    /// The year and the month grid, built with the timeline's months rather than on every redraw:
+    /// a pinch redraws many times a second. Nil until built; a month grid for another month than
+    /// the one shown is built fresh where it's drawn. See `rebuildCalendarLevels`.
+    @State private var yearOverviewCache: YearOverview?
+    @State private var calendarMonthCache: CachedCalendarMonth?
     /// The frames a zoom grows from, reported by the year's and the month's cells.
     @State private var zoomFrames = CalendarZoomFrames()
     /// A pinch is under way, and what it is doing: each pinch moves one level at most.
@@ -216,6 +223,10 @@ struct TimelineView: View {
         .onAppear { setUpIfNeeded() }
         .onChange(of: expenses) { _, _ in refreshWindow() }
         .onChange(of: extrasOnly) { _, _ in showExtrasChange() }
+        .onChange(of: calendarMonthID) { _, _ in rebuildCalendarMonth() }
+        // Category colours and order show in the year; Settings changes them in place.
+        .onChange(of: categories) { _, _ in rebuildCalendarLevels() }
+        .onChange(of: isSettingsPresented) { _, presented in if !presented { rebuildCalendarLevels() } }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active, hasRestoredPlace { saveCurrentPlace() }
@@ -236,11 +247,9 @@ struct TimelineView: View {
         let drawsMonth = hasLevels && draws(.month)
         let drawsYear = hasLevels && draws(.year)
         let coversTimeline = showsCategories || (hasLevels && level != .day)
-        let timelineLook = hasLevels ? look(of: .day) : (scale: 1, opacity: 1)
         return ZStack {
             timeline(topInset: topInset)
-                .scaleEffect(reduceMotion ? 1 : timelineLook.scale, anchor: levelZoom.anchor)
-                .opacity(showsCategories ? 0 : timelineLook.opacity)
+                .modifier(levelLook(.day, applies: hasLevels, hidden: showsCategories))
                 .allowsHitTesting(!coversTimeline)
                 .accessibilityHidden(coversTimeline)
             if showsCategories, let window {
@@ -252,24 +261,21 @@ struct TimelineView: View {
             // The month above the year: its paper covers the year's large end, as the transitions
             // this replaced drew it.
             if drawsYear, let window {
-                let yearLook = look(of: .year)
                 YearView(
-                    overview: yearOverview(in: window), extrasOnly: extrasOnly, today: today,
+                    overview: yearOverviewCache ?? yearOverview(in: window), extrasOnly: extrasOnly, today: today,
                     titleTrailingClearance: toggleClearance,
                     onOpenMonth: { month in ifNotPinching { openMonth(month, in: window) } },
                     arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
                     onMonthFrame: { if level == .year { zoomFrames.report(month: $0, frame: $1) } }
                 )
-                .scaleEffect(reduceMotion ? 1 : yearLook.scale, anchor: levelZoom.anchor)
-                .opacity(yearLook.opacity)
+                .modifier(levelLook(.year))
                 .allowsHitTesting(level == .year)
                 .accessibilityHidden(level != .year)
             }
             if drawsMonth, let window {
-                let monthLook = look(of: .month)
                 CalendarMonthView(
                     month: calendarMonthBinding(in: window), window: window,
-                    calendarMonth: calendarMonthModel(in: window), today: today,
+                    calendarMonth: cachedCalendarMonth(in: window), today: today,
                     onOpenDay: { day in ifNotPinching { openDay(day) } },
                     arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
                     // Only while the month shows: leaving, it reports scaled frames past the zoom's end.
@@ -278,8 +284,7 @@ struct TimelineView: View {
                     isPinching: isPinching,
                     titleTrailingClearance: toggleClearance
                 )
-                .scaleEffect(reduceMotion ? 1 : monthLook.scale, anchor: levelZoom.anchor)
-                .opacity(monthLook.opacity)
+                .modifier(levelLook(.month))
                 .allowsHitTesting(level == .month)
                 .accessibilityHidden(level != .month)
             }
@@ -507,8 +512,42 @@ struct TimelineView: View {
         )
     }
 
-    /// Built on every change rather than cached, as the lanes are: a saved edit changes the
-    /// instances this view holds, which `.onChange(of:)` can't see.
+    /// The grid's month as cached, or built here if the cache holds another month or setting: a
+    /// tap or a pinch sets `calendarMonthID` a moment before `onChange` rebuilds the cache.
+    private func cachedCalendarMonth(in window: TimelineWindow) -> CalendarMonth {
+        let month = shownCalendarMonth(in: window)
+        if let calendarMonthCache, calendarMonthCache.month == month, calendarMonthCache.extrasOnly == extrasOnly {
+            return calendarMonthCache.model
+        }
+        return calendarMonthModel(in: window)
+    }
+
+    /// Rebuilds the year and the shown month wherever the timeline's months are rebuilt: a saved
+    /// edit changes the instances this view holds, which `.onChange(of:)` can't see, so the same
+    /// refreshes that catch it for the list catch it here.
+    private func rebuildCalendarLevels() {
+        guard let window else {
+            yearOverviewCache = nil
+            calendarMonthCache = nil
+            return
+        }
+        yearOverviewCache = yearOverview(in: window)
+        rebuildCalendarMonth()
+    }
+
+    private func rebuildCalendarMonth() {
+        guard let window else { return }
+        calendarMonthCache = CachedCalendarMonth(
+            month: shownCalendarMonth(in: window), extrasOnly: extrasOnly, model: calendarMonthModel(in: window)
+        )
+    }
+
+    private struct CachedCalendarMonth {
+        let month: MonthKey
+        let extrasOnly: Bool
+        let model: CalendarMonth
+    }
+
     private func calendarMonthModel(in window: TimelineWindow) -> CalendarMonth {
         let month = shownCalendarMonth(in: window)
         let built = TimelineBuilder.month(
@@ -522,8 +561,7 @@ struct TimelineView: View {
         return CalendarMonthBuilder.month(section, today: today, calendar: calendar)
     }
 
-    /// The twelve months from this one, as the year shows them. Built on every change, as the
-    /// month is. Months past the window's ceiling are built too, and are simply empty.
+    /// The twelve months from this one, as the year shows them. Months past the window's ceiling are built too, and are simply empty.
     private func yearOverview(in window: TimelineWindow) -> YearOverview {
         let timelineExpenses = Expense.timelineExpenses(expenses)
         let sections = (0..<12).map { offset -> MonthSection in
@@ -597,7 +635,7 @@ struct TimelineView: View {
         var still = Transaction()
         still.disablesAnimations = true
         withTransaction(still) {
-            zoomProgress = pinch.direction == .in ? pinch.progress : 1 - pinch.progress
+            zoomProgress.value = pinch.direction == .in ? pinch.progress : 1 - pinch.progress
         }
     }
 
@@ -741,13 +779,42 @@ struct TimelineView: View {
         level == self.level || zoomPair?.further == level || zoomPair?.closer == level
     }
 
-    /// A level's size and fade: from the zoom while it is in one, otherwise full or hidden.
-    private func look(of level: CalendarLevel) -> (scale: CGFloat, opacity: Double) {
-        if let zoomPair {
-            if level == zoomPair.closer { return levelZoom.closer(at: zoomProgress) }
-            if level == zoomPair.further { return levelZoom.further(at: zoomProgress) }
+    /// A level's size and fade, applied by `LevelLook`, which reads the zoom's progress itself.
+    private func levelLook(_ level: CalendarLevel, applies: Bool = true, hidden: Bool = false) -> LevelLook {
+        LevelLook(
+            level: level, shown: self.level, pair: zoomPair, zoom: levelZoom, progress: zoomProgress,
+            applies: applies, scales: !reduceMotion, hidden: hidden
+        )
+    }
+
+    /// A level's size and fade: from the zoom while it is in one, otherwise full or hidden. Reading
+    /// `progress` here, not in `TimelineView.body`, keeps a pinch frame from rebuilding the screen.
+    /// `applies` false draws the level as it is (no expenses yet); `hidden` hides it outright.
+    private struct LevelLook: ViewModifier {
+        let level: CalendarLevel
+        let shown: CalendarLevel
+        let pair: ZoomPair?
+        let zoom: CalendarZoom
+        let progress: ZoomProgress
+        let applies: Bool
+        let scales: Bool
+        let hidden: Bool
+
+        func body(content: Content) -> some View {
+            let look = look()
+            content
+                .scaleEffect(scales ? look.scale : 1, anchor: zoom.anchor)
+                .opacity(hidden ? 0 : look.opacity)
         }
-        return (1, level == self.level ? 1 : 0)
+
+        private func look() -> (scale: CGFloat, opacity: Double) {
+            guard applies else { return (1, 1) }
+            if let pair {
+                if level == pair.closer { return zoom.closer(at: progress.value) }
+                if level == pair.further { return zoom.further(at: progress.value) }
+            }
+            return (1, level == shown ? 1 : 0)
+        }
     }
 
     /// Moves between the year, a month and the days, zooming about `zoom`: going in, the closer
@@ -777,7 +844,7 @@ struct TimelineView: View {
         levelZoom = zoom
         zoomFrames.isZooming = true
         zoomPair = pair
-        zoomProgress = from
+        zoomProgress.value = from
         zoomGeneration &+= 1
         return from
     }
@@ -788,7 +855,7 @@ struct TimelineView: View {
         let generation = zoomGeneration
         withAnimation(animation) {
             level = new
-            zoomProgress = end
+            zoomProgress.value = end
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
             guard generation == zoomGeneration else { return }
@@ -1217,6 +1284,7 @@ struct TimelineView: View {
     private func forgetWindow() {
         replaceWindow(with: nil)
         sections = [:]
+        rebuildCalendarLevels()
         headerOffsets = [:]
         headerHeights = [:]
         scrollProxy = nil
@@ -1569,6 +1637,7 @@ struct TimelineView: View {
             )
         }
         sections = result
+        rebuildCalendarLevels()
     }
 }
 

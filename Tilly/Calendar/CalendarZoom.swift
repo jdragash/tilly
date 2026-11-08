@@ -128,3 +128,10 @@ struct PinchProgress: Equatable {
         max(Tokens.Motion.pinchSettleMin, Tokens.Motion.zoomDuration * TimeInterval(abs(end - t)))
     }
 }
+
+/// How far in a change of level is: 0 shows the further level, 1 the closer. A reference, so the
+/// views that read it redraw on a pinch frame and the screen that owns it doesn't.
+@MainActor @Observable
+final class ZoomProgress {
+    var value: CGFloat = 0
+}
