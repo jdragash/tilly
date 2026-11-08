@@ -1,7 +1,7 @@
 import Foundation
 
 /// One day of a month's grid: the charges that land on it, skipped ones left out.
-struct CalendarDay: Identifiable, Equatable, Sendable {
+struct MonthGridDay: Identifiable, Equatable, Sendable {
     let day: Int // 1...31
     let date: Date // start of day
     /// Amount descending, ties by name ascending, a `nil` amount last.
@@ -18,5 +18,5 @@ struct CalendarMonth: Equatable, Sendable {
     let section: MonthSection
     let leadingDays: Int // grid cells before the 1st, counted from `calendar.firstWeekday`
     let trailingDays: Int // cells after the last day, completing the final week
-    let days: [CalendarDay] // every day of the month, empty ones included
+    let days: [MonthGridDay] // every day of the month, empty ones included
 }

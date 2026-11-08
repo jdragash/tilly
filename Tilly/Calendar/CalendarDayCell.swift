@@ -3,7 +3,7 @@ import SwiftUI
 /// One day of the month grid: its number, the pictures of its costliest charges, and its total. Every
 /// day is a button into the timeline, an empty one included.
 struct CalendarDayCell: View {
-    let day: CalendarDay
+    let day: MonthGridDay
     let isToday: Bool
     /// A charge saved on this day is arriving: its picture drops in and its total rolls.
     var arrives = false

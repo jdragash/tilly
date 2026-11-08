@@ -35,8 +35,8 @@ import Testing
     }
 
     // The 4th of January 2027 is a Monday.
-    static func day(_ entries: [TimelineEntry], total: Decimal) -> CalendarDay {
-        CalendarDay(day: 4, date: date(2027, 1, 4), entries: entries, total: total, isUpcoming: true)
+    static func day(_ entries: [TimelineEntry], total: Decimal) -> MonthGridDay {
+        MonthGridDay(day: 4, date: date(2027, 1, 4), entries: entries, total: total, isUpcoming: true)
     }
 
     @Test func emptyMonthSaysNothing() {

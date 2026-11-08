@@ -15,7 +15,7 @@ enum CalendarMonthBuilder {
             let date = calendar.date(byAdding: .day, value: day - 1, to: first)!
             let entries = (byDay[day] ?? []).sorted(by: TimelineBuilder.amountOrder)
             let start = calendar.startOfDay(for: date)
-            return CalendarDay(
+            return MonthGridDay(
                 day: day,
                 date: start,
                 entries: entries,
