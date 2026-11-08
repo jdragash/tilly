@@ -255,9 +255,9 @@ enum BillEditor {
         (expense.overrides ?? []).first { calendar.startOfDay(for: $0.scheduledDate) == day }
     }
 
-    /// This charge's 0-based position among the dates its own record generates from `anchor`,
-    /// the same reckoning `EditSession` uses.
-    private static func chargeIndex(
+    /// This charge's 0-based position among the dates its own record generates from `anchor`.
+    /// `EditSession` and the editing functions here share this one reckoning.
+    static func chargeIndex(
         of scheduledDate: Date, anchoredAt anchor: Date, interval: Int, unit: RecurrenceUnit, calendar: Calendar
     ) -> Int {
         let rule = RecurrenceRule(interval: interval, unit: unit, anchorDate: anchor)

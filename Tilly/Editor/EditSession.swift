@@ -43,7 +43,7 @@ struct EditSession: Identifiable, Equatable {
         let paymentsBeforeRule = series[..<recordIndex].reduce(0) {
             $0 + (BillEditor.paymentCount(of: $1, calendar: calendar) ?? 0)
         }
-        let chargeIndex = chargeIndex(
+        let chargeIndex = BillEditor.chargeIndex(
             of: day, anchoredAt: expense.anchorDate, interval: expense.recurrenceInterval,
             unit: expense.recurrenceUnit, calendar: calendar
         )
@@ -86,18 +86,5 @@ struct EditSession: Identifiable, Equatable {
             isFirstCharge: BillEditor.isFirstCharge(day, of: expense, in: series, calendar: calendar),
             previousChargeDate: previousChargeDate
         )
-    }
-
-    /// This charge's 0-based position among the dates its own record generates from `anchor`
-    /// — the same reckoning `BillEditor` uses internally.
-    private static func chargeIndex(
-        of scheduledDate: Date, anchoredAt anchor: Date, interval: Int, unit: RecurrenceUnit, calendar: Calendar
-    ) -> Int {
-        let rule = RecurrenceRule(interval: interval, unit: unit, anchorDate: anchor)
-        let anchorDay = calendar.startOfDay(for: anchor)
-        let day = calendar.startOfDay(for: scheduledDate)
-        guard day >= anchorDay else { return 0 }
-        let dates = RecurrenceEngine.dates(for: rule, in: DateInterval(start: anchorDay, end: day), calendar: calendar)
-        return max(0, dates.count - 1)
     }
 }
