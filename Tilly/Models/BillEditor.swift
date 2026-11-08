@@ -13,8 +13,10 @@ enum BillEditor {
     /// The records sharing `expense.seriesKey`, ascending by anchor.
     static func series(of expense: Expense, in context: ModelContext) throws -> [Expense] {
         let key = expense.seriesKey
-        let all = try context.fetch(FetchDescriptor<Expense>())
-        return all.filter { $0.seriesKey == key }.sorted { $0.anchorDate < $1.anchorDate }
+        let candidates = try context.fetch(
+            FetchDescriptor<Expense>(predicate: #Predicate<Expense> { $0.seriesID == key || $0.id == key })
+        )
+        return candidates.filter { $0.seriesKey == key }.sorted { $0.anchorDate < $1.anchorDate }
     }
 
     /// How many charges a record generates; nil when it runs on.

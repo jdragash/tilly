@@ -533,7 +533,7 @@ struct ExpenseEditor: View {
     }
 
     private func fetchExpense(_ id: UUID) -> Expense? {
-        (try? modelContext.fetch(FetchDescriptor<Expense>()))?.first { $0.id == id }
+        try? modelContext.expense(id: id)
     }
 }
 

@@ -20,8 +20,7 @@ struct EditSession: Identifiable, Equatable {
     static func make(
         expenseID: UUID, scheduledDate: Date, context: ModelContext, calendar: Calendar
     ) throws -> EditSession? {
-        let all = try context.fetch(FetchDescriptor<Expense>())
-        guard let expense = all.first(where: { $0.id == expenseID }) else { return nil }
+        guard let expense = try context.expense(id: expenseID) else { return nil }
 
         let day = calendar.startOfDay(for: scheduledDate)
         let series = try BillEditor.series(of: expense, in: context)
