@@ -40,6 +40,8 @@ struct ExpenseEditor: View {
     @State private var makingCategory = false
     @State private var editingCategory: ExpenseCategory?
     @State private var deletingCategory: ExpenseCategory?
+    /// A save or delete threw and was rolled back; the sheet stays open to try again.
+    @State private var saveFailed = false
     /// Counts picks, for the pick's haptic.
     @State private var picks = 0
 
@@ -122,6 +124,11 @@ struct ExpenseEditor: View {
             CategorySheet(subject: .change(category), onSave: { _ in }, onDelete: { categoryDeleted(id) })
         }
         .categoryDeleteAlert(for: $deletingCategory, onDeleted: categoryDeleted)
+        .alert("Your change wasn’t saved", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Nothing was changed. Try again.")
+        }
     }
 
     // MARK: Pieces
@@ -370,12 +377,15 @@ struct ExpenseEditor: View {
             endDate: draft.rule(calendar: calendar).endDate,
             category: category
         )
-        modelContext.insert(expense)
         do {
-            try modelContext.save()
+            try modelContext.applyOrRollBack {
+                modelContext.insert(expense)
+                try modelContext.save()
+            }
             close(.saved(expenseID: expense.id, date: draft.date))
         } catch {
             Self.logger.error("Saving an expense failed: \(error)")
+            saveFailed = true
         }
     }
 
@@ -499,10 +509,11 @@ struct ExpenseEditor: View {
     /// Runs an edit, then closes as `close` says: a delete by default, a save when one passes it.
     private func performEdit(_ operation: () throws -> Void, then close: EditorClose = .deleted) {
         do {
-            try operation()
+            try modelContext.applyOrRollBack(operation)
             self.close(close)
         } catch {
             Self.logger.error("Editing an expense failed: \(error)")
+            saveFailed = true
         }
     }
 

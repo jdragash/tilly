@@ -544,4 +544,46 @@ import TillyCore
         #expect(BillEditor.isFirstCharge(anchor, of: expense, in: series, calendar: Self.calendar))
         #expect(!BillEditor.isFirstCharge(fourthCharge, of: series[1], in: series, calendar: Self.calendar))
     }
+
+    // MARK: Rolling back
+
+    struct SaveFailed: Error {}
+
+    /// A save can't be made to fail on demand, so the edit throws in its place: a rename, a new
+    /// override and a delete, all pending, then a throw. Every one of them is undone.
+    @Test func aThrownEditLeavesNoPendingChanges() throws {
+        let context = try Self.makeContext()
+        let home = Self.category(in: context)
+        let gym = Self.makeBill(in: context, anchor: Self.date(2026, 1, 31), category: home)
+        let rent = Self.makeBill(in: context, name: "Rent", anchor: Self.date(2026, 1, 1), category: home)
+        try context.save()
+
+        #expect(throws: SaveFailed.self) {
+            try context.applyOrRollBack {
+                gym.name = "Gym2"
+                context.insert(OverrideRecord(scheduledDate: Self.date(2026, 2, 28), isSkipped: true, expense: gym))
+                context.delete(rent)
+                throw SaveFailed()
+            }
+        }
+
+        #expect(!context.hasChanges)
+        #expect(gym.name == "Gym")
+        #expect(try context.fetchCount(FetchDescriptor<OverrideRecord>()) == 0)
+        #expect(try context.fetch(FetchDescriptor<Expense>()).map(\.name).sorted() == ["Gym", "Rent"])
+    }
+
+    @Test func anEditThatSucceedsIsKept() throws {
+        let context = try Self.makeContext()
+        let gym = Self.makeBill(in: context, anchor: Self.date(2026, 1, 31), category: Self.category(in: context))
+        try context.save()
+
+        try context.applyOrRollBack {
+            gym.name = "Gym2"
+            try context.save()
+        }
+
+        #expect(!context.hasChanges)
+        #expect(try context.fetch(FetchDescriptor<Expense>()).map(\.name) == ["Gym2"])
+    }
 }

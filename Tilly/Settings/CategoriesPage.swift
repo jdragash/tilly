@@ -1,3 +1,4 @@
+import OSLog
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -13,6 +14,8 @@ struct CategoriesPage: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
     @Query private var expenses: [Expense]
+
+    private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "CategoriesPage")
 
     @State private var changing: ExpenseCategory?
     @State private var making = false
@@ -162,7 +165,8 @@ struct CategoriesPage: View {
 
     private func arrange(by sort: CategorySort, figures: [UUID: (bills: Int, monthly: Decimal)]) {
         let previous = CategoryOrdering.arrange(categories, by: sort, figures: figures)
-        try? modelContext.save()
+        // A sort that didn't save is rolled back, so there is nothing to undo.
+        guard modelContext.saveOrRollBack("Sorting categories", logger: Self.logger) else { return }
         let shown = SortUndo.Shown(sort: sort, previous: previous)
         undo = shown
         Task { @MainActor in
@@ -173,7 +177,7 @@ struct CategoriesPage: View {
 
     private func restore(_ shown: SortUndo.Shown) {
         CategoryOrdering.restore(categories, order: shown.previous)
-        try? modelContext.save()
+        modelContext.saveOrRollBack("Undoing a sort", logger: Self.logger)
         undo = nil
     }
 
@@ -189,7 +193,7 @@ struct CategoriesPage: View {
         withAnimation(.easeInOut(duration: Tokens.Motion.categoryFade)) {
             CategoryOrdering.restore(categories, order: order)
         }
-        try? modelContext.save()
+        modelContext.saveOrRollBack("Moving a category", logger: Self.logger)
     }
 
     fileprivate func finishDrag() { dragging = nil }
@@ -201,7 +205,7 @@ struct CategoriesPage: View {
         var order = categories.map(\.id)
         order.swapAt(index, destination)
         CategoryOrdering.restore(categories, order: order)
-        try? modelContext.save()
+        modelContext.saveOrRollBack("Moving a category", logger: Self.logger)
     }
 }
 
