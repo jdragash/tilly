@@ -3,6 +3,9 @@ import Foundation
 /// Where history stops. See "History begins at the oldest charge you have entered" in
 /// `docs/DECISIONS.md`.
 enum TimelineFloor {
+    /// The floor line's scroll target: a day older than every listed month lands on it.
+    static let scrollID = "timeline-floor"
+
     /// The oldest month any occurrence can land in: the earliest anchor across all
     /// non-archived expenses, and any override whose `movedDate` is earlier still. `nil`
     /// when there are no expenses that could ever generate one — the caller shows the

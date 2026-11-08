@@ -12,6 +12,9 @@ Learned in the simulator, invisible to tests. The editor's own lessons are in `e
 - Measure Apple's apps, don't guess: screenshot in the simulator and walk pixel columns out from
   inside a glass shape to where its shadow starts, through its flat middle, not its rounded ends
   or label. Compare text weight by stem width in the ascender band, clear of content under glass.
+- **A toolbar item gets a glass capsule of its own** (iOS 26 on). A segmented `Picker` there
+  draws its track inside it, a pill in a pill: `.sharedBackgroundVisibility(.hidden)` on the
+  `ToolbarItem` leaves the control's own capsule alone.
 - The `.glass` button style pads its label (44pt measured 58pt). For an exact size, use
   `glassEffect(.regular.interactive(), in:)` on a plain button.
 - `.borderedProminent` tinted `Ink.primary` is white in dark mode with a white label. Give the

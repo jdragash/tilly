@@ -50,6 +50,8 @@ struct AllBillsSheet: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(role: .close) { dismiss() }
                 }
+                // Off the toolbar's glass: the control draws its own track, and inside the glass
+                // capsule every toolbar item gets it read as a pill in a pill.
                 ToolbarItem(placement: .topBarTrailing) {
                     Picker("Period", selection: $period) {
                         Text("Monthly").tag(BillPeriod.month)
@@ -58,6 +60,7 @@ struct AllBillsSheet: View {
                     .pickerStyle(.segmented)
                     .fixedSize()
                 }
+                .sharedBackgroundVisibility(.hidden)
             }
             .navigationBarTitleDisplayMode(.inline)
         }

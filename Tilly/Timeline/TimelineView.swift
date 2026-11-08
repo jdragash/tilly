@@ -28,6 +28,8 @@ struct TimelineView: View {
     @State private var glideStopper = GlideStopper()
     /// How many times the month button's return has had to start again, overtaken by a fling.
     @State private var returnRestarts = 0
+    /// The list's fade, for the Today kind that jumps under one.
+    @State private var listFade: Double = 1
     @State private var scrollOffset: CGFloat = 0
     @State private var restingContentOffset: CGFloat?
     @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
@@ -70,16 +72,23 @@ struct TimelineView: View {
     @AppStorage("showsExtrasOnly") private var extrasOnly = false
     /// The All / Extras toggle's width, which the titles beneath it keep clear.
     @State private var extrasToggleWidth: CGFloat = 0
-    /// Where the last change of level zoomed about, and whether it was between the year and a month
-    /// (the month is then the closer level) or between a month and the days (the further one).
+    /// Where the last change of level zoomed about.
     @State private var levelZoom = CalendarZoom.centre
-    @State private var zoomPairsWithYear = true
+    /// While the levels change, the two drawn, and how far in it is: 0 shows the further, 1 the
+    /// closer. Every level draws from these, so a pinch can hold the zoom anywhere between; nil at rest.
+    @State private var zoomPair: ZoomPair?
+    @State private var zoomProgress: CGFloat = 0
+    /// Bumped by every zoom, so the end of one overtaken does nothing.
+    @State private var zoomGeneration = 0
     /// The frames a zoom grows from, reported by the year's and the month's cells.
     @State private var zoomFrames = CalendarZoomFrames()
-    /// The timeline's size while it is the level that shows or is leaving; it rests at the size an
-    /// arriving level grows from, so the next arrival has somewhere to grow from.
-    @State private var timelineScale: CGFloat = 1
-    @State private var timelineAnchor: UnitPoint = .center
+    /// A pinch is under way, and what it is doing: each pinch moves one level at most.
+    @GestureState private var isPinching = false
+    @State private var pinch: Pinch?
+    /// The pinch as state, for taps to read: a level leaving keeps the closures it was drawn
+    /// with, and reads a `@GestureState` from them as it was then.
+    @State private var pinchUnderway = false
+    @State private var pinchEnded = Date.distantPast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
 
@@ -87,7 +96,7 @@ struct TimelineView: View {
     private static let scrollSpace = "timelineScroll"
     /// The list's own content, which scrolling doesn't move: distances measured here hold
     /// still while the list scrolls.
-    private static let contentSpace = "timelineContent"
+    private static let contentSpace = TimelineSpace.content
 
     /// The last month (in top-to-bottom document order) whose header has reached the
     /// container's top edge. Derived fresh from every header's live offset rather than
@@ -194,17 +203,17 @@ struct TimelineView: View {
         // edit, and deleting future charges, which only ends a record, left the months ahead.
         .onChange(of: editor) { _, new in
             guard new == nil else { return }
+            // Once the sheet has dropped away, unless it has opened again by then.
+            DispatchQueue.main.asyncAfter(deadline: .now() + Tokens.Motion.Card.sheetExit) {
+                if editor == nil { BoilClock.shared.listsHeld = false }
+            }
             if refreshedOnClose {
                 refreshedOnClose = false
             } else {
                 refreshWindow()
             }
         }
-        .onAppear {
-            // Where the timeline rests while another level shows: the size an arrival grows from.
-            if level != .day { timelineScale = Tokens.Scale.zoomIn }
-            setUpIfNeeded()
-        }
+        .onAppear { setUpIfNeeded() }
         .onChange(of: expenses) { _, _ in refreshWindow() }
         .onChange(of: extrasOnly) { _, _ in showExtrasChange() }
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
@@ -221,24 +230,17 @@ struct TimelineView: View {
     /// for laying itself out again. With no expenses both views are the empty state.
     private func content(topInset: CGFloat, bottomInset: CGFloat) -> some View {
         let showsCategories = mode == .categories && !expenses.isEmpty && window != nil
-        let showsCalendarMonth = mode == .timeline && level == .month && !expenses.isEmpty && window != nil
-        let showsYear = mode == .timeline && level == .year && !expenses.isEmpty && window != nil
-        let coversTimeline = showsCategories || showsCalendarMonth || showsYear
-        // Each level zooms about `levelZoom` both ways, the same scale arriving and leaving: the year
-        // is always the further level, so it grows from or into its large end; the month is the
-        // closer level beside the year and the further one beside the days.
-        let yearTransition: AnyTransition = reduceMotion
-            ? .opacity
-            : .scale(scale: levelZoom.outerScale, anchor: levelZoom.anchor).combined(with: .opacity)
-        let monthTransition: AnyTransition = reduceMotion
-            ? .opacity
-            : .scale(
-                scale: zoomPairsWithYear ? levelZoom.scale : levelZoom.outerScale, anchor: levelZoom.anchor
-            ).combined(with: .opacity)
+        let hasLevels = mode == .timeline && !expenses.isEmpty && window != nil
+        // The levels' controls follow `level`; the levels themselves are drawn while they show or zoom.
+        let showsCalendarMonth = hasLevels && level == .month
+        let drawsMonth = hasLevels && draws(.month)
+        let drawsYear = hasLevels && draws(.year)
+        let coversTimeline = showsCategories || (hasLevels && level != .day)
+        let timelineLook = hasLevels ? look(of: .day) : (scale: 1, opacity: 1)
         return ZStack {
             timeline(topInset: topInset)
-                .scaleEffect(reduceMotion ? 1 : timelineScale, anchor: timelineAnchor)
-                .opacity(coversTimeline ? 0 : 1)
+                .scaleEffect(reduceMotion ? 1 : timelineLook.scale, anchor: levelZoom.anchor)
+                .opacity(showsCategories ? 0 : timelineLook.opacity)
                 .allowsHitTesting(!coversTimeline)
                 .accessibilityHidden(coversTimeline)
             if showsCategories, let window {
@@ -247,26 +249,53 @@ struct TimelineView: View {
                     bottomClearance: bottomClearance, onOpen: openEntry
                 )
             }
-            if showsCalendarMonth, let window {
-                CalendarMonthView(
-                    month: calendarMonthBinding(in: window), window: window,
-                    calendarMonth: calendarMonthModel(in: window), today: today, onOpenDay: openDay,
-                    arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
-                    onDayFrame: { zoomFrames.report(day: $0, frame: $1) },
-                    onBack: { setLevel(.year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window))) },
-                    titleTrailingClearance: toggleClearance
-                )
-                .transition(monthTransition)
-            }
-            if showsYear, let window {
+            // The month above the year: its paper covers the year's large end, as the transitions
+            // this replaced drew it.
+            if drawsYear, let window {
+                let yearLook = look(of: .year)
                 YearView(
                     overview: yearOverview(in: window), extrasOnly: extrasOnly, today: today,
                     titleTrailingClearance: toggleClearance,
-                    onOpenMonth: { openMonth($0, in: window) },
+                    onOpenMonth: { month in ifNotPinching { openMonth(month, in: window) } },
                     arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
-                    onMonthFrame: { zoomFrames.report(month: $0, frame: $1) }
+                    onMonthFrame: { if level == .year { zoomFrames.report(month: $0, frame: $1) } }
                 )
-                .transition(yearTransition)
+                .scaleEffect(reduceMotion ? 1 : yearLook.scale, anchor: levelZoom.anchor)
+                .opacity(yearLook.opacity)
+                .allowsHitTesting(level == .year)
+                .accessibilityHidden(level != .year)
+            }
+            if drawsMonth, let window {
+                let monthLook = look(of: .month)
+                CalendarMonthView(
+                    month: calendarMonthBinding(in: window), window: window,
+                    calendarMonth: calendarMonthModel(in: window), today: today,
+                    onOpenDay: { day in ifNotPinching { openDay(day) } },
+                    arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
+                    // Only while the month shows: leaving, it reports scaled frames past the zoom's end.
+                    onDayFrame: { if level == .month { zoomFrames.report(day: $0, frame: $1) } },
+                    onBack: { ifNotPinching { backToYear(in: window) } },
+                    isPinching: isPinching,
+                    titleTrailingClearance: toggleClearance
+                )
+                .scaleEffect(reduceMotion ? 1 : monthLook.scale, anchor: levelZoom.anchor)
+                .opacity(monthLook.opacity)
+                .allowsHitTesting(level == .month)
+                .accessibilityHidden(level != .month)
+            }
+        }
+        // Alongside the levels' own gestures, so one finger still scrolls and pages.
+        .simultaneousGesture(
+            MagnifyGesture()
+                .updating($isPinching) { _, pinching, _ in pinching = true }
+                .onChanged(followPinch)
+        )
+        // Ended or cancelled alike: the gesture's state resets either way.
+        .onChange(of: isPinching) { _, pinching in
+            pinchUnderway = pinching
+            if !pinching {
+                endPinch()
+                pinchEnded = Date()
             }
         }
         .coordinateSpace(name: CalendarZoom.space)
@@ -329,6 +358,7 @@ struct TimelineView: View {
                 VStack(spacing: 0) {
                     dayTopRow(window)
                     list(window)
+                        .opacity(listFade)
                 }
                 .drawnPaper()
                 .overlay(alignment: .top) {
@@ -353,11 +383,7 @@ struct TimelineView: View {
         let month = monthUnderMiddle() ?? window.current
         return HStack {
             BackButton(title: month.name(in: calendar, relativeTo: today, locale: locale)) {
-                let target = min(max(month, window.floor), window.ceiling)
-                calendarMonthID = target.id
-                // Back into the day it came from, when the list is still in that day's month.
-                let day = zoomFrames.openedDay.flatMap { MonthKey(containing: $0, calendar: calendar) == target ? $0 : nil }
-                setLevel(.month, zoom: day.map(zoomFrames.zoom(forDay:)) ?? .centre)
+                ifNotPinching { backToMonth(in: window) }
             }
             Spacer()
         }
@@ -384,7 +410,7 @@ struct TimelineView: View {
                                 markedDay: markedDay,
                                 markedEntryID: markedEntryID,
                                 onRowFrame: { rowFrames.report($0, frame: $1) },
-                                onOpen: openEntry
+                                onOpen: { entry in ifNotPinching { openEntry(entry) } }
                             )
                             // The content, not the `Section`: a geometry modifier there
                             // stops headers pinning. And the content, not the header: a
@@ -421,6 +447,10 @@ struct TimelineView: View {
                         }
                         .id(month.id)
                     }
+                    // Where a day below every listed month falls.
+                    Color.clear
+                        .frame(height: Tokens.Size.scrollMarker)
+                        .id(TimelineFloor.scrollID)
                     floorLine(window.floor)
                         .onGeometryChange(for: CGFloat.self) { proxy in
                             proxy.frame(in: .named(Self.contentSpace)).maxY
@@ -513,6 +543,148 @@ struct TimelineView: View {
         )
     }
 
+    /// The days' back button: out to the month under the middle of the list, shrinking into `day`
+    /// when it's in that month and the grid has shown it, or else into the day last opened from the
+    /// grid if the list is still in its month.
+    private func backToMonth(in window: TimelineWindow) {
+        setLevel(.month, zoom: monthTarget(in: window))
+    }
+
+    /// Where the way out of the days goes: sets the grid's month and returns the zoom to shrink by.
+    private func monthTarget(in window: TimelineWindow, shrinkingInto day: Date? = nil) -> CalendarZoom {
+        let target = min(max(monthUnderMiddle() ?? window.current, window.floor), window.ceiling)
+        calendarMonthID = target.id
+        let inTarget: (Date) -> Date? = { MonthKey(containing: $0, calendar: calendar) == target ? $0 : nil }
+        let shrinksInto = day.flatMap(inTarget).flatMap { zoomFrames.days[$0] == nil ? nil : $0 }
+            ?? zoomFrames.openedDay.flatMap(inTarget)
+        return shrinksInto.map(zoomFrames.zoom(forDay:)) ?? .centre
+    }
+
+    /// The month's back button: out to the year, shrinking into the month's cell.
+    private func backToYear(in window: TimelineWindow) {
+        setLevel(.year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window)))
+    }
+
+    /// One pinch, once it has a direction: the level it zooms to (nil past the year or the days,
+    /// where it does nothing), how far along it is and how fast, and how to undo what it prepared.
+    private struct Pinch {
+        let direction: PinchDirection
+        let target: CalendarLevel?
+        var progress: CGFloat = 0
+        var speed: CGFloat = 0
+        /// When the fingers last moved: fingers held still send no changes, so a speed this old is 0.
+        var moved = Date()
+        /// A day it lands on in the days, marked once it finishes.
+        var day: Date?
+        var undo: () -> Void = {}
+    }
+
+    /// The zoom follows the fingers: on the first change past the dead zone the pinch chooses what
+    /// to zoom to, as the matching tap or back button would, then holds the zoom where the fingers
+    /// are. See the prototype's `pMove`.
+    private func followPinch(_ value: MagnifyGesture.Value) {
+        if pinch == nil {
+            guard let direction = PinchProgress.direction(magnification: value.magnification) else { return }
+            pinch = beginPinch(direction, at: value.startLocation)
+        }
+        guard var pinch, pinch.target != nil else { return }
+        pinch.progress = PinchProgress.progress(magnification: value.magnification, direction: pinch.direction)
+        pinch.speed = PinchProgress.speed(
+            magnification: value.magnification, velocity: value.velocity, direction: pinch.direction
+        )
+        pinch.moved = Date()
+        self.pinch = pinch
+        var still = Transaction()
+        still.disablesAnimations = true
+        withTransaction(still) {
+            zoomProgress = pinch.direction == .in ? pinch.progress : 1 - pinch.progress
+        }
+    }
+
+    /// Chooses what the pinch zooms to and draws the pair at its start, preparing what the tap or
+    /// back button would: the month the year opens, the day the list lands on, the month it backs to.
+    private func beginPinch(_ direction: PinchDirection, at location: CGPoint) -> Pinch {
+        let dead = Pinch(direction: direction, target: nil)
+        guard let window, mode == .timeline, !expenses.isEmpty else { return dead }
+        endZoom(settled: false)
+        switch (level, direction) {
+        case (.year, .in):
+            guard let month = nearest(to: location, in: zoomFrames.months) else { return dead }
+            let old = calendarMonthID
+            calendarMonthID = min(max(month, window.floor), window.ceiling).id
+            _ = beginZoom(to: .month, zoom: zoomFrames.zoom(forMonth: month))
+            return Pinch(direction: direction, target: .month) { calendarMonthID = old }
+        case (.month, .in):
+            let shown = shownCalendarMonth(in: window)
+            let days = zoomFrames.days.filter { MonthKey(containing: $0.key, calendar: calendar) == shown }
+            guard let day = nearest(to: location, in: days) else { return dead }
+            let place = glideStopper.offset
+            let opened = zoomFrames.openedDay
+            zoomFrames.openedDay = day
+            land(on: day)
+            _ = beginZoom(to: .day, zoom: zoomFrames.zoom(forDay: day))
+            return Pinch(direction: direction, target: .day, day: day) {
+                zoomFrames.openedDay = opened
+                if let place { glideStopper.putBack(place) }
+            }
+        case (.day, .out):
+            let old = calendarMonthID
+            let zoom = monthTarget(in: window, shrinkingInto: day(under: location))
+            _ = beginZoom(to: .month, zoom: zoom)
+            return Pinch(direction: direction, target: .month) { calendarMonthID = old }
+        case (.month, .out):
+            _ = beginZoom(to: .year, zoom: zoomFrames.zoom(forMonth: shownCalendarMonth(in: window)))
+            return Pinch(direction: direction, target: .year)
+        case (.year, .out), (.day, .in):
+            return dead
+        }
+    }
+
+    /// The fingers lifted: past `pinchFinish`, or flicked, the zoom runs on to the level it was
+    /// heading for; otherwise it springs back and what it prepared is undone. See `pEnd`.
+    private func endPinch() {
+        guard let pinch else { return }
+        self.pinch = nil
+        guard let target = pinch.target, zoomPair != nil else { return }
+        let held = Date().timeIntervalSince(pinch.moved) > Tokens.Motion.pinchStill
+        let finishes = PinchProgress.finishes(progress: pinch.progress, speed: held ? 0 : pinch.speed)
+        let now = pinch.direction == .in ? pinch.progress : 1 - pinch.progress
+        // Going in finishes at 1, going out at 0; springing back, the other way.
+        let end: CGFloat = (pinch.direction == .in) == finishes ? 1 : 0
+        let duration = PinchProgress.settleDuration(from: now, to: end)
+        let settle = Tokens.Motion.zoom(duration: duration)
+        if finishes {
+            runZoom(to: end, level: target, animation: settle, duration: duration)
+            if target == .day, let day = pinch.day {
+                markOpened(day)
+            }
+        } else {
+            runZoom(to: end, level: level, animation: settle, duration: duration)
+            pinch.undo()
+        }
+    }
+
+    /// Runs a tap's action unless a pinch is under way or has just ended: the fingers lifting off a
+    /// pinch land as taps on whatever is under them, which opened two days at once.
+    private func ifNotPinching(_ action: () -> Void) {
+        guard !pinchUnderway, Date().timeIntervalSince(pinchEnded) > Tokens.Motion.pinchQuiet else { return }
+        action()
+    }
+
+    /// The key whose frame's centre is nearest `point`.
+    private func nearest<Key>(to point: CGPoint, in frames: [Key: CGRect]) -> Key? {
+        frames.min { hypot($0.value.midX - point.x, $0.value.midY - point.y) < hypot($1.value.midX - point.x, $1.value.midY - point.y) }?.key
+    }
+
+    /// The day of the row under `point` in the list, if a row is there.
+    private func day(under point: CGPoint) -> Date? {
+        let ids = rowFrames.frames.filter { $0.value.minY <= point.y && point.y < $0.value.maxY }.keys
+        for section in sections.values {
+            if let entry = section.entries.first(where: { ids.contains($0.id) }) { return entry.date }
+        }
+        return nil
+    }
+
     /// A month in the year opens as the month level.
     private func openMonth(_ month: MonthKey, in window: TimelineWindow) {
         calendarMonthID = min(max(month, window.floor), window.ceiling).id
@@ -550,39 +722,96 @@ struct TimelineView: View {
         }
     }
 
-    /// Moves between the year, a month and the days, zooming about `zoom`: going in, the closer
-    /// level grows out of the cell that was tapped while the further one grows past and fades;
-    /// going out, the reverse, back into that cell. The timeline, always mounted, animates its own
-    /// scale and opacity; the year and the month come and go as transitions. Nothing here touches
-    /// a scroll.
-    ///
-    /// Where to zoom is set a turn before the level changes: a view leaving takes the transition
-    /// it last drew with, so set in the same update, the level leaving zoomed about the old place.
-    private func setLevel(_ new: CalendarLevel, zoom: CalendarZoom) {
-        guard new != level else { return }
-        let old = level
-        levelZoom = zoom
-        zoomPairsWithYear = new == .year || old == .year
-        zoomFrames.isZooming = true
-        if new == .day || old == .day {
-            // Unseen: the timeline is hidden going in, and at full size, where its anchor changes
-            // nothing, going out.
-            timelineAnchor = zoom.anchor
-            if new == .day { timelineScale = zoom.scale }
-        }
-        DispatchQueue.main.async {
-            withAnimation(Tokens.Motion.zoom) {
-                level = new
-                if new == .day { timelineScale = 1 } else if old == .day { timelineScale = zoom.scale }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + Tokens.Motion.zoomDuration) {
-                zoomFrames.isZooming = false
+    /// The two levels a change of level zooms between: the year and a month, or a month and the days.
+    private struct ZoomPair: Equatable {
+        let further: CalendarLevel
+        let closer: CalendarLevel
+
+        init(between one: CalendarLevel, and other: CalendarLevel) {
+            if one == .year || other == .year {
+                (further, closer) = (.year, .month)
+            } else {
+                (further, closer) = (.month, .day)
             }
         }
     }
 
-    /// A day with charges opens the days: the timeline, with that day's first row just under its
-    /// month's pinned header, the day's rows marked and then fading. The timeline stays mounted
+    /// Whether `level` is drawn: the one that shows, and both of a zoom's pair while it runs.
+    private func draws(_ level: CalendarLevel) -> Bool {
+        level == self.level || zoomPair?.further == level || zoomPair?.closer == level
+    }
+
+    /// A level's size and fade: from the zoom while it is in one, otherwise full or hidden.
+    private func look(of level: CalendarLevel) -> (scale: CGFloat, opacity: Double) {
+        if let zoomPair {
+            if level == zoomPair.closer { return levelZoom.closer(at: zoomProgress) }
+            if level == zoomPair.further { return levelZoom.further(at: zoomProgress) }
+        }
+        return (1, level == self.level ? 1 : 0)
+    }
+
+    /// Moves between the year, a month and the days, zooming about `zoom`: going in, the closer
+    /// level grows out of the cell that was tapped while the further one grows past and fades;
+    /// going out, the reverse, back into that cell. Both are drawn from one progress value, so a
+    /// pinch can hold the zoom anywhere between. The timeline is always mounted, so its place
+    /// survives. Nothing here touches a scroll.
+    ///
+    /// The pair is drawn at its start a turn before the progress moves, so the level arriving is
+    /// in place, unseen, before it starts to grow. A zoom still running ends at once.
+    private func setLevel(_ new: CalendarLevel, zoom: CalendarZoom) {
+        endZoom(settled: false)
+        guard new != level else { return }
+        let from = beginZoom(to: new, zoom: zoom)
+        let generation = zoomGeneration
+        DispatchQueue.main.async {
+            guard generation == zoomGeneration else { return }
+            runZoom(to: 1 - from, level: new, animation: Tokens.Motion.zoom, duration: Tokens.Motion.zoomDuration)
+        }
+    }
+
+    /// Draws the pair for a change from `level` to `new` at where `level` is now, unseen, and
+    /// returns that progress.
+    private func beginZoom(to new: CalendarLevel, zoom: CalendarZoom) -> CGFloat {
+        let pair = ZoomPair(between: level, and: new)
+        let from: CGFloat = level == pair.closer ? 1 : 0
+        levelZoom = zoom
+        zoomFrames.isZooming = true
+        zoomPair = pair
+        zoomProgress = from
+        zoomGeneration &+= 1
+        return from
+    }
+
+    /// Animates the running zoom's progress to `end`, setting `level` with it so the controls
+    /// answer at once, and ends the zoom when the animation has had its time.
+    private func runZoom(to end: CGFloat, level new: CalendarLevel, animation: Animation, duration: TimeInterval) {
+        let generation = zoomGeneration
+        withAnimation(animation) {
+            level = new
+            zoomProgress = end
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            guard generation == zoomGeneration else { return }
+            endZoom(settled: true)
+        }
+    }
+
+    /// The zoom running, if any, is over: only `level` stays drawn, at full size, at once.
+    private func endZoom(settled: Bool) {
+        guard zoomPair != nil else { return }
+        zoomGeneration &+= 1
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            zoomPair = nil
+        }
+        zoomFrames.zoomEnded(settled: settled, showing: level)
+    }
+
+    /// Any day of the month opens the days: the timeline, with that day's first row just under its
+    /// month's pinned header, the day's rows marked and then fading. A day with nothing on it lands
+    /// where it would fall, in the middle of what shows, with nothing marking it; today with nothing
+    /// on it lands the Today line there, as the month button does. The timeline stays mounted
     /// beneath the grid, so its proxy is there to scroll.
     ///
     /// Two scrolls, a turn apart, neither animated. The month first, because a lazy list resolves
@@ -592,25 +821,90 @@ struct TimelineView: View {
     /// no height of its own the marker's top lands at `f × (listHeight − bottomClearance)`.
     /// Measured: 59.86 under a 60pt header, from the current month and from three months back.
     private func openDay(_ date: Date) {
-        guard let scrollProxy else { return }
+        guard scrollProxy != nil else { return }
         let day = calendar.startOfDay(for: date)
-        let month = MonthKey(containing: day, calendar: calendar)
-        markedDay = day
+        let hasRows = sections[MonthKey(containing: day, calendar: calendar)]?.entries.contains { $0.date == day } ?? false
+        markedDay = hasRows ? day : nil
         zoomFrames.openedDay = day
         setLevel(.day, zoom: zoomFrames.zoom(forDay: day))
+        land(on: day) {
+            if hasRestoredPlace { saveCurrentPlace() }
+            withAnimation(.easeOut(duration: Tokens.Motion.dayMark)) { markedDay = nil }
+        }
+    }
+
+    /// A day a pinch has opened, already landed on: marked as a tap marks it, then fading, and the
+    /// place saved.
+    private func markOpened(_ day: Date) {
+        let hasRows = sections[MonthKey(containing: day, calendar: calendar)]?.entries.contains { $0.date == day } ?? false
+        markedDay = hasRows ? day : nil
+        DispatchQueue.main.async {
+            if hasRestoredPlace { saveCurrentPlace() }
+            withAnimation(.easeOut(duration: Tokens.Motion.dayMark)) { markedDay = nil }
+        }
+    }
+
+    /// What a day lands on in the list, and how.
+    private enum DayLanding {
+        /// A day with rows: its marker just under the header.
+        case rows(MonthKey)
+        /// Today with nothing on it, while the divider shows.
+        case divider(MonthKey)
+        /// A zero-high marker, where a day without a charge would fall, centred.
+        case marker(AnyHashable, MonthKey)
+    }
+
+    private func landing(for day: Date) -> DayLanding {
+        let month = MonthKey(containing: day, calendar: calendar)
+        let months = visibleMonths
+        if months.contains(month) {
+            let section = section(for: month)
+            if section.entries.contains(where: { $0.date == day }) { return .rows(month) }
+            if day == calendar.startOfDay(for: today), section.isCurrent, section.hasChargedEntry {
+                return .divider(month)
+            }
+            return .marker(AnyHashable(OccurrenceRow.dayScrollID(day)), month)
+        }
+        // Not listed, as an empty month isn't: where it would be, at the top of the nearest month below.
+        guard let below = months.first(where: { $0 < month }) else {
+            return .marker(AnyHashable(TimelineFloor.scrollID), months.last ?? month)
+        }
+        let section = section(for: below)
+        let seams = DaySeams.seams(for: section, today: today, calendar: calendar)
+        let first = seams[0]?.first ?? section.entries.first?.date ?? seams[section.entries.count]?.first
+        return .marker(first.map { AnyHashable(OccurrenceRow.dayScrollID($0)) } ?? AnyHashable(below.id), below)
+    }
+
+    /// Lands `day` as `openDay` describes, unanimated, then calls `done` once the list is still.
+    private func land(on day: Date, then done: @escaping () -> Void = {}) {
+        guard let scrollProxy else { return }
+        let landing = landing(for: day)
+        let month: MonthKey
+        switch landing {
+        case .rows(let key), .divider(let key), .marker(_, let key): month = key
+        }
         isProgrammaticScroll = true
         // The month first: a lazy list resolves only ids it has laid out, and a month far from
         // where the list rests hasn't been. Landing on it lays it out and measures its header.
         scrollProxy.scrollTo(month.id, anchor: .top)
         DispatchQueue.main.async {
             let headerHeight = headerHeights[month] ?? 0
-            let room = listHeight - bottomClearance
-            let fraction = room > 0 ? min(1, headerHeight / room) : 0
-            scrollProxy.scrollTo(OccurrenceRow.dayScrollID(day), anchor: UnitPoint(x: 0.5, y: fraction))
+            switch landing {
+            case .rows:
+                let room = listHeight - bottomClearance
+                let fraction = room > 0 ? min(1, headerHeight / room) : 0
+                scrollProxy.scrollTo(OccurrenceRow.dayScrollID(day), anchor: UnitPoint(x: 0.5, y: fraction))
+            case .divider:
+                // Its own height, not its frame's, which the zoom is scaling; until it has laid out
+                // it is centred as a zero-high marker would be.
+                let height = rowFrames.frames[TodayDivider.sizeID]?.height ?? 0
+                scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: height, in: month))
+            case .marker(let id, _):
+                scrollProxy.scrollTo(id, anchor: dividerAnchor(height: 0, in: month))
+            }
             DispatchQueue.main.async {
                 isProgrammaticScroll = false
-                if hasRestoredPlace { saveCurrentPlace() }
-                withAnimation(.easeOut(duration: Tokens.Motion.dayMark)) { markedDay = nil }
+                done()
             }
         }
     }
@@ -686,10 +980,17 @@ struct TimelineView: View {
                 expenseID: entry.expenseID, scheduledDate: entry.scheduledDate,
                 context: modelContext, calendar: calendar
             ) else { return }
-            editor = .edit(session)
+            open(.edit(session))
         } catch {
             Self.logger.error("Opening a charge failed: \(error)")
         }
+    }
+
+    /// Opens the editor's sheet. Covered by it and its scrim, the levels' pictures hold the drawing
+    /// they have from this moment, so none redraws in the frames the sheet takes to rise.
+    private func open(_ request: EditorRequest) {
+        BoilClock.shared.listsHeld = true
+        editor = request
     }
 
     /// The editor closed. A save over the days refreshes the months now, so its row is there, lets
@@ -771,7 +1072,7 @@ struct TimelineView: View {
                 }
             )
             Spacer()
-            BottomTrailingControls(onBills: { isBillsPresented = true }, onAdd: { editor = .add })
+            BottomTrailingControls(onBills: { isBillsPresented = true }, onAdd: { open(.add) })
         }
         .padding(.horizontal, Tokens.Space.bottomRowInset)
         .padding(.bottom, Tokens.Space.bottomRowInset)
@@ -1069,22 +1370,39 @@ struct TimelineView: View {
         // own offset, set to where it is, does, so the return is issued a turn later into a list
         // that is standing still.
         glideStopper.stop()
+        // Under Reduce Motion every kind fades: the list doesn't travel.
+        let kind = reduceMotion ? .crossfade : Tokens.Motion.todayKind
         DispatchQueue.main.async {
+            if kind == .crossfade {
+                crossfadeToToday(in: window, hasDivider: hasDivider)
+                return
+            }
             // Near enough that the divider is laid out: one glide to it. Otherwise the month first,
             // since a lazy list resolves only ids it has laid out, and then on to the divider once
             // the month's glide is over: two animated scrolls a turn apart fight.
             if hasDivider, let divider = rowFrames.frames[TodayDivider.scrollID] {
-                withAnimation(.easeInOut(duration: duration)) {
+                withAnimation(todayAnimation(kind, duration: duration)) {
                     scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
                 }
-                settleReturn(after: duration, atMonthTop: false)
+                settleReturn(after: settling(kind, duration), atMonthTop: false)
                 return
             }
-            withAnimation(.easeInOut(duration: duration)) {
+            // Further off, one glide to the month, anchored so the divider lands in the middle as the
+            // month arrives. Gliding to the month's top and then on to the divider overshot the line
+            // from above and came back (284pt, logged).
+            if hasDivider, let top = dividerHeaderTop(in: window.current) {
+                let room = containerHeight - (headerHeights[window.current] ?? 0)
+                withAnimation(todayAnimation(kind, duration: duration)) {
+                    scrollProxy.scrollTo(window.current.id, anchor: UnitPoint(x: 0.5, y: top / room))
+                }
+                settleReturn(after: settling(kind, duration), atMonthTop: false)
+                return
+            }
+            withAnimation(todayAnimation(kind, duration: duration)) {
                 scrollProxy.scrollTo(window.current.id, anchor: .top)
             }
             guard hasDivider else {
-                settleReturn(after: duration, atMonthTop: true)
+                settleReturn(after: settling(kind, duration), atMonthTop: true)
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + duration + Tokens.Motion.returnSettle) {
@@ -1093,10 +1411,37 @@ struct TimelineView: View {
                     return
                 }
                 let onward = Tokens.Motion.returnDurationMin
-                withAnimation(.easeInOut(duration: onward)) {
+                withAnimation(todayAnimation(kind, duration: onward)) {
                     scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: divider.height, in: window.current))
                 }
-                settleReturn(after: onward, atMonthTop: false)
+                settleReturn(after: settling(kind, onward), atMonthTop: false)
+            }
+        }
+    }
+
+    /// Today's scroll, by the kind chosen in the tuning panel; what ships is `.glide`.
+    private func todayAnimation(_ kind: TodayKind, duration: TimeInterval) -> Animation {
+        kind == .spring ? .spring(duration: duration, bounce: 0) : .easeInOut(duration: duration)
+    }
+
+    /// How long Today's scroll takes to come to rest: a spring settles a while after its duration.
+    private func settling(_ kind: TodayKind, _ duration: TimeInterval) -> TimeInterval {
+        kind == .spring ? duration * Tokens.Motion.springSettling : duration
+    }
+
+    /// Today as a crossfade: the list fades out, jumps to the Today line (or this month's top when
+    /// nothing is charged yet) unanimated, and fades back in, over `todayFade` in all.
+    private func crossfadeToToday(in window: TimelineWindow, hasDivider: Bool) {
+        guard let scrollProxy else { return }
+        let half = Tokens.Motion.todayFade / 2
+        withAnimation(.easeIn(duration: half)) { listFade = 0 } completion: {
+            scrollProxy.scrollTo(window.current.id, anchor: .top)
+            DispatchQueue.main.async {
+                if hasDivider, let size = rowFrames.frames[TodayDivider.sizeID] {
+                    scrollProxy.scrollTo(TodayDivider.scrollID, anchor: dividerAnchor(height: size.height, in: window.current))
+                }
+                withAnimation(.easeOut(duration: half)) { listFade = 1 }
+                settleReturn(after: half, atMonthTop: !hasDivider)
             }
         }
     }
@@ -1111,6 +1456,20 @@ struct TimelineView: View {
         let room = container - height
         let fraction = room > 0 ? min(1, max(0, (middle - height / 2) / room)) : 0
         return UnitPoint(x: 0.5, y: fraction)
+    }
+
+    /// Where `month`'s header must sit, from the container's top, for the divider to land centred as
+    /// `dividerAnchor` puts it: from where the divider sat in its month when last laid out, both
+    /// measured in the list's content, which scrolling doesn't move. Nil before it has been laid
+    /// out, or when the header would have to sit above the top, which `scrollTo` can't express.
+    private func dividerHeaderTop(in month: MonthKey) -> CGFloat? {
+        guard let divider = rowFrames.frames[TodayDivider.contentID], let currentContentTop,
+              let header = headerHeights[month], containerHeight > header
+        else { return nil }
+        let fromHeaderTop = divider.midY - (currentContentTop - header)
+        let top = (header + containerHeight) / 2 - fromHeaderTop
+        guard top >= 0, top <= containerHeight - header else { return nil }
+        return top
     }
 
     /// Once the return's glide is over: the app's own scroll ends, and the place is saved.

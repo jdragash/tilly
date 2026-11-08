@@ -33,6 +33,9 @@ final class MotionTuning {
         MotionValue(id: "roughAmount", label: "Symbol roughness", defaultValue: 1.8, range: 0...4, step: 0.1),
         // Where pictures boil: 0 nowhere, 1 in the editor and its pickers, 2 everywhere.
         MotionValue(id: "boil", label: "Boil", defaultValue: 2, range: 0...2, step: 1),
+        // Kinds of motion to try, by number: `SheetKind` and `TodayKind`. The first ships.
+        MotionValue(id: "sheetKind", label: "Sheet opening kind", defaultValue: 0, range: 0...3, step: 1),
+        MotionValue(id: "todayKind", label: "Today kind", defaultValue: 0, range: 0...2, step: 1),
     ]
 
     private let defaults: UserDefaults
@@ -135,5 +138,38 @@ extension Tokens.Motion {
         static var dayDrop: CGFloat { CGFloat(MotionTuning.shared["dayDrop"]) }
         static var dayDropDuration: TimeInterval { MotionTuning.shared["dayDropDuration"] }
         static var dayDropBounce: Double { MotionTuning.shared["dayDropBounce"] }
+        /// How the sheet comes up. Its duration and bounce are `sheetRise` and `sheetRiseBounce`.
+        static var sheetKind: SheetKind { SheetKind(rawValue: Int(MotionTuning.shared["sheetKind"])) ?? .rise }
+        /// What `sheetRise` is at its default, so the kinds that aren't springs scale with its steps.
+        static var sheetRiseShare: Double {
+            sheetRise / (MotionTuning.values.first { $0.id == "sheetRise" }?.defaultValue ?? sheetRise)
+        }
     }
+
+    /// How Today takes the timeline back to the Today line.
+    @MainActor static var todayKind: TodayKind { TodayKind(rawValue: Int(MotionTuning.shared["todayKind"])) ?? .glide }
+}
+
+/// Kinds of opening for the editor's sheet, tried from the tuning panel. Under Reduce Motion every
+/// kind fades.
+enum SheetKind: Int, Sendable {
+    /// Up from the bottom on a spring with `sheetRiseBounce`: what ships.
+    case rise
+    /// Up from the bottom on a spring that doesn't overshoot.
+    case damped
+    /// Up from the bottom on an ease-out, as the system sheet moves.
+    case slide
+    /// Fading in where it rests, growing a little as it comes.
+    case fade
+}
+
+/// Kinds of going back to the Today line, tried from the tuning panel. Under Reduce Motion every
+/// kind fades.
+enum TodayKind: Int, Sendable {
+    /// An eased scroll, longer the further it goes: what ships.
+    case glide
+    /// A scroll on a spring that doesn't overshoot, over the same time.
+    case spring
+    /// The list jumps there under a quick fade.
+    case crossfade
 }

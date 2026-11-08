@@ -42,6 +42,7 @@ measurement, so Opus builds it.
 - **`LazyVStack` stops laying out distant headers**, freezing their cached geometry, and a header
   it stops drawing keeps its last offset: after a jump the month under the middle read June from
   a stale entry. Clear it in `onDisappear`; take distance from the `ScrollView`'s own offset.
+- **Gliding to a month's top, then on to a row inside it, overshoots and comes back** (284pt).
 
 ## Anchoring and measuring
 

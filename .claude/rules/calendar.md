@@ -19,12 +19,32 @@ tests: each was found on screen.
 
 ## Zooming between levels
 
-- **A view leaving takes the transition it last drew with.** Set the zoom's anchor and scale a
-  turn before the level changes, or the level leaving zooms about the old place.
-- **A scale in flight reports scaled frames** through `onGeometryChange`. Keep cells' frames only
-  while no zoom runs, in a reference holder outside view state, or the year's scroll redraws all.
-- The timeline is never inserted: it stays mounted and animates `scaleEffect` and opacity, so its
-  place survives. Its scrolls stay unanimated underneath the zoom.
+- **Every level is drawn from one progress value** (`zoomPair`, `zoomProgress`), not inserted as a
+  transition, so a pinch can hold the zoom anywhere. Draw the pair at its start a turn before the
+  progress moves. The timeline is never inserted, so its place survives; its scrolls stay
+  unanimated underneath the zoom.
+- **The month draws above the year**, whichever is arriving: its opaque paper hides the year's
+  large end, as the transitions this replaced stacked them. The other way round, recordings of the
+  same zoom differed.
+- **A scale in flight reports scaled frames**, even after the zoom is declared over (a grid at 3×
+  shrank the way back into the wrong cell). Keep a level's frames only while it is the level that
+  shows, in a reference holder outside view state. Hold what arrives mid-zoom and keep it once the
+  zoom settles: an arriving level's at-rest frames come before the zoom ends, and a year shown once
+  had none to pinch from.
+
+## Pinching
+
+- **Fingers lifting off a pinch land as taps** on whatever is under them: closing on a month opened
+  two days. Taps wait out a pinch and `pinchQuiet` after it.
+- **A level leaving keeps the closures it was drawn with,** and a `@GestureState` read from them is
+  the value from then. Mirror it into `@State` for anything a tap reads.
+- **Fingers held still send no changes,** so a speed read at the last move made a held pinch a
+  flick. A pinch still for `pinchStill` lifts with none.
+
+## Landing a day
+
+- **An empty day lands on a zero-high marker where it falls.** `DaySeams` keys days to the row they
+  sit above; at the Today line's own row they straddle it, so the view splits them by date.
 
 ## Controls
 

@@ -16,6 +16,14 @@ final class GlideStopper {
         guard let scrollView, scrollView.isDecelerating, !scrollView.isTracking else { return }
         scrollView.setContentOffset(scrollView.contentOffset, animated: false)
     }
+
+    /// Where the list is, exactly, for `putBack`: a pinch that springs back undoes its landing.
+    var offset: CGPoint? { scrollView?.contentOffset }
+
+    /// Puts the list back where `offset` read, unanimated.
+    func putBack(_ offset: CGPoint) {
+        scrollView?.setContentOffset(offset, animated: false)
+    }
 }
 
 /// Placed in a scroll view's content, invisible: finds the `UIScrollView` it sits in.

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One day of the month grid: its number, the emoji of its costliest charges, and its total. A
-/// day with charges is a button; an empty one is its number alone.
+/// One day of the month grid: its number, the emoji of its costliest charges, and its total. Every
+/// day is a button into the timeline, an empty one included.
 struct CalendarDayCell: View {
     let day: CalendarDay
     let isToday: Bool
@@ -17,18 +17,14 @@ struct CalendarDayCell: View {
     @State private var heldTotal: Decimal?
 
     var body: some View {
-        if day.entries.isEmpty {
+        Button(action: onOpen) {
             content
-        } else {
-            Button(action: onOpen) {
-                content
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(CalendarFormatting.dayLabel(day, calendar: calendar, locale: locale))
-            .accessibilityHint("Opens the day's charges")
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(CalendarFormatting.dayLabel(day, calendar: calendar, locale: locale))
+        .accessibilityHint("Opens the day")
     }
 
     /// Every cell lays out from the top, so a week's numbers sit on one line at every size: the

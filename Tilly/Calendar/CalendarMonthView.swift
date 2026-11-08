@@ -18,11 +18,16 @@ struct CalendarMonthView: View {
     let onDayFrame: (Date, CGRect) -> Void
     /// Back out to the year.
     let onBack: () -> Void
+    /// A two-finger pinch is under way: a drag it is part of doesn't page.
+    var isPinching = false
     /// What the title keeps clear for the All / Extras toggle floating over its trailing end.
     let titleTrailingClearance: CGFloat
 
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
+    @GestureState private var isDragging = false
+    /// The drag under way has been part of a pinch at some point.
+    @State private var dragIsPinch = false
 
     var body: some View {
         let section = calendarMonth.section
@@ -125,15 +130,23 @@ struct CalendarMonthView: View {
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .contentShape(Rectangle())
         .simultaneousGesture(
-            DragGesture().onEnded { drag in
-                guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
-                if drag.translation.width < -Tokens.Size.pageSwipe {
-                    page(by: 1)
-                } else if drag.translation.width > Tokens.Size.pageSwipe {
-                    page(by: -1)
+            DragGesture()
+                .updating($isDragging) { _, dragging, _ in dragging = true }
+                .onEnded { drag in
+                    guard !dragIsPinch, abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                    if drag.translation.width < -Tokens.Size.pageSwipe {
+                        page(by: 1)
+                    } else if drag.translation.width > Tokens.Size.pageSwipe {
+                        page(by: -1)
+                    }
                 }
-            }
         )
+        .onChange(of: isDragging) { _, dragging in
+            if dragging { dragIsPinch = isPinching }
+        }
+        .onChange(of: isPinching) { _, pinching in
+            if pinching { dragIsPinch = true }
+        }
     }
 
     private struct Neighbour: Identifiable {

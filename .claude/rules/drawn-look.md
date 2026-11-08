@@ -34,6 +34,13 @@ Learned matching `dashed-and-solid.html` 1:1, invisible to tests. The prototype'
   from its paths (`BadgeGlyph`). SF Symbols' nearest read heavier and wider. Category pictures stay
   SF Symbols; the prototype's are stand-ins.
 
+## Cost
+
+- **Boiling pictures cost about two frames a tick each time the clock moves**, wherever they are
+  (simulator, Debug and Release alike). Covered ones still boil: the levels behind the editor's
+  sheet cost it its frames. Lists read `BoilClock.listStep`, held while the editor is up, set from
+  the tap that opens it: held in `onChange`, a tick still landed in the sheet's first frame.
+
 ## Building
 
 - **A `Shape` that reads `Tokens.Size` won't build**: main-actor isolation crosses into `Shape`.

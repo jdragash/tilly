@@ -36,7 +36,7 @@ struct CategoryPictureView: View {
         switch picture {
         case .symbol(let name):
             let seeds = Tokens.Drawn.boilSeeds
-            let step = isBoiling ? BoilClock.shared.step : 0
+            let step = isBoiling ? (place == .editor ? BoilClock.shared.step : BoilClock.shared.listStep) : 0
             symbol(name, seed: seeds[step % seeds.count])
         case .emoji(let emoji):
             Text(emoji)

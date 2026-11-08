@@ -50,6 +50,8 @@ struct EditorSheet<Content: View>: View {
     @State private var contents: Double = 1
     /// The whole sheet and scrim: Reduce Motion fades instead of moving.
     @State private var opacity: Double = 1
+    /// The sheet's size, for the opening that fades it in.
+    @State private var scale: CGFloat = 1
     /// Bumped by every open and close, so a close finishing after a fresh open leaves it alone.
     @State private var generation = 0
     @State private var isDragging = false
@@ -127,6 +129,8 @@ struct EditorSheet<Content: View>: View {
             .environment(\.editorSheetDragging, isDragging)
             .onPreferenceChange(EditorDragExclusionKey.self) { exclusions = $0 }
             .offset(y: travel)
+            // From the bottom, so the sheet stays on the screen's edge as it grows.
+            .scaleEffect(scale, anchor: .bottom)
             .opacity(opacity)
             // Alongside the keys, cards and scroll views, not over them: their taps still land, and
             // a drag moves the sheet only once it's clearly heading down.
@@ -191,18 +195,22 @@ struct EditorSheet<Content: View>: View {
     private func present(_ new: EditorRequest) {
         generation &+= 1
         let isFresh = shown == nil
+        let kind = Tokens.Motion.Card.sheetKind
+        let fades = reduceMotion || kind == .fade
         var instant = Transaction()
         instant.disablesAnimations = true
         withTransaction(instant) {
             shown = new
             contents = 1
             if isFresh {
-                if reduceMotion {
+                if fades {
                     travel = 0
                     opacity = 0
+                    scale = reduceMotion ? 1 : Tokens.Motion.sheetFadeScale
                 } else {
                     travel = offDistance
                     opacity = 1
+                    scale = 1
                 }
             }
         }
@@ -211,9 +219,27 @@ struct EditorSheet<Content: View>: View {
         DispatchQueue.main.async {
             if reduceMotion {
                 withAnimation(.linear(duration: Tokens.Motion.reducedFade)) { opacity = 1 }
+            } else if kind == .fade {
+                withAnimation(openingAnimation(kind)) {
+                    travel = 0
+                    opacity = 1
+                    scale = 1
+                }
             } else {
-                withAnimation(riseAnimation) { travel = 0 }
+                withAnimation(openingAnimation(kind)) {
+                    travel = 0
+                    opacity = 1
+                }
             }
+        }
+    }
+
+    /// The sheet coming up, by the kind chosen in the tuning panel; what ships is `.rise`.
+    private func openingAnimation(_ kind: SheetKind) -> Animation {
+        switch kind {
+        case .rise, .fade: riseAnimation
+        case .damped: .spring(duration: Tokens.Motion.Card.sheetRise, bounce: 0)
+        case .slide: .easeOut(duration: Tokens.Motion.sheetSlide * Tokens.Motion.Card.sheetRiseShare)
         }
     }
 
@@ -228,6 +254,7 @@ struct EditorSheet<Content: View>: View {
                 shown = nil
                 contents = 1
                 opacity = 1
+                scale = 1
                 travel = 0
             }
         }
