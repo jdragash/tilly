@@ -281,7 +281,9 @@ struct TimelineView: View {
                     titleTrailingClearance: toggleClearance,
                     onOpenMonth: { month in ifNotPinching { openMonth(month, in: window) } },
                     arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
-                    onMonthFrame: { if level == .year { zoomFrames.report(month: $0, frame: $1) } }
+                    // As for the days below: a pinch that reaches the year's full size before the fingers
+                    // lift reports its frames at rest while the level is still the month.
+                    onMonthFrame: { if level == .year || zoomFrames.isZooming { zoomFrames.report(month: $0, frame: $1) } }
                 )
                 .modifier(levelLook(.year))
                 .allowsHitTesting(level == .year)
@@ -293,8 +295,9 @@ struct TimelineView: View {
                     calendarMonth: cachedCalendarMonth(in: window), today: today,
                     onOpenDay: { day in ifNotPinching { openDay(day) } },
                     arrivingDay: arrivingDay, arrivalDelay: arrivalDelay,
-                    // Only while the month shows: leaving, it reports scaled frames past the zoom's end.
-                    onDayFrame: { if level == .month { zoomFrames.report(day: $0, frame: $1) } },
+                    // While the month shows, or during a zoom, whose reports are held and kept only if it
+                    // settles on the month. Leaving, it reports scaled frames past the zoom's end.
+                    onDayFrame: { if level == .month || zoomFrames.isZooming { zoomFrames.report(day: $0, frame: $1) } },
                     onBack: { ifNotPinching { backToYear(in: window) } },
                     isPinching: isPinching,
                     titleTrailingClearance: toggleClearance
