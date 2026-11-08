@@ -217,7 +217,7 @@ import Testing
             .appendingPathComponent("CategoryOrderingTests-\(UUID().uuidString).store")
         defer { try? FileManager.default.removeItem(at: url) }
         func open() throws -> ModelContext {
-            ModelContext(try ModelContainer(for: TillyStore.schema, configurations: [ModelConfiguration(url: url)]))
+            ModelContext(try TillyStore.container(url: url))
         }
 
         let first = try open()

@@ -32,7 +32,7 @@ enum YearBuilder {
             categoryOf[entry.expenseID].flatMap { id in categories.first { $0.id == id }?.colour }
         }
 
-        func mark(for day: CalendarDay) -> YearMark {
+        func mark(for day: MonthGridDay) -> YearMark {
             if day.date == todayStart { return .today }
 
             // `day.entries` is already costliest first, so "first" is the costliest.

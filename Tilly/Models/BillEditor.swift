@@ -13,17 +13,20 @@ enum BillEditor {
     /// The records sharing `expense.seriesKey`, ascending by anchor.
     static func series(of expense: Expense, in context: ModelContext) throws -> [Expense] {
         let key = expense.seriesKey
-        let all = try context.fetch(FetchDescriptor<Expense>())
-        return all.filter { $0.seriesKey == key }.sorted { $0.anchorDate < $1.anchorDate }
+        let candidates = try context.fetch(
+            FetchDescriptor<Expense>(predicate: #Predicate<Expense> { $0.seriesID == key || $0.id == key })
+        )
+        return candidates.filter { $0.seriesKey == key }.sorted { $0.anchor < $1.anchor }
     }
 
     /// How many charges a record generates; nil when it runs on.
     static func paymentCount(of expense: Expense, calendar: Calendar) -> Int? {
-        guard let endDate = expense.endDate else { return nil }
-        let anchor = calendar.startOfDay(for: expense.anchorDate)
-        let end = calendar.startOfDay(for: endDate)
+        guard let end = expense.endDate(in: calendar) else { return nil }
+        let anchor = expense.anchorDate(in: calendar)
         guard end >= anchor else { return 0 }
-        return RecurrenceEngine.dates(for: expense.rule, in: DateInterval(start: anchor, end: end), calendar: calendar).count
+        return RecurrenceEngine.dates(
+            for: expense.rule(calendar: calendar), in: DateInterval(start: anchor, end: end), calendar: calendar
+        ).count
     }
 
     /// Whether the series has any charge, in this record or a later one, strictly after
@@ -31,9 +34,9 @@ enum BillEditor {
     static func hasLaterCharge(than scheduledDate: Date, in series: [Expense], calendar: Calendar) -> Bool {
         let day = calendar.startOfDay(for: scheduledDate)
         for record in series {
-            if record.endDate == nil { return true }
+            if record.end == nil { return true }
             if let count = paymentCount(of: record, calendar: calendar), count > 0 {
-                let last = RecurrenceEngine.date(ofPayment: count - 1, for: record.rule, calendar: calendar)
+                let last = RecurrenceEngine.date(ofPayment: count - 1, for: record.rule(calendar: calendar), calendar: calendar)
                 if calendar.startOfDay(for: last) > day { return true }
             }
         }
@@ -42,9 +45,9 @@ enum BillEditor {
 
     /// Whether `scheduledDate` is the bill's very first charge — the earliest record's own
     /// anchor. The first charge of a later, split-off record is not the bill's first.
-    static func isFirstCharge(_ scheduledDate: Date, of expense: Expense, in series: [Expense], calendar: Calendar) -> Bool {
-        guard let earliest = series.min(by: { $0.anchorDate < $1.anchorDate }) else { return false }
-        return calendar.startOfDay(for: scheduledDate) == calendar.startOfDay(for: earliest.anchorDate)
+    static func isFirstCharge(_ scheduledDate: Date, in series: [Expense], calendar: Calendar) -> Bool {
+        guard let earliest = series.min(by: { $0.anchor < $1.anchor }) else { return false }
+        return CalendarDay(scheduledDate, calendar: calendar) == earliest.anchor
     }
 
     // MARK: Saving
@@ -61,15 +64,15 @@ enum BillEditor {
         let movedDay = calendar.startOfDay(for: draft.date)
 
         let override = existingOverride(on: day, of: expense, calendar: calendar) ?? {
-            let created = OverrideRecord(scheduledDate: day, expense: expense)
+            let created = OverrideRecord(scheduledDate: day, expense: expense, calendar: calendar)
             context.insert(created)
             return created
         }()
         override.actualAmount = amount == expense.amount ? nil : amount
-        override.movedDate = movedDay == day ? nil : movedDay
+        override.setMovedDate(movedDay == day ? nil : movedDay, in: calendar)
         override.isSkipped = false
 
-        if override.actualAmount == nil, override.movedDate == nil, !override.isSkipped {
+        if override.actualAmount == nil, override.moved == nil, !override.isSkipped {
             context.delete(override)
         }
 
@@ -88,29 +91,29 @@ enum BillEditor {
         let seriesRecords = try series(of: expense, in: context)
         let day = calendar.startOfDay(for: scheduledDate)
         let amount = storedAmount(draft)
-        let originalRule = expense.rule
-        let originalAnchor = calendar.startOfDay(for: expense.anchorDate)
+        let originalRule = expense.rule(calendar: calendar)
+        let originalAnchor = expense.anchor
         let chargeIdx = chargeIndex(
-            of: day, anchoredAt: expense.anchorDate, interval: expense.recurrenceInterval,
+            of: day, anchoredAt: expense.anchorDate(in: calendar), interval: expense.recurrenceInterval,
             unit: expense.recurrenceUnit, calendar: calendar
         )
-        let laterRecords = seriesRecords.filter { $0 !== expense && $0.anchorDate > originalAnchor }
+        let laterRecords = seriesRecords.filter { $0 !== expense && $0.anchor > originalAnchor }
 
         let newRuleRecord: Expense
         if chargeIdx == 0 {
             expense.amount = amount
             expense.recurrenceInterval = draft.interval
             expense.recurrenceUnitRaw = draft.unit.rawValue
-            expense.anchorDate = calendar.startOfDay(for: draft.date)
+            expense.setAnchorDate(draft.date, in: calendar)
             newRuleRecord = expense
         } else {
             let endDate = RecurrenceEngine.date(ofPayment: chargeIdx - 1, for: originalRule, calendar: calendar)
-            expense.endDate = calendar.startOfDay(for: endDate)
+            expense.setEndDate(endDate, in: calendar)
             let created = Expense(
                 name: expense.name, amount: amount, isEstimate: false, isArchived: false,
                 recurrenceInterval: draft.interval, recurrenceUnit: draft.unit,
-                anchorDate: calendar.startOfDay(for: draft.date), endDate: nil,
-                category: category, seriesID: expense.seriesKey
+                anchorDate: draft.date, endDate: nil,
+                category: category, seriesID: expense.seriesKey, calendar: calendar
             )
             context.insert(created)
             newRuleRecord = created
@@ -119,12 +122,12 @@ enum BillEditor {
         // Every override scheduled after the open charge, whether it sat on the open record
         // or on a record about to be deleted, moves forward if the new rule still generates
         // its date, and is dropped otherwise.
-        var candidateOverrides = (expense.overrides ?? []).filter { calendar.startOfDay(for: $0.scheduledDate) > day }
+        var candidateOverrides = (expense.overrides ?? []).filter { $0.scheduledDate(in: calendar) > day }
         for later in laterRecords {
             candidateOverrides.append(contentsOf: later.overrides ?? [])
         }
         for override in candidateOverrides {
-            if generates(override.scheduledDate, rule: newRuleRecord.rule, calendar: calendar) {
+            if generates(override.scheduledDate(in: calendar), rule: newRuleRecord.rule(calendar: calendar), calendar: calendar) {
                 override.expense = newRuleRecord
             } else {
                 context.delete(override)
@@ -165,19 +168,19 @@ enum BillEditor {
     ) throws {
         let seriesRecords = try series(of: expense, in: context)
         let day = calendar.startOfDay(for: scheduledDate)
-        let originalAnchor = calendar.startOfDay(for: expense.anchorDate)
+        let originalAnchor = expense.anchor
         let chargeIdx = chargeIndex(
-            of: day, anchoredAt: expense.anchorDate, interval: expense.recurrenceInterval,
+            of: day, anchoredAt: expense.anchorDate(in: calendar), interval: expense.recurrenceInterval,
             unit: expense.recurrenceUnit, calendar: calendar
         )
-        let laterRecords = seriesRecords.filter { $0 !== expense && $0.anchorDate > originalAnchor }
+        let laterRecords = seriesRecords.filter { $0 !== expense && $0.anchor > originalAnchor }
 
         if chargeIdx == 0 {
             context.delete(expense) // cascades to its overrides
         } else {
-            let endDate = RecurrenceEngine.date(ofPayment: chargeIdx - 1, for: expense.rule, calendar: calendar)
-            expense.endDate = calendar.startOfDay(for: endDate)
-            for override in expense.overrides ?? [] where calendar.startOfDay(for: override.scheduledDate) >= day {
+            let endDate = RecurrenceEngine.date(ofPayment: chargeIdx - 1, for: expense.rule(calendar: calendar), calendar: calendar)
+            expense.setEndDate(endDate, in: calendar)
+            for override in expense.overrides ?? [] where override.scheduledDate(in: calendar) >= day {
                 context.delete(override)
             }
         }
@@ -221,7 +224,7 @@ enum BillEditor {
     ) {
         guard let last = series.last else { return }
         guard let wholeBillCount else {
-            last.endDate = nil
+            last.end = nil
             return
         }
 
@@ -232,8 +235,8 @@ enum BillEditor {
             let fallsHere = isLast || (recordCount.map { chargesBefore + $0 >= wholeBillCount } ?? true)
             if fallsHere {
                 let localIndex = max(0, wholeBillCount - chargesBefore - 1)
-                let chargeDate = RecurrenceEngine.date(ofPayment: localIndex, for: record.rule, calendar: calendar)
-                record.endDate = calendar.startOfDay(for: chargeDate)
+                let chargeDate = RecurrenceEngine.date(ofPayment: localIndex, for: record.rule(calendar: calendar), calendar: calendar)
+                record.setEndDate(chargeDate, in: calendar)
                 for later in series[(index + 1)...] {
                     context.delete(later)
                 }
@@ -252,12 +255,13 @@ enum BillEditor {
     }
 
     private static func existingOverride(on day: Date, of expense: Expense, calendar: Calendar) -> OverrideRecord? {
-        (expense.overrides ?? []).first { calendar.startOfDay(for: $0.scheduledDate) == day }
+        let key = CalendarDay(day, calendar: calendar)
+        return (expense.overrides ?? []).first { $0.scheduled == key }
     }
 
-    /// This charge's 0-based position among the dates its own record generates from `anchor`,
-    /// the same reckoning `EditSession` uses.
-    private static func chargeIndex(
+    /// This charge's 0-based position among the dates its own record generates from `anchor`.
+    /// `EditSession` and the editing functions here share this one reckoning.
+    static func chargeIndex(
         of scheduledDate: Date, anchoredAt anchor: Date, interval: Int, unit: RecurrenceUnit, calendar: Calendar
     ) -> Int {
         let rule = RecurrenceRule(interval: interval, unit: unit, anchorDate: anchor)

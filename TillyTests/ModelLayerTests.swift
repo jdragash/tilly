@@ -22,7 +22,7 @@ import TillyCore
 
     @Test func defaultInitialisedExpenseInsertsAndFetches() throws {
         let context = try Self.makeContext()
-        context.insert(Expense())
+        context.insert(Expense(anchorDate: Date(), calendar: Self.calendar))
         try context.save()
 
         let fetched = try context.fetch(FetchDescriptor<Expense>())
@@ -41,7 +41,8 @@ import TillyCore
             recurrenceInterval: 3,
             recurrenceUnit: .year,
             anchorDate: anchor,
-            endDate: end
+            endDate: end,
+            calendar: Self.calendar
         )
         context.insert(expense)
         try context.save()
@@ -53,13 +54,13 @@ import TillyCore
         #expect(fetched.isArchived == true)
         #expect(fetched.recurrenceInterval == 3)
         #expect(fetched.recurrenceUnit == .year)
-        #expect(fetched.anchorDate == anchor)
-        #expect(fetched.endDate == end)
+        #expect(fetched.anchorDate(in: Self.calendar) == anchor)
+        #expect(fetched.endDate(in: Self.calendar) == end)
     }
 
     @Test func amountOfNilStaysNil() throws {
         let context = try Self.makeContext()
-        context.insert(Expense(name: "Variable bill", amount: nil))
+        context.insert(Expense(name: "Variable bill", amount: nil, anchorDate: Date(), calendar: Self.calendar))
         try context.save()
 
         let fetched = try #require(try context.fetch(FetchDescriptor<Expense>()).first)
@@ -74,65 +75,66 @@ import TillyCore
             recurrenceInterval: 3,
             recurrenceUnit: .month,
             anchorDate: anchor,
-            endDate: end
+            endDate: end,
+            calendar: Self.calendar
         )
         context.insert(expense)
         try context.save()
 
-        #expect(expense.snapshot.rule == RecurrenceRule(interval: 3, unit: .month, anchorDate: anchor, endDate: end))
+        #expect(expense.snapshot(calendar: Self.calendar).rule == RecurrenceRule(interval: 3, unit: .month, anchorDate: anchor, endDate: end))
     }
 
     @Test func unrecognisedUnitFallsBackToMonthRatherThanVanishing() throws {
         let context = try Self.makeContext()
-        let expense = Expense()
+        let expense = Expense(anchorDate: Date(), calendar: Self.calendar)
         expense.recurrenceUnitRaw = "fortnight"
         context.insert(expense)
         try context.save()
 
-        #expect(expense.snapshot.rule.unit == .month)
+        #expect(expense.snapshot(calendar: Self.calendar).rule.unit == .month)
         let fetched = try context.fetch(FetchDescriptor<Expense>())
         #expect(fetched.count == 1)
     }
 
     @Test func zeroIntervalClampsThroughToTheRule() throws {
         let context = try Self.makeContext()
-        let expense = Expense(recurrenceInterval: 0)
+        let expense = Expense(recurrenceInterval: 0, anchorDate: Date(), calendar: Self.calendar)
         context.insert(expense)
         try context.save()
 
-        #expect(expense.snapshot.rule.interval == 1)
+        #expect(expense.snapshot(calendar: Self.calendar).rule.interval == 1)
     }
 
     @Test func overrideSnapshotsIncludeOnesScheduledOutsideAnyWindow() throws {
         let context = try Self.makeContext()
-        let expense = Expense(recurrenceUnit: .month, anchorDate: Self.date(2027, 1, 1))
+        let expense = Expense(recurrenceUnit: .month, anchorDate: Self.date(2027, 1, 1), calendar: Self.calendar)
         context.insert(expense)
 
         let dates = [Self.date(2027, 1, 1), Self.date(2027, 6, 1), Self.date(2027, 12, 1)]
         for scheduled in dates {
-            context.insert(OverrideRecord(scheduledDate: scheduled, expense: expense))
+            context.insert(OverrideRecord(scheduledDate: scheduled, expense: expense, calendar: Self.calendar))
         }
         try context.save()
 
-        let snapshots = expense.overrideSnapshots
+        let snapshots = expense.overrideSnapshots(calendar: Self.calendar)
         #expect(snapshots.count == 3)
         #expect(Set(snapshots.map(\.scheduledDate)) == Set(dates))
     }
 
     @Test func expenseWithNoOverridesGivesAnEmptyArrayNotNil() throws {
         let context = try Self.makeContext()
-        let expense = Expense()
+        let expense = Expense(anchorDate: Date(), calendar: Self.calendar)
         context.insert(expense)
         try context.save()
 
-        #expect(expense.overrideSnapshots.isEmpty)
+        #expect(expense.overrideSnapshots(calendar: Self.calendar).isEmpty)
     }
 
     @Test func deletingAnExpenseDeletesItsOverrides() throws {
         let context = try Self.makeContext()
-        let expense = Expense()
+        let expense = Expense(anchorDate: Date(), calendar: Self.calendar)
         context.insert(expense)
-        context.insert(OverrideRecord(scheduledDate: Self.date(2027, 1, 1), expense: expense))
+        context.insert(OverrideRecord(scheduledDate: Self.date(2027, 1, 1), expense: expense, calendar: Self.calendar))
         try context.save()
 
         context.delete(expense)
@@ -145,19 +147,19 @@ import TillyCore
     @Test func storedDataDrivesTheEngineEndToEnd() throws {
         let context = try Self.makeContext()
         let anchor = Self.date(2027, 1, 31)
-        let expense = Expense(amount: 100, recurrenceUnit: .month, anchorDate: anchor)
+        let expense = Expense(amount: 100, recurrenceUnit: .month, anchorDate: anchor, calendar: Self.calendar)
         context.insert(expense)
         context.insert(OverrideRecord(
             scheduledDate: Self.date(2027, 1, 31),
             movedDate: Self.date(2027, 2, 2),
-            expense: expense
-        ))
+            expense: expense,
+            calendar: Self.calendar))
         try context.save()
 
         let range = DateInterval(start: Self.date(2027, 2, 1), end: Self.date(2027, 2, 28))
         let occurrences = RecurrenceEngine.occurrences(
-            for: expense.snapshot,
-            overrides: expense.overrideSnapshots,
+            for: expense.snapshot(calendar: Self.calendar),
+            overrides: expense.overrideSnapshots(calendar: Self.calendar),
             in: range,
             calendar: Self.calendar
         )
@@ -196,7 +198,7 @@ import TillyCore
         let context = try Self.makeContext()
         let category = ExpenseCategory(name: "Home", emoji: "🏠")
         context.insert(category)
-        context.insert(Expense(name: "Rent", category: category))
+        context.insert(Expense(name: "Rent", anchorDate: Date(), category: category, calendar: Self.calendar))
         try context.save()
 
         let fetched = try #require(try context.fetch(FetchDescriptor<Expense>()).first)
@@ -208,7 +210,7 @@ import TillyCore
         let context = try Self.makeContext()
         let category = ExpenseCategory(name: "Home", emoji: "🏠")
         context.insert(category)
-        context.insert(Expense(name: "Rent", category: category))
+        context.insert(Expense(name: "Rent", anchorDate: Date(), category: category, calendar: Self.calendar))
         try context.save()
 
         context.delete(category)
@@ -222,28 +224,28 @@ import TillyCore
     @Test func theTimelineExpenseCarriesTheCategoryEmoji() throws {
         let context = try Self.makeContext()
         let category = ExpenseCategory(name: "Home", emoji: "🏠")
-        let expense = Expense(name: "Rent", category: category)
+        let expense = Expense(name: "Rent", anchorDate: Date(), category: category, calendar: Self.calendar)
         context.insert(category)
         context.insert(expense)
         try context.save()
 
-        #expect(expense.timelineExpense.picture == .emoji("🏠"))
+        #expect(expense.timelineExpense(calendar: Self.calendar).picture == .emoji("🏠"))
     }
 
     @Test func anExpenseWithNoCategoryHasNoEmoji() throws {
         let context = try Self.makeContext()
-        let expense = Expense(name: "Rent")
+        let expense = Expense(name: "Rent", anchorDate: Date(), calendar: Self.calendar)
         context.insert(expense)
         try context.save()
 
-        #expect(expense.timelineExpense.picture == .none)
+        #expect(expense.timelineExpense(calendar: Self.calendar).picture == .none)
     }
 
     // MARK: Series
 
     @Test func seriesIDDefaultsToNil() throws {
         let context = try Self.makeContext()
-        let expense = Expense(name: "Rent")
+        let expense = Expense(name: "Rent", anchorDate: Date(), calendar: Self.calendar)
         context.insert(expense)
         try context.save()
 
@@ -252,7 +254,7 @@ import TillyCore
 
     @Test func seriesKeyFallsBackToID() throws {
         let context = try Self.makeContext()
-        let expense = Expense(name: "Rent")
+        let expense = Expense(name: "Rent", anchorDate: Date(), calendar: Self.calendar)
         context.insert(expense)
         try context.save()
 
@@ -262,7 +264,7 @@ import TillyCore
     @Test func seriesIDRoundTrips() throws {
         let context = try Self.makeContext()
         let series = UUID()
-        let expense = Expense(name: "Rent", seriesID: series)
+        let expense = Expense(name: "Rent", anchorDate: Date(), seriesID: series, calendar: Self.calendar)
         context.insert(expense)
         try context.save()
 
@@ -275,14 +277,15 @@ import TillyCore
         let context = try Self.makeContext()
         let series = UUID()
         let earlier = Expense(
-            name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1), seriesID: series
+            name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1), seriesID: series,
+            calendar: Self.calendar
         )
-        let later = Expense(name: "Gym", anchorDate: Self.date(2026, 6, 1), endDate: nil, seriesID: series)
+        let later = Expense(name: "Gym", anchorDate: Self.date(2026, 6, 1), endDate: nil, seriesID: series, calendar: Self.calendar)
         context.insert(earlier)
         context.insert(later)
         try context.save()
 
-        let timelineExpenses = Expense.timelineExpenses([earlier, later])
+        let timelineExpenses = Expense.timelineExpenses([earlier, later], calendar: Self.calendar)
         #expect(timelineExpenses.allSatisfy { $0.seriesEndDate == nil })
     }
 
@@ -290,28 +293,30 @@ import TillyCore
         let context = try Self.makeContext()
         let series = UUID()
         let earlier = Expense(
-            name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1), seriesID: series
+            name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1), seriesID: series,
+            calendar: Self.calendar
         )
         let later = Expense(
-            name: "Gym", anchorDate: Self.date(2026, 6, 1), endDate: Self.date(2027, 3, 1), seriesID: series
+            name: "Gym", anchorDate: Self.date(2026, 6, 1), endDate: Self.date(2027, 3, 1), seriesID: series,
+            calendar: Self.calendar
         )
         context.insert(earlier)
         context.insert(later)
         try context.save()
 
-        let timelineExpenses = Expense.timelineExpenses([earlier, later])
+        let timelineExpenses = Expense.timelineExpenses([earlier, later], calendar: Self.calendar)
         #expect(timelineExpenses.allSatisfy { $0.seriesEndDate == Self.date(2027, 3, 1) })
     }
 
     @Test func separateSeriesKeepTheirOwnEnds() throws {
         let context = try Self.makeContext()
-        let gym = Expense(name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1))
-        let rent = Expense(name: "Rent", anchorDate: Self.date(2026, 1, 1), endDate: nil)
+        let gym = Expense(name: "Gym", anchorDate: Self.date(2026, 1, 1), endDate: Self.date(2026, 6, 1), calendar: Self.calendar)
+        let rent = Expense(name: "Rent", anchorDate: Self.date(2026, 1, 1), endDate: nil, calendar: Self.calendar)
         context.insert(gym)
         context.insert(rent)
         try context.save()
 
-        let timelineExpenses = Expense.timelineExpenses([gym, rent])
+        let timelineExpenses = Expense.timelineExpenses([gym, rent], calendar: Self.calendar)
         #expect(timelineExpenses.first { $0.name == "Gym" }?.seriesEndDate == Self.date(2026, 6, 1))
         #expect(timelineExpenses.first { $0.name == "Rent" }?.seriesEndDate == nil)
     }

@@ -27,8 +27,7 @@ struct ExpenseEditor: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
-    @Query private var expenses: [Expense]
+    @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
 
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
@@ -40,6 +39,8 @@ struct ExpenseEditor: View {
     @State private var makingCategory = false
     @State private var editingCategory: ExpenseCategory?
     @State private var deletingCategory: ExpenseCategory?
+    /// A save or delete threw and was rolled back; the sheet stays open to try again.
+    @State private var saveFailed = false
     /// Counts picks, for the pick's haptic.
     @State private var picks = 0
 
@@ -122,6 +123,11 @@ struct ExpenseEditor: View {
             CategorySheet(subject: .change(category), onSave: { _ in }, onDelete: { categoryDeleted(id) })
         }
         .categoryDeleteAlert(for: $deletingCategory, onDeleted: categoryDeleted)
+        .alert("Your change wasn’t saved", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Nothing was changed. Try again.")
+        }
     }
 
     // MARK: Pieces
@@ -243,15 +249,21 @@ struct ExpenseEditor: View {
                         .foregroundStyle(Tokens.Ink.secondary)
                         .accessibilityHidden(true)
                 }
-                DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .labelsHidden()
+                if let earliest = draft.earliestDate {
+                    DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, in: earliest..., displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+                } else {
+                    DatePicker(session == nil ? "First charge" : "Date", selection: dateBinding, displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+                }
             }
         case .repeat:
             RepeatWheel(draft: $draft)
         case .category:
             CategoryGrid(
-                categories: categories.sorted { $0.sortOrder < $1.sortOrder },
+                categories: categories,
                 selection: draft.categoryID,
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
                 onPick: { id in if sheetTouch.allowsTap { pick(id) } },
@@ -368,14 +380,18 @@ struct ExpenseEditor: View {
             recurrenceUnit: draft.unit,
             anchorDate: draft.date,
             endDate: draft.rule(calendar: calendar).endDate,
-            category: category
+            category: category,
+            calendar: calendar
         )
-        modelContext.insert(expense)
         do {
-            try modelContext.save()
+            try modelContext.applyOrRollBack {
+                modelContext.insert(expense)
+                try modelContext.save()
+            }
             close(.saved(expenseID: expense.id, date: draft.date))
         } catch {
             Self.logger.error("Saving an expense failed: \(error)")
+            saveFailed = true
         }
     }
 
@@ -482,11 +498,7 @@ struct ExpenseEditor: View {
 
     /// "Oct 31", never a year — matches `ExpenseDraft.dateLabel`.
     private func shortDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        let formatter = FormatterCache.date(template: "MMMd", calendar: calendar, locale: locale)
         return formatter.string(from: date)
     }
 
@@ -499,10 +511,11 @@ struct ExpenseEditor: View {
     /// Runs an edit, then closes as `close` says: a delete by default, a save when one passes it.
     private func performEdit(_ operation: () throws -> Void, then close: EditorClose = .deleted) {
         do {
-            try operation()
+            try modelContext.applyOrRollBack(operation)
             self.close(close)
         } catch {
             Self.logger.error("Editing an expense failed: \(error)")
+            saveFailed = true
         }
     }
 
@@ -517,7 +530,7 @@ struct ExpenseEditor: View {
     }
 
     private func fetchExpense(_ id: UUID) -> Expense? {
-        (try? modelContext.fetch(FetchDescriptor<Expense>()))?.first { $0.id == id }
+        try? modelContext.expense(id: id)
     }
 }
 
@@ -583,7 +596,7 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
     let context = container.mainContext
     let calendar = Calendar.current
     let anchor = calendar.date(byAdding: .month, value: -monthsAgo, to: calendar.startOfDay(for: Date()))!
-    let expense = Expense(name: "Gym", amount: 50, anchorDate: anchor, category: category)
+    let expense = Expense(name: "Gym", amount: 50, anchorDate: anchor, category: category, calendar: calendar)
     context.insert(expense)
     try! context.save()
     return try! EditSession.make(expenseID: expense.id, scheduledDate: anchor, context: context, calendar: calendar)!

@@ -34,7 +34,7 @@ import TillyCore
         in context: ModelContext, amount: Decimal = 50, anchor: Date, endDate: Date? = nil,
         category: ExpenseCategory
     ) -> Expense {
-        let expense = Expense(name: "Gym", amount: amount, anchorDate: anchor, endDate: endDate, category: category)
+        let expense = Expense(name: "Gym", amount: amount, anchorDate: anchor, endDate: endDate, category: category, calendar: Self.calendar)
         context.insert(expense)
         return expense
     }
@@ -58,7 +58,7 @@ import TillyCore
         let category = Self.category(in: context)
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
-        context.insert(OverrideRecord(scheduledDate: anchor, actualAmount: 65, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: anchor, actualAmount: 65, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let session = try #require(
@@ -72,7 +72,7 @@ import TillyCore
         let category = Self.category(in: context)
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
-        context.insert(OverrideRecord(scheduledDate: anchor, actualAmount: 0, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: anchor, actualAmount: 0, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let session = try #require(
@@ -87,7 +87,7 @@ import TillyCore
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
         let moved = Self.date(2026, 2, 2)
-        context.insert(OverrideRecord(scheduledDate: anchor, movedDate: moved, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: anchor, movedDate: moved, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let session = try #require(

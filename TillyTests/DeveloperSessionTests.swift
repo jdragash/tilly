@@ -66,6 +66,25 @@ import Testing
         #expect(defaults.string(forKey: "tillyDeveloperScenario") == "typicalYear")
     }
 
+    struct StoreWontOpen: Error {}
+
+    /// The person's store failing to open shows the recovery screen rather than crashing, and a
+    /// sample still loads afterwards.
+    @Test func aStoreThatWontOpenIsReportedNotFatal() throws {
+        defer { cleanUp() }
+        let session = DeveloperSession(
+            defaults: defaults,
+            sandboxDefaults: sandboxDefaults,
+            persistentContainer: { throw StoreWontOpen() },
+            today: { Date() },
+            calendar: .current
+        )
+        #expect(session.openFailed)
+        session.load(.oneExpense)
+        #expect(!session.openFailed)
+        #expect(try Self.expenseCount(in: session.container) == 1)
+    }
+
     @Test func returningToYourDataReusesTheSamePersistentContainer() {
         defer { cleanUp() }
         let session = makeSession()

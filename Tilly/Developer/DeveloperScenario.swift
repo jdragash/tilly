@@ -36,7 +36,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         case .oneExpense:
             let subscriptions = ExpenseCategory(name: "Subscriptions", symbol: Self.symbol(for: "Subscriptions"), colour: .blue, sortOrder: 0)
             context.insert(subscriptions)
-            context.insert(Expense(name: "Music", amount: 15, anchorDate: calendar.startOfDay(for: today), category: subscriptions))
+            context.insert(Expense(name: "Music", amount: 15, anchorDate: calendar.startOfDay(for: today), category: subscriptions, calendar: calendar))
         case .typicalYear:
             try PreviewData.insert(into: context, today: today, calendar: calendar)
         case .longHistory:
@@ -47,8 +47,8 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
             let start = calendar.startOfDay(for: today)
             let internet = calendar.date(byAdding: .day, value: 2, to: start)!
             let water = calendar.date(byAdding: .day, value: 5, to: start)!
-            context.insert(Expense(name: "Internet", amount: 30, anchorDate: internet, category: home))
-            context.insert(Expense(name: "Water", amount: 45, anchorDate: water, category: home))
+            context.insert(Expense(name: "Internet", amount: 30, anchorDate: internet, category: home, calendar: calendar))
+            context.insert(Expense(name: "Water", amount: 45, anchorDate: water, category: home, calendar: calendar))
         case .manyCategories:
             try Self.insertManyCategories(into: context, today: today, calendar: calendar)
         case .monthlyOnly:
@@ -83,7 +83,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
             let category = ExpenseCategory(name: name, symbol: Self.symbol(for: name), colour: colour, sortOrder: order)
             context.insert(category)
             for (bill, amount, day) in bills {
-                context.insert(Expense(name: bill, amount: amount, anchorDate: anchor(day: day), category: category))
+                context.insert(Expense(name: bill, amount: amount, anchorDate: anchor(day: day), category: category, calendar: calendar))
             }
         }
     }
@@ -97,7 +97,7 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
         let anchor = calendar.date(from: DateComponents(year: components.year, month: (components.month ?? 1) - 8, day: 14))!
         context.insert(Expense(
             name: "Annual tuition", amount: 6000, recurrenceInterval: 1, recurrenceUnit: .year,
-            anchorDate: anchor, category: category
+            anchorDate: anchor, category: category, calendar: calendar
         ))
     }
 
@@ -138,7 +138,8 @@ enum DeveloperScenario: String, CaseIterable, Identifiable, Sendable {
                 context.insert(Expense(
                     name: bill, amount: amount,
                     recurrenceInterval: yearly ? 1 : interval, recurrenceUnit: yearly ? .year : .month,
-                    anchorDate: anchor(day: day, monthOffset: yearly ? -11 : -3), category: category
+                    anchorDate: anchor(day: day, monthOffset: yearly ? -11 : -3), category: category,
+                    calendar: calendar
                 ))
             }
         }

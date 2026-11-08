@@ -23,8 +23,8 @@ import TillyCore
         let context = try Self.makeContext()
         let home = ExpenseCategory(name: "Home")
         context.insert(home)
-        context.insert(Expense(name: "Rent", amount: 950, category: home))
-        context.insert(Expense(name: "Water", amount: 31, category: home))
+        context.insert(Expense(name: "Rent", amount: 950, anchorDate: Date(), category: home, calendar: Self.calendar))
+        context.insert(Expense(name: "Water", amount: 31, anchorDate: Date(), category: home, calendar: Self.calendar))
         try context.save()
 
         try CategoryRemoval.delete(home, context: context)
@@ -39,9 +39,9 @@ import TillyCore
         context.insert(home)
         let series = UUID()
         context.insert(Expense(name: "Rent", amount: 900, anchorDate: Self.date(2027, 1, 1),
-                               endDate: Self.date(2027, 5, 1), category: home, seriesID: series))
+                               endDate: Self.date(2027, 5, 1), category: home, seriesID: series, calendar: Self.calendar))
         context.insert(Expense(name: "Rent", amount: 950, anchorDate: Self.date(2027, 6, 1),
-                               category: home, seriesID: series))
+                               category: home, seriesID: series, calendar: Self.calendar))
         try context.save()
 
         try CategoryRemoval.delete(home, context: context)
@@ -53,9 +53,9 @@ import TillyCore
         let context = try Self.makeContext()
         let home = ExpenseCategory(name: "Home")
         context.insert(home)
-        let rent = Expense(name: "Rent", amount: 950, category: home)
+        let rent = Expense(name: "Rent", amount: 950, anchorDate: Date(), category: home, calendar: Self.calendar)
         context.insert(rent)
-        context.insert(OverrideRecord(scheduledDate: Self.date(2027, 1, 1), expense: rent))
+        context.insert(OverrideRecord(scheduledDate: Self.date(2027, 1, 1), expense: rent, calendar: Self.calendar))
         try context.save()
 
         try CategoryRemoval.delete(home, context: context)
@@ -69,11 +69,11 @@ import TillyCore
         let fun = ExpenseCategory(name: "Fun")
         context.insert(home)
         context.insert(fun)
-        context.insert(Expense(name: "Rent", amount: 950, category: home))
-        let film = Expense(name: "Film club", amount: 13, category: fun)
+        context.insert(Expense(name: "Rent", amount: 950, anchorDate: Date(), category: home, calendar: Self.calendar))
+        let film = Expense(name: "Film club", amount: 13, anchorDate: Date(), category: fun, calendar: Self.calendar)
         context.insert(film)
-        context.insert(OverrideRecord(scheduledDate: Self.date(2027, 1, 1), expense: film))
-        context.insert(Expense(name: "Loose", amount: 5))
+        context.insert(OverrideRecord(scheduledDate: Self.date(2027, 1, 1), expense: film, calendar: Self.calendar))
+        context.insert(Expense(name: "Loose", amount: 5, anchorDate: Date(), calendar: Self.calendar))
         try context.save()
 
         try CategoryRemoval.delete(home, context: context)
@@ -89,9 +89,9 @@ import TillyCore
         let home = ExpenseCategory(name: "Home")
         context.insert(home)
         let series = UUID()
-        context.insert(Expense(name: "Rent", amount: 900, category: home, seriesID: series))
-        context.insert(Expense(name: "Rent", amount: 950, category: home, seriesID: series))
-        context.insert(Expense(name: "Water", amount: 31, category: home))
+        context.insert(Expense(name: "Rent", amount: 900, anchorDate: Date(), category: home, seriesID: series, calendar: Self.calendar))
+        context.insert(Expense(name: "Rent", amount: 950, anchorDate: Date(), category: home, seriesID: series, calendar: Self.calendar))
+        context.insert(Expense(name: "Water", amount: 31, anchorDate: Date(), category: home, calendar: Self.calendar))
         try context.save()
 
         #expect(CategoryRemoval.billCount(of: home) == 2)

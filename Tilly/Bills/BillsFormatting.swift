@@ -66,21 +66,13 @@ enum BillsFormatting {
 
     /// "Nov 10", in the order the locale reads it.
     private static func monthAndDay(_ date: Date, calendar: Calendar, locale: Locale) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        let formatter = FormatterCache.date(template: "MMMd", calendar: calendar, locale: locale)
         return formatter.string(from: date)
     }
 
     /// "12/26", as the timeline writes a series' end.
     private static func monthAndYear(_ date: Date, calendar: Calendar, locale: Locale) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = locale
-        formatter.dateFormat = "MM/yy"
+        let formatter = FormatterCache.date(format: "MM/yy", calendar: calendar, locale: locale)
         return formatter.string(from: date)
     }
 }

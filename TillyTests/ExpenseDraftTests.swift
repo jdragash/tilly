@@ -53,12 +53,13 @@ import TillyCore
         categoryID: UUID? = UUID(),
         ruleAnchor: Date = today,
         paymentsBeforeRule: Int = 0,
-        chargeIndex: Int = 0
+        chargeIndex: Int = 0,
+        earliestDate: Date? = nil
     ) -> EditBaseline {
         EditBaseline(
             digits: digits, name: name, date: date, interval: interval, unit: unit,
             paymentCount: paymentCount, categoryID: categoryID, ruleAnchor: ruleAnchor,
-            paymentsBeforeRule: paymentsBeforeRule, chargeIndex: chargeIndex
+            paymentsBeforeRule: paymentsBeforeRule, chargeIndex: chargeIndex, earliestDate: earliestDate
         )
     }
 
@@ -140,6 +141,26 @@ import TillyCore
 
     @Test func validWithAllThree() {
         let draft = Self.validDraft()
+        #expect(draft.isValid(categoryExists: { _ in true }))
+    }
+
+    // MARK: Earliest date
+
+    @Test func theEarliestDateItselfIsValidAndTheDayBeforeIsNot() {
+        let earliest = Self.date(2026, 3, 16)
+        var draft = ExpenseDraft(editing: Self.baseline(date: Self.date(2026, 4, 15), earliestDate: earliest))
+        draft.name = "Rent"
+        draft.date = earliest
+        #expect(draft.earliestDate == earliest)
+        #expect(draft.isValid(categoryExists: { _ in true }))
+        draft.date = Self.date(2026, 3, 15)
+        #expect(!draft.isValid(categoryExists: { _ in true }))
+    }
+
+    @Test func aNewBillHasNoEarliestDate() {
+        var draft = Self.validDraft()
+        draft.date = Self.date(2000, 1, 1)
+        #expect(draft.earliestDate == nil)
         #expect(draft.isValid(categoryExists: { _ in true }))
     }
 

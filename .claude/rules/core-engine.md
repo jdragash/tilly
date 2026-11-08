@@ -16,7 +16,10 @@ package boundary makes that a compile error.
   sticking: a rule anchored on the 31st gives 31 Jan, 28 Feb, 31 Mar. Walking forward from the
   last result is Dime's drift bug.
 - **Add `Calendar` components, never `TimeInterval`.** 86,400 seconds is wrong twice a year.
-- `Occurrence.id` uses seconds since epoch, and that's fine. It's identity, not date arithmetic.
+- **Stored days are `CalendarDay`s** (year, month, day), never instants. Turn one into a `Date`
+  only with the calendar that will read it (`anchorDate(in:)`, `rule(calendar:)`); a hidden
+  `Calendar.current` disagrees with the calendar a caller or test passed. `Occurrence.id` names
+  its scheduled day the same way.
 
 ## Windows and overrides
 

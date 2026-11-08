@@ -42,3 +42,12 @@ Learned in the simulator, invisible to tests. The editor's own lessons are in `e
 - `@Query`'s array compares by model identity, not its fields, and a relationship-only write
   (an override insert, a field edit on an existing model) doesn't reliably notify either. Don't
   lean on `.onChange(of:)` alone: give the writing sheet its own `onDismiss` refresh.
+
+## Per-frame state
+
+- **What changes every frame stays out of `body`.** Scroll offsets and a pinch's progress as
+  `@State` read in `body` rebuilt the timeline screen every frame (a fling 160 times, now 7; a
+  pinch 18, now 5). Keep the raw values in a plain class (`TimelineScrollGeometry`) and publish to
+  `@State` only what `body` shows, when it changes; or read them in a small `@Observable` that
+  only a modifier reads (`ZoomProgress`, `LevelLook`). A read of a plain class from `body` never
+  updates: the back button's month froze until `body` read the published value.

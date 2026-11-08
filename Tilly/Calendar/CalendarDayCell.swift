@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// One day of the month grid: its number, the emoji of its costliest charges, and its total. Every
+/// One day of the month grid: its number, the pictures of its costliest charges, and its total. Every
 /// day is a button into the timeline, an empty one included.
 struct CalendarDayCell: View {
-    let day: CalendarDay
+    let day: MonthGridDay
     let isToday: Bool
     /// A charge saved on this day is arriving: its picture drops in and its total rolls.
     var arrives = false
@@ -28,7 +28,7 @@ struct CalendarDayCell: View {
     }
 
     /// Every cell lays out from the top, so a week's numbers sit on one line at every size: the
-    /// number in a slot of its own, and the emoji and total share what the row has left under it.
+    /// number in a slot of its own, and the pictures and total share what the row has left under it.
     /// When they don't fit, as in a six-week row at the largest size the grid allows, the total
     /// shrinks; the number never moves.
     private var content: some View {
@@ -38,7 +38,7 @@ struct CalendarDayCell: View {
             if !day.entries.isEmpty {
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    emoji
+                    pictures
                         .opacity(day.isUpcoming ? Tokens.Opacity.upcomingIcon : 1)
                         .dayArrival(arrives, delay: arrivalDelay) {
                             withAnimation(.default) { heldTotal = nil }
@@ -79,14 +79,14 @@ struct CalendarDayCell: View {
         }
     }
 
-    /// The costliest charge's emoji; two overlapped, the costliest on top, and "+N" for the rest.
-    @ViewBuilder private var emoji: some View {
+    /// The costliest charge's picture; two overlapped, the costliest on top, and "+N" for the rest.
+    @ViewBuilder private var pictures: some View {
         let entries = Array(day.entries.prefix(2))
         if entries.count == 1 {
             picture(entries[0], size: Tokens.Size.pictureDay)
         } else {
             HStack(spacing: 0) {
-                HStack(spacing: -Tokens.Space.emojiOverlap) {
+                HStack(spacing: -Tokens.Space.pictureOverlap) {
                     picture(entries[0], size: Tokens.Size.pictureDayPair).zIndex(1)
                     picture(entries[1], size: Tokens.Size.pictureDayPair)
                 }

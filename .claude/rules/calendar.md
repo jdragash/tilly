@@ -31,6 +31,7 @@ tests: each was found on screen.
   shows, in a reference holder outside view state. Hold what arrives mid-zoom and keep it once the
   zoom settles: an arriving level's at-rest frames come before the zoom ends, and a year shown once
   had none to pinch from.
+- **Year and month are cached with `sections`;** progress is read in `LevelLook` only (controls.md).
 
 ## Pinching
 

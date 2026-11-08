@@ -12,7 +12,9 @@ enum CategoryRemoval {
     /// Deletes every `Expense` filed under it (overrides cascade), then the category, then saves.
     static func delete(_ category: ExpenseCategory, context: ModelContext) throws {
         let id = category.id
-        let filed = try context.fetch(FetchDescriptor<Expense>()).filter { $0.category?.id == id }
+        let filed = try context.fetch(
+            FetchDescriptor<Expense>(predicate: #Predicate<Expense> { $0.category?.id == id })
+        )
         for expense in filed { context.delete(expense) }
         context.delete(category)
         try context.save()

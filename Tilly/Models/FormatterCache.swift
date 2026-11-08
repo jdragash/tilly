@@ -23,6 +23,21 @@ nonisolated enum FormatterCache {
         return formatter
     }
 
+    /// A date formatter for the locale's own arrangement of `template` ("MMMd"), in this calendar's time zone.
+    static func date(template: String, calendar: Calendar, locale: Locale) -> DateFormatter {
+        let key = "t|\(calendar.identifier)|\(calendar.timeZone.identifier)|\(locale.identifier)|\(template)"
+        lock.lock()
+        defer { lock.unlock() }
+        if let hit = dates[key] { return hit }
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.locale = locale
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        dates[key] = formatter
+        return formatter
+    }
+
     /// A whole-unit formatter in `Money`'s currency, with `locale`'s separators.
     static func wholeCurrency(locale: Locale) -> NumberFormatter {
         let key = locale.identifier

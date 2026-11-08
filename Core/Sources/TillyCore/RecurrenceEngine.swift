@@ -197,7 +197,8 @@ extension RecurrenceEngine {
                 effectiveDate: movedTo ?? scheduledDate,
                 amount: override?.actualAmount ?? expense.amount,
                 isEstimate: override?.actualAmount != nil ? false : expense.isEstimate,
-                isSkipped: override?.isSkipped ?? false
+                isSkipped: override?.isSkipped ?? false,
+                calendar: calendar
             )
         }
         .filter { $0.effectiveDate >= windowStart && $0.effectiveDate <= windowEnd }

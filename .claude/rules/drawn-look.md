@@ -36,10 +36,10 @@ Learned matching `dashed-and-solid.html` 1:1, invisible to tests. The prototype'
 
 ## Cost
 
-- **Boiling pictures cost about two frames a tick each time the clock moves**, wherever they are
-  (simulator, Debug and Release alike). Covered ones still boil: the levels behind the editor's
-  sheet cost it its frames. Lists read `BoilClock.listStep`, held while the editor is up, set from
-  the tap that opens it: held in `onChange`, a tick still landed in the sheet's first frame.
+- **The boil is baked, never drawn live.** `BoilFrames` renders each picture's three seeds once with
+  `ImageRenderer` (it captures the `roughen` shader) and `BoilingPicture` loops them on Core
+  Animation's clock. Live, every picture's body ran every tick: 1,280 runs in 5s idle on the
+  timeline and 10% of the main thread; baked, none and 0.1%. Any new look goes in the cache key.
 
 ## Building
 

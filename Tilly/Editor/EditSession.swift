@@ -20,12 +20,12 @@ struct EditSession: Identifiable, Equatable {
     static func make(
         expenseID: UUID, scheduledDate: Date, context: ModelContext, calendar: Calendar
     ) throws -> EditSession? {
-        let all = try context.fetch(FetchDescriptor<Expense>())
-        guard let expense = all.first(where: { $0.id == expenseID }) else { return nil }
+        guard let expense = try context.expense(id: expenseID) else { return nil }
 
         let day = calendar.startOfDay(for: scheduledDate)
         let series = try BillEditor.series(of: expense, in: context)
-        let override = (expense.overrides ?? []).first { calendar.startOfDay(for: $0.scheduledDate) == day }
+        let dayKey = CalendarDay(day, calendar: calendar)
+        let override = (expense.overrides ?? []).first { $0.scheduled == dayKey }
 
         // A skip only older data could hold — nothing in v1 writes one — reads as €0 rather
         // than as the record's own amount, since a skip means the charge itself was zero.
@@ -38,18 +38,18 @@ struct EditSession: Identifiable, Equatable {
             digits = ""
         }
 
-        let effectiveDate = calendar.startOfDay(for: override?.movedDate ?? day)
+        let effectiveDate = override?.movedDate(in: calendar) ?? day
         let recordIndex = series.firstIndex { $0 === expense } ?? 0
         let paymentsBeforeRule = series[..<recordIndex].reduce(0) {
             $0 + (BillEditor.paymentCount(of: $1, calendar: calendar) ?? 0)
         }
-        let chargeIndex = chargeIndex(
-            of: day, anchoredAt: expense.anchorDate, interval: expense.recurrenceInterval,
+        let chargeIndex = BillEditor.chargeIndex(
+            of: day, anchoredAt: expense.anchorDate(in: calendar), interval: expense.recurrenceInterval,
             unit: expense.recurrenceUnit, calendar: calendar
         )
 
         let wholeBillPaymentCount: Int?
-        if series.last?.endDate != nil {
+        if series.last?.end != nil {
             wholeBillPaymentCount = series.reduce(0) { $0 + (BillEditor.paymentCount(of: $1, calendar: calendar) ?? 0) }
         } else {
             wholeBillPaymentCount = nil
@@ -61,40 +61,30 @@ struct EditSession: Identifiable, Equatable {
             // record's last — not nil, unless this is the bill's first record too.
             if recordIndex > 0, let count = BillEditor.paymentCount(of: series[recordIndex - 1], calendar: calendar),
                count > 0 {
-                previousChargeDate = RecurrenceEngine.date(ofPayment: count - 1, for: series[recordIndex - 1].rule, calendar: calendar)
+                previousChargeDate = RecurrenceEngine.date(ofPayment: count - 1, for: series[recordIndex - 1].rule(calendar: calendar), calendar: calendar)
             } else {
                 previousChargeDate = nil
             }
         } else {
-            previousChargeDate = RecurrenceEngine.date(ofPayment: chargeIndex - 1, for: expense.rule, calendar: calendar)
+            previousChargeDate = RecurrenceEngine.date(ofPayment: chargeIndex - 1, for: expense.rule(calendar: calendar), calendar: calendar)
         }
 
         let baseline = EditBaseline(
             digits: digits, name: expense.name, date: effectiveDate,
             interval: expense.recurrenceInterval, unit: expense.recurrenceUnit,
             paymentCount: wholeBillPaymentCount, categoryID: expense.category?.id,
-            ruleAnchor: calendar.startOfDay(for: expense.anchorDate), paymentsBeforeRule: paymentsBeforeRule,
-            chargeIndex: chargeIndex
+            ruleAnchor: expense.anchorDate(in: calendar), paymentsBeforeRule: paymentsBeforeRule,
+            chargeIndex: chargeIndex,
+            earliestDate: previousChargeDate.flatMap {
+                calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: $0))
+            }
         )
 
         return EditSession(
             expenseID: expenseID, scheduledDate: day, draft: ExpenseDraft(editing: baseline),
             hasLaterCharge: BillEditor.hasLaterCharge(than: day, in: series, calendar: calendar),
-            isFirstCharge: BillEditor.isFirstCharge(day, of: expense, in: series, calendar: calendar),
+            isFirstCharge: BillEditor.isFirstCharge(day, in: series, calendar: calendar),
             previousChargeDate: previousChargeDate
         )
-    }
-
-    /// This charge's 0-based position among the dates its own record generates from `anchor`
-    /// — the same reckoning `BillEditor` uses internally.
-    private static func chargeIndex(
-        of scheduledDate: Date, anchoredAt anchor: Date, interval: Int, unit: RecurrenceUnit, calendar: Calendar
-    ) -> Int {
-        let rule = RecurrenceRule(interval: interval, unit: unit, anchorDate: anchor)
-        let anchorDay = calendar.startOfDay(for: anchor)
-        let day = calendar.startOfDay(for: scheduledDate)
-        guard day >= anchorDay else { return 0 }
-        let dates = RecurrenceEngine.dates(for: rule, in: DateInterval(start: anchorDay, end: day), calendar: calendar)
-        return max(0, dates.count - 1)
     }
 }

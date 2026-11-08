@@ -30,9 +30,13 @@ The timeline is a pure function of rules, overrides and a date range. Only devia
 as override records keyed on `(expense, scheduledDate)`. Retroactive rule edits are correct for free.
 - **Rejected — materialising a row per occurrence (Dime):** drifts when generated from the previous row, and duplicates under sync.
 
-## Recurrence is every N days, weeks, months or years from a fixed anchor
-**Decided:** 2026-09-04
-Interval, unit, anchor date, optional end date. Month-end clamps without sticking.
+## Recurrence is every N days, weeks, months or years from a fixed anchor, on calendar days
+**Decided:** 2026-09-04; days stored as calendar days 2026-11-08
+Interval, unit, anchor date, optional end date. Month-end clamps without sticking. Every stored day
+(the anchor, the end, an override's scheduled and moved days) is a year, a month and a day, turned
+into a date only with the calendar reading it, so a bill keeps its days in any time zone.
+- **Rejected — the instant each day began:** a bill made in Paris on the 15th read as the 14th in New York.
+- **Rejected — noon UTC:** still an instant, and a convention every write would have to keep.
 - **Rejected — weekday rules ("last Friday"):** a much larger engine and editor for cases not yet needed.
 - **Rejected — iCalendar RRULE:** powerful and almost entirely unused here.
 - **Revisit when:** a real bill can't be expressed.

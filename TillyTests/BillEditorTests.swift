@@ -37,8 +37,7 @@ import TillyCore
     ) -> Expense {
         let expense = Expense(
             name: name, amount: amount, recurrenceInterval: interval, recurrenceUnit: unit,
-            anchorDate: anchor, endDate: endDate, category: category
-        )
+            anchorDate: anchor, endDate: endDate, category: category, calendar: Self.calendar)
         context.insert(expense)
         return expense
     }
@@ -76,7 +75,7 @@ import TillyCore
 
         #expect(expense.overrides?.count == 1)
         #expect(expense.overrides?.first?.actualAmount == 60)
-        #expect(expense.overrides?.first?.movedDate == nil)
+        #expect(expense.overrides?.first?.movedDate(in: Self.calendar) == nil)
     }
 
     @Test func thisChargeBackToTheRuleAmountRemovesTheOverride() throws {
@@ -84,7 +83,7 @@ import TillyCore
         let category = Self.category(in: context)
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
-        context.insert(OverrideRecord(scheduledDate: anchor, actualAmount: 60, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: anchor, actualAmount: 60, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let draft = Self.draft(today: anchor, digits: "50", name: "Gym", date: anchor, category: category)
@@ -108,7 +107,7 @@ import TillyCore
             draft, expense: expense, scheduledDate: anchor, category: category, context: context, calendar: Self.calendar
         )
 
-        #expect(expense.overrides?.first?.movedDate == moved)
+        #expect(expense.overrides?.first?.movedDate(in: Self.calendar) == moved)
         #expect(expense.overrides?.first?.actualAmount == nil)
     }
 
@@ -118,7 +117,7 @@ import TillyCore
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
         let moved = Self.date(2026, 2, 2)
-        context.insert(OverrideRecord(scheduledDate: anchor, movedDate: moved, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: anchor, movedDate: moved, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let draft = Self.draft(today: anchor, digits: "65", name: "Gym", date: moved, category: category)
@@ -128,7 +127,7 @@ import TillyCore
 
         #expect(expense.overrides?.count == 1)
         #expect(expense.overrides?.first?.actualAmount == 65)
-        #expect(expense.overrides?.first?.movedDate == moved)
+        #expect(expense.overrides?.first?.movedDate(in: Self.calendar) == moved)
     }
 
     @Test func zeroIsStoredAsAnAmount() throws {
@@ -163,7 +162,7 @@ import TillyCore
         let series = try BillEditor.series(of: expense, in: context)
         #expect(series.count == 1)
         #expect(series.first?.amount == 60)
-        #expect(series.first?.anchorDate == anchor)
+        #expect(series.first?.anchorDate(in: Self.calendar) == anchor)
     }
 
     @Test func futureFromALaterChargeSplitsTheBill() throws {
@@ -181,10 +180,10 @@ import TillyCore
 
         let series = try BillEditor.series(of: expense, in: context)
         #expect(series.count == 2)
-        #expect(series[0].anchorDate == anchor)
-        #expect(series[0].endDate == Self.date(2026, 3, 31))
+        #expect(series[0].anchorDate(in: Self.calendar) == anchor)
+        #expect(series[0].endDate(in: Self.calendar) == Self.date(2026, 3, 31))
         #expect(series[0].amount == 50)
-        #expect(series[1].anchorDate == fourthCharge)
+        #expect(series[1].anchorDate(in: Self.calendar) == fourthCharge)
         #expect(series[1].amount == 60)
     }
 
@@ -203,7 +202,7 @@ import TillyCore
 
         let series = try BillEditor.series(of: expense, in: context)
         let range = DateInterval(start: Self.date(2026, 1, 1), end: Self.date(2026, 3, 31))
-        let earlyDates = RecurrenceEngine.dates(for: series[0].rule, in: range, calendar: Self.calendar)
+        let earlyDates = RecurrenceEngine.dates(for: series[0].rule(calendar: Self.calendar), in: range, calendar: Self.calendar)
         #expect(earlyDates == [Self.date(2026, 1, 31), Self.date(2026, 2, 28), Self.date(2026, 3, 31)])
     }
 
@@ -258,7 +257,7 @@ import TillyCore
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
         let freeMonth = Self.date(2026, 6, 30) // index 5 from Jan 31: Feb, Mar, Apr, May, Jun
-        context.insert(OverrideRecord(scheduledDate: freeMonth, actualAmount: 0, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: freeMonth, actualAmount: 0, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let fourthCharge = Self.date(2026, 4, 30)
@@ -270,7 +269,7 @@ import TillyCore
         let series = try BillEditor.series(of: expense, in: context)
         let newRecord = series[1]
         #expect(newRecord.overrides?.count == 1)
-        #expect(newRecord.overrides?.first?.scheduledDate == freeMonth)
+        #expect(newRecord.overrides?.first?.scheduledDate(in: Self.calendar) == freeMonth)
         #expect(newRecord.overrides?.first?.actualAmount == 0)
     }
 
@@ -280,7 +279,7 @@ import TillyCore
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
         let freeMonth = Self.date(2026, 6, 30)
-        context.insert(OverrideRecord(scheduledDate: freeMonth, actualAmount: 0, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: freeMonth, actualAmount: 0, expense: expense, calendar: Self.calendar))
         try context.save()
 
         // Moving this charge to the 15th moves the new rule's whole day-of-month pattern, so
@@ -302,7 +301,7 @@ import TillyCore
         let anchor = Self.date(2026, 1, 31)
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
         let fourthCharge = Self.date(2026, 4, 30)
-        context.insert(OverrideRecord(scheduledDate: fourthCharge, actualAmount: 55, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: fourthCharge, actualAmount: 55, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let draft = Self.draft(today: fourthCharge, digits: "60", name: "Gym", date: fourthCharge, category: category)
@@ -375,7 +374,7 @@ import TillyCore
 
         let series = try BillEditor.series(of: expense, in: context)
         #expect(series.count == 1)
-        #expect(series.first?.endDate == Self.date(2026, 2, 28))
+        #expect(series.first?.endDate(in: Self.calendar) == Self.date(2026, 2, 28))
     }
 
     @Test func noEndReopensTheLastRecord() throws {
@@ -390,7 +389,7 @@ import TillyCore
         let draft = Self.draft(today: anchor, digits: "50", name: "Gym", date: anchor, category: category, paymentCount: nil)
         try BillEditor.saveWholeBill(draft, expense: expense, category: category, context: context, calendar: Self.calendar)
 
-        #expect(expense.endDate == nil)
+        #expect(expense.endDate(in: Self.calendar) == nil)
     }
 
     @Test func aLongerCountExtendsTheLastRecord() throws {
@@ -407,7 +406,7 @@ import TillyCore
         )
         try BillEditor.saveWholeBill(draft, expense: expense, category: category, context: context, calendar: Self.calendar)
 
-        #expect(expense.endDate == Self.date(2026, 6, 30))
+        #expect(expense.endDate(in: Self.calendar) == Self.date(2026, 6, 30))
     }
 
     // MARK: Deleting
@@ -422,9 +421,9 @@ import TillyCore
         let fourthCharge = Self.date(2026, 4, 30)
         try BillEditor.deleteFutureCharges(from: fourthCharge, of: expense, context: context, calendar: Self.calendar)
 
-        #expect(expense.endDate == Self.date(2026, 3, 31))
+        #expect(expense.endDate(in: Self.calendar) == Self.date(2026, 3, 31))
         let range = DateInterval(start: Self.date(2026, 1, 1), end: Self.date(2026, 12, 31))
-        let dates = RecurrenceEngine.dates(for: expense.rule, in: range, calendar: Self.calendar)
+        let dates = RecurrenceEngine.dates(for: expense.rule(calendar: Self.calendar), in: range, calendar: Self.calendar)
         #expect(dates == [Self.date(2026, 1, 31), Self.date(2026, 2, 28), Self.date(2026, 3, 31)])
     }
 
@@ -447,7 +446,7 @@ import TillyCore
 
         series = try BillEditor.series(of: expense, in: context)
         #expect(series.count == 1)
-        #expect(series.first?.anchorDate == anchor)
+        #expect(series.first?.anchorDate(in: Self.calendar) == anchor)
     }
 
     @Test func deleteFutureRemovesOverridesFromThatChargeOn() throws {
@@ -457,8 +456,8 @@ import TillyCore
         let expense = Self.makeBill(in: context, amount: 50, anchor: anchor, category: category)
         let secondCharge = Self.date(2026, 2, 28)
         let fifthCharge = Self.date(2026, 5, 31)
-        context.insert(OverrideRecord(scheduledDate: secondCharge, actualAmount: 55, expense: expense))
-        context.insert(OverrideRecord(scheduledDate: fifthCharge, actualAmount: 65, expense: expense))
+        context.insert(OverrideRecord(scheduledDate: secondCharge, actualAmount: 55, expense: expense, calendar: Self.calendar))
+        context.insert(OverrideRecord(scheduledDate: fifthCharge, actualAmount: 65, expense: expense, calendar: Self.calendar))
         try context.save()
 
         let fourthCharge = Self.date(2026, 4, 30)
@@ -466,7 +465,7 @@ import TillyCore
 
         let remaining = expense.overrides ?? []
         #expect(remaining.count == 1)
-        #expect(remaining.first?.scheduledDate == secondCharge)
+        #expect(remaining.first?.scheduledDate(in: Self.calendar) == secondCharge)
     }
 
     @Test func deleteAllRemovesTheWholeSeries() throws {
@@ -541,7 +540,103 @@ import TillyCore
         )
 
         let series = try BillEditor.series(of: expense, in: context)
-        #expect(BillEditor.isFirstCharge(anchor, of: expense, in: series, calendar: Self.calendar))
-        #expect(!BillEditor.isFirstCharge(fourthCharge, of: series[1], in: series, calendar: Self.calendar))
+        #expect(BillEditor.isFirstCharge(anchor, in: series, calendar: Self.calendar))
+        #expect(!BillEditor.isFirstCharge(fourthCharge, in: series, calendar: Self.calendar))
+    }
+
+    // MARK: Rolling back
+
+    struct SaveFailed: Error {}
+
+    /// A save can't be made to fail on demand, so the edit throws in its place: a rename, a new
+    /// override and a delete, all pending, then a throw. Every one of them is undone.
+    @Test func aThrownEditLeavesNoPendingChanges() throws {
+        let context = try Self.makeContext()
+        let home = Self.category(in: context)
+        let gym = Self.makeBill(in: context, anchor: Self.date(2026, 1, 31), category: home)
+        let rent = Self.makeBill(in: context, name: "Rent", anchor: Self.date(2026, 1, 1), category: home)
+        try context.save()
+
+        #expect(throws: SaveFailed.self) {
+            try context.applyOrRollBack {
+                gym.name = "Gym2"
+                context.insert(OverrideRecord(scheduledDate: Self.date(2026, 2, 28), isSkipped: true, expense: gym, calendar: Self.calendar))
+                context.delete(rent)
+                throw SaveFailed()
+            }
+        }
+
+        #expect(!context.hasChanges)
+        #expect(gym.name == "Gym")
+        #expect(try context.fetchCount(FetchDescriptor<OverrideRecord>()) == 0)
+        #expect(try context.fetch(FetchDescriptor<Expense>()).map(\.name).sorted() == ["Gym", "Rent"])
+    }
+
+    @Test func anEditThatSucceedsIsKept() throws {
+        let context = try Self.makeContext()
+        let gym = Self.makeBill(in: context, anchor: Self.date(2026, 1, 31), category: Self.category(in: context))
+        try context.save()
+
+        try context.applyOrRollBack {
+            gym.name = "Gym2"
+            try context.save()
+        }
+
+        #expect(!context.hasChanges)
+        #expect(try context.fetch(FetchDescriptor<Expense>()).map(\.name) == ["Gym2"])
+    }
+
+    // MARK: Moving a future-charges date before the previous charge
+
+    /// Every non-skipped charge's effective date across the whole series in `range`.
+    static func charges(of expense: Expense, in context: ModelContext, range: DateInterval) throws -> [Date] {
+        try BillEditor.series(of: expense, in: context).flatMap { record in
+            RecurrenceEngine.occurrences(
+                for: record.snapshot(calendar: calendar), overrides: record.overrideSnapshots(calendar: calendar), in: range, calendar: calendar
+            )
+            .filter { !$0.isSkipped }
+            .map(\.effectiveDate)
+        }
+    }
+
+    static func monthlyCounts(_ dates: [Date]) -> [Int: Int] {
+        Dictionary(grouping: dates, by: { calendar.component(.month, from: $0) }).mapValues(\.count)
+    }
+
+    @Test func futureChargesMovedBeforeThePreviousChargeNeverDoubleChargesAMonth() throws {
+        let context = try Self.makeContext()
+        let category = Self.category(in: context)
+        let expense = Self.makeBill(in: context, anchor: Self.date(2026, 1, 15), category: category)
+        try context.save()
+
+        let session = try #require(
+            try EditSession.make(
+                expenseID: expense.id, scheduledDate: Self.date(2026, 4, 15), context: context, calendar: Self.calendar
+            )
+        )
+        #expect(session.draft.baseline?.chargeIndex == 3)
+        let range = DateInterval(start: Self.date(2026, 1, 1), end: Self.date(2026, 5, 31))
+
+        // Feb 1 is before the previous charge (Mar 15): the editor must not allow it.
+        var early = session.draft
+        early.date = Self.date(2026, 2, 1)
+        #expect(!early.isValid(categoryExists: { _ in true }))
+
+        // Mar 16, the day after the previous charge, is the earliest allowed.
+        var draft = session.draft
+        draft.date = Self.date(2026, 3, 16)
+        #expect(draft.isValid(categoryExists: { _ in true }))
+        try BillEditor.saveFutureCharges(
+            draft, expense: expense, scheduledDate: Self.date(2026, 4, 15),
+            category: category, context: context, calendar: Self.calendar
+        )
+
+        // Mar 15 (old record's last) and Mar 16 (new record's first) are distinct days, so
+        // March legitimately holds both; every other month holds exactly one.
+        let charges = try Self.charges(of: expense, in: context, range: range)
+        let counts = Self.monthlyCounts(charges)
+        #expect(Set(charges).count == charges.count)
+        #expect([1, 2, 4, 5].allSatisfy { counts[$0] == 1 })
+        #expect(counts[3] == 2)
     }
 }

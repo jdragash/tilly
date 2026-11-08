@@ -12,7 +12,7 @@ enum TimelineCeiling {
         let live = expenses.filter { !$0.isArchived }
         guard !live.isEmpty else { return nil }
         let nextMonth = current.advanced(by: 1)
-        guard live.allSatisfy({ $0.endDate != nil }) else {
+        guard live.allSatisfy({ $0.end != nil }) else {
             return current.advanced(by: TimelineWindow.monthsAhead)
         }
         let last = live.compactMap { lastPayment(of: $0, calendar: calendar) }.max()
@@ -24,7 +24,7 @@ enum TimelineCeiling {
     static func isLastPayment(_ ceiling: MonthKey, for expenses: [Expense], current: MonthKey, calendar: Calendar) -> Bool {
         let live = expenses.filter { !$0.isArchived }
         return !live.isEmpty
-            && live.allSatisfy { $0.endDate != nil }
+            && live.allSatisfy { $0.end != nil }
             && month(for: expenses, current: current, calendar: calendar) == ceiling
     }
 
@@ -32,15 +32,16 @@ enum TimelineCeiling {
     /// before its end, or later if an override moved one of those payments later. `nil` when
     /// it runs on, or ends before it starts.
     private static func lastPayment(of expense: Expense, calendar: Calendar) -> Date? {
-        guard let endDate = expense.endDate else { return nil }
-        let start = calendar.startOfDay(for: expense.anchorDate)
-        let end = calendar.startOfDay(for: endDate)
+        guard let end = expense.endDate(in: calendar) else { return nil }
+        let start = expense.anchorDate(in: calendar)
         guard end >= start else { return nil }
-        let scheduled = RecurrenceEngine.dates(for: expense.rule, in: DateInterval(start: start, end: end), calendar: calendar)
+        let scheduled = RecurrenceEngine.dates(
+            for: expense.rule(calendar: calendar), in: DateInterval(start: start, end: end), calendar: calendar
+        )
         let moved = (expense.overrides ?? []).compactMap { override -> Date? in
-            guard let movedDate = override.movedDate,
-                  calendar.startOfDay(for: override.scheduledDate) <= end else { return nil }
-            return calendar.startOfDay(for: movedDate)
+            guard let movedDate = override.movedDate(in: calendar),
+                  override.scheduledDate(in: calendar) <= end else { return nil }
+            return movedDate
         }
         return (scheduled + moved).max()
     }
