@@ -84,12 +84,14 @@ enum CategoryMonthBuilder {
         let first = MonthKey(containing: start, calendar: calendar)
         let last = MonthKey(containing: today, calendar: calendar).advanced(by: lookAheadMonths)
         guard first <= last else { return [] }
-        var entries: [TimelineEntry] = []
+        var keys: [MonthKey] = []
         var key = first
         while key <= last {
-            entries += TimelineBuilder.month(key, expenses: expenses, today: today, calendar: calendar, extrasOnly: false).entries
+            keys.append(key)
             key = key.advanced(by: 1)
         }
+        let built = TimelineBuilder.months(keys, expenses: expenses, today: today, calendar: calendar, extrasOnly: false)
+        let entries = keys.flatMap { built[$0]?.entries ?? [] }
         return entries
             .filter { $0.state != .skipped && $0.date >= start }
             .sorted { lhs, rhs in

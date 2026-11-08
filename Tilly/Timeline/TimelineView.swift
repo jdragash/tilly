@@ -580,15 +580,17 @@ struct TimelineView: View {
     /// The twelve months from this one, as the year shows them. Months past the window's ceiling are built too, and are simply empty.
     private func yearOverview(in window: TimelineWindow) -> YearOverview {
         let timelineExpenses = Expense.timelineExpenses(expenses)
-        let sections = (0..<12).map { offset -> MonthSection in
-            let key = window.current.advanced(by: offset)
-            // Every charge: the year's marks and totals need the usual ones even with extras only.
-            let built = TimelineBuilder.month(
-                key, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: false
-            )
+        let keys = (0..<12).map { window.current.advanced(by: $0) }
+        // Every charge: the year's marks and totals need the usual ones even with extras only.
+        let built = TimelineBuilder.months(
+            keys, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: false
+        )
+        let sections = keys.map { key -> MonthSection in
+            let section = built[key]!
             return MonthSection(
-                month: built.month, entries: built.entries, total: built.total, remaining: built.remaining,
-                isCurrent: key == window.current, showsExtrasOnly: built.showsExtrasOnly
+                month: section.month, entries: section.entries, total: section.total,
+                remaining: section.remaining, isCurrent: key == window.current,
+                showsExtrasOnly: section.showsExtrasOnly
             )
         }
         return YearBuilder.overview(
@@ -1638,15 +1640,16 @@ struct TimelineView: View {
         guard let window else { return }
         let timelineExpenses = Expense.timelineExpenses(expenses)
 
+        let built = TimelineBuilder.months(
+            window.months, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: extrasOnly
+        )
         var result: [MonthKey: MonthSection] = [:]
         for key in window.months {
-            let built = TimelineBuilder.month(
-                key, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: extrasOnly
-            )
+            guard let section = built[key] else { continue }
             result[key] = MonthSection(
-                month: built.month, entries: built.entries, total: built.total,
-                remaining: built.remaining, isCurrent: key == window.current,
-                showsExtrasOnly: built.showsExtrasOnly
+                month: section.month, entries: section.entries, total: section.total,
+                remaining: section.remaining, isCurrent: key == window.current,
+                showsExtrasOnly: section.showsExtrasOnly
             )
         }
         sections = result
