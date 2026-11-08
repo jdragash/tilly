@@ -225,10 +225,6 @@ struct TimelineView: View {
         // edit, and deleting future charges, which only ends a record, left the months ahead.
         .onChange(of: editor) { _, new in
             guard new == nil else { return }
-            // Once the sheet has dropped away, unless it has opened again by then.
-            DispatchQueue.main.asyncAfter(deadline: .now() + Tokens.Motion.Card.sheetExit) {
-                if editor == nil { BoilClock.shared.listsHeld = false }
-            }
             if refreshedOnClose {
                 refreshedOnClose = false
             } else {
@@ -1073,10 +1069,8 @@ struct TimelineView: View {
         }
     }
 
-    /// Opens the editor's sheet. Covered by it and its scrim, the levels' pictures hold the drawing
-    /// they have from this moment, so none redraws in the frames the sheet takes to rise.
+    /// Opens the editor's sheet.
     private func open(_ request: EditorRequest) {
-        BoilClock.shared.listsHeld = true
         editor = request
     }
 
