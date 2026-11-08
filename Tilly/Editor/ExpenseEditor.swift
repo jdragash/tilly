@@ -380,7 +380,8 @@ struct ExpenseEditor: View {
             recurrenceUnit: draft.unit,
             anchorDate: draft.date,
             endDate: draft.rule(calendar: calendar).endDate,
-            category: category
+            category: category,
+            calendar: calendar
         )
         do {
             try modelContext.applyOrRollBack {
@@ -595,7 +596,7 @@ private func previewEditSession(monthsAgo: Int, in container: ModelContainer, ca
     let context = container.mainContext
     let calendar = Calendar.current
     let anchor = calendar.date(byAdding: .month, value: -monthsAgo, to: calendar.startOfDay(for: Date()))!
-    let expense = Expense(name: "Gym", amount: 50, anchorDate: anchor, category: category)
+    let expense = Expense(name: "Gym", amount: 50, anchorDate: anchor, category: category, calendar: calendar)
     context.insert(expense)
     try! context.save()
     return try! EditSession.make(expenseID: expense.id, scheduledDate: anchor, context: context, calendar: calendar)!

@@ -28,15 +28,15 @@ import Testing
     }
 
     @Test func aBillWithNoEndRunsFarAhead() throws {
-        let expenses = try Self.expenses { [Expense(anchorDate: Self.date(2026, 9, 3))] }
+        let expenses = try Self.expenses { [Expense(anchorDate: Self.date(2026, 9, 3), calendar: Self.calendar)] }
         #expect(Self.ceiling(expenses) == Self.current.advanced(by: TimelineWindow.monthsAhead))
     }
 
     @Test func whenEveryBillEndsTheCeilingIsTheLastPayment() throws {
         let expenses = try Self.expenses {
             [
-                Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3)),
-                Expense(anchorDate: Self.date(2026, 9, 10), endDate: Self.date(2027, 1, 10)),
+                Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3), calendar: Self.calendar),
+                Expense(anchorDate: Self.date(2026, 9, 10), endDate: Self.date(2027, 1, 10), calendar: Self.calendar),
             ]
         }
         #expect(Self.ceiling(expenses) == MonthKey(year: 2027, month: 5))
@@ -45,7 +45,7 @@ import Testing
     @Test func theLastPaymentIsTheLastOneOnOrBeforeTheEnd() throws {
         // Every three months from September: December, March, June. An end in August means June.
         let expenses = try Self.expenses {
-            [Expense(recurrenceInterval: 3, anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 8, 20))]
+            [Expense(recurrenceInterval: 3, anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 8, 20), calendar: Self.calendar)]
         }
         #expect(Self.ceiling(expenses) == MonthKey(year: 2027, month: 6))
     }
@@ -53,8 +53,8 @@ import Testing
     @Test func oneBillWithoutAnEndOutweighsOnesThatEnd() throws {
         let expenses = try Self.expenses {
             [
-                Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3)),
-                Expense(anchorDate: Self.date(2026, 9, 10)),
+                Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3), calendar: Self.calendar),
+                Expense(anchorDate: Self.date(2026, 9, 10), calendar: Self.calendar),
             ]
         }
         #expect(Self.ceiling(expenses) == Self.current.advanced(by: TimelineWindow.monthsAhead))
@@ -62,7 +62,7 @@ import Testing
 
     @Test func aLastPaymentBeforeNextMonthStillShowsNextMonth() throws {
         let expenses = try Self.expenses {
-            [Expense(anchorDate: Self.date(2026, 3, 3), endDate: Self.date(2026, 7, 3))]
+            [Expense(anchorDate: Self.date(2026, 3, 3), endDate: Self.date(2026, 7, 3), calendar: Self.calendar)]
         }
         #expect(Self.ceiling(expenses) == Self.current.advanced(by: 1))
     }
@@ -73,12 +73,12 @@ import Testing
 
     @Test func isLastPaymentOnlyWhenEveryBillEnds() throws {
         let ending = try Self.expenses {
-            [Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3))]
+            [Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3), calendar: Self.calendar)]
         }
         let runningOn = try Self.expenses {
             [
-                Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3)),
-                Expense(anchorDate: Self.date(2026, 9, 10)),
+                Expense(anchorDate: Self.date(2026, 9, 3), endDate: Self.date(2027, 5, 3), calendar: Self.calendar),
+                Expense(anchorDate: Self.date(2026, 9, 10), calendar: Self.calendar),
             ]
         }
         let endingCeiling = try #require(Self.ceiling(ending))

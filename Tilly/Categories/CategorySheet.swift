@@ -309,8 +309,8 @@ private func previewCategories() -> (ModelContainer, [ExpenseCategory]) {
         ExpenseCategory(name: "Phone & internet", symbol: "wifi", colour: .aqua, sortOrder: 2),
     ]
     made.forEach(context.insert)
-    context.insert(Expense(name: "Rent", amount: 950, category: made[0]))
-    context.insert(Expense(name: "Water", amount: 31, category: made[0]))
+    context.insert(Expense(name: "Rent", amount: 950, anchorDate: Date(), category: made[0], calendar: .current))
+    context.insert(Expense(name: "Water", amount: 31, anchorDate: Date(), category: made[0], calendar: .current))
     try! context.save()
     return (container, made)
 }

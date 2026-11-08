@@ -21,8 +21,8 @@ import Testing
 
     @Test func theFloorIsTheEarliestAnchor() throws {
         let context = try Self.makeContext()
-        context.insert(Expense(anchorDate: Self.date(2026, 3, 15)))
-        context.insert(Expense(anchorDate: Self.date(2026, 9, 1)))
+        context.insert(Expense(anchorDate: Self.date(2026, 3, 15), calendar: Self.calendar))
+        context.insert(Expense(anchorDate: Self.date(2026, 9, 1), calendar: Self.calendar))
         try context.save()
 
         let expenses = try context.fetch(FetchDescriptor<Expense>())
@@ -31,13 +31,12 @@ import Testing
 
     @Test func anOverrideMovedEarlierThanEveryAnchorBecomesTheFloor() throws {
         let context = try Self.makeContext()
-        let expense = Expense(anchorDate: Self.date(2026, 6, 1))
+        let expense = Expense(anchorDate: Self.date(2026, 6, 1), calendar: Self.calendar)
         context.insert(expense)
         context.insert(OverrideRecord(
             scheduledDate: Self.date(2026, 6, 1),
             movedDate: Self.date(2026, 1, 10),
-            expense: expense
-        ))
+            expense: expense, calendar: Self.calendar))
         try context.save()
 
         let expenses = try context.fetch(FetchDescriptor<Expense>())
@@ -50,7 +49,7 @@ import Testing
 
     @Test func theFloorIsTheAnchorsMonthNotItsDay() throws {
         let context = try Self.makeContext()
-        context.insert(Expense(anchorDate: Self.date(2026, 3, 28)))
+        context.insert(Expense(anchorDate: Self.date(2026, 3, 28), calendar: Self.calendar))
         try context.save()
 
         let expenses = try context.fetch(FetchDescriptor<Expense>())
@@ -59,8 +58,8 @@ import Testing
 
     @Test func anArchivedExpensesAnchorDoesNotSetTheFloor() throws {
         let context = try Self.makeContext()
-        context.insert(Expense(isArchived: true, anchorDate: Self.date(2020, 1, 1)))
-        context.insert(Expense(anchorDate: Self.date(2026, 6, 1)))
+        context.insert(Expense(isArchived: true, anchorDate: Self.date(2020, 1, 1), calendar: Self.calendar))
+        context.insert(Expense(anchorDate: Self.date(2026, 6, 1), calendar: Self.calendar))
         try context.save()
 
         let expenses = try context.fetch(FetchDescriptor<Expense>())

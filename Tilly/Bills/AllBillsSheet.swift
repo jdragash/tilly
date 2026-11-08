@@ -21,7 +21,7 @@ struct AllBillsSheet: View {
     var body: some View {
         let infos = categories.map(CategoryInfo.init)
         let bills = AllBillsBuilder.bills(
-            Expense.billInputs(expenses), categories: infos, period: period, today: today, calendar: calendar
+            Expense.billInputs(expenses, calendar: calendar), categories: infos, period: period, today: today, calendar: calendar
         )
 
         NavigationStack {

@@ -244,12 +244,12 @@ import TillyCore
     @Test func archivedLeftOut() throws {
         let container = try TillyStore.container(inMemory: true)
         let context = ModelContext(container)
-        let live = Expense(name: "Rent", amount: 100, anchorDate: Self.date(2026, 6, 10))
-        let archived = Expense(name: "Old", amount: 10, isArchived: true, anchorDate: Self.date(2026, 6, 10))
+        let live = Expense(name: "Rent", amount: 100, anchorDate: Self.date(2026, 6, 10), calendar: Self.calendar)
+        let archived = Expense(name: "Old", amount: 10, isArchived: true, anchorDate: Self.date(2026, 6, 10), calendar: Self.calendar)
         context.insert(live)
         context.insert(archived)
 
-        let inputs = Expense.billInputs([live, archived])
+        let inputs = Expense.billInputs([live, archived], calendar: Self.calendar)
         #expect(inputs.map(\.name) == ["Rent"])
         #expect(inputs.first?.expenseID == live.id)
         #expect(inputs.first?.seriesKey == live.seriesKey)

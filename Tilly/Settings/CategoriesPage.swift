@@ -29,7 +29,7 @@ struct CategoriesPage: View {
 
     private var figures: [UUID: (bills: Int, monthly: Decimal)] {
         CategoryFigures.figures(
-            Expense.billInputs(expenses), categories: categories.map(CategoryInfo.init), today: today, calendar: .current
+            Expense.billInputs(expenses, calendar: .current), categories: categories.map(CategoryInfo.init), today: today, calendar: .current
         )
     }
 
@@ -248,7 +248,7 @@ private struct CardDrop: DropDelegate {
         ExpenseCategory(name: "Subscriptions", symbol: "tv", colour: .yellow, sortOrder: 3),
     ]
     made.forEach(context.insert)
-    context.insert(Expense(name: "Rent", amount: 950, category: made[0]))
+    context.insert(Expense(name: "Rent", amount: 950, anchorDate: Date(), category: made[0], calendar: .current))
     try! context.save()
     return NavigationStack { CategoriesPage(today: Date()) }
         .drawnGround()

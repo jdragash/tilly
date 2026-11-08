@@ -568,7 +568,7 @@ struct TimelineView: View {
     private func calendarMonthModel(in window: TimelineWindow) -> CalendarMonth {
         let month = shownCalendarMonth(in: window)
         let built = TimelineBuilder.month(
-            month, expenses: Expense.timelineExpenses(expenses), today: today, calendar: calendar,
+            month, expenses: Expense.timelineExpenses(expenses, calendar: calendar), today: today, calendar: calendar,
             extrasOnly: extrasOnly
         )
         let section = MonthSection(
@@ -580,7 +580,7 @@ struct TimelineView: View {
 
     /// The twelve months from this one, as the year shows them. Months past the window's ceiling are built too, and are simply empty.
     private func yearOverview(in window: TimelineWindow) -> YearOverview {
-        let timelineExpenses = Expense.timelineExpenses(expenses)
+        let timelineExpenses = Expense.timelineExpenses(expenses, calendar: calendar)
         let keys = (0..<12).map { window.current.advanced(by: $0) }
         // Every charge: the year's marks and totals need the usual ones even with extras only.
         let built = TimelineBuilder.months(
@@ -1639,7 +1639,7 @@ struct TimelineView: View {
 
     private func rebuildSections() {
         guard let window else { return }
-        let timelineExpenses = Expense.timelineExpenses(expenses)
+        let timelineExpenses = Expense.timelineExpenses(expenses, calendar: calendar)
 
         let built = TimelineBuilder.months(
             window.months, expenses: timelineExpenses, today: today, calendar: calendar, extrasOnly: extrasOnly
@@ -1679,7 +1679,7 @@ struct TimelineView: View {
     let calendar = Calendar.current
     let today = Date()
     let futureAnchor = calendar.date(byAdding: .day, value: 5, to: today)!
-    context.insert(Expense(name: "Upcoming bill", amount: 50, anchorDate: futureAnchor))
+    context.insert(Expense(name: "Upcoming bill", amount: 50, anchorDate: futureAnchor, calendar: calendar))
     try! context.save()
     return TimelineView()
         .modelContainer(container)

@@ -36,7 +36,7 @@ import Testing
         let (expenses, categories) = try Self.seeded(.oneExpense)
         #expect(expenses.count == 1)
         #expect(categories.count == 1)
-        #expect(expenses.first?.anchorDate == Self.today)
+        #expect(expenses.first?.anchorDate(in: Self.calendar) == Self.today)
     }
 
     @Test func typicalYearMatchesPreviewData() throws {
@@ -56,7 +56,7 @@ import Testing
         let (expenses, _) = try Self.seeded(.nothingChargedYet)
         #expect(expenses.count == 2)
         let built = TimelineBuilder.month(
-            Self.currentMonth, expenses: expenses.map(\.timelineExpense), today: Self.today, calendar: Self.calendar,
+            Self.currentMonth, expenses: expenses.map { $0.timelineExpense(calendar: Self.calendar) }, today: Self.today, calendar: Self.calendar,
             extrasOnly: false
         )
         let section = MonthSection(

@@ -5,7 +5,7 @@ import SwiftData
 enum TillyStore {
     static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "TillyStore")
 
-    static let schema = Schema(versionedSchema: SchemaV1.self)
+    static let schema = Schema(versionedSchema: SchemaV3.self)
 
     static func container(inMemory: Bool = false) throws -> ModelContainer {
         try container(ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory))

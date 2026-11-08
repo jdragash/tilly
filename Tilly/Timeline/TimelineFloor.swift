@@ -1,4 +1,5 @@
 import Foundation
+import TillyCore
 
 /// Where history stops. See "History begins at the oldest charge you have entered" in
 /// `docs/DECISIONS.md`.
@@ -13,19 +14,19 @@ enum TimelineFloor {
     /// generates an occurrence for one; counting their anchors would push the floor below
     /// anything the list could actually show.
     static func month(for expenses: [Expense], calendar: Calendar) -> MonthKey? {
-        var earliest: Date?
+        var earliest: CalendarDay?
         for expense in expenses where !expense.isArchived {
-            if earliest == nil || expense.anchorDate < earliest! {
-                earliest = expense.anchorDate
+            if earliest == nil || expense.anchor < earliest! {
+                earliest = expense.anchor
             }
             for override in expense.overrides ?? [] {
-                guard let moved = override.movedDate else { continue }
+                guard let moved = override.moved else { continue }
                 if earliest == nil || moved < earliest! {
                     earliest = moved
                 }
             }
         }
         guard let earliest else { return nil }
-        return MonthKey(containing: earliest, calendar: calendar)
+        return MonthKey(year: earliest.year, month: earliest.month)
     }
 }

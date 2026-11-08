@@ -2,9 +2,9 @@ import Foundation
 import SwiftData
 import TillyCore
 
-typealias Expense = SchemaV1.Expense
+typealias Expense = SchemaV3.Expense
 
-extension SchemaV1 {
+extension SchemaV3 {
     @Model
     final class Expense {
         var id: UUID = UUID()
@@ -16,8 +16,15 @@ extension SchemaV1 {
         /// A plain `String` rather than the enum: CloudKit-safe, readable in the store, and
         /// usable in a `#Predicate`. A stored enum goes through `Codable` into an opaque blob.
         var recurrenceUnitRaw: String = RecurrenceUnit.month.rawValue
-        var anchorDate: Date = Date()
-        var endDate: Date?
+        /// The first charge's day as parts, never an instant, so it reads the same in every time
+        /// zone. Through `anchor`, or `anchorDate(in:)` with the calendar that will use it.
+        var anchorYear: Int = 2000
+        var anchorMonth: Int = 1
+        var anchorDay: Int = 1
+        /// The last charge's day, all three nil when the bill runs on. Through `end`.
+        var endYear: Int?
+        var endMonth: Int?
+        var endDay: Int?
         /// Optional because CloudKit requires it; the editor requires one, so `nil` only occurs in a
         /// store saved before categories existed.
         var category: ExpenseCategory?
@@ -28,6 +35,7 @@ extension SchemaV1 {
         @Relationship(deleteRule: .cascade, inverse: \OverrideRecord.expense)
         var overrides: [OverrideRecord]?
 
+        /// `anchorDate` and `endDate` are read as days in `calendar`.
         init(
             id: UUID = UUID(),
             name: String = "",
@@ -36,10 +44,11 @@ extension SchemaV1 {
             isArchived: Bool = false,
             recurrenceInterval: Int = 1,
             recurrenceUnit: RecurrenceUnit = .month,
-            anchorDate: Date = Date(),
+            anchorDate: Date,
             endDate: Date? = nil,
             category: ExpenseCategory? = nil,
-            seriesID: UUID? = nil
+            seriesID: UUID? = nil,
+            calendar: Calendar
         ) {
             self.id = id
             self.name = name
@@ -48,12 +57,45 @@ extension SchemaV1 {
             self.isArchived = isArchived
             self.recurrenceInterval = recurrenceInterval
             self.recurrenceUnitRaw = recurrenceUnit.rawValue
-            self.anchorDate = anchorDate
-            self.endDate = endDate
             self.category = category
             self.seriesID = seriesID
+            self.anchor = CalendarDay(anchorDate, calendar: calendar)
+            self.end = endDate.map { CalendarDay($0, calendar: calendar) }
         }
     }
+}
+
+extension Expense {
+    /// The first charge's day.
+    var anchor: CalendarDay {
+        get { CalendarDay(year: anchorYear, month: anchorMonth, day: anchorDay) }
+        set {
+            anchorYear = newValue.year
+            anchorMonth = newValue.month
+            anchorDay = newValue.day
+        }
+    }
+
+    /// The last charge's day; nil when the bill runs on.
+    var end: CalendarDay? {
+        get {
+            guard let endYear, let endMonth, let endDay else { return nil }
+            return CalendarDay(year: endYear, month: endMonth, day: endDay)
+        }
+        set {
+            endYear = newValue?.year
+            endMonth = newValue?.month
+            endDay = newValue?.day
+        }
+    }
+
+    func anchorDate(in calendar: Calendar) -> Date { anchor.date(in: calendar) }
+
+    func setAnchorDate(_ date: Date, in calendar: Calendar) { anchor = CalendarDay(date, calendar: calendar) }
+
+    func endDate(in calendar: Calendar) -> Date? { end?.date(in: calendar) }
+
+    func setEndDate(_ date: Date?, in calendar: Calendar) { end = date.map { CalendarDay($0, calendar: calendar) } }
 }
 
 extension Expense {
@@ -69,20 +111,20 @@ extension Expense {
         RecurrenceUnit(rawValue: recurrenceUnitRaw) ?? .month
     }
 
-    var rule: RecurrenceRule {
+    func rule(calendar: Calendar) -> RecurrenceRule {
         RecurrenceRule(
             interval: recurrenceInterval,
             unit: recurrenceUnit,
-            anchorDate: anchorDate,
-            endDate: endDate
+            anchorDate: anchorDate(in: calendar),
+            endDate: endDate(in: calendar)
         )
     }
 
-    var snapshot: ExpenseSnapshot {
-        ExpenseSnapshot(id: id, amount: amount, isEstimate: isEstimate, rule: rule, isArchived: isArchived)
+    func snapshot(calendar: Calendar) -> ExpenseSnapshot {
+        ExpenseSnapshot(id: id, amount: amount, isEstimate: isEstimate, rule: rule(calendar: calendar), isArchived: isArchived)
     }
 
-    var overrideSnapshots: [OccurrenceOverride] {
-        (overrides ?? []).map(\.snapshot)
+    func overrideSnapshots(calendar: Calendar) -> [OccurrenceOverride] {
+        (overrides ?? []).map { $0.snapshot(calendar: calendar) }
     }
 }

@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-typealias ExpenseCategory = SchemaV1.ExpenseCategory
+typealias ExpenseCategory = SchemaV3.ExpenseCategory
 
-extension SchemaV1 {
+extension SchemaV3 {
     /// A picture (a symbol, or the emoji it was made with), a name and a colour, and a place in the user's order. The app ships with none;
     /// people make their own while adding an expense. `CategoryOrdering` sets the colour and order
     /// of any saved before either existed.

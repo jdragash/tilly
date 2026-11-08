@@ -192,7 +192,7 @@ struct CategoryView: View {
     private var categoryMonth: CategoryMonth {
         let infos = categories.map(CategoryInfo.init)
         return CategoryMonthBuilder.month(
-            month, expenses: Expense.timelineExpenses(expenses), categoryOf: Expense.categoryMap(expenses),
+            month, expenses: Expense.timelineExpenses(expenses, calendar: calendar), categoryOf: Expense.categoryMap(expenses),
             categories: infos, today: today, calendar: calendar, isCurrent: month == window.current
         )
     }

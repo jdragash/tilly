@@ -8,10 +8,11 @@ extension Expense {
     ///
     /// Only this record's own end: a caller with the whole series available should use
     /// `timelineExpenses(_:)` instead, which carries the series' end.
-    var timelineExpense: TimelineExpense {
+    func timelineExpense(calendar: Calendar) -> TimelineExpense {
         TimelineExpense(
-            name: name, picture: CategoryPicture(category), colour: category?.colour, snapshot: snapshot, overrides: overrideSnapshots,
-            seriesEndDate: endDate
+            name: name, picture: CategoryPicture(category), colour: category?.colour,
+            snapshot: snapshot(calendar: calendar), overrides: overrideSnapshots(calendar: calendar),
+            seriesEndDate: endDate(in: calendar)
         )
     }
 
@@ -19,16 +20,17 @@ extension Expense {
     /// latest-anchored record sharing its `seriesKey`, nil when that record runs on. A bill
     /// split into a later record by "future charges" reads its whole series' end this way,
     /// not the open record's own.
-    static func timelineExpenses(_ expenses: [Expense]) -> [TimelineExpense] {
+    static func timelineExpenses(_ expenses: [Expense], calendar: Calendar) -> [TimelineExpense] {
         let series = Dictionary(grouping: expenses, by: \.seriesKey)
         let seriesEnds: [UUID: Date?] = series.mapValues { records in
-            records.max(by: { $0.anchorDate < $1.anchorDate })?.endDate ?? nil
+            records.max(by: { $0.anchor < $1.anchor })?.endDate(in: calendar) ?? nil
         }
         return expenses.map { expense in
             TimelineExpense(
                 name: expense.name, picture: CategoryPicture(expense.category), colour: expense.category?.colour,
-                snapshot: expense.snapshot,
-                overrides: expense.overrideSnapshots, seriesEndDate: seriesEnds[expense.seriesKey] ?? nil
+                snapshot: expense.snapshot(calendar: calendar),
+                overrides: expense.overrideSnapshots(calendar: calendar),
+                seriesEndDate: seriesEnds[expense.seriesKey] ?? nil
             )
         }
     }
@@ -38,19 +40,19 @@ extension Expense {
     static func categoryMap(_ expenses: [Expense]) -> [UUID: UUID] {
         var map: [UUID: UUID] = [:]
         for expense in expenses {
-            if let category = expense.category { map[expense.snapshot.id] = category.id }
+            if let category = expense.category { map[expense.id] = category.id }
         }
         return map
     }
 
     /// One `BillInput` per record, for All bills. Archived records are left out. Overrides are
     /// carried whole, as `timelineExpense` carries them.
-    static func billInputs(_ expenses: [Expense]) -> [BillInput] {
+    static func billInputs(_ expenses: [Expense], calendar: Calendar) -> [BillInput] {
         expenses.filter { !$0.isArchived }.map { expense in
             BillInput(
                 seriesKey: expense.seriesKey, expenseID: expense.id, name: expense.name,
-                categoryID: expense.category?.id, snapshot: expense.snapshot,
-                overrides: expense.overrideSnapshots
+                categoryID: expense.category?.id, snapshot: expense.snapshot(calendar: calendar),
+                overrides: expense.overrideSnapshots(calendar: calendar)
             )
         }
     }
