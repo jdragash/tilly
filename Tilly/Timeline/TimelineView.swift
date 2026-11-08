@@ -18,9 +18,15 @@ struct TimelineView: View {
     @State private var window: TimelineWindow?
     @State private var isLastPayment = false
     @State private var sections: [MonthKey: MonthSection] = [:]
-    @State private var headerOffsets: [MonthKey: CGFloat] = [:]
-    @State private var headerHeights: [MonthKey: CGFloat] = [:]
     @State private var viewportHeight: CGFloat = 0
+    /// The list's live geometry, written every scroll frame. A plain reference, not view state:
+    /// read in `body`, it rebuilt the screen once a frame. What `body` needs from it is published
+    /// as `pinnedMonth` and `middleMonth`, and only when either changes.
+    @State private var geometry = TimelineScrollGeometry()
+    /// The month whose header is pinned at the top, and the month under the middle of the list,
+    /// as `body` reads them. Actions read the live answers from `geometry` instead.
+    @State private var pinnedMonthShown: MonthKey?
+    @State private var middleMonthShown: MonthKey?
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasRestoredPlace = false
     @State private var isProgrammaticScroll = false
@@ -30,12 +36,8 @@ struct TimelineView: View {
     @State private var returnRestarts = 0
     /// The list's fade, for the Today kind that jumps under one.
     @State private var listFade: Double = 1
-    @State private var scrollOffset: CGFloat = 0
-    @State private var restingContentOffset: CGFloat?
     @State private var bottomClearance: CGFloat = Tokens.Space.floatingClearance
     @State private var containerHeight: CGFloat = 0
-    @State private var currentContentTop: CGFloat?
-    @State private var floorLineBottom: CGFloat?
     @State private var floorSpacer: CGFloat = 0
     @State private var isSettingsPresented = false
     @State private var isBillsPresented = false
@@ -115,7 +117,17 @@ struct TimelineView: View {
     /// one month's threshold at once, and the later month in document order is the one that
     /// has actually taken over pinning.
     private func pinnedMonth(in months: [MonthKey]) -> MonthKey? {
-        months.last { (headerOffsets[$0] ?? .infinity) <= 0 }
+        months.last { (geometry.headerOffsets[$0] ?? .infinity) <= 0 }
+    }
+
+    /// Hands `body` the pinned month and the month under the middle, only when either has changed:
+    /// the offsets they come from move every scroll frame, and most frames change neither.
+    private func publishScrollMonths() {
+        let months = visibleMonths
+        let pinned = pinnedMonth(in: months)
+        let middle = monthUnderMiddle(in: months)
+        if pinned != pinnedMonthShown { pinnedMonthShown = pinned }
+        if middle != middleMonthShown { middleMonthShown = middle }
     }
 
     /// Months from the ceiling down to the floor, with an empty month dropped unless it's the
@@ -141,9 +153,9 @@ struct TimelineView: View {
     /// top-most visible item is wrong (preserving it can shove the read month off screen);
     /// total content height is wrong too, because one change can add a month at one end and
     /// drop one at the other. See `.claude/rules/swiftui-scrolling.md`.
-    private func monthUnderMiddle() -> MonthKey? {
+    private func monthUnderMiddle(in months: [MonthKey]? = nil) -> MonthKey? {
         let middleY = listHeight / 2
-        return visibleMonths.last { (headerOffsets[$0] ?? .infinity) <= middleY }
+        return (months ?? visibleMonths).last { (geometry.headerOffsets[$0] ?? .infinity) <= middleY }
     }
 
     /// How far the reader has travelled from the resting position: positive below it (back
@@ -161,8 +173,8 @@ struct TimelineView: View {
     /// mounted, and stable in between because nothing but a day change moves the current
     /// month within the content.
     private var returnDistance: CGFloat? {
-        guard viewportHeight > 0, let restingContentOffset else { return nil }
-        return scrollOffset - restingContentOffset
+        guard viewportHeight > 0, let restingContentOffset = geometry.restingContentOffset else { return nil }
+        return geometry.scrollOffset - restingContentOffset
     }
 
     /// How long the return scroll should take, scaled to the distance actually travelled.
@@ -189,7 +201,10 @@ struct TimelineView: View {
         // no text field of its own, so it ignores the keyboard whole: ignoring it on the row
         // alone isn't enough, because the row follows the bottom of what it sits in.
         .ignoresSafeArea(.keyboard)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+            viewportHeight = $0
+            publishScrollMonths()
+        }
         // Above the levels, the glass controls and the bottom row.
         .overlay {
             EditorSheet(request: $editor) { request in
@@ -385,7 +400,7 @@ struct TimelineView: View {
     /// "‹ October": the month under the middle of the list, live, which the back button returns
     /// to as the calendar's month.
     private func dayTopRow(_ window: TimelineWindow) -> some View {
-        let month = monthUnderMiddle() ?? window.current
+        let month = middleMonthShown ?? window.current
         return HStack {
             BackButton(title: month.name(in: calendar, relativeTo: today, locale: locale)) {
                 ifNotPinching { backToMonth(in: window) }
@@ -401,10 +416,8 @@ struct TimelineView: View {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                     if isLastPayment { ceilingLine(window.ceiling) }
-                    // Once per update, not once per month: each was a filter of every month in the
-                    // window, run again for every header on every scroll frame.
                     let months = visibleMonths
-                    let pinned = pinnedMonth(in: months)
+                    let pinned = pinnedMonthShown
                     ForEach(months) { month in
                         let monthSection = section(for: month)
                         Section {
@@ -424,7 +437,7 @@ struct TimelineView: View {
                                 proxy.frame(in: .named(Self.contentSpace)).minY
                             } action: { minY in
                                 guard month == window.current else { return }
-                                currentContentTop = minY
+                                geometry.currentContentTop = minY
                                 updateFloorSpacer()
                             }
                         } header: {
@@ -437,18 +450,22 @@ struct TimelineView: View {
                                 .onGeometryChange(for: CGRect.self) { proxy in
                                     proxy.frame(in: .named(Self.scrollSpace))
                                 } action: { frame in
-                                    headerOffsets[month] = frame.minY
-                                    headerHeights[month] = frame.height
+                                    geometry.headerOffsets[month] = frame.minY
+                                    geometry.headerHeights[month] = frame.height
                                     if month == window.current {
-                                        restingContentOffset = scrollOffset + frame.minY
+                                        geometry.restingContentOffset = geometry.scrollOffset + frame.minY
                                         updateFloorSpacer()
                                     }
+                                    publishScrollMonths()
                                 }
                                 // A header the list stops drawing keeps its last offset, which
                                 // then lies: a jump to a far month left June's behind at the
                                 // top, and the month under the middle read June. Its height
                                 // stays, as every header's is the same.
-                                .onDisappear { headerOffsets[month] = nil }
+                                .onDisappear {
+                                    geometry.headerOffsets[month] = nil
+                                    publishScrollMonths()
+                                }
                         }
                         .id(month.id)
                     }
@@ -460,7 +477,7 @@ struct TimelineView: View {
                         .onGeometryChange(for: CGFloat.self) { proxy in
                             proxy.frame(in: .named(Self.contentSpace)).maxY
                         } action: { maxY in
-                            floorLineBottom = maxY
+                            geometry.floorLineBottom = maxY
                             updateFloorSpacer()
                         }
                     Color.clear.frame(height: floorSpacer)
@@ -471,7 +488,7 @@ struct TimelineView: View {
             }
             .contentMargins(.bottom, bottomClearance, for: .scrollContent)
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
-                scrollOffset = newValue
+                geometry.scrollOffset = newValue
             }
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, newValue in
                 containerHeight = newValue
@@ -746,7 +763,7 @@ struct TimelineView: View {
         guard window != nil else { return }
         glideStopper.stop()
         let anchorMonth = monthUnderMiddle()
-        let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
+        let desiredOffset = anchorMonth.flatMap { geometry.headerOffsets[$0] } ?? 0
         rebuildSections()
         let target = anchorMonth.flatMap { anchor in
             visibleMonths.contains(anchor)
@@ -955,7 +972,7 @@ struct TimelineView: View {
         // where the list rests hasn't been. Landing on it lays it out and measures its header.
         scrollProxy.scrollTo(month.id, anchor: .top)
         DispatchQueue.main.async {
-            let headerHeight = headerHeights[month] ?? 0
+            let headerHeight = geometry.headerHeights[month] ?? 0
             switch landing {
             case .rows:
                 let room = listHeight - bottomClearance
@@ -1004,7 +1021,7 @@ struct TimelineView: View {
                     }
                     return
                 }
-                let headerHeight = headerHeights[month] ?? 0
+                let headerHeight = geometry.headerHeights[month] ?? 0
                 let room = listHeight - bottomClearance - rowHeight
                 let top = headerHeight + Tokens.Motion.Card.landingRowOffset
                 let fraction = room > 0 ? min(1, max(0, top / room)) : 0
@@ -1033,7 +1050,7 @@ struct TimelineView: View {
         let month = MonthKey(containing: entry.date, calendar: calendar)
         let listTop = Tokens.Size.headerRow
         return TimelineLanding.isInView(
-            frame, listTop: listTop, headerHeight: headerHeights[month] ?? 0,
+            frame, listTop: listTop, headerHeight: geometry.headerHeights[month] ?? 0,
             listBottom: listTop + listHeight - bottomClearance
         )
     }
@@ -1205,8 +1222,9 @@ struct TimelineView: View {
     /// separate callbacks either side of a scroll, and the space flickered 548 → 0.3 → 548 at
     /// launch. Changes under half a point are ignored.
     private func updateFloorSpacer() {
-        guard let window, let currentContentTop, let floorLineBottom,
-              let headerHeight = headerHeights[window.current], containerHeight > 0
+        guard let window, let currentContentTop = geometry.currentContentTop,
+              let floorLineBottom = geometry.floorLineBottom,
+              let headerHeight = geometry.headerHeights[window.current], containerHeight > 0
         else { return }
         let currentHeaderTop = currentContentTop - headerHeight
         let needed = max(0, containerHeight - (floorLineBottom - currentHeaderTop))
@@ -1270,7 +1288,7 @@ struct TimelineView: View {
             return
         }
         let anchorMonth = monthUnderMiddle()
-        let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
+        let desiredOffset = anchorMonth.flatMap { geometry.headerOffsets[$0] } ?? 0
         replaceWindow(with: newWindow)
         rebuildSections()
         if let anchorMonth, visibleMonths.contains(anchorMonth) {
@@ -1285,13 +1303,10 @@ struct TimelineView: View {
         replaceWindow(with: nil)
         sections = [:]
         rebuildCalendarLevels()
-        headerOffsets = [:]
-        headerHeights = [:]
+        geometry = TimelineScrollGeometry()
+        publishScrollMonths()
         scrollProxy = nil
         hasRestoredPlace = false
-        restingContentOffset = nil
-        currentContentTop = nil
-        floorLineBottom = nil
         floorSpacer = 0
         placeStore.clear()
     }
@@ -1366,7 +1381,7 @@ struct TimelineView: View {
     /// makes the landing worse, not better. `.claude/rules/swiftui-scrolling.md` records what
     /// was measured and where to start.
     private func currentPlace() -> TimelinePlace? {
-        guard let month = monthUnderMiddle(), let offset = headerOffsets[month] else { return nil }
+        guard let month = monthUnderMiddle(), let offset = geometry.headerOffsets[month] else { return nil }
         return TimelinePlace(anchorMonthID: month.id, anchorOffset: Double(offset))
     }
 
@@ -1407,7 +1422,7 @@ struct TimelineView: View {
             return
         }
         let anchorMonth = monthUnderMiddle()
-        let desiredOffset = anchorMonth.flatMap { headerOffsets[$0] } ?? 0
+        let desiredOffset = anchorMonth.flatMap { geometry.headerOffsets[$0] } ?? 0
         replaceWindow(with: TimelineWindow(floor: window.floor, ceiling: ceiling, current: newCurrent))
         rebuildSections()
         if let anchorMonth { anchorAndSettle(anchorMonth, to: max(0, desiredOffset)) }
@@ -1459,7 +1474,7 @@ struct TimelineView: View {
             // month arrives. Gliding to the month's top and then on to the divider overshot the line
             // from above and came back (284pt, logged).
             if hasDivider, let top = dividerHeaderTop(in: window.current) {
-                let room = containerHeight - (headerHeights[window.current] ?? 0)
+                let room = containerHeight - (geometry.headerHeights[window.current] ?? 0)
                 withAnimation(todayAnimation(kind, duration: duration)) {
                     scrollProxy.scrollTo(window.current.id, anchor: UnitPoint(x: 0.5, y: top / room))
                 }
@@ -1520,7 +1535,7 @@ struct TimelineView: View {
     /// bottom margin, so a target `h` high centred at `m` needs `f = (m − h/2) / (C − h)`.
     private func dividerAnchor(height: CGFloat, in month: MonthKey) -> UnitPoint {
         let container = containerHeight
-        let middle = ((headerHeights[month] ?? 0) + container) / 2
+        let middle = ((geometry.headerHeights[month] ?? 0) + container) / 2
         let room = container - height
         let fraction = room > 0 ? min(1, max(0, (middle - height / 2) / room)) : 0
         return UnitPoint(x: 0.5, y: fraction)
@@ -1531,8 +1546,9 @@ struct TimelineView: View {
     /// measured in the list's content, which scrolling doesn't move. Nil before it has been laid
     /// out, or when the header would have to sit above the top, which `scrollTo` can't express.
     private func dividerHeaderTop(in month: MonthKey) -> CGFloat? {
-        guard let divider = rowFrames.frames[TodayDivider.contentID], let currentContentTop,
-              let header = headerHeights[month], containerHeight > header
+        guard let divider = rowFrames.frames[TodayDivider.contentID],
+              let currentContentTop = geometry.currentContentTop,
+              let header = geometry.headerHeights[month], containerHeight > header
         else { return nil }
         let fromHeaderTop = divider.midY - (currentContentTop - header)
         let top = (header + containerHeight) / 2 - fromHeaderTop
@@ -1551,7 +1567,7 @@ struct TimelineView: View {
             // different instants — measured on device leaving the cache 702, 493 and 0.2 points
             // wrong across three otherwise identical returns, and the next return's duration is
             // read from it. At the divider it isn't, so the cache is left to the header.
-            if atMonthTop { restingContentOffset = scrollOffset }
+            if atMonthTop { geometry.restingContentOffset = geometry.scrollOffset }
             // And save it. The scroll-idle save is suppressed while this view's own scroll is
             // in flight, and a fling cut short by this tap never settled to save either — so
             // without this the saved place is wherever the fling was heading, and a relaunch
@@ -1611,7 +1627,7 @@ struct TimelineView: View {
     /// version's bug, and it drifted by half a point per gesture.
     private func restoreAnchor(_ month: MonthKey, to desiredOffset: CGFloat) {
         guard let scrollProxy else { return }
-        let headerHeight = headerHeights[month] ?? 0
+        let headerHeight = geometry.headerHeights[month] ?? 0
         let denominator = (listHeight - bottomClearance) - headerHeight
         guard headerHeight > 0, denominator > 0.5 else {
             scrollProxy.scrollTo(month.id, anchor: .top)
@@ -1638,6 +1654,7 @@ struct TimelineView: View {
         }
         sections = result
         rebuildCalendarLevels()
+        publishScrollMonths()
     }
 }
 

@@ -31,9 +31,7 @@ tests: each was found on screen.
   shows, in a reference holder outside view state. Hold what arrives mid-zoom and keep it once the
   zoom settles: an arriving level's at-rest frames come before the zoom ends, and a year shown once
   had none to pinch from.
-- **Read the zoom's progress only in `LevelLook`, never in `TimelineView.body`.** Read there, every
-  pinch frame rebuilt the screen and the year's twelve months (18 body runs a pinch, now 5). The
-  year and the grid's month are cached with `sections` and rebuilt wherever it is.
+- **Year and month are cached with `sections`;** progress is read in `LevelLook` only (controls.md).
 
 ## Pinching
 
