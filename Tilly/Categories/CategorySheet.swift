@@ -1,3 +1,4 @@
+import OSLog
 import SwiftData
 import SwiftUI
 
@@ -28,6 +29,10 @@ struct CategorySheet: View {
     @State private var picked: Bool
     @State private var scrollToTop = 0
     @State private var deleting: ExpenseCategory?
+    /// The save threw and was rolled back; the sheet stays open to try again.
+    @State private var saveFailed = false
+
+    private static let logger = Logger(subsystem: "com.jdragash.Tilly", category: "CategorySheet")
     @FocusState private var nameFocused: Bool
     private let seed: UInt64
     /// What the changed category was, read once: after a delete the sheet may draw once more, and
@@ -137,6 +142,11 @@ struct CategorySheet: View {
         .categoryDeleteAlert(for: $deleting) { _ in
             onDelete()
             dismiss()
+        }
+        .alert("Your change wasn’t saved", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Nothing was changed. Try again.")
         }
     }
 
@@ -253,6 +263,22 @@ struct CategorySheet: View {
 
     private func save() {
         guard canSave else { return }
+        do {
+            let category = try modelContext.applyOrRollBack {
+                let category = write()
+                try modelContext.save()
+                return category
+            }
+            onSave(category)
+            dismiss()
+        } catch {
+            Self.logger.error("Saving a category failed: \(error, privacy: .public)")
+            saveFailed = true
+        }
+    }
+
+    /// The sheet's name, picture and colour on a new category or the one being changed.
+    private func write() -> ExpenseCategory {
         let category: ExpenseCategory
         switch subject {
         case .new(let existing):
@@ -267,9 +293,7 @@ struct CategorySheet: View {
             if let symbol { category.symbol = symbol }
             category.colour = colour
         }
-        try? modelContext.save()
-        onSave(category)
-        dismiss()
+        return category
     }
 }
 

@@ -5,9 +5,9 @@ extension ModelContext {
     /// Runs `operation`, its writes and its save, and if anything in it throws, discards every
     /// pending change before rethrowing. A failed save then leaves nothing half-written waiting
     /// for the next save to carry out by accident.
-    func applyOrRollBack(_ operation: () throws -> Void) rethrows {
+    func applyOrRollBack<Result>(_ operation: () throws -> Result) rethrows -> Result {
         do {
-            try operation()
+            return try operation()
         } catch {
             rollback()
             throw error
