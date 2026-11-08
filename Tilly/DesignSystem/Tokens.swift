@@ -291,9 +291,9 @@ enum Tokens {
         static let readoutGap: CGFloat = 6
         /// Between the calendar's cells and weekday columns; from the prototype.
         static let gridGap: CGFloat = 2
-        /// A day's second emoji tucks under the first by this much.
-        static let emojiOverlap: CGFloat = 4
-        /// Before the "+N" that follows a day's two emoji.
+        /// A day's second picture tucks under the first by this much.
+        static let pictureOverlap: CGFloat = 4
+        /// Before the "+N" that follows a day's two pictures.
         static let dayMoreGap: CGFloat = 5
         /// Inside a day cell, above its number and below its total.
         static let cellTop: CGFloat = 4
