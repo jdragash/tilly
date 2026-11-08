@@ -27,8 +27,7 @@ struct ExpenseEditor: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
-    @Query private var expenses: [Expense]
+    @Query(sort: \ExpenseCategory.sortOrder) private var categories: [ExpenseCategory]
 
     @State private var draft: ExpenseDraft
     @State private var panel: EditorPanel
@@ -264,7 +263,7 @@ struct ExpenseEditor: View {
             RepeatWheel(draft: $draft)
         case .category:
             CategoryGrid(
-                categories: categories.sorted { $0.sortOrder < $1.sortOrder },
+                categories: categories,
                 selection: draft.categoryID,
                 newBreathes: categories.isEmpty && !progress.isMissing(.amount) && !progress.isMissing(.name),
                 onPick: { id in if sheetTouch.allowsTap { pick(id) } },
