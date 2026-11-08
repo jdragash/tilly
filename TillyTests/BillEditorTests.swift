@@ -541,8 +541,8 @@ import TillyCore
         )
 
         let series = try BillEditor.series(of: expense, in: context)
-        #expect(BillEditor.isFirstCharge(anchor, of: expense, in: series, calendar: Self.calendar))
-        #expect(!BillEditor.isFirstCharge(fourthCharge, of: series[1], in: series, calendar: Self.calendar))
+        #expect(BillEditor.isFirstCharge(anchor, in: series, calendar: Self.calendar))
+        #expect(!BillEditor.isFirstCharge(fourthCharge, in: series, calendar: Self.calendar))
     }
 
     // MARK: Rolling back

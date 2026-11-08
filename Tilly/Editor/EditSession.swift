@@ -82,7 +82,7 @@ struct EditSession: Identifiable, Equatable {
         return EditSession(
             expenseID: expenseID, scheduledDate: day, draft: ExpenseDraft(editing: baseline),
             hasLaterCharge: BillEditor.hasLaterCharge(than: day, in: series, calendar: calendar),
-            isFirstCharge: BillEditor.isFirstCharge(day, of: expense, in: series, calendar: calendar),
+            isFirstCharge: BillEditor.isFirstCharge(day, in: series, calendar: calendar),
             previousChargeDate: previousChargeDate
         )
     }

@@ -44,7 +44,7 @@ enum BillEditor {
 
     /// Whether `scheduledDate` is the bill's very first charge — the earliest record's own
     /// anchor. The first charge of a later, split-off record is not the bill's first.
-    static func isFirstCharge(_ scheduledDate: Date, of expense: Expense, in series: [Expense], calendar: Calendar) -> Bool {
+    static func isFirstCharge(_ scheduledDate: Date, in series: [Expense], calendar: Calendar) -> Bool {
         guard let earliest = series.min(by: { $0.anchorDate < $1.anchorDate }) else { return false }
         return calendar.startOfDay(for: scheduledDate) == calendar.startOfDay(for: earliest.anchorDate)
     }
