@@ -2,53 +2,57 @@ import Foundation
 import SwiftData
 import TillyCore
 
-@Model
-final class Expense {
-    var id: UUID = UUID()
-    var name: String = ""
-    var amount: Decimal?
-    var isEstimate: Bool = false
-    var isArchived: Bool = false
-    var recurrenceInterval: Int = 1
-    /// A plain `String` rather than the enum: CloudKit-safe, readable in the store, and
-    /// usable in a `#Predicate`. A stored enum goes through `Codable` into an opaque blob.
-    var recurrenceUnitRaw: String = RecurrenceUnit.month.rawValue
-    var anchorDate: Date = Date()
-    var endDate: Date?
-    /// Optional because CloudKit requires it; the editor requires one, so `nil` only occurs in a
-    /// store saved before categories existed.
-    var category: ExpenseCategory?
-    /// Optional so a migrated store gives existing bills no shared default: nil is "its own
-    /// series". Set when "future charges" splits a bill into a new record sharing this one.
-    var seriesID: UUID?
+typealias Expense = SchemaV1.Expense
 
-    @Relationship(deleteRule: .cascade, inverse: \OverrideRecord.expense)
-    var overrides: [OverrideRecord]?
+extension SchemaV1 {
+    @Model
+    final class Expense {
+        var id: UUID = UUID()
+        var name: String = ""
+        var amount: Decimal?
+        var isEstimate: Bool = false
+        var isArchived: Bool = false
+        var recurrenceInterval: Int = 1
+        /// A plain `String` rather than the enum: CloudKit-safe, readable in the store, and
+        /// usable in a `#Predicate`. A stored enum goes through `Codable` into an opaque blob.
+        var recurrenceUnitRaw: String = RecurrenceUnit.month.rawValue
+        var anchorDate: Date = Date()
+        var endDate: Date?
+        /// Optional because CloudKit requires it; the editor requires one, so `nil` only occurs in a
+        /// store saved before categories existed.
+        var category: ExpenseCategory?
+        /// Optional so a migrated store gives existing bills no shared default: nil is "its own
+        /// series". Set when "future charges" splits a bill into a new record sharing this one.
+        var seriesID: UUID?
 
-    init(
-        id: UUID = UUID(),
-        name: String = "",
-        amount: Decimal? = nil,
-        isEstimate: Bool = false,
-        isArchived: Bool = false,
-        recurrenceInterval: Int = 1,
-        recurrenceUnit: RecurrenceUnit = .month,
-        anchorDate: Date = Date(),
-        endDate: Date? = nil,
-        category: ExpenseCategory? = nil,
-        seriesID: UUID? = nil
-    ) {
-        self.id = id
-        self.name = name
-        self.amount = amount
-        self.isEstimate = isEstimate
-        self.isArchived = isArchived
-        self.recurrenceInterval = recurrenceInterval
-        self.recurrenceUnitRaw = recurrenceUnit.rawValue
-        self.anchorDate = anchorDate
-        self.endDate = endDate
-        self.category = category
-        self.seriesID = seriesID
+        @Relationship(deleteRule: .cascade, inverse: \OverrideRecord.expense)
+        var overrides: [OverrideRecord]?
+
+        init(
+            id: UUID = UUID(),
+            name: String = "",
+            amount: Decimal? = nil,
+            isEstimate: Bool = false,
+            isArchived: Bool = false,
+            recurrenceInterval: Int = 1,
+            recurrenceUnit: RecurrenceUnit = .month,
+            anchorDate: Date = Date(),
+            endDate: Date? = nil,
+            category: ExpenseCategory? = nil,
+            seriesID: UUID? = nil
+        ) {
+            self.id = id
+            self.name = name
+            self.amount = amount
+            self.isEstimate = isEstimate
+            self.isArchived = isArchived
+            self.recurrenceInterval = recurrenceInterval
+            self.recurrenceUnitRaw = recurrenceUnit.rawValue
+            self.anchorDate = anchorDate
+            self.endDate = endDate
+            self.category = category
+            self.seriesID = seriesID
+        }
     }
 }
 
