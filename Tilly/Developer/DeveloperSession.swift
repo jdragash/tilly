@@ -1,6 +1,7 @@
 #if DEBUG
 import Foundation
 import Observation
+import OSLog
 import SwiftData
 
 /// Which store the app is showing: the person's own, or a sample scenario seeded fresh into
@@ -15,6 +16,9 @@ final class DeveloperSession {
     private(set) var scenario: DeveloperScenario
     private(set) var container: ModelContainer
     private(set) var placeStore: TimelinePlaceStore
+    /// The last load's store wouldn't open. `container` keeps whatever it held before (an empty
+    /// in-memory placeholder at launch), the store file is left alone, and the app shows `StoreUnavailableView`.
+    private(set) var openFailed = false
     /// Changes on every load, so the timeline can be rebuilt from scratch.
     private(set) var generation = 0
 
@@ -86,8 +90,10 @@ final class DeveloperSession {
                 container = persistentContainer!
                 placeStore = TimelinePlaceStore(defaults: defaults)
             }
+            openFailed = false
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            TillyStore.logger.error("The store didn't open: \(error, privacy: .public)")
+            openFailed = true
         }
     }
 }
