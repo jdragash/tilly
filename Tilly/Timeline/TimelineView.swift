@@ -241,6 +241,7 @@ struct TimelineView: View {
         .onChange(of: sections) { _, _ in restorePlaceIfNeeded() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active, hasRestoredPlace { saveCurrentPlace() }
+            if newPhase == .active, !calendar.isDate(today, inSameDayAs: Date()) { handleDayChange() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             handleDayChange()
