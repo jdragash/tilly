@@ -487,6 +487,8 @@ struct TimelineView: View {
                 .scrollTargetLayout()
             }
             .contentMargins(.bottom, bottomClearance, for: .scrollContent)
+            // The future runs years ahead, so a scroll bar's place read as an endless list.
+            .scrollIndicators(.hidden)
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newValue in
                 geometry.scrollOffset = newValue
             }

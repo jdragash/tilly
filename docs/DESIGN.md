@@ -145,13 +145,13 @@ handing off beneath it is hidden: a scrim or a blur won't do.
 ### One list, from your oldest charge to five years on
 
 Months ahead run on above the current one, like Calendar, all there from the start, and history runs
-on below. Nothing to tap open, nothing that closes itself. At rest the list sits flush on the
-current month, however short. When it holds nothing charged, it ends with `This fills in as bills go
-out.` While any bill runs on, the list runs five years ahead; once every bill ends it stops at the
-last payment: `Nothing after May 2027.` Below, it stops at the oldest occurrence: `Nothing before
-March.` An empty month isn't listed, except this one and next, so no month ever shows €0 for a month
-the app knows nothing about. Expenses are entered for their next occurrence; a deliberately
-backdated bill is shown.
+on below. Nothing to tap open, nothing that closes itself, and no scroll bar. At rest the list sits
+flush on the current month, however short. When it holds nothing charged, it ends with `This fills
+in as bills go out.` While any bill runs on, the list runs five years ahead; once every bill ends it
+stops at the last payment: `Nothing after May 2027.` Below, it stops at the oldest occurrence:
+`Nothing before March.` An empty month isn't listed, except this one and next, so no month ever
+shows €0 for a month the app knows nothing about. Expenses are entered for their next occurrence; a
+deliberately backdated bill is shown.
 
 ### Nothing under the reader's eyes moves
 
